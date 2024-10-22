@@ -8,8 +8,7 @@ struct RenderingEquationContent
 {
     float3 directMainLight;
     float3 directAdditionalLight;
-    float3 indirectLightDiffuse;
-    float3 indirectLightSpecular;
+    float3 indirectLight;
 };
 
 //TODO：计算上述结构所有内容的函数

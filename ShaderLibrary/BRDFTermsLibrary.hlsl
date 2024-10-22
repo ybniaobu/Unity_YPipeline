@@ -24,7 +24,7 @@ struct AnisoBRDFParams
     float BoV;
 };
 
-void InitializeBRDFData(out BRDFParams BRDFParams, float3 N, float3 L, float3 V, float3 H)
+void InitializeBRDFParams(out BRDFParams BRDFParams, float3 N, float3 L, float3 V, float3 H)
 {
     BRDFParams.NoL = saturate(dot(N, L));
     BRDFParams.NoH = saturate(dot(N, H));
@@ -32,7 +32,7 @@ void InitializeBRDFData(out BRDFParams BRDFParams, float3 N, float3 L, float3 V,
     BRDFParams.VoH = saturate(dot(V, H));
 }
 
-void InitializeAnisoBRDFData(out AnisoBRDFParams AnisoBRDFParams, float3 T, float3 B, float3 L, float3 V, float3 H)
+void InitializeAnisoBRDFParams(out AnisoBRDFParams AnisoBRDFParams, float3 T, float3 B, float3 L, float3 V, float3 H)
 {
     AnisoBRDFParams.ToH = dot(T, H);
     AnisoBRDFParams.ToL = dot(T, L);

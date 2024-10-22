@@ -104,13 +104,13 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     float3 Ks = F_SchlickRoughness(standardPBRParams.F0, standardPBRParams.NoV, standardPBRParams.roughness);
     float3 Kd = 1.0 - Ks;
     Kd *= 1.0 - standardPBRParams.metallic;
-    renderingEquationContent.indirectLightDiffuse = irradiance * envBRDFDiffuse * Kd;
+    renderingEquationContent.indirectLight += irradiance * envBRDFDiffuse * Kd;
 
     float3 R = reflect(-standardPBRParams.V, standardPBRParams.N);
     float3 prefilteredColor = SAMPLE_TEXTURE2D_LOD(_PrefilteredEnvMap, sampler_PrefilteredEnvMap, R, 8 * standardPBRParams.roughness).rgb;
     float2 envBRDFSpecular = SAMPLE_TEXTURE2D(_EnvBRDFLut, sampler_Point_Clamp_EnvBRDFLut, float2(standardPBRParams.NoV, standardPBRParams.roughness)).rg;
-    // renderingEquationContent.indirectLightSpecular = prefilteredColor * (standardPBRParams.F0 * envBRDFSpecular.x + envBRDFSpecular.y);
-    renderingEquationContent.indirectLightSpecular = prefilteredColor * lerp(envBRDFSpecular.xxx, envBRDFSpecular.yyy, standardPBRParams.F0);
+    // renderingEquationContent.indirectLight += prefilteredColor * (standardPBRParams.F0 * envBRDFSpecular.x + envBRDFSpecular.y);
+    renderingEquationContent.indirectLight += prefilteredColor * lerp(envBRDFSpecular.xxx, envBRDFSpecular.yyy, standardPBRParams.F0);
 
     float3 energyCompensation = 1.0 + standardPBRParams.F0 * (1.0 / envBRDFSpecular.y - 1.0);
 
@@ -120,7 +120,7 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     InitializeMainLightParams(mainLightParams, standardPBRParams.V);
     
     BRDFParams mainBRDFParams = (BRDFParams) 0;
-    InitializeBRDFData(mainBRDFParams, standardPBRParams.N, mainLightParams.L, standardPBRParams.V, mainLightParams.H);
+    InitializeBRDFParams(mainBRDFParams, standardPBRParams.N, mainLightParams.L, standardPBRParams.V, mainLightParams.H);
     
     renderingEquationContent.directMainLight = mainLightParams.color * StandardPBR_EnergyCompensation(mainBRDFParams, standardPBRParams, energyCompensation);
     
@@ -134,7 +134,7 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
             InitializeAdditionalLightParams(additionalLightParams, lightIndex, standardPBRParams.V, IN.positionWS);
             
             BRDFParams additionalBRDFParams = (BRDFParams) 0;
-            InitializeBRDFData(additionalBRDFParams, standardPBRParams.N, additionalLightParams.L, standardPBRParams.V, additionalLightParams.H);
+            InitializeBRDFParams(additionalBRDFParams, standardPBRParams.N, additionalLightParams.L, standardPBRParams.V, additionalLightParams.H);
     
             float3 additionalLightColor = additionalLightParams.color * (additionalLightParams.distanceAttenuation * additionalLightParams.angleAttenuation);
             renderingEquationContent.directAdditionalLight += additionalLightColor * StandardPBR(additionalBRDFParams, standardPBRParams);
@@ -142,7 +142,7 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     #endif
 
     //return float4(renderingEquationContent.directMainLight + renderingEquationContent.directAdditionalLight , 1.0f);
-    return float4(renderingEquationContent.directMainLight + renderingEquationContent.directAdditionalLight + renderingEquationContent.indirectLightDiffuse + renderingEquationContent.indirectLightSpecular, 1.0f);
+    return float4(renderingEquationContent.directMainLight + renderingEquationContent.directAdditionalLight + renderingEquationContent.indirectLight, 1.0f);
 }
 
 #endif
