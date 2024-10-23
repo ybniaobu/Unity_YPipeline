@@ -7,7 +7,7 @@
 // BRDF input parameters struct
 struct BRDFParams
 {
-    //NoV is in BRDFModelParams
+    // NoV is in BRDFModelParams
     float NoL;
     float NoH;
     float LoH;

@@ -20,7 +20,7 @@ Texture2D _BaseTex;             SamplerState sampler_Trilinear_Repeat_BaseTex;
 Texture2D _RoughnessTex;
 Texture2D _MetallicTex;
 Texture2D _NormalTex;
-TextureCube _PrefilteredEnvMap; SamplerState sampler_PrefilteredEnvMap;
+TextureCube _PrefilteredEnvMap; SamplerState sampler_Trilinear_Repeat_PrefilteredEnvMap;
 Texture2D _EnvBRDFLut;          SamplerState sampler_Point_Clamp_EnvBRDFLut;
 
 struct Attributes
@@ -52,7 +52,7 @@ void InitializeStandardPBRParams(Varyings IN, out StandardPBRParams standardPBRP
         standardPBRParams.roughness = _Roughness;
     #endif
 
-    standardPBRParams.roughness = max(0.01, standardPBRParams.roughness); //make sure there is a tiny specular lobe when roughness is zero
+    standardPBRParams.roughness = clamp(standardPBRParams.roughness, 0.01, 1.0); //make sure there is a tiny specular lobe when roughness is zero
 
     #if _USE_METALLICTEX
         standardPBRParams.metallic = SAMPLE_TEXTURE2D(_MetallicTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).r;
@@ -99,15 +99,16 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     // --------------------------------------------------------------------------------
     // IBL
     // float3 irradiance = SampleSH(standardPBRParams.N) / PI;
-    float3 irradiance = SAMPLE_TEXTURE2D_LOD(_PrefilteredEnvMap, sampler_PrefilteredEnvMap, standardPBRParams.N, 5).rgb;
+    float3 irradiance = SAMPLE_TEXTURE2D_LOD(_PrefilteredEnvMap, sampler_Trilinear_Repeat_PrefilteredEnvMap, standardPBRParams.N, 8).rgb;
     float3 envBRDFDiffuse = standardPBRParams.albedo * SAMPLE_TEXTURE2D(_EnvBRDFLut, sampler_Point_Clamp_EnvBRDFLut, float2(standardPBRParams.NoV, standardPBRParams.roughness)).b;
-    float3 Ks = F_SchlickRoughness(standardPBRParams.F0, standardPBRParams.NoV, standardPBRParams.roughness);
-    float3 Kd = 1.0 - Ks;
+    float3 Ks = F_Schlick(1, standardPBRParams.F0, standardPBRParams.NoV);
+    //float3 Ks = F_SchlickRoughness(standardPBRParams.F0, standardPBRParams.NoV, standardPBRParams.roughness);
+    float Kd = 1.0 - (Ks.r + Ks.g + Ks.b)/3;
     Kd *= 1.0 - standardPBRParams.metallic;
     renderingEquationContent.indirectLight += irradiance * envBRDFDiffuse * Kd;
 
     float3 R = reflect(-standardPBRParams.V, standardPBRParams.N);
-    float3 prefilteredColor = SAMPLE_TEXTURE2D_LOD(_PrefilteredEnvMap, sampler_PrefilteredEnvMap, R, 8 * standardPBRParams.roughness).rgb;
+    float3 prefilteredColor = SAMPLE_TEXTURE2D_LOD(_PrefilteredEnvMap, sampler_Trilinear_Repeat_PrefilteredEnvMap, R, 8 * standardPBRParams.roughness).rgb;
     float2 envBRDFSpecular = SAMPLE_TEXTURE2D(_EnvBRDFLut, sampler_Point_Clamp_EnvBRDFLut, float2(standardPBRParams.NoV, standardPBRParams.roughness)).rg;
     // renderingEquationContent.indirectLight += prefilteredColor * (standardPBRParams.F0 * envBRDFSpecular.x + envBRDFSpecular.y);
     renderingEquationContent.indirectLight += prefilteredColor * lerp(envBRDFSpecular.xxx, envBRDFSpecular.yyy, standardPBRParams.F0);
@@ -141,7 +142,7 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
         }
     #endif
 
-    //return float4(renderingEquationContent.directMainLight + renderingEquationContent.directAdditionalLight , 1.0f);
+    // return float4(renderingEquationContent.directMainLight + renderingEquationContent.directAdditionalLight , 1.0f);
     return float4(renderingEquationContent.directMainLight + renderingEquationContent.directAdditionalLight + renderingEquationContent.indirectLight, 1.0f);
 }
 

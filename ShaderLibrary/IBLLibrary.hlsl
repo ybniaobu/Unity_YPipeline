@@ -8,6 +8,9 @@
 #include "Assets/ShaderLibrary/ToneMappingLibrary.hlsl"
 
 // --------------------------------------------------------------------------------
+// 
+
+// --------------------------------------------------------------------------------
 // Spherical Harmonics(SH)
 // TODO: 先使用 UnityInput 里传递进来的 unity_SHAr...unity_SHC 以后写自己管线时再修改
 float3 SampleSH(float3 N)

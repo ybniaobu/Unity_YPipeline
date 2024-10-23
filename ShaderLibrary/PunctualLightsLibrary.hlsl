@@ -22,7 +22,7 @@ float GetAngleFalloff(float3 L, float3 spotDirection, float2 spotAngleFalloffPar
 
 // --------------------------------------------------------------------------------
 // Light Parameters for computing the BRDF Data and the Rendering Equation
-struct LightParams //Sunlight
+struct LightParams
 {
     float3 color;
     float4 positionWS;
