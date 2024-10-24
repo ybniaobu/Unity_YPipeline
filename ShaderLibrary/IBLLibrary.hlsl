@@ -62,7 +62,7 @@ float3 PrefilterEnvMap_GGX(TEXTURECUBE(envMap), SAMPLER(envMapSampler), uint sam
             float saSample = 1.0 / (float(sampleNumber) * PDF + 0.0001);
             float mipLevel = roughness == 0.0 ? 0.0 : 0.5 * log2(saSample / saTexel);
             
-            prefilteredColor += envMap.SampleLevel(envMapSampler, L, mipLevel).rgb * NoL; //1.5是一个magic number
+            prefilteredColor += envMap.SampleLevel(envMapSampler, L, mipLevel * 1.6).rgb * NoL; //1.5是一个magic number
             totalWeight += NoL;
         }
     }

@@ -77,7 +77,7 @@ Shader "YPipeline/EditorTool/EnvMapPrefilter"
 
             float4 frag (Varyings IN) : SV_Target
             {
-                float3 prefilteredColor = PrefilterHDREnvMap_GGX(_Cubemap, trilinear_repeat_sampler_Cubemap, _SampleNumber, _ResolutionPerFace, _Roughness, IN.sampleDir);
+                float3 prefilteredColor = PrefilterEnvMap_GGX(_Cubemap, trilinear_repeat_sampler_Cubemap, _SampleNumber, _ResolutionPerFace, _Roughness, IN.sampleDir);
                 float3 color = prefilteredColor.rgb * _Exposure;
                 //return float4(color, 1.0f);
                 return float4(GammaToLinearSpaceExact(color.r), GammaToLinearSpaceExact(color.g), GammaToLinearSpaceExact(color.b), 1.0f); //RenderToCubemap API 会将进行 gamma 0.45 处理看起来会更白

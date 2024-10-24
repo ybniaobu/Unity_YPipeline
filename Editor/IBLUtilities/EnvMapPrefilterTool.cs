@@ -46,7 +46,7 @@ public class EnvMapPrefilterTool : OdinEditorWindow
         {
             EnvMapPrefilterSkybox.SetFloat("_Roughness", 1.0f / (mipCount - 1) * i);
             EnvMapPrefilterSkybox.SetFloat("_SampleNumber", Mathf.Pow(2.0f, i + 4));
-            EnvMapPrefilterSkybox.SetFloat("_Exposure", Mathf.Lerp(1, exposureLevel, (float) i / (mipCount - 1.0f)));
+            //EnvMapPrefilterSkybox.SetFloat("_Exposure", Mathf.Lerp(1, exposureLevel, (float) i / (mipCount - 1.0f)));
             
             m_CubemapMipmaps.Add(new Cubemap((int) (sizePerFace / Mathf.Pow(2.0f, i)), TextureFormat.RGBA64, false));
             m_CubemapCamera.GetComponent<Camera>().RenderToCubemap(m_CubemapMipmaps[i]);

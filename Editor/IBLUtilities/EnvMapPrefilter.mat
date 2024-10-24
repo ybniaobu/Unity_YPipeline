@@ -101,7 +101,7 @@ Material:
     - _DstBlend: 0
     - _DstBlendAlpha: 0
     - _EnvironmentReflections: 1
-    - _Exposure: 1.75
+    - _Exposure: 1
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
@@ -112,8 +112,8 @@ Material:
     - _ReceiveShadows: 1
     - _ResolutionPerFace: 2048
     - _Rotation: 270
-    - _Roughness: 1
-    - _SampleNumber: 4096
+    - _Roughness: 0
+    - _SampleNumber: 512
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
