@@ -1,5 +1,5 @@
-﻿#ifndef YPIPELINE_STANDARD_INPUT_INCLUDED
-#define YPIPELINE_STANDARD_INPUT_INCLUDED
+﻿#ifndef YPIPELINE_STANDARD_FORWARD_PASS_INCLUDED
+#define YPIPELINE_STANDARD_FORWARD_PASS_INCLUDED
 
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 #include "Assets/ShaderLibrary/RenderingEquationLibrary.hlsl"
@@ -20,6 +20,7 @@ Texture2D _BaseTex;             SamplerState sampler_Trilinear_Repeat_BaseTex;
 Texture2D _RoughnessTex;
 Texture2D _MetallicTex;
 Texture2D _NormalTex;
+Texture2D _AOTex;
 TextureCube _PrefilteredEnvMap; SamplerState sampler_Trilinear_Repeat_PrefilteredEnvMap;
 Texture2D _EnvBRDFLut;          SamplerState sampler_Point_Clamp_EnvBRDFLut;
 
@@ -39,7 +40,6 @@ struct Varyings
     float3 normalWS     : TEXCOORD2;
     float3 tangentWS    : TEXCOORD3;
     float3 binormalWS   : TEXCOORD4;
-    // float3 SH           : TEXCOORD4;
 };
 
 void InitializeStandardPBRParams(Varyings IN, out StandardPBRParams standardPBRParams)
@@ -69,7 +69,8 @@ void InitializeStandardPBRParams(Varyings IN, out StandardPBRParams standardPBRP
     #else
         standardPBRParams.N = normalize(IN.normalWS);
     #endif
-    
+
+    standardPBRParams.ao = SAMPLE_TEXTURE2D(_AOTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).r;
     standardPBRParams.F0 = lerp(_Specular * _Specular * float3(0.16, 0.16, 0.16), standardPBRParams.albedo, standardPBRParams.metallic);
     standardPBRParams.V = GetWorldSpaceNormalizeViewDir(IN.positionWS);
     standardPBRParams.NoV = saturate(dot(standardPBRParams.N, standardPBRParams.V)) + 1e-3; //防止小黑点
@@ -96,23 +97,16 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
 
     // --------------------------------------------------------------------------------
     // IBL
-    // float3 irradiance = SampleSH(standardPBRParams.N) / PI;
-    float3 irradiance = SAMPLE_TEXTURE2D_LOD(_PrefilteredEnvMap, sampler_Trilinear_Repeat_PrefilteredEnvMap, standardPBRParams.N, 8).rgb / PI;
+    // TODO：IBL部分封装为函数
+    float3 irradiance = SampleSH(standardPBRParams.N) / 1.25;
     float3 envBRDFDiffuse = standardPBRParams.albedo * SAMPLE_TEXTURE2D(_EnvBRDFLut, sampler_Point_Clamp_EnvBRDFLut, float2(standardPBRParams.NoV, standardPBRParams.roughness)).b;
-    float3 Ks = F_Schlick(1, standardPBRParams.F0, standardPBRParams.NoV);
-    //float3 Ks = F_SchlickRoughness(standardPBRParams.F0, standardPBRParams.NoV, standardPBRParams.roughness);
-    //float Kd = 1.0 - (Ks.r + Ks.g + Ks.b)/3;
-    float3 Kd = float3(1.0, 1.0, 1.0) - Ks;
-    Kd *= 1.0 - standardPBRParams.metallic;
+    float3 Kd = 1.0 - standardPBRParams.metallic;
     renderingEquationContent.indirectLight += irradiance * envBRDFDiffuse * Kd;
 
     float3 R = reflect(-standardPBRParams.V, standardPBRParams.N);
-    float3 prefilteredColor = SAMPLE_TEXTURE2D_LOD(_PrefilteredEnvMap, sampler_Trilinear_Repeat_PrefilteredEnvMap, R, 8.0 * standardPBRParams.roughness).rgb;
+    float3 prefilteredColor = SAMPLE_TEXTURE2D_LOD(_PrefilteredEnvMap, sampler_Trilinear_Repeat_PrefilteredEnvMap, R, 7.0 * standardPBRParams.roughness).rgb; //TODO: 补充 roughness 到 mipmap level 的映射函数，而不是现在的简单线性映射
     float2 envBRDFSpecular = SAMPLE_TEXTURE2D(_EnvBRDFLut, sampler_Point_Clamp_EnvBRDFLut, float2(standardPBRParams.NoV, standardPBRParams.roughness)).rg;
-    renderingEquationContent.indirectLight += prefilteredColor * (standardPBRParams.F0 * envBRDFSpecular.x + envBRDFSpecular.y);
-    //renderingEquationContent.indirectLight += prefilteredColor * lerp(envBRDFSpecular.xxx, envBRDFSpecular.yyy, standardPBRParams.F0);
-
-    float3 energyCompensation = 1.0 + standardPBRParams.F0 * (1.0 / envBRDFSpecular.y - 1.0);
+    renderingEquationContent.indirectLight += prefilteredColor * (standardPBRParams.F0 * envBRDFSpecular.x + envBRDFSpecular.y) / 1.25;
 
     // --------------------------------------------------------------------------------
     // Punctual Lights
@@ -140,8 +134,7 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
             renderingEquationContent.directAdditionalLight += additionalLightColor * StandardPBR(additionalBRDFParams, standardPBRParams);
         }
     #endif
-
-    //return float4(renderingEquationContent.directMainLight + renderingEquationContent.directAdditionalLight, 1.0f);
+    
     return float4(renderingEquationContent.directMainLight + renderingEquationContent.directAdditionalLight + renderingEquationContent.indirectLight, 1.0f);
 }
 

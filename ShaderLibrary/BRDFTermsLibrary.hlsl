@@ -46,18 +46,18 @@ void InitializeAnisoBRDFParams(out AnisoBRDFParams AnisoBRDFParams, float3 T, fl
 // Fresnel Term
 float F_Schlick(float f90, float f0, float VoH)
 {
-    return f0 + (f90 - f0) * pow(1.0 - VoH, 5.0);
+    return f0 + saturate(f90 - f0) * pow(1.0 - VoH, 5.0);
 }
 
 float3 F_Schlick(float f90, float3 f0, float VoH)
 {
-    return f0 + (float3(f90, f90, f90) - f0) * pow(1.0 - VoH, 5.0);
+    return f0 + saturate(float3(f90, f90, f90) - f0) * pow(1.0 - VoH, 5.0);
 }
 
 float3 F_SchlickRoughness(float3 f0, float NoV, float roughness)
 {
     float3 f90 = max(float3(1.0 - roughness, 1.0 - roughness, 1.0 - roughness), f0);
-    return f0 + (f90 - f0) * pow(1.0 - NoV, 5.0);
+    return f0 + saturate(f90 - f0) * pow(1.0 - NoV, 5.0);
 }
 
 // --------------------------------------------------------------------------------
@@ -151,6 +151,14 @@ float V_SmithGGXCorrelated(float NoV, float NoL, float roughness)
     return 0.5 / (V_SmithL + V_SmithV);
 }
 
+float V_SmithGGXCorrelatedApprox(float NoV, float NoL, float roughness)
+{
+    float a = roughness * roughness;
+    float V_SmithL = NoV * (NoL * (1.0 - a) + a);
+    float V_SmithV = NoL * (NoV * (1.0 - a) + a);
+    return 0.5 / (V_SmithL + V_SmithV);
+}
+
 float V_SmithGGXCorrelated_Anisotropic(float at, float ab, float NoV, float NoL, float ToV, float BoV, float ToL, float BoL)
 {
     float at2 = at * at;
@@ -158,6 +166,11 @@ float V_SmithGGXCorrelated_Anisotropic(float at, float ab, float NoV, float NoL,
     float V_SmithL = NoV * sqrt(NoL * NoL + at2 * ToL * ToL + ab2 * BoL * BoL);
     float V_SmithV = NoL * sqrt(NoV * NoV + at2 * ToV * ToV + ab2 * BoV * BoV);
     return 0.5 / (V_SmithL + V_SmithV);
+}
+
+float V_Kelemen(float LoH)
+{
+    return 0.25 / (LoH * LoH);
 }
 
 #endif

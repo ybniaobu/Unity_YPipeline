@@ -28,7 +28,7 @@ float2 Hammersley(uint index, uint sampleNumber)
 // phi: angle of rotation from x in xz plane, the range of phi is [-π, π];
 // theta: angle of rotation with respect to y-axis, the range of theta is [0, π];
 // phi can be derived from atan2(z/x), the range of atan2() is also [-π, π];
-// theta can be derived from acos(y), the range of asin() is also [0, π];
+// theta can be derived from acos(y), the range of acos() is also [0, π];
 float3 SphericalCoordToCartesianCoord(float theta, float phi)
 {
     return float3(sin(theta) * cos(phi), cos(theta), sin(theta) * sin(phi));

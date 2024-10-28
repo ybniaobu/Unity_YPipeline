@@ -24,6 +24,9 @@ Shader "YPipeline/PBR/Standard"
         [NoScaleOffset] [Normal] _NormalTex("Normal Texture", 2D) = "bump" {}
         _NormalIntensity("Normal Intensity", Float) = 1.0
         
+        [Header(Ambient Occlusion Settings)] [Space(8)]
+        [NoScaleOffset] _AOTex("Ambient Occlusion Texture", 2D) = "white" {}
+        
         [Header(Other Settings)] [Space(8)]
         [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull Mode", Float) = 2
     }
@@ -59,7 +62,7 @@ Shader "YPipeline/PBR/Standard"
             #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             
-            #include "Assets/Shaders/YPipeStandardForwardPass.hlsl"
+            #include "StandardForwardPass.hlsl"
             ENDHLSL
         }
     }
