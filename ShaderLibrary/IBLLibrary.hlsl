@@ -116,6 +116,32 @@ float PreintegrateDiffuse_RenormalizedBurley(float roughness, float NoV)
     for (uint i = 0; i < sampleNumber; i++)
     {
         float2 xi = Hammersley(i, sampleNumber);
+        float3 L = InverseSampleHemisphere(xi).xyz;
+        float3 H = normalize(L + V);
+
+        float NoL = saturate(L.y);
+        float LoH = saturate(dot(L, H));
+
+        if (NoL > 0)
+        {
+            float diffuse = Fd_RenormalizedBurley_Disney_NoPI(NoV, NoL, LoH, roughness);
+            fd += diffuse;
+        }
+    }
+    
+    return fd / sampleNumber;
+}
+
+float PreintegrateDiffuse_RenormalizedBurley_CosineVersion(float roughness, float NoV)
+{
+    float3 V = float3(sqrt(1.0 - NoV * NoV), NoV, 0.0);
+
+    float fd = 0.0;
+    const uint sampleNumber = 2048;
+
+    for (uint i = 0; i < sampleNumber; i++)
+    {
+        float2 xi = Hammersley(i, sampleNumber);
         float3 L = CosineSampleHemisphere(xi).xyz;
         float3 H = normalize(L + V);
 
@@ -165,7 +191,7 @@ float2 PreintegrateSpecular_SmithGGXCorrelated(float roughness, float NoV)
         }
     }
 
-    return float2(r,g) / sampleNumber;
+    return float2(r, g) / sampleNumber;
 }
 
 #endif

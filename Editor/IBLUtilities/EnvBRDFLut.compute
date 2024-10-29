@@ -9,8 +9,8 @@ int _LutSize;
 [numthreads(8,8,1)]
 void GenerateEnvBRDFLut (uint3 id : SV_DispatchThreadID)
 {
-    float roughness = float(id.y) / (_LutSize - 1);
-    float NoV = float(id.x) / (_LutSize - 1);
+    float roughness = saturate(float(id.y) / (_LutSize - 1));
+    float NoV = saturate(float(id.x) / (_LutSize - 1));
     float diffuse = PreintegrateDiffuse_RenormalizedBurley(roughness, NoV);
     float2 specular = PreintegrateSpecular_SmithGGXCorrelated(roughness, NoV);
     

@@ -46,12 +46,12 @@ void InitializeAnisoBRDFParams(out AnisoBRDFParams AnisoBRDFParams, float3 T, fl
 // Fresnel Term
 float F_Schlick(float f90, float f0, float VoH)
 {
-    return f0 + saturate(f90 - f0) * pow(1.0 - VoH, 5.0);
+    return f0 + (f90 - f0) * pow(1.0 - VoH, 5.0);
 }
 
 float3 F_Schlick(float f90, float3 f0, float VoH)
 {
-    return f0 + saturate(float3(f90, f90, f90) - f0) * pow(1.0 - VoH, 5.0);
+    return f0 + (float3(f90, f90, f90) - f0) * pow(1.0 - VoH, 5.0);
 }
 
 float3 F_SchlickRoughness(float3 f0, float NoV, float roughness)

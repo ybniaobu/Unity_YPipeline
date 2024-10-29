@@ -32,7 +32,7 @@ float3 StandardPBR(BRDFParams BRDFParams, StandardPBRParams standardPBRParams)
 float3 StandardPBR_EnergyCompensation(BRDFParams BRDFParams, StandardPBRParams standardPBRParams, float3 energyCompensation)
 {
     float roughness = clamp(standardPBRParams.roughness, 0.02, 1.0); //make sure there is a tiny specular lobe when roughness is zero
-    float3 diffuse = Fd_Lambert(standardPBRParams.albedo);
+    float3 diffuse = Fd_RenormalizedBurley_Disney(standardPBRParams.NoV, BRDFParams.NoL, BRDFParams.LoH, roughness, standardPBRParams.albedo);
 
     float D = D_GGX(BRDFParams.NoH, roughness);
     float V = V_SmithGGXCorrelated(standardPBRParams.NoV, BRDFParams.NoL, roughness);
