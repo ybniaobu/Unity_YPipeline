@@ -22,8 +22,8 @@ Shader "YPipeline/EditorTool/EnvMapPrefilter"
             #pragma fragment frag
             
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/ACES.hlsl"
             #include "Assets/ShaderLibrary/IBLLibrary.hlsl"
+            #include "Assets/ShaderLibrary/ToneMappingLibrary.hlsl"
 
             TextureCube _Cubemap; SamplerState trilinear_repeat_sampler_Cubemap;
 
@@ -79,8 +79,7 @@ Shader "YPipeline/EditorTool/EnvMapPrefilter"
             {
                 float3 prefilteredColor = PrefilterEnvMap_GGX(_Cubemap, trilinear_repeat_sampler_Cubemap, _SampleNumber, _ResolutionPerFace, _Roughness, IN.sampleDir);
                 float3 color = prefilteredColor.rgb * _Exposure;
-                //return float4(color, 1.0f);
-                return float4(GammaToLinearSpaceExact(color.r), GammaToLinearSpaceExact(color.g), GammaToLinearSpaceExact(color.b), 1.0f); //RenderToCubemap API 会将进行 gamma 0.45 处理看起来会更白
+                return float4(GammaToLinearSpaceExact(color.r), GammaToLinearSpaceExact(color.g), GammaToLinearSpaceExact(color.b), 1.0f); //RenderToCubemap API will do gamma 0.45
             }
             ENDHLSL
         }

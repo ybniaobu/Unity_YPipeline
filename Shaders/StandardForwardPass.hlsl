@@ -4,7 +4,6 @@
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 #include "Assets/ShaderLibrary/RenderingEquationLibrary.hlsl"
 #include "Assets/ShaderLibrary/BRDFTermsLibrary.hlsl"
-#include "Assets/ShaderLibrary/IBLLibrary.hlsl"
 #include "Assets/ShaderLibrary/BRDFModelLibrary.hlsl"
 
 CBUFFER_START (UnityPerMaterial)
@@ -97,19 +96,9 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
 
     // --------------------------------------------------------------------------------
     // IBL
-    // TODO：IBL部分封装为函数
-    float3 irradiance = SampleSH(standardPBRParams.N);
-    float3 envBRDFDiffuse = standardPBRParams.albedo * SAMPLE_TEXTURE2D(_EnvBRDFLut, sampler_Point_Clamp_EnvBRDFLut, float2(standardPBRParams.NoV, standardPBRParams.roughness)).b;
-    float3 Kd = 1.0 - standardPBRParams.metallic;
-    renderingEquationContent.indirectLight += irradiance * envBRDFDiffuse * Kd;
-
-    float3 R = reflect(-standardPBRParams.V, standardPBRParams.N);
-    float3 prefilteredColor = SAMPLE_TEXTURE2D_LOD(_PrefilteredEnvMap, sampler_Trilinear_Repeat_PrefilteredEnvMap, R, 7.0 * standardPBRParams.roughness).rgb; //TODO: 补充 roughness 到 mipmap level 的映射函数，而不是现在的简单线性映射
-    float2 envBRDFSpecular = SAMPLE_TEXTURE2D(_EnvBRDFLut, sampler_Point_Clamp_EnvBRDFLut, float2(standardPBRParams.NoV, standardPBRParams.roughness)).rg;
-    //renderingEquationContent.indirectLight += prefilteredColor * (standardPBRParams.F0 * envBRDFSpecular.x + envBRDFSpecular.y);
-
-    float3 energyCompensation = 1.0 + standardPBRParams.F0 * (1.0 / envBRDFSpecular.y - 1) / 2;
-    renderingEquationContent.indirectLight += prefilteredColor * lerp(envBRDFSpecular.xxx, envBRDFSpecular.yyy, standardPBRParams.F0) * energyCompensation;
+    float3 energyCompensation = 0;
+    renderingEquationContent.indirectLight += calculateIBL(standardPBRParams, _PrefilteredEnvMap,
+        sampler_Trilinear_Repeat_PrefilteredEnvMap, _EnvBRDFLut, sampler_Point_Clamp_EnvBRDFLut, energyCompensation);
 
     // --------------------------------------------------------------------------------
     // Punctual Lights
@@ -119,7 +108,7 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     BRDFParams mainBRDFParams = (BRDFParams) 0;
     InitializeBRDFParams(mainBRDFParams, standardPBRParams.N, mainLightParams.L, standardPBRParams.V, mainLightParams.H);
     
-    renderingEquationContent.directMainLight = mainLightParams.color * StandardPBR_EnergyCompensation(mainBRDFParams, standardPBRParams, energyCompensation);
+    renderingEquationContent.directMainLight = calculatePunctualLight(mainLightParams) * StandardPBR_EnergyCompensation(mainBRDFParams, standardPBRParams, energyCompensation);
     
     #ifdef _ADDITIONAL_LIGHTS
         int additionalLightsCount = GetAdditionalLightCount();
@@ -132,13 +121,11 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
             
             BRDFParams additionalBRDFParams = (BRDFParams) 0;
             InitializeBRDFParams(additionalBRDFParams, standardPBRParams.N, additionalLightParams.L, standardPBRParams.V, additionalLightParams.H);
-    
-            float3 additionalLightColor = additionalLightParams.color * (additionalLightParams.distanceAttenuation * additionalLightParams.angleAttenuation);
-            renderingEquationContent.directAdditionalLight += additionalLightColor * StandardPBR_EnergyCompensation(additionalBRDFParams, standardPBRParams, energyCompensation);
+            
+            renderingEquationContent.directAdditionalLight += calculatePunctualLight(additionalLightParams) * StandardPBR_EnergyCompensation(additionalBRDFParams, standardPBRParams, energyCompensation);
         }
     #endif
     
-    //return float4(irradiance * 2 * standardPBRParams.albedo, 1.0f);
     return float4(renderingEquationContent.directMainLight + renderingEquationContent.directAdditionalLight + renderingEquationContent.indirectLight, 1.0f);
 }
 

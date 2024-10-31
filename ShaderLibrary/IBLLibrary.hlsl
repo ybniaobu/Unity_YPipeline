@@ -8,9 +8,6 @@
 #include "Assets/ShaderLibrary/ToneMappingLibrary.hlsl"
 
 // --------------------------------------------------------------------------------
-// 
-
-// --------------------------------------------------------------------------------
 // Spherical Harmonics(SH)
 // TODO: 先使用 UnityInput 里传递进来的 unity_SHAr...unity_SHC 以后写自己管线时再修改
 float3 SampleSH(float3 N)
@@ -32,7 +29,6 @@ float3 SampleSH(float3 N)
 
     return L0L1 + L2;
 }
-
 
 // --------------------------------------------------------------------------------
 // Prefilter Environment Map
@@ -62,46 +58,12 @@ float3 PrefilterEnvMap_GGX(TEXTURECUBE(envMap), SAMPLER(envMapSampler), uint sam
             float saSample = 1.0 / (float(sampleNumber) * PDF + 0.0001);
             float mipLevel = roughness == 0.0 ? 0.0 : 0.5 * log2(saSample / saTexel);
             
-            prefilteredColor += envMap.SampleLevel(envMapSampler, L, mipLevel * 1.6).rgb * NoL; //1.5是一个magic number
+            prefilteredColor += envMap.SampleLevel(envMapSampler, L, mipLevel + 1).rgb * NoL; //1 is a magic/empirical number
             totalWeight += NoL;
         }
     }
     
     return prefilteredColor / totalWeight;
-}
-
-float3 PrefilterHDREnvMap_GGX(TEXTURECUBE(envMap), SAMPLER(envMapSampler), uint sampleNumber, float resolutionPerFace, float roughness, float3 R)
-{
-    float3 N = R;
-    float3 V = R;
-
-    float3 prefilteredColor = 0;
-    float totalWeight = 0;
-    
-    for( uint i = 0; i < sampleNumber; i++ )
-    {
-        float2 xi = Hammersley(i, sampleNumber);
-        float4 HandPDF = ImportanceSampleGGX(xi, roughness);
-        float3 H = TangentCoordToWorldCoord(HandPDF.xyz, N);
-        float PDF = HandPDF.w;
-        float3 L = 2 * dot( V, H ) * H - V;
-
-        float NoL = saturate(dot(N, L));
-        
-        if (NoL > 0)
-        {
-            // Reduce artifacts due to high frequency details by sampling a mip level of the environment map based on the integral's PDF and the roughness
-            // resolutionPerFace is the resolution of source cubemap (per face)
-            float saTexel  = FOUR_PI / (6.0 * resolutionPerFace * resolutionPerFace);
-            float saSample = 1.0 / (float(sampleNumber) * PDF + 0.0001);
-            float mipLevel = roughness == 0.0 ? 0.0 : 0.5 * log2(saSample / saTexel);
-            
-            prefilteredColor += ACESFilm(envMap.SampleLevel(envMapSampler, L, mipLevel).rgb) * NoL; //1.5是一个magic number
-            totalWeight += NoL;
-        }
-    }
-    
-    return ACESFilm_Inv(prefilteredColor / totalWeight);
 }
 
 // --------------------------------------------------------------------------------
@@ -186,8 +148,8 @@ float2 PreintegrateSpecular_SmithGGXCorrelated(float roughness, float NoV)
             
             //r += (1.0 - Fc) * G_Vis;
             //g += Fc * G_Vis;
-            r += Fc * G_Vis;
-            g += G_Vis;
+            r += G_Vis;
+            g += Fc * G_Vis;
         }
     }
 

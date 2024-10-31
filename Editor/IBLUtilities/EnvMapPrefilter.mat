@@ -113,7 +113,7 @@ Material:
     - _ResolutionPerFace: 2048
     - _Rotation: 270
     - _Roughness: 1
-    - _SampleNumber: 4096
+    - _SampleNumber: 2048
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1

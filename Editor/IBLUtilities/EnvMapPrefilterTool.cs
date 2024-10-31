@@ -6,6 +6,7 @@ using System.Collections.Generic;
 
 public class EnvMapPrefilterTool : OdinEditorWindow
 {
+    //TODO：修改该工具，RenderToCubemap API 有点问题，会将 HDR 转变为 LDR
     [MenuItem("Tools/IBL Tools/Environment Map Prefilter")]
     private static void ShowWindow()
     {
@@ -19,7 +20,6 @@ public class EnvMapPrefilterTool : OdinEditorWindow
     [Title("Save Settings")] 
     public int sizePerFace = 2048;
     public int mipCount = 9;
-    public float exposureLevel = 1.5f;
     [FolderPath] public string savePath = "Assets";
     public string saveName = "PrefilteredCubemap";
     
@@ -35,7 +35,7 @@ public class EnvMapPrefilterTool : OdinEditorWindow
     {
         m_CubemapMipmaps = new List<Cubemap>();
         
-        prefilteredEnvMap = new Cubemap(sizePerFace, TextureFormat.RGBA64, mipCount);
+        prefilteredEnvMap = new Cubemap(sizePerFace, TextureFormat.RGBAHalf, mipCount);
         
         m_CubemapCamera = new GameObject("CubemapCamera");
         m_CubemapCamera.AddComponent<Camera>();
@@ -45,10 +45,8 @@ public class EnvMapPrefilterTool : OdinEditorWindow
         for (int i = 0; i < mipCount; i++)
         {
             EnvMapPrefilterSkybox.SetFloat("_Roughness", 1.0f / (mipCount - 1) * i);
-            EnvMapPrefilterSkybox.SetFloat("_SampleNumber", Mathf.Pow(2.0f, i + 4));
-            //EnvMapPrefilterSkybox.SetFloat("_Exposure", Mathf.Lerp(1, exposureLevel, (float) i / (mipCount - 1.0f)));
             
-            m_CubemapMipmaps.Add(new Cubemap((int) (sizePerFace / Mathf.Pow(2.0f, i)), TextureFormat.RGBA64, false));
+            m_CubemapMipmaps.Add(new Cubemap((int) (sizePerFace / Mathf.Pow(2.0f, i)), TextureFormat.RGBAHalf, false));
             m_CubemapCamera.GetComponent<Camera>().RenderToCubemap(m_CubemapMipmaps[i]);
             
             var face00 = m_CubemapMipmaps[i].GetPixelData<Color>(0, CubemapFace.NegativeX);
@@ -67,7 +65,7 @@ public class EnvMapPrefilterTool : OdinEditorWindow
         }
         
         DestroyImmediate(m_CubemapCamera);
-        
+        EditorUtility.CompressCubemapTexture(prefilteredEnvMap, TextureFormat.BC6H, TextureCompressionQuality.Normal);
         AssetDatabase.CreateAsset(prefilteredEnvMap, savePath + "/" + saveName + ".cubemap");
     }
 }
