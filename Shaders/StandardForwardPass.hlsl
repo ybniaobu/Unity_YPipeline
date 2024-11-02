@@ -71,7 +71,9 @@ void InitializeStandardPBRParams(Varyings IN, out StandardPBRParams standardPBRP
 
     standardPBRParams.ao = SAMPLE_TEXTURE2D(_AOTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).r;
     standardPBRParams.F0 = lerp(_Specular * _Specular * float3(0.16, 0.16, 0.16), standardPBRParams.albedo, standardPBRParams.metallic);
+    standardPBRParams.F90 = saturate(dot(standardPBRParams.F0, 50.0 * 0.3333));
     standardPBRParams.V = GetWorldSpaceNormalizeViewDir(IN.positionWS);
+    standardPBRParams.R = reflect(-standardPBRParams.V, standardPBRParams.N);
     standardPBRParams.NoV = saturate(dot(standardPBRParams.N, standardPBRParams.V)) + 1e-3; //防止小黑点
 }
 
@@ -97,7 +99,7 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     // --------------------------------------------------------------------------------
     // IBL
     float3 energyCompensation = 0;
-    renderingEquationContent.indirectLight += calculateIBL(standardPBRParams, _PrefilteredEnvMap,
+    renderingEquationContent.indirectLight += CalculateIBL(standardPBRParams, _PrefilteredEnvMap,
         sampler_Trilinear_Repeat_PrefilteredEnvMap, _EnvBRDFLut, sampler_Point_Clamp_EnvBRDFLut, energyCompensation);
 
     // --------------------------------------------------------------------------------
@@ -108,7 +110,7 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     BRDFParams mainBRDFParams = (BRDFParams) 0;
     InitializeBRDFParams(mainBRDFParams, standardPBRParams.N, mainLightParams.L, standardPBRParams.V, mainLightParams.H);
     
-    renderingEquationContent.directMainLight = calculatePunctualLight(mainLightParams) * StandardPBR_EnergyCompensation(mainBRDFParams, standardPBRParams, energyCompensation);
+    renderingEquationContent.directMainLight = CalculatePunctualLight(mainLightParams) * StandardPBR_EnergyCompensation(mainBRDFParams, standardPBRParams, energyCompensation);
     
     #ifdef _ADDITIONAL_LIGHTS
         int additionalLightsCount = GetAdditionalLightCount();
@@ -122,7 +124,7 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
             BRDFParams additionalBRDFParams = (BRDFParams) 0;
             InitializeBRDFParams(additionalBRDFParams, standardPBRParams.N, additionalLightParams.L, standardPBRParams.V, additionalLightParams.H);
             
-            renderingEquationContent.directAdditionalLight += calculatePunctualLight(additionalLightParams) * StandardPBR_EnergyCompensation(additionalBRDFParams, standardPBRParams, energyCompensation);
+            renderingEquationContent.directAdditionalLight += CalculatePunctualLight(additionalLightParams) * StandardPBR_EnergyCompensation(additionalBRDFParams, standardPBRParams, energyCompensation);
         }
     #endif
     

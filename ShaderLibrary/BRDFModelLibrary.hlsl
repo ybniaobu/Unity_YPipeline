@@ -11,8 +11,10 @@ struct StandardPBRParams
     float metallic;
     float ao;
     float3 F0;
+    float F90;
     float3 N; // L、H is related to the light，see XXXLightsLibrary.
     float3 V;
+    float3 R;
     float NoV;
 };
 
@@ -23,8 +25,12 @@ float3 StandardPBR(BRDFParams BRDFParams, StandardPBRParams standardPBRParams)
     
     float D = D_GGX(BRDFParams.NoH, roughness);
     float V = V_SmithGGXCorrelated(standardPBRParams.NoV, BRDFParams.NoL, roughness);
-    float3 F = F_Schlick(1, standardPBRParams.F0, BRDFParams.VoH);
+    float3 F = F_Schlick(standardPBRParams.F90, standardPBRParams.F0, BRDFParams.VoH);
     float3 specular = D * V * F;
+
+    // Horizon specular occlusion
+    float horizon = saturate(1.0 + dot(standardPBRParams.R, standardPBRParams.N));
+    specular *= horizon * horizon;
     
     return (diffuse * (1 - standardPBRParams.metallic) + specular) * BRDFParams.NoL;
 }
@@ -36,8 +42,12 @@ float3 StandardPBR_EnergyCompensation(BRDFParams BRDFParams, StandardPBRParams s
 
     float D = D_GGX(BRDFParams.NoH, roughness);
     float V = V_SmithGGXCorrelated(standardPBRParams.NoV, BRDFParams.NoL, roughness);
-    float3 F = F_Schlick(1, standardPBRParams.F0, BRDFParams.VoH);
+    float3 F = F_Schlick(standardPBRParams.F90, standardPBRParams.F0, BRDFParams.VoH);
     float3 specular = D * V * F;
+
+    // Horizon specular occlusion
+    float horizon = saturate(1.0 + dot(standardPBRParams.R, standardPBRParams.N));
+    specular *= horizon * horizon;
     
     return (diffuse * (1 - standardPBRParams.metallic) + specular * energyCompensation) * BRDFParams.NoL;
 }
@@ -54,6 +64,8 @@ struct AnisotropicModelParams
     float3 F0;
     float3 N; //L、H is related to the light，see XXXLightsLibrary.
     float3 V;
+    float3 R;
+    float NoV;
 };
 
 #endif
