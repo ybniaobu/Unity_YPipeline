@@ -1,13 +1,13 @@
 ﻿#ifndef YPIPELINE_RENDERING_EQUATION_LIBRARY_INCLUDED
 #define YPIPELINE_RENDERING_EQUATION_LIBRARY_INCLUDED
 
-#include "Assets/YPipeline/ShaderLibrary/PunctualLightsLibrary.hlsl"
-#include "Assets/YPipeline/ShaderLibrary/BRDFModelLibrary.hlsl"
-#include "Assets/YPipeline/ShaderLibrary/IBLLibrary.hlsl"
+#include "../ShaderLibrary/PunctualLightsLibrary.hlsl"
+#include "../ShaderLibrary/BRDFModelLibrary.hlsl"
+#include "../ShaderLibrary/IBLLibrary.hlsl"
 
 struct RenderingEquationContent
 {
-    float3 directMainLight;
+    float3 directPunctualLights;
     float3 directAdditionalLight;
     float3 indirectLight;
 };
@@ -48,9 +48,9 @@ float3 CalculateIBL(StandardPBRParams standardPBRParams, TextureCube prefiltered
 
 // --------------------------------------------------------------------------------
 // Punctual light calculation
-float3 CalculatePunctualLight(LightParams lightParams)
+float3 CalculateLightIrradiance(LightParams lightParams)
 {
-    float3 irradiance = lightParams.color * lightParams.distanceAttenuation * lightParams.angleAttenuation;
+    float3 irradiance = lightParams.color * lightParams.shadowAttenuation * lightParams.distanceAttenuation * lightParams.angleAttenuation;
     return irradiance;
 }
 

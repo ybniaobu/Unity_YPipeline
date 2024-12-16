@@ -1,7 +1,7 @@
 ﻿#ifndef YPIPELINE_BRDF_MODEL_LIBRARY_INCLUDED
 #define YPIPELINE_BRDF_MODEL_LIBRARY_INCLUDED
 
-#include "Assets/YPipeline/ShaderLibrary/BRDFTermsLibrary.hlsl"
+#include "../ShaderLibrary/BRDFTermsLibrary.hlsl"
 // --------------------------------------------------------------------------------
 // Standard PBR Model
 struct StandardPBRParams

@@ -21,7 +21,7 @@ Shader "YPipeline/EditorTool/EnvMapPrefilter"
             #pragma vertex vert
             #pragma fragment frag
             
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Assets/YPipeline/ShaderLibrary/Core/YPipelineCore.hlsl"
             #include "Assets/YPipeline/ShaderLibrary/IBLLibrary.hlsl"
             #include "Assets/YPipeline/ShaderLibrary/ToneMappingLibrary.hlsl"
 

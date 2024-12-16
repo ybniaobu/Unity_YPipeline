@@ -1,11 +1,8 @@
 ﻿#ifndef YPIPELINE_IBL_LIBRARY_INCLUDED
 #define YPIPELINE_IBL_LIBRARY_INCLUDED
 
-#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/ACES.hlsl"
-#include "Assets/YPipeline/ShaderLibrary/BRDFTermsLibrary.hlsl"
-#include "Assets/YPipeline/ShaderLibrary/SamplingLibrary.hlsl"
-#include "Assets/YPipeline/ShaderLibrary/ToneMappingLibrary.hlsl"
+#include "../ShaderLibrary/BRDFTermsLibrary.hlsl"
+#include "../ShaderLibrary/SamplingLibrary.hlsl"
 
 // --------------------------------------------------------------------------------
 // Spherical Harmonics(SH)
@@ -141,8 +138,8 @@ float2 PreintegrateSpecular_SmithGGXCorrelated(float roughness, float NoV)
 
         if (NoL > 0)
         {
-            float V = V_SmithGGXCorrelated(NoV, NoL, roughness);
-            float G = V * 4 * NoL * NoV;
+            float Vis = V_SmithGGXCorrelated(NoV, NoL, roughness);
+            float G = Vis * 4 * NoL * NoV;
             float G_Vis = G * VoH / (NoH * NoV);
             float Fc = pow(1.0 - VoH, 5);
             

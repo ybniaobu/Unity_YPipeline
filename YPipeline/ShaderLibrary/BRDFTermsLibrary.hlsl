@@ -1,7 +1,7 @@
 ﻿#ifndef YPIPELINE_BRDF_TERMS_LIBRARY_INCLUDED
 #define YPIPELINE_BRDF_TERMS_LIBRARY_INCLUDED
 
-#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+#include "Core/YPipelineCore.hlsl"
 
 // --------------------------------------------------------------------------------
 // BRDF input parameters struct
