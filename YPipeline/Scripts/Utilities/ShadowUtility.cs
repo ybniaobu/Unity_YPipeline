@@ -6,13 +6,13 @@ namespace YPipeline
     public static class ShadowUtility
     {
         /// <summary>
-        /// 获取从世界空间坐标到阴影空间坐标的矩阵
+        /// 获取从世界空间坐标到光源屏幕空间坐标的矩阵，只适用于方向光（平行光）
         /// </summary>
-        /// <param name="vp"></param>
+        /// <param name="vp">方向光源的观察投影矩阵</param>
         /// <returns></returns>
-        public static Matrix4x4 GetDirLightWorldToShadowMatrix(Matrix4x4 vp)
+        public static Matrix4x4 GetWorldToDirLightScreenMatrix(Matrix4x4 vp)
         {
-            if (SystemInfo.usesReversedZBuffer) 
+            if (SystemInfo.usesReversedZBuffer)
             {
                 vp.m20 = -vp.m20;
                 vp.m21 = -vp.m21;
@@ -20,7 +20,6 @@ namespace YPipeline
                 vp.m23 = -vp.m23;
             }
             
-            //缩放 0.5 加上平移 0.5 
             vp.m00 = 0.5f * (vp.m00 + vp.m30);
             vp.m01 = 0.5f * (vp.m01 + vp.m31);
             vp.m02 = 0.5f * (vp.m02 + vp.m32);
@@ -36,21 +35,26 @@ namespace YPipeline
             
             return vp;
         }
-
-        public static Matrix4x4 GetTiledDirLightWorldToShadowMatrix(Matrix4x4 vp, Vector2 offset, int split)
+        
+        /// <summary>
+        /// 获取从世界空间坐标到光源屏幕空间切片坐标的矩阵，只适用于方向光（平行光）
+        /// </summary>
+        /// <param name="vp">方向光源的观察投影矩阵</param>
+        /// <param name="offset">切片偏移</param>
+        /// <param name="scale">切片比例</param>
+        /// <returns></returns>
+        public static Matrix4x4 GetWorldToTiledDirLightScreenMatrix(Matrix4x4 vp, Vector2 offset, float scale = 1.0f)
         {
-            Matrix4x4 vps = GetDirLightWorldToShadowMatrix(vp);
+            Matrix4x4 vps = GetWorldToDirLightScreenMatrix(vp);
             
-            //还是缩放再平移
-            float scale = 1f / split;
-            vps.m00 = (vps.m00 + offset.x * vps.m30) * scale;
-            vps.m01 = (vps.m01 + offset.x * vps.m31) * scale;
-            vps.m02 = (vps.m02 + offset.x * vps.m32) * scale;
-            vps.m03 = (vps.m03 + offset.x * vps.m33) * scale;
-            vps.m10 = (vps.m10 + offset.y * vps.m30) * scale;
-            vps.m11 = (vps.m11 + offset.y * vps.m31) * scale;
-            vps.m12 = (vps.m12 + offset.y * vps.m32) * scale;
-            vps.m13 = (vps.m13 + offset.y * vps.m33) * scale;
+            vps.m00 = scale * vps.m00 + offset.x * vps.m30;
+            vps.m01 = scale * vps.m01 + offset.x * vps.m31;
+            vps.m02 = scale * vps.m02 + offset.x * vps.m32;
+            vps.m03 = scale * vps.m03 + offset.x * vps.m33;
+            vps.m10 = scale * vps.m10 + offset.y * vps.m30;
+            vps.m11 = scale * vps.m11 + offset.y * vps.m31;
+            vps.m12 = scale * vps.m12 + offset.y * vps.m32;
+            vps.m13 = scale * vps.m13 + offset.y * vps.m33;
             
             return vps;
         }

@@ -1,9 +1,9 @@
 ﻿#ifndef YPIPELINE_RENDERING_EQUATION_LIBRARY_INCLUDED
 #define YPIPELINE_RENDERING_EQUATION_LIBRARY_INCLUDED
 
-#include "../ShaderLibrary/PunctualLightsLibrary.hlsl"
 #include "../ShaderLibrary/BRDFModelLibrary.hlsl"
 #include "../ShaderLibrary/IBLLibrary.hlsl"
+#include "../ShaderLibrary/PunctualLightsLibrary.hlsl"
 
 struct RenderingEquationContent
 {

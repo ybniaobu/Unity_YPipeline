@@ -4,23 +4,6 @@
 #include "Core/YPipelineCore.hlsl"
 
 // --------------------------------------------------------------------------------
-// Low-discrepancy sequence
-float RadicalInverseVdC(uint bits) 
-{
-    bits = (bits << 16u) | (bits >> 16u);
-    bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
-    bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
-    bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
-    bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
-    return float(bits) * 2.3283064365386963e-10; // / 0x100000000
-}
-
-float2 Hammersley(uint index, uint sampleNumber)
-{
-    return float2(float(index) / float(sampleNumber), RadicalInverseVdC(index));
-}
-
-// --------------------------------------------------------------------------------
 // Coordinate conversion
 
 // Convention: Cartesian coordinate and Spherical coordinate are both left-handed.
@@ -75,6 +58,14 @@ float2 CartesianToLatLongUV(float3 cartesianCoord)
 
 // --------------------------------------------------------------------------------
 // Inverse transform sampling
+// From [0, 1] to [-1, 1]
+float2 InverseSampleCircle(float2 xi)
+{
+    float r = sqrt(xi.x);
+    float theta = TWO_PI * xi.y;
+    return r * float2(cos(theta), sin(theta));
+}
+
 float4 InverseSampleSphere(float2 xi) // Left-handed Spherical and Cartesian Coordinate
 {
     float phi = PI * (2.0 * xi.x - 1.0);

@@ -2,12 +2,13 @@
 #define YPIPELINE_SHADOW_CASTER_PASS_INCLUDED
 
 #include "../ShaderLibrary/Core/YPipelineCore.hlsl"
+#include "../ShaderLibrary/ShadowsLibrary.hlsl"
 
 struct Attributes
 {
     float4 positionOS   : POSITION;
-    float3 normalOS     : NORMAL;
-    //float2 uv           : TEXCOORD0;
+    // float3 normalOS     : NORMAL;
+    // float2 uv           : TEXCOORD0;
 };
 
 struct Varyings

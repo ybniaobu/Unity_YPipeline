@@ -53,7 +53,7 @@ float3 StandardPBR_EnergyCompensation(BRDFParams BRDFParams, StandardPBRParams s
 }
 
 // --------------------------------------------------------------------------------
-// Anisotropic model
+// Anisotropic Model
 struct AnisotropicModelParams
 {
     float anisotropy;

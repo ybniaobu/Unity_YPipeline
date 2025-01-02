@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
 using Unity.Collections;
+using UnityEngine.Rendering.RenderGraphModule;
 
 namespace YPipeline
 {
@@ -15,9 +16,11 @@ namespace YPipeline
         
         private static int m_DirShadowMapID = Shader.PropertyToID("_DirectionalShadowMap");
         private static int m_DirShadowMatricesID = Shader.PropertyToID("_DirectionalShadowMatrices");
-        private static int m_CascadeCountID = Shader.PropertyToID("_CascadeCount");
+        private static int m_CascadeParamsID = Shader.PropertyToID("_CascadeParams");
         private static int m_CascadeCullingSpheresID = Shader.PropertyToID("_CascadeCullingSpheres");
-        private static int m_ShadowDistanceID = Shader.PropertyToID("_ShadowDistance");
+        private static int m_ShadowDistanceFadeID = Shader.PropertyToID("_ShadowDistanceFade");
+        
+        private static int m_ShadowBiasID = Shader.PropertyToID("_ShadowBias");
         
         // --------------------------------------------------------------------------------
         // CBuffer Data
@@ -40,10 +43,16 @@ namespace YPipeline
         // Directional Light Shadow fields
         struct ShadowingDirLight                            //存储能投射阴影的可见方向光的数据
         {
-            public int visibleLightIndex;                   
+            public int visibleLightIndex;
+            public float nearPlaneOffset;
         }
         private int m_ShadowingDirLightCount;               //场景中能投射阴影的可见方向光数量
         private ShadowingDirLight[] m_ShadowingDirLights;   //能投射阴影的可见方向光的数据数组
+        
+        // --------------------------------------------------------------------------------
+        // 
+        // private NativeArray<LightShadowCasterCullingInfo> m_CullingInfoPerLight;
+        // private NativeArray<ShadowSplitData> m_ShadowSplitDataPerLight;
         
         protected override void Initialize()
         {
@@ -72,7 +81,9 @@ namespace YPipeline
         protected override void OnRender(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
         {
             base.OnRender(asset, ref data);
+            data.buffer.SetGlobalDepthBias(0, 0.0f);
             RenderToDirShadowMap(asset, ref data);
+            data.buffer.SetGlobalDepthBias(0.0f, 0.0f); 
             data.context.ExecuteCommandBuffer(data.buffer);
             data.buffer.Clear();
         }
@@ -95,7 +106,8 @@ namespace YPipeline
                     {
                         m_ShadowingDirLights[m_ShadowingDirLightCount] = new ShadowingDirLight 
                         {
-                            visibleLightIndex = i
+                            visibleLightIndex = i,
+                            nearPlaneOffset = visibleLight.light.shadowNearPlane
                         };
                         
                         m_DirLightShadowData[m_DirLightCount] = new Vector2(visibleLight.light.shadowStrength, 
@@ -123,11 +135,14 @@ namespace YPipeline
 
         private void RenderToDirShadowMap(YRenderPipelineAsset asset, ref PipelinePerFrameData data)//渲染到整张阴影贴图，所有生成阴影的直接光
         {
+            int tilesCount = 0;
+            int split = 0;
+            int tileSize = 0;
             if (m_ShadowingDirLightCount > 0)
             {
                 //获取阴影贴图并设置为 RenderTarget
                 data.buffer.GetTemporaryRT(m_DirShadowMapID, 
-                    asset.directionalShadowMapSize, asset.directionalShadowMapSize, 
+                    asset.directionalShadowAtlas, asset.directionalShadowAtlas, 
                     32, FilterMode.Bilinear, RenderTextureFormat.Shadowmap);
                 
                 data.buffer.SetRenderTarget(
@@ -137,10 +152,9 @@ namespace YPipeline
             
                 data.buffer.ClearRenderTarget(true, false, Color.clear);
                 
-                //渲染至阴影贴图，每张阴影贴图分为 4 个 tiles 分别存储一个 ShadowingDirLight 产生的贴图
-                int tiles = asset.cascadeCount * m_ShadowingDirLightCount;
-                int split = tiles <= 1 ? 1 : tiles <= 4 ? 2 : 4;
-                int tileSize = asset.directionalShadowMapSize / split;
+                tilesCount = asset.cascadeCount * m_ShadowingDirLightCount;
+                split = tilesCount <= 1 ? 1 : tilesCount <= 4 ? 2 : 4;
+                tileSize = asset.directionalShadowAtlas / split;
                 
                 for (int i = 0; i < m_ShadowingDirLightCount; i++) 
                 {
@@ -155,10 +169,12 @@ namespace YPipeline
                     32, FilterMode.Bilinear, RenderTextureFormat.Shadowmap);
             }
 
-            data.buffer.SetGlobalInt(m_CascadeCountID, asset.cascadeCount);
+            data.buffer.SetGlobalVector(m_CascadeParamsID, new Vector4(asset.cascadeCount, tileSize));
             data.buffer.SetGlobalVectorArray(m_CascadeCullingSpheresID, m_CascadeCullingSpheres);
             data.buffer.SetGlobalMatrixArray(m_DirShadowMatricesID, m_DirShadowMatrices);
-            data.buffer.SetGlobalFloat(m_ShadowDistanceID, asset.maxShadowDistance);
+            data.buffer.SetGlobalVector(m_ShadowDistanceFadeID, new Vector4(1.0f / asset.maxShadowDistance, 1.0f / asset.distanceFade, 1.0f / asset.cascadeFade));
+            
+            data.buffer.SetGlobalVector(m_ShadowBiasID, new Vector4(asset.depthBias, asset.slopeScaledDepthBias, asset.normalBias, asset.slopeScaledNormalBias));
         }
 
         private void RenderToDirShadowMapTile(YRenderPipelineAsset asset, ref PipelinePerFrameData data, int shadowingDirLightIndex, int split, int tileSize)
@@ -168,14 +184,15 @@ namespace YPipeline
                 new ShadowDrawingSettings(data.cullingResults, shadowingDirLight.visibleLightIndex);
             
             int cascadeCount = asset.cascadeCount;
-            int tileOffset = shadowingDirLightIndex * cascadeCount;
             Vector3 ratios = asset.SpiltRatios;
             
             for (int i = 0; i < cascadeCount; i++)
             {
                 data.cullingResults.ComputeDirectionalShadowMatricesAndCullingPrimitives(
-                    shadowingDirLight.visibleLightIndex, i, cascadeCount, ratios, tileSize, 0f,
+                    shadowingDirLight.visibleLightIndex, i, cascadeCount, 
+                    ratios, tileSize, shadowingDirLight.nearPlaneOffset,
                     out Matrix4x4 viewMatrix, out Matrix4x4 projectionMatrix, out ShadowSplitData splitData);
+                
                 shadowDrawingSettings.splitData = splitData;
 
                 if (shadowingDirLightIndex == 0)
@@ -185,14 +202,13 @@ namespace YPipeline
                     m_CascadeCullingSpheres[i] = cullingSphere;
                 }
                 
-                int tileIndex = tileOffset + i;
-                
-                Vector2 offset = new Vector2(tileIndex % split, tileIndex / split);
+                int tileIndex = shadowingDirLightIndex * cascadeCount + i;
+                Vector2 tileOffset = new Vector2(tileIndex % split, tileIndex / split);
                 data.buffer.SetViewport(new Rect(
-                    offset.x * tileSize, offset.y * tileSize, tileSize, tileSize
+                    tileOffset.x * tileSize, tileOffset.y * tileSize, tileSize, tileSize
                 ));
-                m_DirShadowMatrices[tileIndex] = ShadowUtility.GetTiledDirLightWorldToShadowMatrix(
-                    projectionMatrix * viewMatrix, offset, split);
+                m_DirShadowMatrices[tileIndex] = ShadowUtility.GetWorldToTiledDirLightScreenMatrix(
+                    projectionMatrix * viewMatrix, tileOffset / split, 1.0f / split);
                 
                 data.buffer.SetViewProjectionMatrices(viewMatrix, projectionMatrix);
 

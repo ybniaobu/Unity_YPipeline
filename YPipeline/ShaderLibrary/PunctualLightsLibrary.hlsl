@@ -36,7 +36,7 @@ struct LightParams
 
 // --------------------------------------------------------------------------------
 // Initialize Directional Light Parameters
-void InitializeDirectionalLightParams(out LightParams directionalLightParams, int dirLightIndex, float3 V, float3 positionWS)
+void InitializeDirectionalLightParams(out LightParams directionalLightParams, int dirLightIndex, float3 V, float3 normalWS, float3 positionWS)
 {
     directionalLightParams.color = _DirectionalLightColors[dirLightIndex].rgb;
     directionalLightParams.positionWS = _DirectionalLightDirections[dirLightIndex]; //Directional Light has no position
@@ -44,7 +44,7 @@ void InitializeDirectionalLightParams(out LightParams directionalLightParams, in
     directionalLightParams.H = normalize(directionalLightParams.L + V);
     directionalLightParams.distanceAttenuation = 1.0;
     directionalLightParams.angleAttenuation = 1.0;
-    directionalLightParams.shadowAttenuation = GetDirShadowFalloff(dirLightIndex, positionWS);
+    directionalLightParams.shadowAttenuation = GetDirShadowFalloff_Atlas(dirLightIndex, positionWS, normalWS, directionalLightParams.L);
     directionalLightParams.layerMask = _DirectionalLightLayerMask;
 }
 

@@ -2,6 +2,7 @@
 #define YPIPELINE_IBL_LIBRARY_INCLUDED
 
 #include "../ShaderLibrary/BRDFTermsLibrary.hlsl"
+#include "../ShaderLibrary/RandomLibrary.hlsl"
 #include "../ShaderLibrary/SamplingLibrary.hlsl"
 
 // --------------------------------------------------------------------------------
@@ -39,7 +40,7 @@ float3 PrefilterEnvMap_GGX(TEXTURECUBE(envMap), SAMPLER(envMapSampler), uint sam
     
     for( uint i = 0; i < sampleNumber; i++ )
     {
-        float2 xi = Hammersley(i, sampleNumber);
+        float2 xi = Hammersley_Bits(i, sampleNumber);
         float4 HandPDF = ImportanceSampleGGX(xi, roughness);
         float3 H = TangentCoordToWorldCoord(HandPDF.xyz, N);
         float PDF = HandPDF.w;
@@ -74,7 +75,7 @@ float PreintegrateDiffuse_RenormalizedBurley(float roughness, float NoV)
 
     for (uint i = 0; i < sampleNumber; i++)
     {
-        float2 xi = Hammersley(i, sampleNumber);
+        float2 xi = Hammersley_Bits(i, sampleNumber);
         float3 L = InverseSampleHemisphere(xi).xyz;
         float3 H = normalize(L + V);
 
@@ -100,7 +101,7 @@ float PreintegrateDiffuse_RenormalizedBurley_CosineVersion(float roughness, floa
 
     for (uint i = 0; i < sampleNumber; i++)
     {
-        float2 xi = Hammersley(i, sampleNumber);
+        float2 xi = Hammersley_Bits(i, sampleNumber);
         float3 L = CosineSampleHemisphere(xi).xyz;
         float3 H = normalize(L + V);
 
@@ -128,7 +129,7 @@ float2 PreintegrateSpecular_SmithGGXCorrelated(float roughness, float NoV)
 
     for (uint i = 0; i < sampleNumber; i++)
     {
-        float2 xi = Hammersley(i, sampleNumber);
+        float2 xi = Hammersley_Bits(i, sampleNumber);
         float3 H = ImportanceSampleGGX(xi, roughness, N);
         float3 L = 2.0 * dot(V, H) * H - V;
 

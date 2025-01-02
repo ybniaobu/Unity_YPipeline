@@ -105,7 +105,7 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     for (int i = 0; i < _DirectionalLightCount; i++)
     {
         LightParams dirLightParams = (LightParams) 0;
-        InitializeDirectionalLightParams(dirLightParams, i, standardPBRParams.V, IN.positionWS);
+        InitializeDirectionalLightParams(dirLightParams, i, standardPBRParams.V, normalize(IN.normalWS), IN.positionWS);
 
         BRDFParams dirBRDFParams = (BRDFParams) 0;
         InitializeBRDFParams(dirBRDFParams, standardPBRParams.N, dirLightParams.L, standardPBRParams.V, dirLightParams.H);
