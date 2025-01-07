@@ -169,7 +169,7 @@ namespace YPipeline
                     32, FilterMode.Bilinear, RenderTextureFormat.Shadowmap);
             }
 
-            data.buffer.SetGlobalVector(m_CascadeParamsID, new Vector4(asset.cascadeCount, tileSize));
+            data.buffer.SetGlobalVector(m_CascadeParamsID, new Vector4(asset.cascadeCount, tileSize, asset.directionalShadowAtlas, asset.penumbraWidth));
             data.buffer.SetGlobalVectorArray(m_CascadeCullingSpheresID, m_CascadeCullingSpheres);
             data.buffer.SetGlobalMatrixArray(m_DirShadowMatricesID, m_DirShadowMatrices);
             data.buffer.SetGlobalVector(m_ShadowDistanceFadeID, new Vector4(1.0f / asset.maxShadowDistance, 1.0f / asset.distanceFade, 1.0f / asset.cascadeFade));
@@ -193,6 +193,7 @@ namespace YPipeline
                     ratios, tileSize, shadowingDirLight.nearPlaneOffset,
                     out Matrix4x4 viewMatrix, out Matrix4x4 projectionMatrix, out ShadowSplitData splitData);
                 
+                splitData.shadowCascadeBlendCullingFactor = 1.0f;
                 shadowDrawingSettings.splitData = splitData;
 
                 if (shadowingDirLightIndex == 0)

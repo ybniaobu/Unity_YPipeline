@@ -2,7 +2,6 @@
 #define YPIPELINE_SHADOW_CASTER_PASS_INCLUDED
 
 #include "../ShaderLibrary/Core/YPipelineCore.hlsl"
-#include "../ShaderLibrary/ShadowsLibrary.hlsl"
 
 struct Attributes
 {

@@ -74,12 +74,17 @@ float3 ApplyShadowBias(float3 positionWS, float cascadeIndex, float3 normalWS, f
     float cosTheta = saturate(dot(normalWS, L));
     float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
     float tanTheta = clamp(sinTheta / cosTheta, 0.0, 50.0); // maxBias
-    float texelSize = sqrt(_CascadeCullingSpheres[cascadeIndex].w) * 2 / _CascadeParams.y;
+    float texelSize = sqrt(_CascadeCullingSpheres[cascadeIndex].w) * 2.0 / _CascadeParams.y;
 
     float3 depthBias = texelSize * _ShadowBias.x * L;
     float3 scaledDepthBias = texelSize * tanTheta * _ShadowBias.y * L;
     float3 normalBias = texelSize * _ShadowBias.z * normalWS;
     float3 scaledNormalBias = texelSize * sinTheta * _ShadowBias.w * normalWS;
+
+    depthBias += _CascadeParams.w / 100 * _ShadowBias.x * L;
+    scaledDepthBias += _CascadeParams.w / 100 * tanTheta * _ShadowBias.y * L;
+    normalBias += _CascadeParams.w / 100 * _ShadowBias.z * normalWS;
+    scaledNormalBias += _CascadeParams.w / 100 * sinTheta * _ShadowBias.w * normalWS;
     
     return positionWS + depthBias + scaledDepthBias + normalBias + scaledNormalBias;
 }
@@ -109,25 +114,26 @@ float GetDirShadowFalloff_Atlas(int dirLightIndex, float3 positionWS, float3 nor
     //float shadowAttenuation = SampleShadowMap_Compare(positionTSS, _DirectionalShadowMap, sampler_point_clamp_compare_DirectionalShadowMap);
 
     // ..............................................................................
-    // try
-
-    float random = Random_NoSine(positionTSS.xy);
-    float randomRadian = random * TWO_PI - PI;
+    // PCF Low-discrepancy
+    float random = Random_NoSine(positionWS);
+    float randomRadian = random * TWO_PI;
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
-
-    float sampleNumber = 32.0;
-    float sample = 0.0;
-
-    [unroll]
+    
+    float sampleNumber = 16;
+    float shadowAttenuation = 0.0;
+    
     for (float i = 0; i < sampleNumber; i++)
     {
-        //float2 offset = mul(rotation, poissonDisk16[i]) / 8192 * 3;
-        float2 offset = mul(rotation, InverseSampleCircle(Hammersley_Bits(i, sampleNumber))) / 8192 * 4;
+        //float2 offset = mul(rotation, poissonDisk[i]) / _CascadeParams.z * 5;
+        float2 offset = mul(rotation, InverseSampleCircle(Sobol_Scrambled(i, 1, 2))) / _CascadeParams.z  * _CascadeParams.w / 100;
+        offset /= sqrt(_CascadeCullingSpheres[cascadeIndex].w) * 2.0 / _CascadeParams.y;
         float2 uv = positionTSS.xy + offset;
-        sample += _DirectionalShadowMap.SampleCmpLevelZero(sampler_linear_clamp_compare_DirectionalShadowMap, uv, positionTSS.z);
+        
+        shadowAttenuation += _DirectionalShadowMap.SampleCmpLevelZero(sampler_linear_clamp_compare_DirectionalShadowMap, uv, positionTSS.z);
     }
+    shadowAttenuation = shadowAttenuation / sampleNumber;
     
-    return lerp(1.0, sample * 1 / sampleNumber, shadowStrength);
+    return lerp(1.0, shadowAttenuation, shadowStrength);
 }
 
 
