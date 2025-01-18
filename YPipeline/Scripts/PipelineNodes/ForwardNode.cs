@@ -53,14 +53,16 @@ namespace YPipeline
             DrawingSettings opaqueDrawing = new DrawingSettings(m_UnlitShaderTagId, opaqueSorting)
             {
                 enableInstancing = asset.enableGPUInstancing,
+                perObjectData = PerObjectData.Lightmaps | PerObjectData.ShadowMask | PerObjectData.LightProbe | PerObjectData.OcclusionProbe
             };
             opaqueDrawing.SetShaderPassName(1, m_ForwardLitShaderTagId);
             
             DrawingSettings alphaTestDrawing = new DrawingSettings(m_UnlitShaderTagId, alphaTestSorting)
             {
                 enableInstancing = asset.enableGPUInstancing,
+                perObjectData = PerObjectData.Lightmaps | PerObjectData.ShadowMask | PerObjectData.LightProbe | PerObjectData.OcclusionProbe
             };
-            alphaTestDrawing.SetShaderPassName(1, m_ForwardLitShaderTagId);
+            //alphaTestDrawing.SetShaderPassName(1, m_ForwardLitShaderTagId);
 
             RendererListParams opaqueRendererListParams =
                 new RendererListParams(data.cullingResults, opaqueDrawing, opaqueFiltering);

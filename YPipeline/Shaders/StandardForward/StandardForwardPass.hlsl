@@ -1,8 +1,8 @@
 ﻿#ifndef YPIPELINE_STANDARD_FORWARD_PASS_INCLUDED
 #define YPIPELINE_STANDARD_FORWARD_PASS_INCLUDED
 
-#include "../ShaderLibrary/Core/YPipelineCore.hlsl"
-#include "../ShaderLibrary/RenderingEquationLibrary.hlsl"
+#include "../../ShaderLibrary/Core/YPipelineCore.hlsl"
+#include "../../ShaderLibrary/RenderingEquationLibrary.hlsl"
 
 CBUFFER_START (UnityPerMaterial)
     float4 _BaseColor;
@@ -27,6 +27,7 @@ struct Attributes
     float3 normalOS     : NORMAL;
     float4 tangentOS    : TANGENT;
     float2 uv           : TEXCOORD0;
+    LIGHTMAP_UV(1)
 };
 
 struct Varyings
@@ -37,6 +38,7 @@ struct Varyings
     float3 normalWS     : TEXCOORD2;
     float3 tangentWS    : TEXCOORD3;
     float3 binormalWS   : TEXCOORD4;
+    LIGHTMAP_UV(5)
 };
 
 void InitializeStandardPBRParams(Varyings IN, out StandardPBRParams standardPBRParams)
@@ -84,6 +86,7 @@ Varyings StandardVert(Attributes IN)
     OUT.normalWS = TransformObjectToWorldNormal(IN.normalOS);
     OUT.tangentWS = TransformObjectToWorldDir(IN.tangentOS.xyz);
     OUT.binormalWS = cross(OUT.normalWS, OUT.tangentWS) * IN.tangentOS.w;
+    TRANSFER_LIGHTMAP_UV(IN, OUT)
     return OUT;
 }
 
@@ -94,24 +97,26 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     StandardPBRParams standardPBRParams = (StandardPBRParams) 0;
     InitializeStandardPBRParams(IN, standardPBRParams);
 
-    // --------------------------------------------------------------------------------
-    // IBL
-    float3 energyCompensation = 0;
-    renderingEquationContent.indirectLight += CalculateIBL(standardPBRParams, _PrefilteredEnvMap,
-        sampler_Trilinear_Repeat_PrefilteredEnvMap, _EnvBRDFLut, sampler_Point_Clamp_EnvBRDFLut, energyCompensation);
+    // ----------------------------------------------------------------------------------------------------
+    // Indirect Lighting
+    float3 envBRDF = SampleEnvLut(_EnvBRDFLut, sampler_Point_Clamp_EnvBRDFLut, standardPBRParams.NoV, standardPBRParams.roughness);
+    float3 energyCompensation = 1.0 + standardPBRParams.F0 * (1.0 / envBRDF.x - 1) * 0.5; // 0.5 is a magic number
+    
+    renderingEquationContent.indirectLightDiffuse += IndirectLighting_Diffuse(LIGHTMAP_UV_FRAGMENT(IN), standardPBRParams, envBRDF.b);
 
-    // --------------------------------------------------------------------------------
-    // Punctual Lights
-    for (int i = 0; i < _DirectionalLightCount; i++)
-    {
-        LightParams dirLightParams = (LightParams) 0;
-        InitializeDirectionalLightParams(dirLightParams, i, standardPBRParams.V, normalize(IN.normalWS), IN.positionWS);
+    renderingEquationContent.indirectLightSpecular += CalculateIBL_Specular(standardPBRParams, _PrefilteredEnvMap,
+        sampler_Trilinear_Repeat_PrefilteredEnvMap, envBRDF.rg, energyCompensation);
 
-        BRDFParams dirBRDFParams = (BRDFParams) 0;
-        InitializeBRDFParams(dirBRDFParams, standardPBRParams.N, dirLightParams.L, standardPBRParams.V, dirLightParams.H);
+    // ----------------------------------------------------------------------------------------------------
+    // Direct Lighting
+    LightParams sunLightParams = (LightParams) 0;
+    InitializeSunLightParams(sunLightParams, LIGHTMAP_UV_FRAGMENT(IN), standardPBRParams.V, normalize(IN.normalWS), IN.positionWS);
 
-        renderingEquationContent.directPunctualLights += CalculateLightIrradiance(dirLightParams) * StandardPBR_EnergyCompensation(dirBRDFParams, standardPBRParams, energyCompensation);
-    }
+    BRDFParams sunBRDFParams = (BRDFParams) 0;
+    InitializeBRDFParams(sunBRDFParams, standardPBRParams.N, sunLightParams.L, standardPBRParams.V, sunLightParams.H);
+
+    renderingEquationContent.directSunLight += CalculateLightIrradiance(sunLightParams) * StandardPBR_EnergyCompensation(sunBRDFParams, standardPBRParams, energyCompensation);
+    
     
     // #ifdef _ADDITIONAL_LIGHTS
     //     int additionalLightsCount = GetAdditionalLightCount();
@@ -129,8 +134,13 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     //     }
     // #endif
 
-    return float4(renderingEquationContent.directPunctualLights + renderingEquationContent.directAdditionalLight, 1.0f);
-    // return float4(renderingEquationContent.directPunctualLights + renderingEquationContent.directAdditionalLight + renderingEquationContent.indirectLight, 1.0f);
+    //return float4(renderingEquationContent.indirectLightDiffuse, 1.0f);
+    //return float4(renderingEquationContent.directSunLight, 1.0f);
+    //return float4(SampleLightMap(LIGHTMAP_UV_FRAGMENT(IN)) * standardPBRParams.albedo, 1.0);
+    //return float4(SampleSH(standardPBRParams.N), 1.0);
+    //return float4(SampleShadowmask(LIGHTMAP_UV_FRAGMENT(IN)).rrr, 1.0);
+    return float4(renderingEquationContent.directSunLight + renderingEquationContent.directPunctualLights + renderingEquationContent.indirectLightDiffuse, 1.0);
+    return float4(renderingEquationContent.directSunLight + renderingEquationContent.directPunctualLights + renderingEquationContent.indirectLightDiffuse + renderingEquationContent.indirectLightSpecular, 1.0);
 }
 
 #endif

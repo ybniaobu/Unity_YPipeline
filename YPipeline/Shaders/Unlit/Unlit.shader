@@ -13,6 +13,10 @@ Shader "YPipeline/Unlit"
         [Toggle(_CLIPPING)] _Clipping ("Alpha Clipping", Float) = 0
         _Cutoff("Alpha CutOff", Range(0.0, 1.0)) = 0.5
         
+        [Header(Emission Settings)] [Space(8)]
+        [HDR] _EmissionColor("Emission Color", Color) = (0.0, 0.0, 0.0, 1.0)
+        [NoScaleOffset] _EmissionTex("Emission Texture", 2D) = "white" {}
+        
         [Header(Other Settings)] [Space(8)]
         [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull Mode", Float) = 2
     }
@@ -33,10 +37,28 @@ Shader "YPipeline/Unlit"
 
             #pragma shader_feature_local_fragment _CLIPPING
             
-            #include "../ShaderPass/UnlitPass.hlsl"
+            #include "UnlitPass.hlsl"
             ENDHLSL
         }
+
+        Pass
+        {
+        	Name "Meta"
+        	
+			Tags { "LightMode" = "Meta" }
+
+			Cull Off
+
+			HLSLPROGRAM
+			#pragma target 4.5
+			
+			#pragma vertex MetaVert
+			#pragma fragment MetaFrag
+			
+			#include "UnlitMetaPass.hlsl"
+			ENDHLSL
+		}
     }
     
-    // CustomEditor "YPipeline.Editor.UnlitShaderGUI"
+    CustomEditor "YPipeline.Editor.UnlitShaderGUI"
 }

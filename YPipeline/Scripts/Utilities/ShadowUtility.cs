@@ -10,7 +10,7 @@ namespace YPipeline
         /// </summary>
         /// <param name="vp">方向光源的观察投影矩阵</param>
         /// <returns></returns>
-        public static Matrix4x4 GetWorldToDirLightScreenMatrix(Matrix4x4 vp)
+        public static Matrix4x4 GetWorldToSunLightScreenMatrix(Matrix4x4 vp)
         {
             if (SystemInfo.usesReversedZBuffer)
             {
@@ -43,9 +43,9 @@ namespace YPipeline
         /// <param name="offset">切片偏移</param>
         /// <param name="scale">切片比例</param>
         /// <returns></returns>
-        public static Matrix4x4 GetWorldToTiledDirLightScreenMatrix(Matrix4x4 vp, Vector2 offset, float scale = 1.0f)
+        public static Matrix4x4 GetWorldToTiledSunLightScreenMatrix(Matrix4x4 vp, Vector2 offset, float scale = 1.0f)
         {
-            Matrix4x4 vps = GetWorldToDirLightScreenMatrix(vp);
+            Matrix4x4 vps = GetWorldToSunLightScreenMatrix(vp);
             
             vps.m00 = scale * vps.m00 + offset.x * vps.m30;
             vps.m01 = scale * vps.m01 + offset.x * vps.m31;

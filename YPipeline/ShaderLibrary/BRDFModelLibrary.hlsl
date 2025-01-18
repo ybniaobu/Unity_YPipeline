@@ -2,6 +2,8 @@
 #define YPIPELINE_BRDF_MODEL_LIBRARY_INCLUDED
 
 #include "../ShaderLibrary/BRDFTermsLibrary.hlsl"
+#include "../ShaderLibrary/AmbientOcclusionLibrary.hlsl"
+
 // --------------------------------------------------------------------------------
 // Standard PBR Model
 struct StandardPBRParams
@@ -27,10 +29,8 @@ float3 StandardPBR(BRDFParams BRDFParams, StandardPBRParams standardPBRParams)
     float V = V_SmithGGXCorrelated(standardPBRParams.NoV, BRDFParams.NoL, roughness);
     float3 F = F_Schlick(standardPBRParams.F90, standardPBRParams.F0, BRDFParams.VoH);
     float3 specular = D * V * F;
-
-    // Horizon specular occlusion
-    float horizon = saturate(1.0 + dot(standardPBRParams.R, standardPBRParams.N));
-    specular *= horizon * horizon;
+    
+    specular *= ComputeHorizonSpecularOcclusion(standardPBRParams.R, standardPBRParams.N);
     
     return (diffuse * (1 - standardPBRParams.metallic) + specular) * BRDFParams.NoL;
 }
@@ -44,10 +44,8 @@ float3 StandardPBR_EnergyCompensation(BRDFParams BRDFParams, StandardPBRParams s
     float V = V_SmithGGXCorrelated(standardPBRParams.NoV, BRDFParams.NoL, roughness);
     float3 F = F_Schlick(standardPBRParams.F90, standardPBRParams.F0, BRDFParams.VoH);
     float3 specular = D * V * F;
-
-    // Horizon specular occlusion
-    float horizon = saturate(1.0 + dot(standardPBRParams.R, standardPBRParams.N));
-    specular *= horizon * horizon;
+    
+    specular *= ComputeHorizonSpecularOcclusion(standardPBRParams.R, standardPBRParams.N);
     
     return (diffuse * (1 - standardPBRParams.metallic) + specular * energyCompensation) * BRDFParams.NoL;
 }

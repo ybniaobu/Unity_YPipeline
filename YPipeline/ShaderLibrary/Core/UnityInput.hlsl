@@ -3,7 +3,7 @@
 
 // Unity Engine built-in shader input variables.
 
-// --------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------
 // SRP Batcher
 CBUFFER_START(UnityPerDraw)
     float4x4 unity_ObjectToWorld;
@@ -11,20 +11,27 @@ CBUFFER_START(UnityPerDraw)
     float4 unity_LODFade;
     float4 unity_WorldTransformParams;
 
-    // SH block feature
-    real4 unity_SHAr;
-    real4 unity_SHAg;
-    real4 unity_SHAb;
-    real4 unity_SHBr;
-    real4 unity_SHBg;
-    real4 unity_SHBb;
-    real4 unity_SHC;
+    // Occlusion Probes
+    float4 unity_ProbesOcclusion;
+
+    // Lightmap
+    float4 unity_LightmapST;
+    float4 unity_DynamicLightmapST;
+
+    // SH
+    float4 unity_SHAr;
+    float4 unity_SHAg;
+    float4 unity_SHAb;
+    float4 unity_SHBr;
+    float4 unity_SHBg;
+    float4 unity_SHBb;
+    float4 unity_SHC;
 
     float4x4 unity_MatrixPreviousM;
     float4x4 unity_MatrixPreviousMI;
 CBUFFER_END
 
-// --------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------
 // Other variables
 float3 _WorldSpaceCameraPos;
 
@@ -43,8 +50,19 @@ CBUFFER_START(UnityPerFrame)
     float4x4 unity_MatrixInvVP;
 CBUFFER_END
 
-// --------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------
+// Textures and Samplers
+
+TEXTURE2D(unity_Lightmap);
+SAMPLER(samplerunity_Lightmap);
+
+TEXTURE2D(unity_ShadowMask);
+SAMPLER(samplerunity_ShadowMask);
+
+
+// ----------------------------------------------------------------------------------------------------
 // for SpaceTransforms.hlsl compatibility
+
 #define UNITY_MATRIX_M          unity_ObjectToWorld
 #define UNITY_MATRIX_I_M        unity_WorldToObject
 #define UNITY_MATRIX_V          unity_MatrixV
@@ -60,7 +78,7 @@ CBUFFER_END
 #define UNITY_PREV_MATRIX_M     unity_MatrixPreviousM
 #define UNITY_PREV_MATRIX_I_M   unity_MatrixPreviousMI
 
-// --------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------
 // Functions
 float3 GetWorldSpaceNormalizeViewDir(float3 positionWS)
 {

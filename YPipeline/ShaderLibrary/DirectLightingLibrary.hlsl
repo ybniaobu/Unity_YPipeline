@@ -1,5 +1,5 @@
-﻿#ifndef YPIPELINE_PUNCTUAL_LIGHTS_LIBRARY_INCLUDED
-#define YPIPELINE_PUNCTUAL_LIGHTS_LIBRARY_INCLUDED
+﻿#ifndef YPIPELINE_DIRECT_LIGHTING_LIBRARY_INCLUDED
+#define YPIPELINE_DIRECT_LIGHTING_LIBRARY_INCLUDED
 
 #include "../ShaderLibrary/ShadowsLibrary.hlsl"
 
@@ -31,21 +31,27 @@ struct LightParams
     float distanceAttenuation;
     float angleAttenuation;
     float shadowAttenuation;
-    uint layerMask;
+    //uint layerMask;
 };
+
+float3 CalculateLightIrradiance(LightParams lightParams)
+{
+    float3 irradiance = lightParams.color * lightParams.shadowAttenuation * lightParams.distanceAttenuation * lightParams.angleAttenuation;
+    return irradiance;
+}
 
 // --------------------------------------------------------------------------------
 // Initialize Directional Light Parameters
-void InitializeDirectionalLightParams(out LightParams directionalLightParams, int dirLightIndex, float3 V, float3 normalWS, float3 positionWS)
+void InitializeSunLightParams(out LightParams sunLightParams, float2 lightMapUV, float3 V, float3 normalWS, float3 positionWS)
 {
-    directionalLightParams.color = _DirectionalLightColors[dirLightIndex].rgb;
-    directionalLightParams.positionWS = _DirectionalLightDirections[dirLightIndex]; //Directional Light has no position
-    directionalLightParams.L = normalize(directionalLightParams.positionWS.xyz);
-    directionalLightParams.H = normalize(directionalLightParams.L + V);
-    directionalLightParams.distanceAttenuation = 1.0;
-    directionalLightParams.angleAttenuation = 1.0;
-    directionalLightParams.shadowAttenuation = GetDirShadowFalloff_Atlas(dirLightIndex, positionWS, normalWS, directionalLightParams.L);
-    directionalLightParams.layerMask = _DirectionalLightLayerMask;
+    sunLightParams.color = _SunLightColor.rgb;
+    sunLightParams.positionWS = _SunLightDirection; //Directional Light has no position
+    sunLightParams.L = normalize(sunLightParams.positionWS.xyz);
+    sunLightParams.H = normalize(sunLightParams.L + V);
+    sunLightParams.distanceAttenuation = 1.0;
+    sunLightParams.angleAttenuation = 1.0;
+    sunLightParams.shadowAttenuation = GetSunLightShadowFalloff(lightMapUV, positionWS, normalWS, sunLightParams.L);
+    //directionalLightParams.layerMask = _DirectionalLightLayerMask;
 }
 
 // --------------------------------------------------------------------------------

@@ -37,6 +37,7 @@ namespace YPipeline
             DrawingSettings transparencyDrawing = new DrawingSettings(m_TransparencyShaderTagId, transparencySorting)
             {
                 enableInstancing = asset.enableGPUInstancing,
+                perObjectData = PerObjectData.Lightmaps | PerObjectData.ShadowMask | PerObjectData.LightProbe | PerObjectData.OcclusionProbe
             };
             transparencyDrawing.SetShaderPassName(1, m_UnlitShaderTagId);
             

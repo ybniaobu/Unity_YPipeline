@@ -48,7 +48,7 @@ Shader "YPipeline/PBR/Standard Forward"
             Cull [_Cull]
             
             HLSLPROGRAM
-            #pragma target 3.5
+            #pragma target 4.5
             
             #pragma vertex StandardVert
             #pragma fragment StandardFrag
@@ -57,31 +57,50 @@ Shader "YPipeline/PBR/Standard Forward"
             #pragma shader_feature_local_fragment _USE_METALLICTEX
             #pragma shader_feature_local_fragment _USE_NORMALTEX
             
-            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
-            #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
-            #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
-            #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
+            #pragma multi_compile _ LIGHTMAP_ON
+            #pragma multi_compile _ _SHADOW_MASK_DISTANCE _SHADOW_MASK_NORMAL
             
-            #include "../ShaderPass/StandardForwardPass.hlsl"
+            #include "StandardForwardPass.hlsl"
             ENDHLSL
         }
 
         Pass
         {
+        	Name "ShadowCaster"
+        	
 			Tags { "LightMode" = "ShadowCaster" }
 
 			ColorMask 0
+			Cull [_Cull]
 
 			HLSLPROGRAM
-			#pragma target 3.5
+			#pragma target 4.5
 			
 			#pragma vertex ShadowCasterVert
 			#pragma fragment ShadowCasterFrag
 			
-			#include "../ShaderPass/ShadowCasterPass.hlsl"
+			#include "../ShadowCasterPass.hlsl"
+			ENDHLSL
+		}
+		
+        Pass
+        {
+        	Name "Meta"
+        	
+			Tags { "LightMode" = "Meta" }
+
+			Cull Off
+
+			HLSLPROGRAM
+			#pragma target 4.5
+			
+			#pragma vertex MetaVert
+			#pragma fragment MetaFrag
+			
+			#include "StandardForwardMetaPass.hlsl"
 			ENDHLSL
 		}
     }
 
-    // CustomEditor "YPipeline.Editor.StandardForwardShaderGUI"
+    CustomEditor "YPipeline.Editor.StandardForwardShaderGUI"
 }

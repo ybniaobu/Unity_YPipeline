@@ -1,11 +1,11 @@
 ﻿#ifndef YPIPELINE_IBL_LIBRARY_INCLUDED
 #define YPIPELINE_IBL_LIBRARY_INCLUDED
 
-#include "../ShaderLibrary/BRDFTermsLibrary.hlsl"
+#include "../ShaderLibrary/BRDFModelLibrary.hlsl"
 #include "../ShaderLibrary/RandomLibrary.hlsl"
 #include "../ShaderLibrary/SamplingLibrary.hlsl"
 
-// --------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------
 // Spherical Harmonics(SH)
 // TODO: 先使用 UnityInput 里传递进来的 unity_SHAr...unity_SHC 以后写自己管线时再修改
 float3 SampleSH(float3 N)
@@ -28,7 +28,58 @@ float3 SampleSH(float3 N)
     return L0L1 + L2;
 }
 
-// --------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------
+// IBL calculation
+float3 SampleEnvLut(Texture2D envLut, SamplerState envLutSampler, float NoV, float roughness)
+{
+    return SAMPLE_TEXTURE2D(envLut, envLutSampler, float2(NoV, roughness)).rgb;
+}
+
+float3 CalculateIBL_Diffuse(StandardPBRParams standardPBRParams, float envBRDF_Diffuse)
+{
+    float3 irradiance = SampleSH(standardPBRParams.N);
+    float3 envBRDFDiffuse = standardPBRParams.albedo * envBRDF_Diffuse;
+    float Kd = 1.0 - standardPBRParams.metallic;
+    float3 IBLDiffuse = irradiance * envBRDFDiffuse * Kd * standardPBRParams.ao;
+    return IBLDiffuse;
+}
+
+float3 CalculateIBL_Specular(StandardPBRParams standardPBRParams, TextureCube prefilteredEnvMap, SamplerState prefilteredEnvMapSampler, float2 envBRDF_Specular, float3 energyCompensation)
+{
+    float3 prefilteredColor = SAMPLE_TEXTURECUBE_LOD(prefilteredEnvMap, prefilteredEnvMapSampler, standardPBRParams.R, 8.0 * standardPBRParams.roughness).rgb;
+    //float3 envBRDFSpecular = lerp(envBRDF.yyy, envBRDF.xxx, standardPBRParams.F0);
+    float3 envBRDFSpecular = envBRDF_Specular.xxx * standardPBRParams.F0 + (float3(standardPBRParams.F90, standardPBRParams.F90, standardPBRParams.F90) - standardPBRParams.F0) * envBRDF_Specular.yyy;
+    float3 IBLSpecular = prefilteredColor * envBRDFSpecular * energyCompensation * ComputeSpecularAO(standardPBRParams.NoV, standardPBRParams.ao, standardPBRParams.roughness);
+    
+    IBLSpecular *= ComputeHorizonSpecularOcclusion(standardPBRParams.R, standardPBRParams.N);
+    return IBLSpecular;
+}
+
+// float3 CalculateIBL(StandardPBRParams standardPBRParams, TextureCube prefilteredEnvMap, SamplerState prefilteredEnvMapSampler,
+//     Texture2D envLut, SamplerState envLutSampler, out float3 energyCompensation)
+// {
+//     float3 envBRDF = SAMPLE_TEXTURE2D(envLut, envLutSampler, float2(standardPBRParams.NoV, standardPBRParams.roughness)).rgb;
+//     
+//     float3 irradiance = SampleSH(standardPBRParams.N);
+//     float3 envBRDFDiffuse = standardPBRParams.albedo * envBRDF.b;
+//     float Kd = 1.0 - standardPBRParams.metallic;
+//     float3 IBLDiffuse = irradiance * envBRDFDiffuse * Kd * standardPBRParams.ao;
+//     
+//     float3 prefilteredColor = SAMPLE_TEXTURECUBE_LOD(prefilteredEnvMap, prefilteredEnvMapSampler, standardPBRParams.R, 8.0 * standardPBRParams.roughness).rgb;
+//     //float3 envBRDFSpecular = lerp(envBRDF.yyy, envBRDF.xxx, standardPBRParams.F0);
+//     float3 envBRDFSpecular = envBRDF.xxx * standardPBRParams.F0 + (float3(standardPBRParams.F90, standardPBRParams.F90, standardPBRParams.F90) - standardPBRParams.F0) * envBRDF.yyy;
+//     energyCompensation = 1.0 + standardPBRParams.F0 * (1.0 / envBRDF.x - 1) / 2;
+//     float3 IBLSpecular = prefilteredColor * envBRDFSpecular * energyCompensation * ComputeSpecularAO(standardPBRParams.NoV, standardPBRParams.ao, standardPBRParams.roughness);
+//     
+//     // Horizon specular occlusion
+//     float horizon = saturate(1.0 + dot(standardPBRParams.R, standardPBRParams.N));
+//     IBLSpecular *= horizon * horizon;
+//
+//     float3 IBL = IBLDiffuse + IBLSpecular;
+//     return IBL;
+// }
+
+// ----------------------------------------------------------------------------------------------------
 // Prefilter Environment Map
 float3 PrefilterEnvMap_GGX(TEXTURECUBE(envMap), SAMPLER(envMapSampler), uint sampleNumber, float resolutionPerFace, float roughness, float3 R)
 {
@@ -64,7 +115,7 @@ float3 PrefilterEnvMap_GGX(TEXTURECUBE(envMap), SAMPLER(envMapSampler), uint sam
     return prefilteredColor / totalWeight;
 }
 
-// --------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------
 // Environment 2D Lut (Preintegrate BRDF)
 float PreintegrateDiffuse_RenormalizedBurley(float roughness, float NoV)
 {

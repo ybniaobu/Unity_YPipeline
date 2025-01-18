@@ -1,15 +1,17 @@
 ﻿#ifndef YPIPELINE_UNLIT_PASS_INCLUDED
 #define YPIPELINE_UNLIT_PASS_INCLUDED
 
-#include "../ShaderLibrary/Core/YPipelineCore.hlsl"
+#include "../../ShaderLibrary/Core/YPipelineCore.hlsl"
 
 CBUFFER_START(UnityPerMaterial)
     float4 _BaseColor;
     float4 _BaseTex_ST;
+    float4 _EmissionColor;
     float _Cutoff;
 CBUFFER_END
 
-Texture2D<float4> _BaseTex;     SamplerState sampler_Trilinear_Repeat_BaseTex;
+Texture2D _BaseTex;     SamplerState sampler_Trilinear_Repeat_BaseTex;
+Texture2D _EmissionTex;
 
 struct Attributes
 {
@@ -33,13 +35,14 @@ Varyings UnlitVert(Attributes IN)
 
 float4 UnlitFrag(Varyings IN) : SV_Target
 {
-    float4 albedo = SAMPLE_TEXTURE2D(_BaseTex, sampler_Trilinear_Repeat_BaseTex, IN.uv) * _BaseColor;
+    float3 emission = SAMPLE_TEXTURE2D(_EmissionTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).rgb * _EmissionColor.rgb;
+    float3 albedo = SAMPLE_TEXTURE2D(_BaseTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).rgb * _BaseColor.rgb;
     
     #if defined(_CLIPPING)
         clip(albedo.a - _Cutoff);
     #endif
 
-    return albedo;
+    return float4(albedo + emission, 1.0);
 }
 
 #endif
