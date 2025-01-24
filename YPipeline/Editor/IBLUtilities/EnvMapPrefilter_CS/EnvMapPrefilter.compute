@@ -12,6 +12,7 @@ int _Face;
 int _SizePerFace;
 int _SampleNumber;
 int _MipMapLevel;
+float _Exposure;
 
 float3 RotateAroundYInDegrees(float3 dir, float degrees)
 {
@@ -71,7 +72,7 @@ void PrefilterEnvMap (uint3 id : SV_DispatchThreadID)
     float3 dir = CubeMapping(_Face, float2(id.xy) / (mipMapSize - 1));
     dir = RotateAroundYInDegrees(dir, _Rotation);
     float3 prefilterColor = PrefilterEnvMap_GGX(_EnvMap, trilinear_repeat_sampler_EnvMap, _SampleNumber, _SizePerFace, _Roughness, dir);
-
+    prefilterColor *= _Exposure;
     uint index = id.y * mipMapSize + id.x;
     _Result[index] = float4(prefilterColor, 1.0);
 }

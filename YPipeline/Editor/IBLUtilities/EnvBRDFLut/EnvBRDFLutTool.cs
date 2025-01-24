@@ -14,7 +14,7 @@ public class EnvBRDFLutTool : OdinEditorWindow
     }
 
     [Title("Compute Shader Settings")] 
-    [Sirenix.OdinInspector.FilePath] public string csPath = "Assets/YPipeline/Editor/IBLUtilities/EnvBRDFLut.compute";
+    [Sirenix.OdinInspector.FilePath] public string csPath = "Assets/YPipeline/Editor/IBLUtilities/EnvBRDFLut/EnvBRDFLut.compute";
     [ReadOnly] public ComputeShader envBRDFLutCs;
     [ReadOnly] public string csKernelName = "GenerateEnvBRDFLut";
     

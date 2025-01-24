@@ -7,7 +7,7 @@
 #include "UnityInput.hlsl"
 #include "YPipelineInput.hlsl"
 
-#if defined(_SHADOW_MASK_DISTANCE)
+#if defined(_SHADOW_MASK_DISTANCE) || defined(_SHADOW_MASK_NORMAL)
     #define SHADOWS_SHADOWMASK
 #endif
 

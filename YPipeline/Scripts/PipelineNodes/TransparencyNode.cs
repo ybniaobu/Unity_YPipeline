@@ -13,7 +13,7 @@ namespace YPipeline
             m_UnlitShaderTagId = new ShaderTagId("SRPDefaultUnlit"); 
             m_TransparencyShaderTagId = new ShaderTagId("YPipelineTransparency");
         }
-        
+
         protected override void Dispose()
         {
             
@@ -37,7 +37,7 @@ namespace YPipeline
             DrawingSettings transparencyDrawing = new DrawingSettings(m_TransparencyShaderTagId, transparencySorting)
             {
                 enableInstancing = asset.enableGPUInstancing,
-                perObjectData = PerObjectData.Lightmaps | PerObjectData.ShadowMask | PerObjectData.LightProbe | PerObjectData.OcclusionProbe
+                perObjectData = PerObjectData.ReflectionProbes | PerObjectData.Lightmaps | PerObjectData.ShadowMask | PerObjectData.LightProbe | PerObjectData.OcclusionProbe
             };
             transparencyDrawing.SetShaderPassName(1, m_UnlitShaderTagId);
             

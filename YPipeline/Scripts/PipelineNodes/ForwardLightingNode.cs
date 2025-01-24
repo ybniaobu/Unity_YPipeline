@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
 using Unity.Collections;
+using UnityEditor.VersionControl;
 
 namespace YPipeline
 {
@@ -47,7 +48,8 @@ namespace YPipeline
         private Vector4 m_sunLightColor;
         private Vector4 m_sunLightDirection;
 
-        private bool useShadowMask;
+        private bool m_UseShadowMask;
+        private float m_ShadowMaskChannel;
         
         
         // ----------------------------------------------------------------------------------------------------
@@ -74,6 +76,9 @@ namespace YPipeline
         protected override void OnSetup(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
         {
             base.OnSetup(asset, ref data);
+            
+            // 只需传递一次的贴图或者变量
+            Shader.SetGlobalTexture("_EnvBRDFLut", asset.environmentBRDFLut);
         }
 
         protected override void OnRender(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
@@ -95,7 +100,8 @@ namespace YPipeline
             NativeArray<VisibleLight> visibleLights = data.cullingResults.visibleLights;
             m_sunLightCount = 0;
             m_shadowingSunLightCount = 0;
-            useShadowMask = false;
+            m_UseShadowMask = false;
+            m_ShadowMaskChannel = -1.0f;
             
             for (int i = 0; i < visibleLights.Length; i++)
             {
@@ -109,15 +115,16 @@ namespace YPipeline
                     var color = visibleLight.finalColor;
                     m_sunLightDirection = -visibleLight.localToWorldMatrix.GetColumn(2);
                     
-                    if (visibleLight.light.shadows != LightShadows.None && visibleLight.light.shadowStrength > 0f && data.cullingResults.GetShadowCasterBounds(i, out Bounds outBounds))
+                    if (visibleLight.light.shadows != LightShadows.None && visibleLight.light.shadowStrength > 0f)
                     {
-                        m_shadowingSunLightCount++;
+                        if (data.cullingResults.GetShadowCasterBounds(i, out Bounds outBounds)) m_shadowingSunLightCount++;
                         m_sunLightColor = new Vector4(color.r, color.g, color.b, visibleLight.light.shadowStrength);
 
                         LightBakingOutput lightBaking = visibleLight.light.bakingOutput;
                         if (lightBaking.lightmapBakeType == LightmapBakeType.Mixed && lightBaking.mixedLightingMode == MixedLightingMode.Shadowmask)
                         {
-                            useShadowMask = true;
+                            m_UseShadowMask = true;
+                            m_ShadowMaskChannel = lightBaking.occlusionMaskChannel;
                         }
                     }
                     else
@@ -159,6 +166,11 @@ namespace YPipeline
                     ,m_MaxDirectionalLightCount * m_MaxCascadeCount, 32, FilterMode.Bilinear, RenderTextureFormat.Shadowmap);
                 RenderToDirShadowMapTile(asset,ref data);
             }
+            else
+            {
+                data.buffer.GetTemporaryRTArray(m_SunLightShadowArrayID, 1, 1
+                    ,m_MaxDirectionalLightCount * m_MaxCascadeCount, 32, FilterMode.Bilinear, RenderTextureFormat.Shadowmap);
+            }
         }
 
         private void RenderToDirShadowMapTile(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
@@ -188,14 +200,23 @@ namespace YPipeline
         {
             data.buffer.SetGlobalVector(m_ShadowBiasID, new Vector4(asset.depthBias, asset.slopeScaledDepthBias, asset.normalBias, asset.slopeScaledNormalBias));
             data.buffer.SetGlobalVector(m_SunLightShadowParamsId, new Vector4(asset.cascadeCount, asset.sunLightShadowArraySize, asset.shadowSampleNumber, asset.penumbraWidth));
-            data.buffer.SetGlobalVector(m_SunLightShadowFadeParamsId, new Vector4(1.0f / asset.maxShadowDistance, 1.0f / asset.distanceFade, 1.0f / asset.cascadeEdgeFade, 0));
+            data.buffer.SetGlobalVector(m_SunLightShadowFadeParamsId, new Vector4(1.0f / asset.maxShadowDistance, 1.0f / asset.distanceFade, 1.0f / asset.cascadeEdgeFade, m_ShadowMaskChannel));
             data.buffer.SetGlobalVectorArray(m_CascadeCullingSpheresID, m_CascadeCullingSpheres);
             data.buffer.SetGlobalMatrixArray(m_SunLightShadowMatricesID, m_SunLightShadowMatrices);
         }
 
         private void SetKeywords(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
         {
-            data.buffer.SetKeyword(_ShadowMaskDistance, useShadowMask);
+            if (QualitySettings.shadowmaskMode == ShadowmaskMode.DistanceShadowmask)
+            {
+                data.buffer.SetKeyword(_ShadowMaskDistance, m_UseShadowMask);
+                data.buffer.SetKeyword(_ShadowMaskNormal, false);
+            }
+            else
+            {
+                data.buffer.SetKeyword(_ShadowMaskNormal, m_UseShadowMask);
+                data.buffer.SetKeyword(_ShadowMaskDistance, false);
+            }
         }
     }
 }

@@ -14,6 +14,9 @@ CBUFFER_START(UnityPerDraw)
     // Occlusion Probes
     float4 unity_ProbesOcclusion;
 
+    // HDR environment map decode instruction
+    // float4 unity_SpecCube0_HDR;
+
     // Lightmap
     float4 unity_LightmapST;
     float4 unity_DynamicLightmapST;
@@ -58,6 +61,9 @@ SAMPLER(samplerunity_Lightmap);
 
 TEXTURE2D(unity_ShadowMask);
 SAMPLER(samplerunity_ShadowMask);
+
+TEXTURECUBE(unity_SpecCube0);
+SAMPLER(samplerunity_SpecCube0_TrilinearRepeat);
 
 
 // ----------------------------------------------------------------------------------------------------

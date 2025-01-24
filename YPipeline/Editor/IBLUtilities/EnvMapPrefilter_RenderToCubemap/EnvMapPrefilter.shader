@@ -12,7 +12,7 @@ Shader "YPipeline/EditorTool/EnvMapPrefilter"
     
     SubShader
     {
-        Tags { "Queue"="Background" "RenderType"="Background" "PreviewType"="Skybox" "RenderPipeline" = "UniversalPipeline" }
+        Tags { "Queue"="Background" "RenderType"="Background" "PreviewType"="Skybox" }
         Cull Off ZWrite Off
 
         Pass

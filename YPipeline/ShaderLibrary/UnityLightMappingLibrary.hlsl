@@ -49,11 +49,20 @@ float4 SampleShadowmask(float2 lightMapUV)
     #endif
 }
 
-float MixBakedAndRealtimeShadows(float2 lightMapUV, float realtimeShadowAttenuation, float shadowFade)
+// For Shadowmask - Distance Shadowmask Mode
+float MixBakedAndRealtimeShadows(float2 lightMapUV, int channel, float realtimeShadowAttenuation, float realtimeShadowFade)
 {
-    float bakedShadowAttenuation = SampleShadowmask(lightMapUV).r;
-    float shadowAttenuation = lerp(bakedShadowAttenuation, realtimeShadowAttenuation, shadowFade);
+    float bakedShadowAttenuation = SampleShadowmask(lightMapUV)[channel];
+    float shadowAttenuation = lerp(bakedShadowAttenuation, realtimeShadowAttenuation, realtimeShadowFade);
     return shadowAttenuation;
+}
+
+// For Shadowmask - Shadowmask Mode
+float ChooseBakedAndRealtimeShadows(float2 lightMapUV, int channel, float realtimeShadowAttenuation, float realtimeShadowFade)
+{
+    float bakedShadowAttenuation = SampleShadowmask(lightMapUV)[channel];
+    realtimeShadowAttenuation = lerp(1.0, realtimeShadowAttenuation, realtimeShadowFade);
+    return min(bakedShadowAttenuation, realtimeShadowAttenuation);
 }
 
 #endif

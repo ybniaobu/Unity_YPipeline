@@ -18,8 +18,6 @@ Texture2D _RoughnessTex;
 Texture2D _MetallicTex;
 Texture2D _NormalTex;
 Texture2D _AOTex;
-TextureCube _PrefilteredEnvMap; SamplerState sampler_Trilinear_Repeat_PrefilteredEnvMap;
-Texture2D _EnvBRDFLut;          SamplerState sampler_Point_Clamp_EnvBRDFLut;
 
 struct Attributes
 {
@@ -104,8 +102,9 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     
     renderingEquationContent.indirectLightDiffuse += IndirectLighting_Diffuse(LIGHTMAP_UV_FRAGMENT(IN), standardPBRParams, envBRDF.b);
 
-    renderingEquationContent.indirectLightSpecular += CalculateIBL_Specular(standardPBRParams, _PrefilteredEnvMap,
-        sampler_Trilinear_Repeat_PrefilteredEnvMap, envBRDF.rg, energyCompensation);
+    //renderingEquationContent.indirectLightSpecular += CalculateIBL_Specular(standardPBRParams, _PrefilteredEnvMap, sampler_Trilinear_Repeat_PrefilteredEnvMap, envBRDF.rg, energyCompensation);
+    renderingEquationContent.indirectLightSpecular += CalculateIBL_Specular_RemappedMipmap(standardPBRParams, unity_SpecCube0,
+        samplerunity_SpecCube0_TrilinearRepeat, envBRDF.rg, energyCompensation);
 
     // ----------------------------------------------------------------------------------------------------
     // Direct Lighting
@@ -134,12 +133,17 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     //     }
     // #endif
 
-    //return float4(renderingEquationContent.indirectLightDiffuse, 1.0f);
-    //return float4(renderingEquationContent.directSunLight, 1.0f);
-    //return float4(SampleLightMap(LIGHTMAP_UV_FRAGMENT(IN)) * standardPBRParams.albedo, 1.0);
-    //return float4(SampleSH(standardPBRParams.N), 1.0);
-    //return float4(SampleShadowmask(LIGHTMAP_UV_FRAGMENT(IN)).rrr, 1.0);
-    return float4(renderingEquationContent.directSunLight + renderingEquationContent.directPunctualLights + renderingEquationContent.indirectLightDiffuse, 1.0);
+    // ----------------------------------------------------------------------------------------------------
+    // LOD Fade
+    #if defined(LOD_FADE_CROSSFADE)
+        float dither = InterleavedGradientNoise(IN.positionHCS.xy, 0);
+        float isNextLodLevel = step(unity_LODFade.x, 0);
+        dither = lerp(-dither, dither, isNextLodLevel);
+        clip(unity_LODFade.x + dither);
+    #endif
+
+    
+    //return float4(renderingEquationContent.directSunLight + renderingEquationContent.directPunctualLights + renderingEquationContent.indirectLightDiffuse, 1.0);
     return float4(renderingEquationContent.directSunLight + renderingEquationContent.directPunctualLights + renderingEquationContent.indirectLightDiffuse + renderingEquationContent.indirectLightSpecular, 1.0);
 }
 

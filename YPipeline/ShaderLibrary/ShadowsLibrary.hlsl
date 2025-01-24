@@ -110,7 +110,7 @@ float3 ApplyShadowBias(float3 positionWS, float texelSize, float penumbraWidth, 
 // Shadow Attenuation Functions
 float ApplyPCF_SunLight(float3 positionWS, float texelSize, float3 positionSS, float cascadeIndex)
 {
-    float random = Random_Sine(positionWS);
+    float random = Random_NoSine(positionWS);
     float randomRadian = random * TWO_PI;
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
     float shadowAttenuation = 0.0;
@@ -120,7 +120,7 @@ float ApplyPCF_SunLight(float3 positionWS, float texelSize, float3 positionSS, f
         float2 offset = mul(rotation, InverseSampleCircle(Sobol_Scrambled(i, 1, 2))) / _SunLightShadowParams.y;
         offset = offset / texelSize * _SunLightShadowParams.w * 0.01;
         float2 uv = positionSS.xy + offset;
-        shadowAttenuation += SampleShadowArray_Compare(float3(uv, positionSS.z), cascadeIndex, _SunLightShadowArray, sampler_LinearClampCompare);
+        shadowAttenuation += SampleShadowArray_Compare(float3(uv, positionSS.z), cascadeIndex, _SunLightShadowArray, sampler_PointClampCompare);
     }
     return shadowAttenuation / _SunLightShadowParams.z;
 }
@@ -129,19 +129,31 @@ float GetSunLightShadowFalloff(float2 lightMapUV, float3 positionWS, float3 norm
 {
     float cascadeIndex = ComputeCascadeIndex(positionWS);
     float shadowStrength = _SunLightColor.w;
-
-    float shadowFade = 1.0 - step(_SunLightShadowParams.x, cascadeIndex);
+    
+    if (cascadeIndex >= _SunLightShadowParams.x)
+    {
+        #if defined(_SHADOW_MASK_DISTANCE) || defined(_SHADOW_MASK_NORMAL)
+            return lerp(1.0, SampleShadowmask(lightMapUV)[_SunLightShadowFadeParams.w], shadowStrength);
+        #else
+            return 1.0;
+        #endif
+    }
+    
+    // float shadowFade = 1.0 - step(_SunLightShadowParams.x, cascadeIndex);
+    
+    float shadowFade = 1.0;
     shadowFade *= ComputeDistanceFade(positionWS, _SunLightShadowFadeParams.x, _SunLightShadowFadeParams.y);
     shadowFade *= ComputeCascadeEdgeFade(cascadeIndex, _SunLightShadowParams.x, positionWS, _SunLightShadowFadeParams.z, _CascadeCullingSpheres[_SunLightShadowParams.x - 1]);
 
     float texelSize = _CascadeCullingSpheres[cascadeIndex].w * 2.0 / _SunLightShadowParams.y;
     float3 positionWS_Bias = ApplyShadowBias(positionWS, texelSize, _SunLightShadowParams.w, normalWS, L);
     float3 positionSS = TransformWorldToSunLightShadowCoord(positionWS_Bias, cascadeIndex);
-    
     float shadowAttenuation = ApplyPCF_SunLight(positionWS, texelSize, positionSS, cascadeIndex);
 
     #if defined(_SHADOW_MASK_DISTANCE)
-        return lerp(1.0, MixBakedAndRealtimeShadows(lightMapUV, shadowAttenuation, shadowFade), shadowStrength);
+        return lerp(1.0, MixBakedAndRealtimeShadows(lightMapUV, _SunLightShadowFadeParams.w ,shadowAttenuation, shadowFade), shadowStrength);
+    #elif defined(_SHADOW_MASK_NORMAL)
+        return lerp(1.0, ChooseBakedAndRealtimeShadows(lightMapUV, _SunLightShadowFadeParams.w ,shadowAttenuation, shadowFade), shadowStrength);
     #else
         return lerp(1.0, shadowAttenuation, shadowStrength * shadowFade);
     #endif

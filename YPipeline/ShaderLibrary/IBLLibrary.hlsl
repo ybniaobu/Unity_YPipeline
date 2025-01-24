@@ -35,6 +35,12 @@ float3 SampleEnvLut(Texture2D envLut, SamplerState envLutSampler, float NoV, flo
     return SAMPLE_TEXTURE2D(envLut, envLutSampler, float2(NoV, roughness)).rgb;
 }
 
+// float3 SampleHDREnvironment(TextureCube envMap, SamplerState envMapSampler, float3 dir, float mipmap)
+// {
+//     float4 env = SAMPLE_TEXTURECUBE_LOD(envMap, envMapSampler, dir, mipmap);
+//     return DecodeHDREnvironment(env, unity_SpecCube0_HDR);
+// }
+
 float3 CalculateIBL_Diffuse(StandardPBRParams standardPBRParams, float envBRDF_Diffuse)
 {
     float3 irradiance = SampleSH(standardPBRParams.N);
@@ -44,9 +50,29 @@ float3 CalculateIBL_Diffuse(StandardPBRParams standardPBRParams, float envBRDF_D
     return IBLDiffuse;
 }
 
+float RoughnessToMipmapLevel(float roughness, float maxMipLevel)
+{
+    roughness = roughness * (1.7 - 0.7 * roughness);
+    return roughness * maxMipLevel;
+}
+
 float3 CalculateIBL_Specular(StandardPBRParams standardPBRParams, TextureCube prefilteredEnvMap, SamplerState prefilteredEnvMapSampler, float2 envBRDF_Specular, float3 energyCompensation)
 {
-    float3 prefilteredColor = SAMPLE_TEXTURECUBE_LOD(prefilteredEnvMap, prefilteredEnvMapSampler, standardPBRParams.R, 8.0 * standardPBRParams.roughness).rgb;
+    float3 prefilteredColor = SAMPLE_TEXTURECUBE_LOD(prefilteredEnvMap, prefilteredEnvMapSampler, standardPBRParams.R, 6.0 * standardPBRParams.roughness).rgb;
+    //float3 prefilteredColor = SampleHDREnvironment(prefilteredEnvMap, prefilteredEnvMapSampler, standardPBRParams.R, 6.0 * standardPBRParams.roughness);
+    //float3 envBRDFSpecular = lerp(envBRDF.yyy, envBRDF.xxx, standardPBRParams.F0);
+    float3 envBRDFSpecular = envBRDF_Specular.xxx * standardPBRParams.F0 + (float3(standardPBRParams.F90, standardPBRParams.F90, standardPBRParams.F90) - standardPBRParams.F0) * envBRDF_Specular.yyy;
+    float3 IBLSpecular = prefilteredColor * envBRDFSpecular * energyCompensation * ComputeSpecularAO(standardPBRParams.NoV, standardPBRParams.ao, standardPBRParams.roughness);
+    
+    IBLSpecular *= ComputeHorizonSpecularOcclusion(standardPBRParams.R, standardPBRParams.N);
+    return IBLSpecular;
+}
+
+float3 CalculateIBL_Specular_RemappedMipmap(StandardPBRParams standardPBRParams, TextureCube prefilteredEnvMap, SamplerState prefilteredEnvMapSampler, float2 envBRDF_Specular, float3 energyCompensation)
+{
+    float mipmap = RoughnessToMipmapLevel(standardPBRParams.roughness, 6.0);
+    float3 prefilteredColor = SAMPLE_TEXTURECUBE_LOD(prefilteredEnvMap, prefilteredEnvMapSampler, standardPBRParams.R, mipmap).rgb;
+    //float3 prefilteredColor = SampleHDREnvironment(prefilteredEnvMap, prefilteredEnvMapSampler, standardPBRParams.R, mipmap);
     //float3 envBRDFSpecular = lerp(envBRDF.yyy, envBRDF.xxx, standardPBRParams.F0);
     float3 envBRDFSpecular = envBRDF_Specular.xxx * standardPBRParams.F0 + (float3(standardPBRParams.F90, standardPBRParams.F90, standardPBRParams.F90) - standardPBRParams.F0) * envBRDF_Specular.yyy;
     float3 IBLSpecular = prefilteredColor * envBRDFSpecular * energyCompensation * ComputeSpecularAO(standardPBRParams.NoV, standardPBRParams.ao, standardPBRParams.roughness);
@@ -107,7 +133,7 @@ float3 PrefilterEnvMap_GGX(TEXTURECUBE(envMap), SAMPLER(envMapSampler), uint sam
             float saSample = 1.0 / (float(sampleNumber) * PDF + 0.0001);
             float mipLevel = roughness == 0.0 ? 0.0 : 0.5 * log2(saSample / saTexel);
             
-            prefilteredColor += envMap.SampleLevel(envMapSampler, L, mipLevel * 1.5).rgb * NoL; //1 is a magic/empirical number
+            prefilteredColor += envMap.SampleLevel(envMapSampler, L, mipLevel * 1.5).rgb * NoL; //1.5 is a magic/empirical number
             totalWeight += NoL;
         }
     }

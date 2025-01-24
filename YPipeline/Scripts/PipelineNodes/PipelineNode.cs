@@ -22,7 +22,7 @@ namespace YPipeline
         protected abstract void Dispose();
         
         /// <summary>
-        /// 用于提前设置需要跨 PipelineNode 的数据，以便各个 PipelineNode 可以使用
+        /// 用于只需要设置一次的全局贴图或者变量，不在 render 每帧调用
         /// </summary>
         /// <param name="asset"></param>
         /// <param name="data"></param>

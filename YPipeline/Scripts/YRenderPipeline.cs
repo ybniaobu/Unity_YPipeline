@@ -29,6 +29,8 @@ namespace YPipeline
             
             GraphicsSettings.useScriptableRenderPipelineBatching = asset.enableSRPBatcher;
             GraphicsSettings.lightsUseLinearIntensity = true;
+            
+            PipelineNode.SetupPipelineNodes(m_Asset, ref m_Data);
         }
 
         protected override void Render(ScriptableRenderContext context, Camera[] cameras)
@@ -47,7 +49,6 @@ namespace YPipeline
             {
                 BeginCameraRendering(context, camera);
                 if (!Setup(camera)) return;
-                PipelineNode.SetupPipelineNodes(m_Asset, ref m_Data);
                 PipelineNode.RenderPipelineNodes(m_Asset, ref m_Data);
                 
                 // Drawing Gizmos

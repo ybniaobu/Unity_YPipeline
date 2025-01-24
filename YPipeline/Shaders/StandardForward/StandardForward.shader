@@ -59,6 +59,8 @@ Shader "YPipeline/PBR/Standard Forward"
             
             #pragma multi_compile _ LIGHTMAP_ON
             #pragma multi_compile _ _SHADOW_MASK_DISTANCE _SHADOW_MASK_NORMAL
+
+            #pragma multi_compile _ LOD_FADE_CROSSFADE
             
             #include "StandardForwardPass.hlsl"
             ENDHLSL
