@@ -4,8 +4,10 @@
 #include "../ShaderLibrary/BRDFTermsLibrary.hlsl"
 #include "../ShaderLibrary/AmbientOcclusionLibrary.hlsl"
 
-// --------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------
 // Standard PBR Model
+// ----------------------------------------------------------------------------------------------------
+
 struct StandardPBRParams
 {
     float3 albedo;
@@ -22,7 +24,7 @@ struct StandardPBRParams
 
 float3 StandardPBR(BRDFParams BRDFParams, StandardPBRParams standardPBRParams)
 {
-    float roughness = clamp(standardPBRParams.roughness, 0.02, 1.0); //make sure there is a tiny specular lobe when roughness is zero
+    float roughness = clamp(standardPBRParams.roughness, 0.05, 1.0); //make sure there is a tiny specular lobe when roughness is zero
     float3 diffuse = Fd_RenormalizedBurley_Disney(standardPBRParams.NoV, BRDFParams.NoL, BRDFParams.LoH, roughness, standardPBRParams.albedo);
     
     float D = D_GGX(BRDFParams.NoH, roughness);
@@ -37,7 +39,7 @@ float3 StandardPBR(BRDFParams BRDFParams, StandardPBRParams standardPBRParams)
 
 float3 StandardPBR_EnergyCompensation(BRDFParams BRDFParams, StandardPBRParams standardPBRParams, float3 energyCompensation)
 {
-    float roughness = clamp(standardPBRParams.roughness, 0.02, 1.0); //make sure there is a tiny specular lobe when roughness is zero
+    float roughness = clamp(standardPBRParams.roughness, 0.05, 1.0); //make sure there is a tiny specular lobe when roughness is zero
     float3 diffuse = Fd_RenormalizedBurley_Disney(standardPBRParams.NoV, BRDFParams.NoL, BRDFParams.LoH, roughness, standardPBRParams.albedo);
 
     float D = D_GGX(BRDFParams.NoH, roughness);
@@ -50,8 +52,10 @@ float3 StandardPBR_EnergyCompensation(BRDFParams BRDFParams, StandardPBRParams s
     return (diffuse * (1 - standardPBRParams.metallic) + specular * energyCompensation) * BRDFParams.NoL;
 }
 
-// --------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------
 // Anisotropic Model
+// ----------------------------------------------------------------------------------------------------
+
 struct AnisotropicModelParams
 {
     float anisotropy;

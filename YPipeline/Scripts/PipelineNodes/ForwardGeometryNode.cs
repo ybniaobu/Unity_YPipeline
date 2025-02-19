@@ -3,7 +3,7 @@ using UnityEngine.Rendering;
 
 namespace YPipeline
 {
-    public class ForwardNode : PipelineNode
+    public class ForwardGeometryNode : PipelineNode
     {
         private static ShaderTagId m_UnlitShaderTagId;
         private static ShaderTagId m_ForwardLitShaderTagId;
@@ -16,7 +16,7 @@ namespace YPipeline
 
         protected override void Dispose()
         {
-            
+            DestroyImmediate(this);
         }
 
         protected override void OnRender(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
@@ -27,12 +27,12 @@ namespace YPipeline
             CameraClearFlags flags = data.cameraData.camera.clearFlags;
             data.buffer.ClearRenderTarget(flags < CameraClearFlags.Nothing, 
                 flags < CameraClearFlags.Depth, data.cameraData.camera.backgroundColor.linear);
-            ForwardRenderer(asset, ref data);
+            RenderOpaqueAndAlphaTest(asset, ref data);
             data.context.ExecuteCommandBuffer(data.buffer);
             data.buffer.Clear();
         }
 
-        private void ForwardRenderer(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
+        private void RenderOpaqueAndAlphaTest(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
         {
             FilteringSettings opaqueFiltering = 
                 new FilteringSettings(new RenderQueueRange(2000, 2449));

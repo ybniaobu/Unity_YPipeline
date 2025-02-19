@@ -3,6 +3,10 @@
 
 #include "../ShaderLibrary/Core/YPipelineCore.hlsl"
 
+CBUFFER_START(PerShadowDraw)
+    float _ShadowPancaking;
+CBUFFER_END
+
 struct Attributes
 {
     float4 positionOS   : POSITION;
@@ -22,10 +26,12 @@ Varyings ShadowCasterVert(Attributes IN)
     OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
 
     #if UNITY_REVERSED_Z
-    OUT.positionHCS.z = min(OUT.positionHCS.z, OUT.positionHCS.w * UNITY_NEAR_CLIP_VALUE);
+        float clamped = min(OUT.positionHCS.z, OUT.positionHCS.w * UNITY_NEAR_CLIP_VALUE);
     #else
-    OUT.positionHCS.z = max(OUT.positionHCS.z, OUT.positionHCS.w * UNITY_NEAR_CLIP_VALUE);
+        float clamped = max(OUT.positionHCS.z, OUT.positionHCS.w * UNITY_NEAR_CLIP_VALUE);
     #endif
+
+    OUT.positionHCS.z = lerp(OUT.positionHCS.z, clamped, _ShadowPancaking);
     
     return OUT;
 }

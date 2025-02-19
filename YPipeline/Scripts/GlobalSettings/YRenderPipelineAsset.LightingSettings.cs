@@ -29,37 +29,39 @@ namespace YPipeline
         [Range(0f, 10f)] public float slopeScaledNormalBias = 0.5f;
         
         [TitleGroup("Shadows Settings/Direct Light Shadows")]
+        [MinValue(0)] public float maxShadowDistance = 80.0f;
+        
+        [TitleGroup("Shadows Settings/Direct Light Shadows")]
+        [Range(0f, 1f)] public float distanceFade = 0.1f;
+        
         [TabGroup("Shadows Settings/Direct Light Shadows/Tab", "Sun Light Shadows")]
         [ValueDropdown("m_TextureSizes")] public int sunLightShadowArraySize = 2048;
+        
+        [TabGroup("Shadows Settings/Direct Light Shadows/Tab", "Sun Light Shadows")]
+        [ValueDropdown("m_SampleNumbers")] public int sunLightShadowSampleNumber = 16;
+        
+        [TabGroup("Shadows Settings/Direct Light Shadows/Tab", "Sun Light Shadows")]
+        [Range(0f, 10f)] public float sunLightPenumbraWidth = 4.0f;
         
         [TabGroup("Shadows Settings/Direct Light Shadows/Tab", "Sun Light Shadows")]
         [Range(1, 4)] public int cascadeCount = 4;
         
         [TabGroup("Shadows Settings/Direct Light Shadows/Tab", "Sun Light Shadows")] [SerializeField]
-        [Range(0f, 1f)] [Indent] private float spiltRatio1 = 0.25f, spiltRatio2 = 0.5f, spiltRatio3 = 0.75f;
+        [Range(0f, 1f)] [Indent] private float spiltRatio1 = 0.15f, spiltRatio2 = 0.3f, spiltRatio3 = 0.6f;
         
         public Vector3 SpiltRatios => new Vector3(spiltRatio1, spiltRatio2, spiltRatio3);
         
         [TabGroup("Shadows Settings/Direct Light Shadows/Tab", "Sun Light Shadows")]
-        [MinValue(0)] public float maxShadowDistance = 60.0f;
+        [Range(0f, 1f)] public float cascadeEdgeFade = 0.05f;
         
-        [TabGroup("Shadows Settings/Direct Light Shadows/Tab", "Sun Light Shadows")]
-        [Range(0f, 1f)] public float distanceFade = 0.1f;
         
-        [TabGroup("Shadows Settings/Direct Light Shadows/Tab", "Sun Light Shadows")]
-        [Range(0f, 1f)] public float cascadeEdgeFade = 0.2f;
+        [TabGroup("Shadows Settings/Direct Light Shadows/Tab", "Punctual Light Shadows")]
+        [ValueDropdown("m_TextureSizes")] public int punctualLightShadowArraySize = 512;
         
-        [TabGroup("Shadows Settings/Direct Light Shadows/Tab", "Sun Light Shadows")]
-        [ValueDropdown("m_SampleNumbers")] public int shadowSampleNumber = 16;
+        [TabGroup("Shadows Settings/Direct Light Shadows/Tab", "Punctual Light Shadows")]
+        [ValueDropdown("m_SampleNumbers")] public int punctualLightShadowSampleNumber = 16;
         
-        [TabGroup("Shadows Settings/Direct Light Shadows/Tab", "Sun Light Shadows")]
-        [Range(0f, 10f)] public float penumbraWidth = 1.5f;
-        
-
-        [TabGroup("Shadows Settings/Direct Light Shadows/Tab", "Point Light Shadows")]
-        public int a = 0;
-        
-        [TabGroup("Shadows Settings/Direct Light Shadows/Tab", "Spot Light Shadows")]
-        public int b = 0;
+        [TabGroup("Shadows Settings/Direct Light Shadows/Tab", "Punctual Light Shadows")]
+        [Range(0f, 10f)] public float punctualLightPenumbra = 3.0f;
     }
 }

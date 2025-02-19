@@ -97,17 +97,19 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
 
     // ----------------------------------------------------------------------------------------------------
     // Indirect Lighting
-    float3 envBRDF = SampleEnvLut(_EnvBRDFLut, sampler_Point_Clamp_EnvBRDFLut, standardPBRParams.NoV, standardPBRParams.roughness);
+    // ----------------------------------------------------------------------------------------------------
+    float3 envBRDF = SampleEnvLut(ENVIRONMENT_BRDF_LUT, LUT_SAMPLER, standardPBRParams.NoV, standardPBRParams.roughness);
     float3 energyCompensation = 1.0 + standardPBRParams.F0 * (1.0 / envBRDF.x - 1) * 0.5; // 0.5 is a magic number
     
     renderingEquationContent.indirectLightDiffuse += IndirectLighting_Diffuse(LIGHTMAP_UV_FRAGMENT(IN), standardPBRParams, envBRDF.b);
 
-    //renderingEquationContent.indirectLightSpecular += CalculateIBL_Specular(standardPBRParams, _PrefilteredEnvMap, sampler_Trilinear_Repeat_PrefilteredEnvMap, envBRDF.rg, energyCompensation);
+    //renderingEquationContent.indirectLightSpecular += CalculateIBL_Specular(standardPBRParams, unity_SpecCube0, samplerunity_SpecCube0, envBRDF.rg, energyCompensation);
     renderingEquationContent.indirectLightSpecular += CalculateIBL_Specular_RemappedMipmap(standardPBRParams, unity_SpecCube0,
-        samplerunity_SpecCube0_TrilinearRepeat, envBRDF.rg, energyCompensation);
+        samplerunity_SpecCube0, envBRDF.rg, energyCompensation);
 
     // ----------------------------------------------------------------------------------------------------
-    // Direct Lighting
+    // Direct Lighting - Sun Light
+    // ----------------------------------------------------------------------------------------------------
     LightParams sunLightParams = (LightParams) 0;
     InitializeSunLightParams(sunLightParams, LIGHTMAP_UV_FRAGMENT(IN), standardPBRParams.V, normalize(IN.normalWS), IN.positionWS);
 
@@ -116,25 +118,25 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
 
     renderingEquationContent.directSunLight += CalculateLightIrradiance(sunLightParams) * StandardPBR_EnergyCompensation(sunBRDFParams, standardPBRParams, energyCompensation);
     
+    // ----------------------------------------------------------------------------------------------------
+    // Direct Lighting - Punctual Light
+    // ----------------------------------------------------------------------------------------------------
+    int spotLightCount = GetSpotLightCount();
     
-    // #ifdef _ADDITIONAL_LIGHTS
-    //     int additionalLightsCount = GetAdditionalLightCount();
-    //
-    //     for (int i = 0; i < additionalLightsCount; ++i)
-    //     {
-    //         int lightIndex = GetAdditionalLightIndex(i);
-    //         LightParams additionalLightParams = (LightParams) 0;
-    //         InitializeAdditionalLightParams(additionalLightParams, lightIndex, standardPBRParams.V, IN.positionWS);
-    //         
-    //         BRDFParams additionalBRDFParams = (BRDFParams) 0;
-    //         InitializeBRDFParams(additionalBRDFParams, standardPBRParams.N, additionalLightParams.L, standardPBRParams.V, additionalLightParams.H);
-    //         
-    //         renderingEquationContent.directAdditionalLight += CalculatePunctualLight(additionalLightParams) * StandardPBR_EnergyCompensation(additionalBRDFParams, standardPBRParams, energyCompensation);
-    //     }
-    // #endif
+    for (int i = 0; i < spotLightCount; i++)
+    {
+        LightParams spotLightParams = (LightParams) 0;
+        InitializeSpotLightParams(spotLightParams, i, LIGHTMAP_UV_FRAGMENT(IN), standardPBRParams.V, normalize(IN.normalWS), IN.positionWS);
+        
+        BRDFParams spotBRDFParams = (BRDFParams) 0;
+        InitializeBRDFParams(spotBRDFParams, standardPBRParams.N, spotLightParams.L, standardPBRParams.V, spotLightParams.H);
+        
+        renderingEquationContent.directPunctualLights += CalculateLightIrradiance(spotLightParams) * StandardPBR_EnergyCompensation(spotBRDFParams, standardPBRParams, energyCompensation);
+    }
 
     // ----------------------------------------------------------------------------------------------------
     // LOD Fade
+    // ----------------------------------------------------------------------------------------------------
     #if defined(LOD_FADE_CROSSFADE)
         float dither = InterleavedGradientNoise(IN.positionHCS.xy, 0);
         float isNextLodLevel = step(unity_LODFade.x, 0);
@@ -143,7 +145,6 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     #endif
 
     
-    //return float4(renderingEquationContent.directSunLight + renderingEquationContent.directPunctualLights + renderingEquationContent.indirectLightDiffuse, 1.0);
     return float4(renderingEquationContent.directSunLight + renderingEquationContent.directPunctualLights + renderingEquationContent.indirectLightDiffuse + renderingEquationContent.indirectLightSpecular, 1.0);
 }
 

@@ -5,6 +5,7 @@
 
 // ----------------------------------------------------------------------------------------------------
 // Light Map
+// ----------------------------------------------------------------------------------------------------
 
 #if defined(LIGHTMAP_ON)
     #define LIGHTMAP_UV(index)                      float2 lightMapUV : TEXCOORD##index;
@@ -39,20 +40,27 @@ float3 CalculateLightMap_Diffuse(float2 lightMapUV, StandardPBRParams standardPB
 
 // ----------------------------------------------------------------------------------------------------
 // Shadowmask Map
+// ----------------------------------------------------------------------------------------------------
 
-float4 SampleShadowmask(float2 lightMapUV)
+float SampleShadowmask(float2 lightMapUV, float channel)
 {
+    // if (channel < 0) return 1.0;
+    float isNotInShadowmask = channel < 0.0;
+    float attenuation = 1.0;
+    
     #if defined(LIGHTMAP_ON)
-        return SAMPLE_TEXTURE2D(unity_ShadowMask, samplerunity_ShadowMask, lightMapUV);
+        attenuation = SAMPLE_TEXTURE2D(unity_ShadowMask, samplerunity_ShadowMask, lightMapUV)[channel];
     #else
-        return unity_ProbesOcclusion;
+        attenuation = unity_ProbesOcclusion[channel];
     #endif
+    
+    return lerp(attenuation, 1.0, isNotInShadowmask);
 }
 
 // For Shadowmask - Distance Shadowmask Mode
 float MixBakedAndRealtimeShadows(float2 lightMapUV, int channel, float realtimeShadowAttenuation, float realtimeShadowFade)
 {
-    float bakedShadowAttenuation = SampleShadowmask(lightMapUV)[channel];
+    float bakedShadowAttenuation = SampleShadowmask(lightMapUV, channel);
     float shadowAttenuation = lerp(bakedShadowAttenuation, realtimeShadowAttenuation, realtimeShadowFade);
     return shadowAttenuation;
 }
@@ -60,7 +68,7 @@ float MixBakedAndRealtimeShadows(float2 lightMapUV, int channel, float realtimeS
 // For Shadowmask - Shadowmask Mode
 float ChooseBakedAndRealtimeShadows(float2 lightMapUV, int channel, float realtimeShadowAttenuation, float realtimeShadowFade)
 {
-    float bakedShadowAttenuation = SampleShadowmask(lightMapUV)[channel];
+    float bakedShadowAttenuation = SampleShadowmask(lightMapUV, channel);
     realtimeShadowAttenuation = lerp(1.0, realtimeShadowAttenuation, realtimeShadowFade);
     return min(bakedShadowAttenuation, realtimeShadowAttenuation);
 }

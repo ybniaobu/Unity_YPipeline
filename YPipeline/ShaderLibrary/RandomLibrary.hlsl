@@ -3,6 +3,8 @@
 
 // ----------------------------------------------------------------------------------------------------
 // Low-discrepancy sequence - Radical Inverse Functions(Van der Corput sequence)
+// ----------------------------------------------------------------------------------------------------
+
 // From https://www.pbr-book.org/3ed-2018/Sampling_and_Reconstruction/The_Halton_Sampler or https://pbr-book.org/4ed/Sampling_and_Reconstruction/Halton_Sampler
 uint RadicalInverseVdC_Bits(uint bits) // Base-2 radical inverse
 {
@@ -33,6 +35,8 @@ float RadicalInverseVdc_Float(uint base, uint a) // Use prime number as base; a 
 
 // ----------------------------------------------------------------------------------------------------
 // Low-discrepancy sequence - Hammersley sequence
+// ----------------------------------------------------------------------------------------------------
+
 float2 Hammersley_Bits(uint index, uint sampleNumber)
 {
     return float2(float(index) / float(sampleNumber), float(RadicalInverseVdC_Bits(index)) * 2.3283064365386963e-10); // /0x100000000
@@ -45,6 +49,8 @@ float2 Hammersley_Float(uint index, uint sampleNumber, uint primeBase = 2)
 
 // ----------------------------------------------------------------------------------------------------
 // Low-discrepancy sequence - Halton sequence
+// ----------------------------------------------------------------------------------------------------
+
 float2 Halton_Float(uint index, uint primeBase1 = 2, uint primeBase2 = 3)
 {
     return float2(RadicalInverseVdc_Float(primeBase1,index), RadicalInverseVdc_Float(primeBase2,index));
@@ -52,6 +58,8 @@ float2 Halton_Float(uint index, uint primeBase1 = 2, uint primeBase2 = 3)
 
 // ----------------------------------------------------------------------------------------------------
 // Low-discrepancy sequence - Sobol sequence
+// ----------------------------------------------------------------------------------------------------
+
 // From https://www.shadertoy.com/view/sd2Xzm and https://www.jcgt.org/published/0009/04/01/
 uint2 SobolGenerator(uint index)
 {
@@ -100,6 +108,8 @@ float2 Sobol_Scrambled(uint index, uint seed1, uint seed2) // works best with ra
 
 // ----------------------------------------------------------------------------------------------------
 // Bob Jenkins' One-At-A-Time hashing algorithm: https://en.wikipedia.org/wiki/Jenkins_hash_function
+// ----------------------------------------------------------------------------------------------------
+
 uint Hash_Jenkins(uint x)
 {
     x += ( x << 10u );
@@ -117,6 +127,7 @@ uint Hash_Jenkins(uint4 v) { return Hash_Jenkins(v.x ^ Hash_Jenkins(v.y) ^ Hash_
 // ----------------------------------------------------------------------------------------------------
 // Generate Pseudo-random value in [0, 1) using Bob Jenkins' One-At-A-Time hashing algorithm
 // From https://stackoverflow.com/a/17479300
+// ----------------------------------------------------------------------------------------------------
 
 // Construct a float with half-open range [0, 1) using low 23 bits.
 // All zeroes yields 0.0, all ones yields the next smallest representable value below 1.0.
@@ -139,6 +150,8 @@ float Random_Mantissa(float4 v) { return floatConstruct(Hash_Jenkins(asuint(v)))
 
 // ----------------------------------------------------------------------------------------------------
 // Generate Pseudo-random value in [0, 1), this method produces pattern when using large values, recommend to use a small range in [0, 1]
+// ----------------------------------------------------------------------------------------------------
+
 // From "The Book of Shaders" by Patricio Gonzalez Vivo and Jen Lowe
 // https://thebookofshaders.com/10/ or https://github.com/patriciogonzalezvivo/lygia
 float Random_Sine(float x) { return frac(sin(x) * 43758.5453123); }
@@ -148,6 +161,8 @@ float Random_Sine(float4 pos) { return frac(sin(dot(pos, float4(12.9898, 78.233,
 
 // ----------------------------------------------------------------------------------------------------
 // Generate Pseudo-random value in [0, 1) without sine
+// ----------------------------------------------------------------------------------------------------
+
 // From https://www.shadertoy.com/view/4djSRW or https://github.com/patriciogonzalezvivo/lygia
 // smallRange = true: input with a small range in [0, 1] ; smallRange = false: input with a big range over 0 and 1
 float Random_NoSine(float x, bool smallRange = true)

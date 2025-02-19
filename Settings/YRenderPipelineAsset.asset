@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: YRenderPipelineAsset
   m_EditorClassIdentifier: 
   enableSRPBatcher: 1
-  enableGPUInstancing: 0
+  enableGPUInstancing: 1
   renderPath: 0
   currentPipelineNodes:
   - {fileID: 0}
@@ -21,19 +21,20 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   environmentBRDFLut: {fileID: 2800000, guid: d2c827fe86e2d6643be2b723f8ad8888, type: 3}
-  depthBias: 0
-  slopeScaledDepthBias: 0.75
-  normalBias: 0
-  slopeScaledNormalBias: 0.25
-  sunLightShadowArraySize: 4096
-  cascadeCount: 3
-  spiltRatio1: 0.4
-  spiltRatio2: 0.75
-  spiltRatio3: 1
-  maxShadowDistance: 50
+  depthBias: 0.25
+  slopeScaledDepthBias: 0.5
+  normalBias: 0.25
+  slopeScaledNormalBias: 0.5
+  maxShadowDistance: 80
   distanceFade: 0.1
-  cascadeEdgeFade: 0
-  shadowSampleNumber: 16
-  penumbraWidth: 4
-  a: 0
-  b: 0
+  sunLightShadowArraySize: 2048
+  sunLightShadowSampleNumber: 16
+  sunLightPenumbraWidth: 4
+  cascadeCount: 4
+  spiltRatio1: 0.15
+  spiltRatio2: 0.3
+  spiltRatio3: 0.6
+  cascadeEdgeFade: 0.05
+  punctualLightShadowArraySize: 512
+  punctualLightShadowSampleNumber: 16
+  punctualLightPenumbra: 3

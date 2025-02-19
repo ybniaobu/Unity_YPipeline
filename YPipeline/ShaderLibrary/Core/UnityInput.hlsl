@@ -5,6 +5,8 @@
 
 // ----------------------------------------------------------------------------------------------------
 // SRP Batcher
+// ----------------------------------------------------------------------------------------------------
+
 CBUFFER_START(UnityPerDraw)
     float4x4 unity_ObjectToWorld;
     float4x4 unity_WorldToObject;
@@ -36,6 +38,8 @@ CBUFFER_END
 
 // ----------------------------------------------------------------------------------------------------
 // Other variables
+// ----------------------------------------------------------------------------------------------------
+
 float3 _WorldSpaceCameraPos;
 
 // x = orthographic camera's width
@@ -55,6 +59,7 @@ CBUFFER_END
 
 // ----------------------------------------------------------------------------------------------------
 // Textures and Samplers
+// ----------------------------------------------------------------------------------------------------
 
 TEXTURE2D(unity_Lightmap);
 SAMPLER(samplerunity_Lightmap);
@@ -63,11 +68,12 @@ TEXTURE2D(unity_ShadowMask);
 SAMPLER(samplerunity_ShadowMask);
 
 TEXTURECUBE(unity_SpecCube0);
-SAMPLER(samplerunity_SpecCube0_TrilinearRepeat);
+SAMPLER(samplerunity_SpecCube0);
 
 
 // ----------------------------------------------------------------------------------------------------
 // for SpaceTransforms.hlsl compatibility
+// ----------------------------------------------------------------------------------------------------
 
 #define UNITY_MATRIX_M          unity_ObjectToWorld
 #define UNITY_MATRIX_I_M        unity_WorldToObject
@@ -85,7 +91,9 @@ SAMPLER(samplerunity_SpecCube0_TrilinearRepeat);
 #define UNITY_PREV_MATRIX_I_M   unity_MatrixPreviousMI
 
 // ----------------------------------------------------------------------------------------------------
-// Functions
+// Space Transform Functions
+// ----------------------------------------------------------------------------------------------------
+
 float3 GetWorldSpaceNormalizeViewDir(float3 positionWS)
 {
     if (unity_OrthoParams.w < 0.5f) // Perspective

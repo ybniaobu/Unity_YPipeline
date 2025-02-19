@@ -13,10 +13,10 @@ namespace YPipeline
             m_UnlitShaderTagId = new ShaderTagId("SRPDefaultUnlit"); 
             m_TransparencyShaderTagId = new ShaderTagId("YPipelineTransparency");
         }
-
+        
         protected override void Dispose()
         {
-            
+            DestroyImmediate(this);
         }
 
         protected override void OnRender(YRenderPipelineAsset asset, ref PipelinePerFrameData data)

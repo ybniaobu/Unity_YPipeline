@@ -6,11 +6,11 @@ namespace YPipeline
     public static class ShadowUtility
     {
         /// <summary>
-        /// 获取从世界空间坐标到光源屏幕空间坐标的矩阵，只适用于方向光（平行光）
+        /// 获取从世界空间坐标到光源屏幕空间坐标的矩阵，适用于使用 Shadow Array 的灯光，点光源和聚光灯别忘了在 Shader 中做齐次除法
         /// </summary>
-        /// <param name="vp">方向光源的观察投影矩阵</param>
+        /// <param name="vp">光源的观察投影矩阵</param>
         /// <returns></returns>
-        public static Matrix4x4 GetWorldToSunLightScreenMatrix(Matrix4x4 vp)
+        public static Matrix4x4 GetWorldToLightScreenMatrix(Matrix4x4 vp)
         {
             if (SystemInfo.usesReversedZBuffer)
             {
@@ -37,15 +37,15 @@ namespace YPipeline
         }
         
         /// <summary>
-        /// 获取从世界空间坐标到光源屏幕空间切片坐标的矩阵，只适用于方向光（平行光）
+        /// 获取从世界空间坐标到光源屏幕空间切片坐标的矩阵，适用于使用 Shadow Atlas 的灯光，点光源和聚光灯别忘了在 Shader 中做齐次除法
         /// </summary>
-        /// <param name="vp">方向光源的观察投影矩阵</param>
+        /// <param name="vp">光源的观察投影矩阵</param>
         /// <param name="offset">切片偏移</param>
         /// <param name="scale">切片比例</param>
         /// <returns></returns>
-        public static Matrix4x4 GetWorldToTiledSunLightScreenMatrix(Matrix4x4 vp, Vector2 offset, float scale = 1.0f)
+        public static Matrix4x4 GetWorldToTiledLightScreenMatrix(Matrix4x4 vp, Vector2 offset, float scale = 1.0f)
         {
-            Matrix4x4 vps = GetWorldToSunLightScreenMatrix(vp);
+            Matrix4x4 vps = GetWorldToLightScreenMatrix(vp);
             
             vps.m00 = scale * vps.m00 + offset.x * vps.m30;
             vps.m01 = scale * vps.m01 + offset.x * vps.m31;

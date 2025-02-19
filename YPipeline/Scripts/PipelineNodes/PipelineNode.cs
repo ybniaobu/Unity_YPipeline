@@ -20,33 +20,57 @@ namespace YPipeline
         
         protected abstract void Initialize();
         protected abstract void Dispose();
-        
+
         /// <summary>
         /// 用于只需要设置一次的全局贴图或者变量，不在 render 每帧调用
         /// </summary>
         /// <param name="asset"></param>
-        /// <param name="data"></param>
-        protected virtual void OnSetup(YRenderPipelineAsset asset, ref PipelinePerFrameData data) { }
+        /// <param name="context"></param>
+        /// <param name="buffer"></param>
+        protected virtual void OnBegin(YRenderPipelineAsset asset, ref ScriptableRenderContext context, CommandBuffer buffer) { }
         protected virtual void OnRender(YRenderPipelineAsset asset, ref PipelinePerFrameData data) { }
+        protected virtual void OnRelease(YRenderPipelineAsset asset, ref PipelinePerFrameData data) { }
 
-        public static void SetupPipelineNodes(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
+        public static void Begin(YRenderPipelineAsset asset, ref ScriptableRenderContext context, CommandBuffer buffer)
         {
             if (asset.currentPipelineNodes.Count != 0)
             {
                 for (int i = 0; i < asset.currentPipelineNodes.Count; i++)
                 {
-                    asset.currentPipelineNodes[i].OnSetup(asset, ref data);
+                    asset.currentPipelineNodes[i].OnBegin(asset, ref context, buffer);
                 }
             }
         }
 
-        public static void RenderPipelineNodes(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
+        public static void Render(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
         {
             if (asset.currentPipelineNodes.Count != 0)
             {
                 for (int i = 0; i < asset.currentPipelineNodes.Count; i++)
                 {
                     asset.currentPipelineNodes[i].OnRender(asset, ref data);
+                }
+            }
+        }
+        
+        public static void ReleaseResources(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
+        {
+            if (asset.currentPipelineNodes.Count != 0)
+            {
+                for (int i = 0; i < asset.currentPipelineNodes.Count; i++)
+                {
+                    asset.currentPipelineNodes[i].OnRelease(asset, ref data);
+                }
+            }
+        }
+
+        public static void DisposeNodes(YRenderPipelineAsset asset)
+        {
+            if (asset.currentPipelineNodes.Count != 0)
+            {
+                for (int i = 0; i < asset.currentPipelineNodes.Count; i++)
+                {
+                    asset.currentPipelineNodes[i].Dispose();
                 }
             }
         }

@@ -9,6 +9,8 @@ namespace YPipeline.Editor
         public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] properties)
         {
             base.OnGUI(materialEditor, properties);
+            // DrawMaterialProperties();
+            
             // UnityEmissionProperty();
         }
 
@@ -24,6 +26,11 @@ namespace YPipeline.Editor
         //             m.globalIlluminationFlags &= ~MaterialGlobalIlluminationFlags.EmissiveIsBlack;
         //         }
         //     }
+        // }
+
+        // private void DrawMaterialProperties()
+        // {
+        //     GUILayout.Label("Main Maps", EditorStyles.boldLabel);
         // }
     }
 }

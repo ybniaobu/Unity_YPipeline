@@ -12,7 +12,8 @@ namespace YPipeline
         // --------------------------------------------------------------------------------
         // RenderPipelineAsset
         public override string renderPipelineShaderTag => string.Empty;
-        
+        public override Shader defaultShader => Shader.Find("YPipeline/PBR/Standard Forward");
+
         protected override RenderPipeline CreatePipeline ()
         {
             return new YRenderPipeline(this);
@@ -24,45 +25,45 @@ namespace YPipeline
         public bool enableSRPBatcher = true;
         
         [FoldoutGroup("Batching Settings")]
-        public bool enableGPUInstancing = false;
+        public bool enableGPUInstancing = true;
         
         // --------------------------------------------------------------------------------
         // 渲染路径配置
         public enum RenderPath
         {
-            Forward, Deferred
+            Forward, Deferred, Custom
         }
         
         [FoldoutGroup("Render Path Settings", expanded: true)]
         [PropertyOrder(-1)] public RenderPath renderPath = RenderPath.Forward;
         
         [FoldoutGroup("Render Path Settings")]
-        [ReadOnly] public List<PipelineNode> currentPipelineNodes = new List<PipelineNode>();
-        
-        private List<PipelineNode> m_ForwardPipelineNodes;
-        private List<PipelineNode> m_DeferredPipelineNodes;
-        
-        private Dictionary<RenderPath, List<PipelineNode>> m_PresetRenderPathsDict = new Dictionary<RenderPath, List<PipelineNode>>();
-        public Dictionary<RenderPath, List<PipelineNode>> PresetRenderPathsDict => m_PresetRenderPathsDict;
+        public List<PipelineNode> currentPipelineNodes = new List<PipelineNode>();
 
         public void PresetRenderPaths()
         {
-            m_PresetRenderPathsDict.Clear();
-            m_ForwardPipelineNodes = new List<PipelineNode>()
+            currentPipelineNodes.Clear();
+            switch (renderPath)
             {
-                PipelineNode.Create<ForwardLightingNode>(), PipelineNode.Create<ForwardNode>(), 
-                PipelineNode.Create<SkyboxNode>(), PipelineNode.Create<TransparencyNode>()
-            };
-            m_PresetRenderPathsDict.Add(RenderPath.Forward, m_ForwardPipelineNodes);
+                case RenderPath.Forward: 
+                    currentPipelineNodes.Add(PipelineNode.Create<ForwardLightingNode>());
+                    currentPipelineNodes.Add(PipelineNode.Create<ForwardGeometryNode>());
+                    currentPipelineNodes.Add(PipelineNode.Create<SkyboxNode>());
+                    currentPipelineNodes.Add(PipelineNode.Create<TransparencyNode>());
+                    break;
+                case RenderPath.Deferred:
+                    currentPipelineNodes = new List<PipelineNode>()
+                    {
 
-            m_DeferredPipelineNodes = new List<PipelineNode>()
-            {
+                    };
+                    break;
+                case RenderPath.Custom:
+                    currentPipelineNodes = new List<PipelineNode>()
+                    {
 
-            };
-            m_PresetRenderPathsDict.Add(RenderPath.Deferred, m_DeferredPipelineNodes);
-            
-            // Set Current Render Path's PipelineNodes
-            currentPipelineNodes = m_PresetRenderPathsDict[renderPath];
+                    };
+                    break;
+            }
         }
         
         // --------------------------------------------------------------------------------
@@ -71,7 +72,7 @@ namespace YPipeline
         
         // --------------------------------------------------------------------------------
         // 其他共用字段
-        private static int[] m_TextureSizes = new int[] { 512, 1024, 2048, 4096, 8192 };
+        private static int[] m_TextureSizes = new int[] { 256, 512, 1024, 2048, 4096, 8192 };
         private static int[] m_SampleNumbers = new int[] { 1, 4, 8, 16, 32, 64, 128 };
     }
 }

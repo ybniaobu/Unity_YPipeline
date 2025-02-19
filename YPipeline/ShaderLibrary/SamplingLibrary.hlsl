@@ -3,8 +3,9 @@
 
 #include "Core/YPipelineCore.hlsl"
 
-// --------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------
 // Coordinate conversion
+// ----------------------------------------------------------------------------------------------------
 
 // Convention: Cartesian coordinate and Spherical coordinate are both left-handed.
 // the order of Spherical coordinate is r, theta, phi.
@@ -40,8 +41,10 @@ float3 TangentCoordToWorldCoord(float3 tangentCoord, float3 N)
     return normalize(tangent * tangentCoord.x + normalize(N) * tangentCoord.y + binormal * tangentCoord.z);
 }
 
-// --------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------
 // Environment Mapping
+// ----------------------------------------------------------------------------------------------------
+
 float3 LatLongUVToCartesian(float2 uv)
 {
     float phi = (uv.x - 0.5f) * TWO_PI;
@@ -56,9 +59,10 @@ float2 CartesianToLatLongUV(float3 cartesianCoord)
     return float2(sphericalCoord.y * INV_TWO_PI + 0.5, sphericalCoord.x * INV_PI);
 }
 
-// --------------------------------------------------------------------------------
-// Inverse transform sampling
-// From [0, 1] to [-1, 1]
+// ----------------------------------------------------------------------------------------------------
+// Inverse transform sampling, From [0, 1] to [-1, 1]
+// ----------------------------------------------------------------------------------------------------
+
 float2 InverseSampleCircle(float2 xi)
 {
     float r = sqrt(xi.x);
@@ -88,8 +92,10 @@ float4 InverseSampleHemisphere(float2 xi) // Left-handed Spherical and Cartesian
     return float4(N, PDF);
 }
 
-// --------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------
 // Cosine-weighted inverse transform sampling
+// ----------------------------------------------------------------------------------------------------
+
 float4 CosineSampleHemisphere(float2 xi) // Left-handed Spherical and Cartesian Coordinate
 {
     float phi = PI * (2.0 * xi.x - 1.0);
@@ -101,8 +107,10 @@ float4 CosineSampleHemisphere(float2 xi) // Left-handed Spherical and Cartesian 
     return float4(N, PDF);
 }
 
-// --------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------
 // Importance sampling
+// ----------------------------------------------------------------------------------------------------
+
 float4 ImportanceSampleGGX(float2 xi, float roughness) // Left-handed Spherical and Cartesian Coordinate
 {
     float a = roughness * roughness;

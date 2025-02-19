@@ -7,7 +7,8 @@
 
 // ----------------------------------------------------------------------------------------------------
 // Spherical Harmonics(SH)
-// TODO: 先使用 UnityInput 里传递进来的 unity_SHAr...unity_SHC 以后写自己管线时再修改
+// ----------------------------------------------------------------------------------------------------
+
 float3 SampleSH(float3 N)
 {
     float3 L0L1;
@@ -30,6 +31,8 @@ float3 SampleSH(float3 N)
 
 // ----------------------------------------------------------------------------------------------------
 // IBL calculation
+// ----------------------------------------------------------------------------------------------------
+
 float3 SampleEnvLut(Texture2D envLut, SamplerState envLutSampler, float NoV, float roughness)
 {
     return SAMPLE_TEXTURE2D(envLut, envLutSampler, float2(NoV, roughness)).rgb;
@@ -107,6 +110,8 @@ float3 CalculateIBL_Specular_RemappedMipmap(StandardPBRParams standardPBRParams,
 
 // ----------------------------------------------------------------------------------------------------
 // Prefilter Environment Map
+// ----------------------------------------------------------------------------------------------------
+
 float3 PrefilterEnvMap_GGX(TEXTURECUBE(envMap), SAMPLER(envMapSampler), uint sampleNumber, float resolutionPerFace, float roughness, float3 R)
 {
     float3 N = R;
@@ -143,6 +148,8 @@ float3 PrefilterEnvMap_GGX(TEXTURECUBE(envMap), SAMPLER(envMapSampler), uint sam
 
 // ----------------------------------------------------------------------------------------------------
 // Environment 2D Lut (Preintegrate BRDF)
+// ----------------------------------------------------------------------------------------------------
+
 float PreintegrateDiffuse_RenormalizedBurley(float roughness, float NoV)
 {
     float3 V = float3(sqrt(1.0 - NoV * NoV), NoV, 0.0);
