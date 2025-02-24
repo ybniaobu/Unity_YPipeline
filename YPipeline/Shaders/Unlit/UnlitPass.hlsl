@@ -36,13 +36,13 @@ Varyings UnlitVert(Attributes IN)
 float4 UnlitFrag(Varyings IN) : SV_Target
 {
     float3 emission = SAMPLE_TEXTURE2D(_EmissionTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).rgb * _EmissionColor.rgb;
-    float3 albedo = SAMPLE_TEXTURE2D(_BaseTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).rgb * _BaseColor.rgb;
+    float4 albedo = SAMPLE_TEXTURE2D(_BaseTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).rgba * _BaseColor.rgba;
     
     #if defined(_CLIPPING)
         clip(albedo.a - _Cutoff);
     #endif
 
-    return float4(albedo + emission, 1.0);
+    return float4(albedo.rgb + emission, 1.0);
 }
 
 #endif

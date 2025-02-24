@@ -90,20 +90,4 @@ SAMPLER(samplerunity_SpecCube0);
 #define UNITY_PREV_MATRIX_M     unity_MatrixPreviousM
 #define UNITY_PREV_MATRIX_I_M   unity_MatrixPreviousMI
 
-// ----------------------------------------------------------------------------------------------------
-// Space Transform Functions
-// ----------------------------------------------------------------------------------------------------
-
-float3 GetWorldSpaceNormalizeViewDir(float3 positionWS)
-{
-    if (unity_OrthoParams.w < 0.5f) // Perspective
-    {
-        return normalize(_WorldSpaceCameraPos - positionWS);
-    }
-    else // Orthographic
-    {
-        return UNITY_MATRIX_V[2].xyz;
-    }
-}
-
 #endif

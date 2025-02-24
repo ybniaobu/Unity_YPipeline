@@ -29,7 +29,7 @@ namespace YPipeline
         private static readonly int k_PunctualLightShadowSettingsID = Shader.PropertyToID("_PunctualLightShadowSettings");
         
         // Sun Light Params Per Frame
-        private static readonly int k_SunLightShadowArrayID = Shader.PropertyToID("_SunLightShadowArray");
+        private static readonly int k_SunLightShadowMapID = Shader.PropertyToID("_SunLightShadowMap");
         private static readonly int k_SunLightColorId = Shader.PropertyToID("_SunLightColor");
         private static readonly int k_SunLightDirectionId = Shader.PropertyToID("_SunLightDirection");
         private static readonly int k_CascadeCullingSpheresID = Shader.PropertyToID("_CascadeCullingSpheres");
@@ -38,14 +38,14 @@ namespace YPipeline
         // Spot and Point Light Params Per Frame
         private static readonly int k_PunctualLightCountId = Shader.PropertyToID("_PunctualLightCount");
         
-        private static readonly int k_SpotLightShadowArrayID = Shader.PropertyToID("_SpotLightShadowArray");
+        private static readonly int k_SpotLightShadowMapID = Shader.PropertyToID("_SpotLightShadowMap");
         private static readonly int k_SpotLightColorsId = Shader.PropertyToID("_SpotLightColors");
         private static readonly int k_SpotLightPositionsId = Shader.PropertyToID("_SpotLightPositions");
         private static readonly int k_SpotLightDirectionsId = Shader.PropertyToID("_SpotLightDirections");
         private static readonly int k_SpotLightParamsId = Shader.PropertyToID("_SpotLightParams");
         private static readonly int k_SpotLightShadowMatricesID = Shader.PropertyToID("_SpotLightShadowMatrices");
         
-        private static readonly int k_PointLightShadowArrayID = Shader.PropertyToID("_PointLightShadowArray");
+        private static readonly int k_PointLightShadowMapID = Shader.PropertyToID("_PointLightShadowMap");
         private static readonly int k_PointLightColorsId = Shader.PropertyToID("_PointLightColors");
         private static readonly int k_PointLightPositionsId = Shader.PropertyToID("_PointLightPositions");
         private static readonly int k_PointLightParamsId = Shader.PropertyToID("_PointLightParams");
@@ -120,7 +120,7 @@ namespace YPipeline
             m_PointLightColors = new Vector4[k_MaxPointLightCount];
             m_PointLightPositions = new Vector4[k_MaxPointLightCount];
             m_PointLightParams = new Vector4[k_MaxPointLightCount];
-            m_PointLightShadowMatrices = new Matrix4x4[k_MaxShadowingPointLightCount];
+            m_PointLightShadowMatrices = new Matrix4x4[k_MaxShadowingPointLightCount * 6];
             m_ShadowingPointLightIndices = new int[k_MaxShadowingPointLightCount];
         }
         
@@ -132,9 +132,9 @@ namespace YPipeline
         protected override void OnRelease(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
         {
             base.OnRelease(asset, ref data);
-            data.buffer.ReleaseTemporaryRT(k_SunLightShadowArrayID);
-            data.buffer.ReleaseTemporaryRT(k_SpotLightShadowArrayID);
-            data.buffer.ReleaseTemporaryRT(k_PointLightShadowArrayID);
+            data.buffer.ReleaseTemporaryRT(k_SunLightShadowMapID);
+            data.buffer.ReleaseTemporaryRT(k_SpotLightShadowMapID);
+            data.buffer.ReleaseTemporaryRT(k_PointLightShadowMapID);
             
             data.context.ExecuteCommandBuffer(data.buffer);
             data.buffer.Clear();
@@ -258,7 +258,7 @@ namespace YPipeline
                 }
                 else if (visibleLight.lightType == LightType.Point)
                 {
-                    if (m_PointLightCount >= k_MaxSpotLightCount) continue;
+                    if (m_PointLightCount >= k_MaxPointLightCount) continue;
 
                     m_PointLightColors[m_PointLightCount] = visibleLight.finalColor;
                     m_PointLightColors[m_PointLightCount].w = 0;
@@ -327,20 +327,16 @@ namespace YPipeline
         {
             if (m_ShadowingSunLightCount > 0)
             {
-                data.buffer.GetTemporaryRTArray(k_SunLightShadowArrayID, asset.sunLightShadowArraySize, asset.sunLightShadowArraySize
-                    ,k_MaxDirectionalLightCount * k_MaxCascadeCount, 32, FilterMode.Bilinear, RenderTextureFormat.Shadowmap);
+                data.buffer.GetTemporaryRTArray(k_SunLightShadowMapID, asset.sunLightShadowArraySize, asset.sunLightShadowArraySize
+                    ,m_ShadowingSunLightCount * asset.cascadeCount, 32, FilterMode.Bilinear, RenderTextureFormat.Shadowmap);
                 RenderSunLightShadowArray(asset,ref data);
-            }
-            else
-            {
-                data.buffer.GetTemporaryRTArray(k_SunLightShadowArrayID, 1, 1
-                    ,1, 32, FilterMode.Bilinear, RenderTextureFormat.Shadowmap);
             }
         }
 
         private void RenderSunLightShadowArray(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
         {
             ShadowDrawingSettings shadowDrawingSettings = new ShadowDrawingSettings(data.cullingResults, m_SunLightIndex);
+            data.buffer.SetGlobalFloat(k_ShadowPancakingId, 1.0f);
             
             for (int i = 0; i < asset.cascadeCount; i++)
             {
@@ -354,9 +350,8 @@ namespace YPipeline
                 m_SunLightShadowMatrices[i] = ShadowUtility.GetWorldToLightScreenMatrix(projectionMatrix * viewMatrix);
                 
                 data.buffer.SetViewProjectionMatrices(viewMatrix, projectionMatrix);
-                data.buffer.SetRenderTarget(new RenderTargetIdentifier(k_SunLightShadowArrayID, 0, CubemapFace.Unknown, i), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                data.buffer.SetRenderTarget(new RenderTargetIdentifier(k_SunLightShadowMapID, 0, CubemapFace.Unknown, i), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
                 data.buffer.ClearRenderTarget(true, false, Color.clear);
-                data.buffer.SetGlobalFloat(k_ShadowPancakingId, 1.0f);
                 RendererList shadowRendererList = data.context.CreateShadowRendererList(ref shadowDrawingSettings);
                 data.buffer.DrawRendererList(shadowRendererList);
             }
@@ -366,31 +361,31 @@ namespace YPipeline
         {
             if (m_ShadowingSpotLightCount > 0)
             {
-                data.buffer.GetTemporaryRTArray(k_SpotLightShadowArrayID, asset.punctualLightShadowArraySize, asset.punctualLightShadowArraySize
-                    ,k_MaxShadowingSpotLightCount, 32, FilterMode.Bilinear, RenderTextureFormat.Shadowmap);
+                data.buffer.GetTemporaryRTArray(k_SpotLightShadowMapID, asset.punctualLightShadowArraySize, asset.punctualLightShadowArraySize
+                    ,m_ShadowingSpotLightCount, 32, FilterMode.Bilinear, RenderTextureFormat.Shadowmap);
+                
                 RenderSpotLightShadowArray(asset,ref data);
             }
-            else
-            {
-                data.buffer.GetTemporaryRTArray(k_SpotLightShadowArrayID, 1, 1
-                    ,1, 32, FilterMode.Bilinear, RenderTextureFormat.Shadowmap);
-            }
             
-            // if (m_ShadowingPointLightCount > 0)
-            // {
-            //     data.buffer.GetTemporaryRTArray(k_PointLightShadowArrayID, asset.punctualLightShadowArraySize, asset.punctualLightShadowArraySize
-            //         ,k_MaxShadowingPointLightCount, 32, FilterMode.Bilinear, RenderTextureFormat.Shadowmap);
-            //     RenderSpotLightShadowArray(asset,ref data);
-            // }
-            // else
-            // {
-            //     data.buffer.GetTemporaryRTArray(k_PointLightShadowArrayID, 1, 1
-            //         ,1, 32, FilterMode.Bilinear, RenderTextureFormat.Shadowmap);
-            // }
+            if (m_ShadowingPointLightCount > 0)
+            {
+                data.buffer.GetTemporaryRT(k_PointLightShadowMapID, new RenderTextureDescriptor()
+                {
+                    colorFormat = RenderTextureFormat.Shadowmap,
+                    depthBufferBits = 32,
+                    dimension = TextureDimension.CubeArray,
+                    width = asset.punctualLightShadowArraySize,
+                    height = asset.punctualLightShadowArraySize,
+                    volumeDepth = m_ShadowingPointLightCount * 6,
+                    msaaSamples = 1
+                });
+                RenderPointLightShadowArray(asset,ref data);
+            }
         }
         
         private void RenderSpotLightShadowArray(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
         {
+            data.buffer.SetGlobalFloat(k_ShadowPancakingId, 0.0f);
             for (int i = 0; i < m_ShadowingSpotLightCount; i++)
             {
                 ShadowDrawingSettings shadowDrawingSettings = new ShadowDrawingSettings(data.cullingResults, m_ShadowingSpotLightIndices[i]);
@@ -400,9 +395,8 @@ namespace YPipeline
                 m_SpotLightShadowMatrices[i] = ShadowUtility.GetWorldToLightScreenMatrix(projectionMatrix * viewMatrix);
                 
                 data.buffer.SetViewProjectionMatrices(viewMatrix, projectionMatrix);
-                data.buffer.SetRenderTarget(new RenderTargetIdentifier(k_SpotLightShadowArrayID, 0, CubemapFace.Unknown, i), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                data.buffer.SetRenderTarget(new RenderTargetIdentifier(k_SpotLightShadowMapID, 0, CubemapFace.Unknown, i), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
                 data.buffer.ClearRenderTarget(true, false, Color.clear);
-                data.buffer.SetGlobalFloat(k_ShadowPancakingId, 0.0f);
                 RendererList shadowRendererList = data.context.CreateShadowRendererList(ref shadowDrawingSettings);
                 data.buffer.DrawRendererList(shadowRendererList);
             }
@@ -410,20 +404,26 @@ namespace YPipeline
         
         private void RenderPointLightShadowArray(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
         {
+            data.buffer.SetGlobalFloat(k_ShadowPancakingId, 0.0f);
             for (int i = 0; i < m_ShadowingPointLightCount; i++)
             {
                 ShadowDrawingSettings shadowDrawingSettings = new ShadowDrawingSettings(data.cullingResults, m_ShadowingPointLightIndices[i]);
-                data.cullingResults.ComputeSpotShadowMatricesAndCullingPrimitives(m_ShadowingPointLightIndices[i], out Matrix4x4 viewMatrix, out Matrix4x4 projectionMatrix, out ShadowSplitData splitData);
-                shadowDrawingSettings.splitData = splitData;
+
+                for (int j = 0; j < 6; j++)
+                {
+                    data.cullingResults.ComputePointShadowMatricesAndCullingPrimitives(m_ShadowingPointLightIndices[i], (CubemapFace) j, 0, out Matrix4x4 viewMatrix, out Matrix4x4 projectionMatrix, out ShadowSplitData splitData);
+                    shadowDrawingSettings.splitData = splitData;
+                    viewMatrix.m11 = -viewMatrix.m11;
+                    viewMatrix.m12 = -viewMatrix.m12;
+                    viewMatrix.m13 = -viewMatrix.m13;
+                    m_PointLightShadowMatrices[i * 6 + j] = ShadowUtility.GetWorldToLightScreenMatrix(projectionMatrix * viewMatrix);
                 
-                m_PointLightShadowMatrices[i] = ShadowUtility.GetWorldToLightScreenMatrix(projectionMatrix * viewMatrix);
-                
-                data.buffer.SetViewProjectionMatrices(viewMatrix, projectionMatrix);
-                data.buffer.SetRenderTarget(new RenderTargetIdentifier(k_PointLightShadowArrayID, 0, CubemapFace.Unknown, i), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
-                data.buffer.ClearRenderTarget(true, false, Color.clear);
-                data.buffer.SetGlobalFloat(k_ShadowPancakingId, 0.0f);
-                RendererList shadowRendererList = data.context.CreateShadowRendererList(ref shadowDrawingSettings);
-                data.buffer.DrawRendererList(shadowRendererList);
+                    data.buffer.SetViewProjectionMatrices(viewMatrix, projectionMatrix);
+                    data.buffer.SetRenderTarget(new RenderTargetIdentifier(k_PointLightShadowMapID, 0, CubemapFace.Unknown, i * 6 + j), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                    data.buffer.ClearRenderTarget(true, false, Color.clear);
+                    RendererList shadowRendererList = data.context.CreateShadowRendererList(ref shadowDrawingSettings);
+                    data.buffer.DrawRendererList(shadowRendererList);
+                }
             }
         }
 

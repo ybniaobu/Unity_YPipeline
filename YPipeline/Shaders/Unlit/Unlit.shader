@@ -32,6 +32,8 @@ Shader "YPipeline/Unlit"
             Cull [_Cull]
             
             HLSLPROGRAM
+            #pragma target 4.5
+            
             #pragma vertex UnlitVert
             #pragma fragment UnlitFrag
 
@@ -40,6 +42,27 @@ Shader "YPipeline/Unlit"
             #include "UnlitPass.hlsl"
             ENDHLSL
         }
+
+        Pass
+        {
+        	Name "ShadowCaster"
+        	
+			Tags { "LightMode" = "ShadowCaster" }
+
+			ColorMask 0
+			Cull [_Cull]
+
+			HLSLPROGRAM
+			#pragma target 4.5
+			
+			#pragma vertex ShadowCasterVert
+			#pragma fragment ShadowCasterFrag
+
+			#pragma shader_feature_local_fragment _CLIPPING
+			
+			#include "UnlitShadowCasterPass.hlsl"
+			ENDHLSL
+		}
 
         Pass
         {

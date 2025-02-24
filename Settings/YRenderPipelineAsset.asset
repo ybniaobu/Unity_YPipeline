@@ -21,14 +21,14 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   environmentBRDFLut: {fileID: 2800000, guid: d2c827fe86e2d6643be2b723f8ad8888, type: 3}
-  depthBias: 0.25
+  depthBias: 0.5
   slopeScaledDepthBias: 0.5
   normalBias: 0.25
   slopeScaledNormalBias: 0.5
-  maxShadowDistance: 80
-  distanceFade: 0.1
+  maxShadowDistance: 100
+  distanceFade: 0.05
   sunLightShadowArraySize: 2048
-  sunLightShadowSampleNumber: 16
+  sunLightShadowSampleNumber: 8
   sunLightPenumbraWidth: 4
   cascadeCount: 4
   spiltRatio1: 0.15
@@ -36,5 +36,5 @@ MonoBehaviour:
   spiltRatio3: 0.6
   cascadeEdgeFade: 0.05
   punctualLightShadowArraySize: 512
-  punctualLightShadowSampleNumber: 16
+  punctualLightShadowSampleNumber: 8
   punctualLightPenumbra: 3

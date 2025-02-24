@@ -134,6 +134,19 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
         renderingEquationContent.directPunctualLights += CalculateLightIrradiance(spotLightParams) * StandardPBR_EnergyCompensation(spotBRDFParams, standardPBRParams, energyCompensation);
     }
 
+    int pointLightCount = GetPointLightCount();
+
+    for (int j = 0; j < pointLightCount; j++)
+    {
+        LightParams pointLightParams = (LightParams) 0;
+        InitializePointLightParams(pointLightParams, j, LIGHTMAP_UV_FRAGMENT(IN), standardPBRParams.V, normalize(IN.normalWS), IN.positionWS);
+
+        BRDFParams pointBRDFParams = (BRDFParams) 0;
+        InitializeBRDFParams(pointBRDFParams, standardPBRParams.N, pointLightParams.L, standardPBRParams.V, pointLightParams.H);
+
+        renderingEquationContent.directPunctualLights += CalculateLightIrradiance(pointLightParams) * StandardPBR_EnergyCompensation(pointBRDFParams, standardPBRParams, energyCompensation);
+    }
+
     // ----------------------------------------------------------------------------------------------------
     // LOD Fade
     // ----------------------------------------------------------------------------------------------------

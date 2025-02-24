@@ -84,7 +84,33 @@ void InitializeSpotLightParams(out LightParams spotLightParams, int lightIndex, 
     }
     else
     {
-        spotLightParams.shadowAttenuation = GetSpotLightShadowAttenuation(lightIndex, lightMapUV, positionWS, normalWS, spotLightParams.L);
+        float linearDepth = abs(dot(lightVector, spotDirection));
+        spotLightParams.shadowAttenuation = GetSpotLightShadowAttenuation(lightIndex, lightMapUV, positionWS, normalWS, spotLightParams.L, linearDepth);
+    }
+}
+
+void InitializePointLightParams(out LightParams pointLightParams, int lightIndex, float2 lightMapUV, float3 V, float3 normalWS, float3 positionWS)
+{
+    pointLightParams.color = GetPointLightColor(lightIndex);
+    pointLightParams.positionWS = float4(GetPointLightPosition(lightIndex), 1.0);
+    
+    float3 lightVector = pointLightParams.positionWS.xyz - positionWS;
+    pointLightParams.L = normalize(lightVector);
+    pointLightParams.H = normalize(pointLightParams.L + V);
+    
+    pointLightParams.distanceAttenuation = GetDistanceAttenuation(lightVector, GetPointLightInverseRadiusSquare(lightIndex));
+    pointLightParams.angleAttenuation = 1.0;
+    
+    [branch]
+    if (pointLightParams.distanceAttenuation <= 0.0 || GetShadowingPointLightIndex(lightIndex) < 0.0)
+    {
+        pointLightParams.shadowAttenuation = 1.0;
+    }
+    else
+    {
+        float faceIndex = CubeMapFaceID(-pointLightParams.L);
+        float linearDepth = abs(dot(lightVector, k_CubeMapFaceDir[faceIndex]));
+        pointLightParams.shadowAttenuation = GetPointLightShadowAttenuation(lightIndex, faceIndex, lightMapUV, positionWS, normalWS, pointLightParams.L, linearDepth);
     }
 }
 
