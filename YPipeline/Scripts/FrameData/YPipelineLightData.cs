@@ -8,6 +8,11 @@ namespace YPipeline
     /// </summary>
     public class YPipelineLightData
     {
-        
+        public Light light;
+
+        public YPipelineLightData(Light light)
+        {
+            this.light = light;
+        }
     }
 }

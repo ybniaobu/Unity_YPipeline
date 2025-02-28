@@ -8,11 +8,11 @@ using YPipeline;
 [SupportedOnRenderPipeline(typeof(YRenderPipelineAsset))]
 public class YPipelineCameraEditor : Editor
 {
-    public Camera camera => target as Camera;
+    public Camera Camera => target as Camera;
     private YPipelineCamera m_YPipelineCamera;
     
     public void OnEnable()
     {
-        m_YPipelineCamera = camera.GetYPipelineCamera();
+        m_YPipelineCamera = Camera.GetYPipelineCamera();
     }
 }

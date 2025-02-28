@@ -8,6 +8,15 @@ using YPipeline;
 [SupportedOnRenderPipeline(typeof(YRenderPipelineAsset))]
 public class YPipelineLightEditor : LightEditor
 {
+    public Light Light => target as Light;
+    private YPipelineLight m_YPipelineLight;
+    
+    protected new void OnEnable()
+    {
+        base.OnEnable();
+        m_YPipelineLight = Light.GetYPipelineLight();
+    }
+    
     public override void OnInspectorGUI() 
     {
         base.OnInspectorGUI();

@@ -126,7 +126,7 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     for (int i = 0; i < spotLightCount; i++)
     {
         LightParams spotLightParams = (LightParams) 0;
-        InitializeSpotLightParams(spotLightParams, i, LIGHTMAP_UV_FRAGMENT(IN), standardPBRParams.V, normalize(IN.normalWS), IN.positionWS);
+        InitializeSpotLightParams(spotLightParams, i, standardPBRParams.V, normalize(IN.normalWS), IN.positionWS);
         
         BRDFParams spotBRDFParams = (BRDFParams) 0;
         InitializeBRDFParams(spotBRDFParams, standardPBRParams.N, spotLightParams.L, standardPBRParams.V, spotLightParams.H);
@@ -139,7 +139,7 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     for (int j = 0; j < pointLightCount; j++)
     {
         LightParams pointLightParams = (LightParams) 0;
-        InitializePointLightParams(pointLightParams, j, LIGHTMAP_UV_FRAGMENT(IN), standardPBRParams.V, normalize(IN.normalWS), IN.positionWS);
+        InitializePointLightParams(pointLightParams, j, standardPBRParams.V, normalize(IN.normalWS), IN.positionWS);
 
         BRDFParams pointBRDFParams = (BRDFParams) 0;
         InitializeBRDFParams(pointBRDFParams, standardPBRParams.N, pointLightParams.L, standardPBRParams.V, pointLightParams.H);
@@ -156,7 +156,6 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
         dither = lerp(-dither, dither, isNextLodLevel);
         clip(unity_LODFade.x + dither);
     #endif
-
     
     return float4(renderingEquationContent.directSunLight + renderingEquationContent.directPunctualLights + renderingEquationContent.indirectLightDiffuse + renderingEquationContent.indirectLightSpecular, 1.0);
 }

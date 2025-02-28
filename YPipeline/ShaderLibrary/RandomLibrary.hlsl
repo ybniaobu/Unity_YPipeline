@@ -66,6 +66,7 @@ uint2 SobolGenerator(uint index)
     uint2 p = uint2(0u, 0u);
     uint2 d = uint2(0x80000000u, 0x80000000u);
 
+    UNITY_UNROLLX(32)
     for(; index != 0u; index >>= 1u)
     {
         if((index & 1u) != 0u) p ^= d;

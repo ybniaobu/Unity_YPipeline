@@ -41,7 +41,7 @@ namespace YPipeline
         [ValueDropdown("m_SampleNumbers")] public int sunLightShadowSampleNumber = 16;
         
         [TabGroup("Shadows Settings/Direct Light Shadows/Tab", "Sun Light Shadows")]
-        [Range(0f, 10f)] public float sunLightPenumbraWidth = 4.0f;
+        [Range(0f, 1f)] public float sunLightPenumbraWidth = 0.25f;
         
         [TabGroup("Shadows Settings/Direct Light Shadows/Tab", "Sun Light Shadows")]
         [Range(1, 4)] public int cascadeCount = 4;
@@ -62,6 +62,6 @@ namespace YPipeline
         [ValueDropdown("m_SampleNumbers")] public int punctualLightShadowSampleNumber = 16;
         
         [TabGroup("Shadows Settings/Direct Light Shadows/Tab", "Punctual Light Shadows")]
-        [Range(0f, 10f)] public float punctualLightPenumbra = 3.0f;
+        [Range(0f, 0.5f)] public float punctualLightPenumbra = 0.05f;
     }
 }

@@ -6,7 +6,7 @@ namespace YPipeline
     /// <summary>
     /// Unity Camera 类的扩展方法
     /// </summary>
-    public static class ExtendCamera
+    public static class CameraExtensions
     {
         public static YPipelineCamera GetYPipelineCamera(this Camera camera)
         {
@@ -22,7 +22,7 @@ namespace YPipeline
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(Camera))]
-    public class YPipelineCamera : MonoBehaviour, ISerializationCallbackReceiver, IAdditionalData
+    public class YPipelineCamera : MonoBehaviour, ISerializationCallbackReceiver
     {
         public void OnBeforeSerialize()
         {
