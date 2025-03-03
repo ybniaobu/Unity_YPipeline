@@ -20,14 +20,6 @@ namespace YPipeline
         }
         
         // --------------------------------------------------------------------------------
-        // 合批配置
-        [FoldoutGroup("Batching Settings", expanded: true)]
-        public bool enableSRPBatcher = true;
-        
-        [FoldoutGroup("Batching Settings")]
-        public bool enableGPUInstancing = true;
-        
-        // --------------------------------------------------------------------------------
         // 渲染路径配置
         public enum RenderPath
         {
@@ -50,6 +42,7 @@ namespace YPipeline
                     currentPipelineNodes.Add(PipelineNode.Create<ForwardGeometryNode>());
                     currentPipelineNodes.Add(PipelineNode.Create<SkyboxNode>());
                     currentPipelineNodes.Add(PipelineNode.Create<TransparencyNode>());
+                    currentPipelineNodes.Add(PipelineNode.Create<PostProcessingNode>());
                     break;
                 case RenderPath.Deferred:
                     currentPipelineNodes = new List<PipelineNode>()
@@ -68,6 +61,16 @@ namespace YPipeline
         
         // --------------------------------------------------------------------------------
         // 后处理配置
+        [FoldoutGroup("Post Processing Settings", expanded: true)]
+        public float a = 0;
+        
+        // --------------------------------------------------------------------------------
+        // 合批配置
+        [FoldoutGroup("Batching Settings", expanded: true)]
+        public bool enableSRPBatcher = true;
+        
+        [FoldoutGroup("Batching Settings")]
+        public bool enableGPUInstancing = true;
         
         
         // --------------------------------------------------------------------------------

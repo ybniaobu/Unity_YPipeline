@@ -23,7 +23,7 @@ float3 RotateAroundYInDegrees(float3 dir, float degrees)
     return float3(mul(m, dir.xz), dir.y).xzy;
 }
 
-float3 CubeMapping(int face, float2 uv)
+float3 CubeMapping_Right(int face, float2 uv)
 {
     float3 dir = 0;
 
@@ -69,7 +69,7 @@ float3 CubeMapping(int face, float2 uv)
 void PrefilterEnvMap (uint3 id : SV_DispatchThreadID)
 {
     int mipMapSize = _SizePerFace / pow(2, _MipMapLevel);
-    float3 dir = CubeMapping(_Face, float2(id.xy) / (mipMapSize - 1));
+    float3 dir = CubeMapping_Right(_Face, float2(id.xy) / (mipMapSize - 1));
     dir = RotateAroundYInDegrees(dir, _Rotation);
     float3 prefilterColor = PrefilterEnvMap_GGX(_EnvMap, trilinear_repeat_sampler_EnvMap, _SampleNumber, _SizePerFace, _Roughness, dir);
     prefilterColor *= _Exposure;

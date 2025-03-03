@@ -12,11 +12,16 @@ namespace YPipeline
         public ScriptableRenderContext context;
         public CommandBuffer buffer;
         public CullingResults cullingResults;
-        public YPipelineCameraData cameraData;
+        public Camera camera;
         
         // ××××××××××××××××××××××××××××××××××××××××××××××××××××××××××××××××××××××××××××××××
         // Data 相关方法
         
+    }
+
+    public struct ForwardRenderTarget
+    {
+        public static int frameBufferId = Shader.PropertyToID("_CameraFrameBuffer");
     }
     
     // public class PipelineData

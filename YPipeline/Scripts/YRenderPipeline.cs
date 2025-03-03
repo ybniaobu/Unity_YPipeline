@@ -92,7 +92,7 @@ namespace YPipeline
             }
             cullingParameters.shadowDistance = Mathf.Min(m_Asset.maxShadowDistance, camera.farClipPlane);
             m_Data.cullingResults = m_Data.context.Cull(ref cullingParameters);
-            m_Data.cameraData = new YPipelineCameraData(camera); //TODO: GC 问题
+            m_Data.camera = camera;
             m_Data.buffer = CommandBufferPool.Get();
 #if UNITY_EDITOR
             m_Data.buffer.name = camera.name;

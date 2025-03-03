@@ -204,6 +204,7 @@ namespace YPipeline
             
             data.context.ExecuteCommandBuffer(data.buffer);
             data.buffer.Clear();
+            data.context.Submit();
         }
         
         private void RecordLightData(YRenderPipelineAsset asset, ref PipelinePerFrameData data)

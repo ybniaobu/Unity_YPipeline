@@ -23,13 +23,16 @@ namespace YPipeline
         {
             base.OnRender(asset, ref data);
             TransparencyRenderer(asset, ref data);
+            data.context.ExecuteCommandBuffer(data.buffer);
+            data.buffer.Clear();
+            data.context.Submit();
         }
 
         private void TransparencyRenderer(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
         {
             FilteringSettings transparencyFiltering = new FilteringSettings(RenderQueueRange.transparent);
             
-            SortingSettings transparencySorting = new SortingSettings(data.cameraData.camera)
+            SortingSettings transparencySorting = new SortingSettings(data.camera)
             {
                 criteria = SortingCriteria.CommonTransparent
             };
@@ -47,8 +50,6 @@ namespace YPipeline
             RendererList transparencyRendererList = data.context.CreateRendererList(ref transparencyRendererListParams);
             
             data.buffer.DrawRendererList(transparencyRendererList);
-            data.context.ExecuteCommandBuffer(data.buffer);
-            data.buffer.Clear();
         }
     }
 }

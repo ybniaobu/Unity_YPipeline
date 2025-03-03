@@ -31,10 +31,10 @@ MonoBehaviour:
   sunLightShadowSampleNumber: 16
   sunLightPenumbraWidth: 0.25
   cascadeCount: 4
-  spiltRatio1: 0.05
-  spiltRatio2: 0.2
-  spiltRatio3: 0.5
+  spiltRatio1: 0.15
+  spiltRatio2: 0.3
+  spiltRatio3: 0.6
   cascadeEdgeFade: 0.05
   punctualLightShadowArraySize: 1024
   punctualLightShadowSampleNumber: 8
-  punctualLightPenumbra: 0.05
+  punctualLightPenumbra: 0.095
