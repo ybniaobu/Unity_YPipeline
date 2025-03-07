@@ -27,6 +27,8 @@ namespace YPipeline
         {
             m_Asset = asset;
             m_Data = new PipelinePerFrameData();
+            
+            VolumeManager.instance.Initialize(null, asset.volumeProfile);
             asset.PresetRenderPaths();
             
             GraphicsSettings.useScriptableRenderPipelineBatching = asset.enableSRPBatcher;
@@ -57,18 +59,11 @@ namespace YPipeline
             {
                 BeginCameraRendering(context, camera);
                 if (!Setup(camera)) return;
-                PipelineNode.Render(m_Asset, ref m_Data);
                 
-                // Drawing Gizmos
-#if UNITY_EDITOR
-                if (Handles.ShouldRenderGizmos()) 
-                {
-                    RendererList gizmosRendererList = context.CreateGizmoRendererList(camera, GizmoSubset.PreImageEffects);
-                    m_Data.buffer.DrawRendererList(gizmosRendererList);
-                    gizmosRendererList = context.CreateGizmoRendererList(camera, GizmoSubset.PostImageEffects);
-                    m_Data.buffer.DrawRendererList(gizmosRendererList);
-                }
-#endif
+                // 好像在这个版本中，要自己调用 Update，否则无法获取到 VolumeComponent 序列化后的数据。可能以后的版本要删除这段代码。
+                VolumeManager.instance.Update(camera.transform, 1);
+                
+                PipelineNode.Render(m_Asset, ref m_Data);
                 
                 // Submit all scheduled commands
                 m_Data.context.ExecuteCommandBuffer(m_Data.buffer);
@@ -124,6 +119,7 @@ namespace YPipeline
             UnityEngine.Experimental.GlobalIllumination.Lightmapping.ResetDelegate();
 #endif
             PipelineNode.DisposeNodes(m_Asset);
+            VolumeManager.instance.Deinitialize();
         }
     }
 }

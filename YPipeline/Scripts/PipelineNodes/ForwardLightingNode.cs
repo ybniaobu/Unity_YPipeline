@@ -196,12 +196,14 @@ namespace YPipeline
             RecordLightData(asset, ref data);
             DeliverLightData(asset, ref data);
             
+            data.buffer.BeginSample("Shadows");
             CreateAndRenderSunLightShadowArray(asset, ref data);
             CreateAndRenderPunctualLightShadowArray(asset, ref data);
             DeliverShadowData(asset, ref data);
             
             SetKeywords(asset, ref data);
             
+            data.buffer.EndSample("Shadows");
             data.context.ExecuteCommandBuffer(data.buffer);
             data.buffer.Clear();
             data.context.Submit();

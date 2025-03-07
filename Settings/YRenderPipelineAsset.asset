@@ -12,14 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6d090269ab8a8eb40a3f24edb1024efa, type: 3}
   m_Name: YRenderPipelineAsset
   m_EditorClassIdentifier: 
-  enableSRPBatcher: 1
-  enableGPUInstancing: 1
   renderPath: 0
   currentPipelineNodes:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
+  - {fileID: 0}
+  volumeProfile: {fileID: 11400000, guid: eb8647ca7eb7e324fa7d7b19a82bc4f5, type: 2}
+  enableSRPBatcher: 1
+  enableGPUInstancing: 1
   environmentBRDFLut: {fileID: 2800000, guid: d2c827fe86e2d6643be2b723f8ad8888, type: 3}
   depthBias: 0.1
   slopeScaledDepthBias: 0.5

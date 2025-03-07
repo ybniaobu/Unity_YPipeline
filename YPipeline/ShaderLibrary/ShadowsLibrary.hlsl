@@ -383,7 +383,7 @@ float3 ComputeAverageBlockerDepth_CubeArray(float index, float faceIndex, TEXTUR
 
     for (int i = 0; i < sampleNumber; i++)
     {
-        float2 offset = mul(rotation, InverseSampleCircle(Sobol_Scrambled(i, hash1, hash2))) * 0.5; // don't need to divide 2, because cubemap is also [-1, 1]
+        float2 offset = mul(rotation, InverseSampleCircle(Sobol_Scrambled(i, hash1, hash2))) * 0.5;
         offset = offset * searchWidthPercent;
         float2 uv_Offset = positionSS.xy + offset;
         float3 sampleDir = CubeMapping(faceIndex, uv_Offset);
@@ -415,7 +415,7 @@ float GetSunLightShadowAttenuation_PCSS(float3 positionWS, float3 normalWS, floa
 
     float texelSize = GetCascadeCullingSphereRadius(cascadeIndex) * 2.0 / GetSunLightShadowArraySize();
     // float searchWidthWS = GetSunLightSize();
-    float searchWidthWS = GetSunLightSize() * 0.2;
+    float searchWidthWS = GetSunLightSize();
     float searchWidthPercent = searchWidthWS / GetCascadeCullingSphereRadius(cascadeIndex) * 0.5;
 
     float3 positionWS_SearchBias = ApplyShadowBias(positionWS, GetSunLightShadowBias(), texelSize, searchWidthWS, normalWS, L);

@@ -42,6 +42,12 @@ CBUFFER_END
 
 float3 _WorldSpaceCameraPos;
 
+// x = 1 or -1 (-1 if projection is flipped)
+// y = near plane
+// z = far plane
+// w = 1/far plane
+float4 _ProjectionParams;
+
 // x = orthographic camera's width
 // y = orthographic camera's height
 // z = unused

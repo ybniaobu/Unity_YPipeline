@@ -62,7 +62,7 @@ namespace YPipeline
         // --------------------------------------------------------------------------------
         // 后处理配置
         [FoldoutGroup("Post Processing Settings", expanded: true)]
-        public float a = 0;
+        public VolumeProfile volumeProfile;
         
         // --------------------------------------------------------------------------------
         // 合批配置
