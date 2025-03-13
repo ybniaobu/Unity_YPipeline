@@ -40,6 +40,21 @@ namespace YPipeline
                 RendererList gizmosRendererList = data.context.CreateGizmoRendererList(data.camera, GizmoSubset.PreImageEffects);
                 data.buffer.DrawRendererList(gizmosRendererList);
             }
+            
+            // disable post-processing in material preview and reflection probe preview
+            if (data.camera.cameraType > CameraType.SceneView)
+            {
+                // TODO: 改变逻辑
+                data.buffer.Blit(RenderTargetIDs.k_FrameBufferId, BuiltinRenderTextureType.CameraTarget);
+                return;
+            }
+            
+            // enable or disable post-processing in the scene window via its effects dropdown menu in its toolbar
+            if (data.camera.cameraType == CameraType.SceneView && !SceneView.currentDrawingSceneView.sceneViewState.showImageEffects)
+            {
+                data.buffer.Blit(RenderTargetIDs.k_FrameBufferId, BuiltinRenderTextureType.CameraTarget);
+                return;
+            }
 #endif
             data.buffer.BeginSample("Post Processing");
             
@@ -66,22 +81,6 @@ namespace YPipeline
 
         private void PostProcessingRender(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
         {
-#if UNITY_EDITOR
-            // disable post-processing in material preview and reflection probe preview
-            if (data.camera.cameraType > CameraType.SceneView)
-            {
-                // TODO: 改变逻辑
-                data.buffer.Blit(RenderTargetIDs.k_FrameBufferId, BuiltinRenderTextureType.CameraTarget);
-                return;
-            }
-            
-            // enable or disable post-processing in the scene window via its effects dropdown menu in its toolbar
-            if (data.camera.cameraType == CameraType.SceneView && !SceneView.currentDrawingSceneView.sceneViewState.showImageEffects)
-            {
-                return;
-            }
-#endif
-            
             m_BloomRenderer.Render(asset, ref data);
         }
     }

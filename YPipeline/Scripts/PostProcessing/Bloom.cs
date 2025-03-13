@@ -5,6 +5,7 @@ namespace YPipeline
 {
     public enum BloomDownscaleMode
     {
+        None,
         Half,
         Quarter,
         HalfQuarter
@@ -33,7 +34,7 @@ namespace YPipeline
         public DownscaleParameter downscale = new DownscaleParameter(BloomDownscaleMode.Half);
         
         [Tooltip("最大迭代次数或泛光金字塔层数(决定了模糊过程的最小分辨率) The maximum number of iterations/Pyramid Levels.")]
-        public ClampedIntParameter maxIterations = new ClampedIntParameter(6, 1, 15);
+        public ClampedIntParameter maxIterations = new ClampedIntParameter(5, 1, 15);
         
         [Tooltip("是否在向上采样阶段使用 Bicubic 插值以获取更平滑的效果（略微更费性能） Use bicubic sampling instead of bilinear sampling for the upsampling passes. This is slightly more expensive but helps getting smoother visuals.")]
         public BoolParameter bicubicUpsampling = new BoolParameter(false);
@@ -92,7 +93,7 @@ namespace YPipeline
             
             // Determine the iteration count
             int minSize = Mathf.Min(width, height);
-            int iterationCount = Mathf.FloorToInt(Mathf.Log(minSize, 2.0f));
+            int iterationCount = Mathf.FloorToInt(Mathf.Log(minSize, 2.0f) - 1);
             iterationCount = Mathf.Clamp(iterationCount, 1, settings.maxIterations.value);
             
             // Shader property and keyword setup

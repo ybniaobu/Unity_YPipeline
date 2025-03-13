@@ -3,7 +3,7 @@ using UnityEngine.Rendering;
 
 namespace YPipeline
 {
-    public class PostProcessingRenderer
+    public abstract class PostProcessingRenderer
     {
         public static T1 Create<T1, T2>() 
             where T1 : PostProcessingRenderer<T2>, new() 
@@ -12,16 +12,6 @@ namespace YPipeline
             T1 renderer = new T1();
             renderer.Initialize();
             return renderer;
-        }
-        
-        protected static Material CreateMaterial(Shader shader, Material material)
-        {
-            if (material == null && shader != null)
-            {
-                material = new Material(shader);
-                material.hideFlags = HideFlags.HideAndDontSave;
-            }
-            return material;
         }
     }
     

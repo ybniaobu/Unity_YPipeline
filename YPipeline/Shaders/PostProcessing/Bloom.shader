@@ -57,7 +57,7 @@ Shader "Hidden/YPipeline/Bloom"
             #pragma target 3.5
             #pragma vertex BloomVert
             #pragma fragment BloomPrefilterFrag
-            // #pragma multi_compile_local_fragment _ _BLOOM_BICUBIC_UPSAMPLING
+            #pragma multi_compile_local_fragment _ _BLOOM_BICUBIC_UPSAMPLING
             ENDHLSL
         }
     }
