@@ -11,15 +11,17 @@ namespace YPipeline
     public class PostProcessingNode : PipelineNode
     {
         private BloomRenderer m_BloomRenderer;
+        private ToneMappingRenderer m_ToneMappingRenderer;
         
         protected override void Initialize()
         {
             m_BloomRenderer = PostProcessingRenderer.Create<BloomRenderer, Bloom>();
+            m_ToneMappingRenderer = PostProcessingRenderer.Create<ToneMappingRenderer, ToneMapping>();
         }
         
         protected override void Dispose()
         {
-            DestroyImmediate(this);
+            //DestroyImmediate(this);
         }
 
         protected override void OnRelease(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
@@ -81,7 +83,15 @@ namespace YPipeline
 
         private void PostProcessingRender(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
         {
+            RenderTextureFormat format = asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default;
+            data.buffer.GetTemporaryRT(RenderTargetIDs.k_BloomTextureId, data.camera.pixelWidth, data.camera.pixelHeight, 0, FilterMode.Bilinear, format);
             m_BloomRenderer.Render(asset, ref data);
+            
+            // Tonemapping
+            m_ToneMappingRenderer.Render(asset, ref data);
+            
+            
+            data.buffer.ReleaseTemporaryRT(RenderTargetIDs.k_BloomTextureId);
         }
     }
 }

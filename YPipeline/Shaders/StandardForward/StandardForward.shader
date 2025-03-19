@@ -26,6 +26,18 @@ Shader "YPipeline/PBR/Standard Forward"
         
         [Header(Ambient Occlusion Settings)] [Space(8)]
         [NoScaleOffset] _AOTex("Ambient Occlusion Texture", 2D) = "white" {}
+    	
+	    [Header(Emission Settings)] [Space(8)]
+        [HDR] _EmissionColor("Emission Color", Color) = (0.0, 0.0, 0.0, 1.0)
+        [NoScaleOffset] _EmissionTex("Emission Texture", 2D) = "Black" {}
+        
+    	[Header(Transparency Settings)] [Space(8)]
+        [Enum(UnityEngine.Rendering.BlendMode)] _SrcBlend ("Src Blend", Float) = 1
+        [Enum(UnityEngine.Rendering.BlendMode)] _DstBlend ("Dst Blend", Float) = 0
+        [Enum(Off, 0, On, 1)] _ZWrite ("Z Write", Float) = 1
+        [Toggle(_CLIPPING)] _Clipping ("Alpha Clipping", Float) = 0
+        _Cutoff("Alpha CutOff", Range(0.0, 1.0)) = 0.5
+    	[NoScaleOffset] _OpacityTex("Opacity Texture", 2D) = "white" {}
         
         [Header(Other Settings)] [Space(8)]
         [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull Mode", Float) = 2
@@ -56,6 +68,7 @@ Shader "YPipeline/PBR/Standard Forward"
             #pragma shader_feature_local_fragment _USE_ROUGHNESSTEX
             #pragma shader_feature_local_fragment _USE_METALLICTEX
             #pragma shader_feature_local_fragment _USE_NORMALTEX
+            #pragma shader_feature_local_fragment _CLIPPING
             
             #pragma multi_compile _ LIGHTMAP_ON
             #pragma multi_compile _ _SHADOW_MASK_DISTANCE _SHADOW_MASK_NORMAL
@@ -80,6 +93,8 @@ Shader "YPipeline/PBR/Standard Forward"
 			
 			#pragma vertex ShadowCasterVert
 			#pragma fragment ShadowCasterFrag
+
+			#pragma shader_feature_local_fragment _CLIPPING
 			
 			#include "../ShadowCasterPass.hlsl"
 			ENDHLSL

@@ -28,7 +28,7 @@ namespace YPipeline
             m_Asset = asset;
             m_Data = new PipelinePerFrameData();
             
-            VolumeManager.instance.Initialize(null, asset.volumeProfile);
+            VolumeManager.instance.Initialize(null, asset.globalVolumeProfile);
             asset.PresetRenderPaths();
             
             GraphicsSettings.useScriptableRenderPipelineBatching = asset.enableSRPBatcher;
@@ -118,7 +118,7 @@ namespace YPipeline
 #if UNITY_EDITOR
             UnityEngine.Experimental.GlobalIllumination.Lightmapping.ResetDelegate();
 #endif
-            PipelineNode.DisposeNodes(m_Asset);
+            //PipelineNode.DisposeNodes(m_Asset);
             VolumeManager.instance.Deinitialize();
         }
     }

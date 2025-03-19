@@ -11,12 +11,13 @@ namespace YPipeline
         protected override void Initialize()
         {
             m_UnlitShaderTagId = new ShaderTagId("SRPDefaultUnlit"); 
-            m_TransparencyShaderTagId = new ShaderTagId("YPipelineTransparency");
+            m_TransparencyShaderTagId = new ShaderTagId("YPipelineForward");
+            //m_TransparencyShaderTagId = new ShaderTagId("YPipelineTransparency");
         }
         
         protected override void Dispose()
         {
-            DestroyImmediate(this);
+            //DestroyImmediate(this);
         }
 
         protected override void OnRender(YRenderPipelineAsset asset, ref PipelinePerFrameData data)

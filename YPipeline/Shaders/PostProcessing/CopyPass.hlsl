@@ -5,6 +5,7 @@
 #include "../../ShaderLibrary/Core/UnityInput.hlsl"
 
 TEXTURE2D(_BlitTexture);
+float4 _BlitTexture_TexelSize;
 SAMPLER(sampler_LinearClamp);
 
 struct Varyings

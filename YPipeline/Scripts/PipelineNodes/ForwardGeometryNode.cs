@@ -16,7 +16,7 @@ namespace YPipeline
 
         protected override void Dispose()
         {
-            DestroyImmediate(this);
+            //DestroyImmediate(this);
         }
 
         protected override void OnRelease(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
@@ -33,7 +33,8 @@ namespace YPipeline
             base.OnRender(asset, ref data);
             data.context.SetupCameraProperties(data.camera);
             
-            data.buffer.GetTemporaryRT(RenderTargetIDs.k_FrameBufferId, data.camera.pixelWidth, data.camera.pixelHeight, 32, FilterMode.Bilinear, RenderTextureFormat.Default);
+            data.buffer.GetTemporaryRT(RenderTargetIDs.k_FrameBufferId, data.camera.pixelWidth, data.camera.pixelHeight, 32, FilterMode.Bilinear, 
+                asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
             data.buffer.SetRenderTarget(new RenderTargetIdentifier(RenderTargetIDs.k_FrameBufferId), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
             // CameraClearFlags flags = data.camera.clearFlags;
             // data.buffer.ClearRenderTarget(flags < CameraClearFlags.Nothing, flags < CameraClearFlags.Depth, data.camera.backgroundColor.linear);
@@ -75,7 +76,7 @@ namespace YPipeline
                 enableInstancing = asset.enableGPUInstancing,
                 perObjectData = PerObjectData.ReflectionProbes | PerObjectData.Lightmaps | PerObjectData.ShadowMask | PerObjectData.LightProbe | PerObjectData.OcclusionProbe
             };
-            //alphaTestDrawing.SetShaderPassName(1, m_ForwardLitShaderTagId);
+            alphaTestDrawing.SetShaderPassName(1, m_ForwardLitShaderTagId);
 
             RendererListParams opaqueRendererListParams =
                 new RendererListParams(data.cullingResults, opaqueDrawing, opaqueFiltering);

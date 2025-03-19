@@ -1,5 +1,48 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-1710404950045096949
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4daddfc6fcab4b5790a3f146e548ce68, type: 3}
+  m_Name: Bloom
+  m_EditorClassIdentifier: 
+  active: 1
+  mode:
+    m_OverrideState: 1
+    m_Value: 1
+  intensity:
+    m_OverrideState: 1
+    m_Value: 0.5
+  finalIntensity:
+    m_OverrideState: 1
+    m_Value: 1
+  additiveStrength:
+    m_OverrideState: 1
+    m_Value: 0.5
+  scatter:
+    m_OverrideState: 1
+    m_Value: 0.5
+  threshold:
+    m_OverrideState: 1
+    m_Value: 1
+  thresholdKnee:
+    m_OverrideState: 1
+    m_Value: 0.5
+  bloomDownscale:
+    m_OverrideState: 1
+    m_Value: 0
+  maxIterations:
+    m_OverrideState: 1
+    m_Value: 6
+  bicubicUpsampling:
+    m_OverrideState: 1
+    m_Value: 1
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13,8 +56,9 @@ MonoBehaviour:
   m_Name: Global Volume Profile
   m_EditorClassIdentifier: 
   components:
-  - {fileID: 4858947903403610376}
---- !u!114 &4858947903403610376
+  - {fileID: -1710404950045096949}
+  - {fileID: 8638038084918822704}
+--- !u!114 &8638038084918822704
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -23,25 +67,25 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4daddfc6fcab4b5790a3f146e548ce68, type: 3}
-  m_Name: Bloom
+  m_Script: {fileID: 11500000, guid: 31ed7e83b6b444debaa899048f0fd483, type: 3}
+  m_Name: ToneMapping
   m_EditorClassIdentifier: 
   active: 1
-  intensity:
+  mode:
     m_OverrideState: 1
-    m_Value: 1.5
-  threshold:
+    m_Value: 0
+  reinhardMode:
     m_OverrideState: 1
-    m_Value: 0.5
-  thresholdKnee:
-    m_OverrideState: 1
-    m_Value: 0.5
-  downscale:
-    m_OverrideState: 1
-    m_Value: 1
-  maxIterations:
-    m_OverrideState: 1
-    m_Value: 6
-  bicubicUpsampling:
+    m_Value: 0
+  minWhite:
+    m_OverrideState: 0
+    m_Value: 5
+  exposureBias:
+    m_OverrideState: 0
+    m_Value: 2
+  aCESMode:
     m_OverrideState: 1
     m_Value: 1
+  aGXMode:
+    m_OverrideState: 1
+    m_Value: 0

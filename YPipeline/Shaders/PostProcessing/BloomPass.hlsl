@@ -2,24 +2,17 @@
 #define YPIPELINE_BLOOM_PASS_INCLUDED
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
+// #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Filtering.hlsl"
 #include "../../ShaderLibrary/Core/UnityInput.hlsl"
 
-float4 _BloomThreshold;
-float _BloomIntensity;
+#include "CopyPass.hlsl"
 
-TEXTURE2D(_BlitTexture);
-float4 _BlitTexture_TexelSize;
+float4 _BloomThreshold; // x: threshold, y: -threshold + threshold * thresholdKnee, z: 2 * threshold * thresholdKnee, w: 1 / 4 * threshold * thresholdKnee
+float4 _BloomParams; // x: intensity or scatter
+
 TEXTURE2D(_BloomLowerTexture);
 float4 _BloomLowerTexture_TexelSize;
-
-SAMPLER(sampler_LinearClamp);
-
-struct Varyings
-{
-    float4 positionHCS  : SV_POSITION;
-    float2 uv           : TEXCOORD0;
-};
 
 float3 ApplyBloomThreshold(float3 color)
 {
@@ -32,18 +25,29 @@ float3 ApplyBloomThreshold(float3 color)
     return color * contribution;
 }
 
-Varyings BloomVert(uint vertexID : SV_VertexID)
+float4 BloomPrefilterFrag(Varyings IN) : SV_TARGET
 {
-    Varyings OUT;
-    OUT.uv = float2((vertexID << 1) & 2, vertexID & 2);
-    OUT.positionHCS = float4(OUT.uv * 2.0 - 1.0, UNITY_NEAR_CLIP_VALUE, 1.0);
+    float3 color = float3(0.0, 0.0, 0.0);
+    float weight = 0.0;
+    float2 offsets[5] = { float2(0.0, 0.0), float2(-1.0, -1.0), float2(-1.0, 1.0), float2(1.0, -1.0), float2(1.0, 1.0)};
+    // float2 offsets[9] = { float2(0.0, 0.0), float2(-1.0, -1.0), float2(-1.0, 1.0), float2(1.0, -1.0), float2(1.0, 1.0),
+    // float2(-1.0, 0.0), float2(1.0, 0.0), float2(0.0, -1.0), float2(0.0, 1.0)};
 
-    if (_ProjectionParams.x < 0.0) OUT.uv.y = 1.0 - OUT.uv.y;
-    // #if UNITY_UV_STARTS_AT_TOP
-    //     OUT.uv.y = 1.0 - OUT.uv.y;
-    // #endif
-    
-    return OUT;
+    UNITY_UNROLL
+    for (int i = 0; i < 5; i++)
+    {
+        float2 offset = offsets[i] * _BlitTexture_TexelSize.xy * 2.0;
+        float3 c = ApplyBloomThreshold(SAMPLE_TEXTURE2D_LOD(_BlitTexture, sampler_LinearClamp, IN.uv + offset, 0).rgb);
+        // float w = 1.0 / (Luminance(c) + 1.0);
+        float w = 1.0 / (c.r + c.g + c.b + 1.0);
+        color += c * w;
+        weight += w;
+    }
+    color /= weight;
+
+    // Clamp colors to positive once in prefilter. Encode can have a sqrt, and sqrt(-x) == NaN. Up/Downsample passes would then spread the NaN.
+    color = max(color, 0.0);
+    return float4(color, 1.0);
 }
 
 float4 BloomGaussianBlurHorizontalFrag(Varyings IN) : SV_TARGET
@@ -80,7 +84,7 @@ float4 BloomGaussianBlurVerticalFrag(Varyings IN) : SV_TARGET
     return float4(color, 1.0);
 }
 
-float4 BloomUpsampleFrag(Varyings IN) : SV_TARGET
+float4 BloomAdditiveUpsampleFrag(Varyings IN) : SV_TARGET
 {
     #if _BLOOM_BICUBIC_UPSAMPLING
         float3 lowerTex = SampleTexture2DBicubic(_BloomLowerTexture, sampler_LinearClamp, IN.uv, _BloomLowerTexture_TexelSize.zwxy, (1.0).xx, 0.0).rgb;
@@ -89,17 +93,33 @@ float4 BloomUpsampleFrag(Varyings IN) : SV_TARGET
     #endif
     
     float3 higherTex = SAMPLE_TEXTURE2D_LOD(_BlitTexture, sampler_LinearClamp, IN.uv, 0).rgb;
-    return float4(lowerTex * _BloomIntensity + higherTex, 1.0);
+    return float4(lowerTex * _BloomParams.x + higherTex, 1.0);
 }
 
-float4 BloomPrefilterFrag(Varyings IN) : SV_TARGET
+float4 BloomScatteringUpsampleFrag(Varyings IN) : SV_TARGET
 {
     #if _BLOOM_BICUBIC_UPSAMPLING
-        float3 color = ApplyBloomThreshold(SampleTexture2DBicubic(_BlitTexture, sampler_LinearClamp, IN.uv, _BlitTexture_TexelSize.zwxy, (1.0).xx, 0.0).rgb);
+    float3 lowerTex = SampleTexture2DBicubic(_BloomLowerTexture, sampler_LinearClamp, IN.uv, _BloomLowerTexture_TexelSize.zwxy, (1.0).xx, 0.0).rgb;
     #else
-        float3 color = ApplyBloomThreshold(SAMPLE_TEXTURE2D_LOD(_BlitTexture, sampler_LinearClamp, IN.uv, 0).rgb);
+    float3 lowerTex = SAMPLE_TEXTURE2D_LOD(_BloomLowerTexture, sampler_LinearClamp, IN.uv, 0).rgb;
     #endif
-    return float4(color, 1.0);
+    
+    float3 higherTex = SAMPLE_TEXTURE2D_LOD(_BlitTexture, sampler_LinearClamp, IN.uv, 0).rgb;
+    return float4(lerp(higherTex, lowerTex, _BloomParams.x), 1.0);
+}
+
+float4 BloomScatteringFinalBlitFrag(Varyings IN) : SV_TARGET
+{
+    #if _BLOOM_BICUBIC_UPSAMPLING
+    float3 lowerTex = SampleTexture2DBicubic(_BloomLowerTexture, sampler_LinearClamp, IN.uv, _BloomLowerTexture_TexelSize.zwxy, (1.0).xx, 0.0).rgb;
+    #else
+    float3 lowerTex = SAMPLE_TEXTURE2D_LOD(_BloomLowerTexture, sampler_LinearClamp, IN.uv, 0).rgb;
+    #endif
+    
+    float3 higherTex = SAMPLE_TEXTURE2D_LOD(_BlitTexture, sampler_LinearClamp, IN.uv, 0).rgb;
+
+    lowerTex += higherTex - ApplyBloomThreshold(higherTex);
+    return float4(lerp(higherTex, lowerTex, _BloomParams.x), 1.0);
 }
 
 #endif

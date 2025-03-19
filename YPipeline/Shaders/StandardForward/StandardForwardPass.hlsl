@@ -7,17 +7,21 @@
 CBUFFER_START (UnityPerMaterial)
     float4 _BaseColor;
     float4 _BaseTex_ST;
+    float4 _EmissionColor;
     float _Specular;
     float _Roughness;
     float _Metallic;
     float _NormalIntensity;
+    float _Cutoff;
 CBUFFER_END
 
 Texture2D _BaseTex;             SamplerState sampler_Trilinear_Repeat_BaseTex;
+Texture2D _EmissionTex;
 Texture2D _RoughnessTex;
 Texture2D _MetallicTex;
 Texture2D _NormalTex;
 Texture2D _AOTex;
+Texture2D _OpacityTex;
 
 struct Attributes
 {
@@ -42,6 +46,7 @@ struct Varyings
 void InitializeStandardPBRParams(Varyings IN, out StandardPBRParams standardPBRParams)
 {
     standardPBRParams.albedo = SAMPLE_TEXTURE2D(_BaseTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).rgb * _BaseColor.rgb;
+    standardPBRParams.emission = SAMPLE_TEXTURE2D(_EmissionTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).rgb * _EmissionColor.rgb;
 
     #if _USE_ROUGHNESSTEX
         standardPBRParams.roughness = SAMPLE_TEXTURE2D(_RoughnessTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).r;
@@ -148,6 +153,14 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     }
 
     // ----------------------------------------------------------------------------------------------------
+    // Clipping
+    // ----------------------------------------------------------------------------------------------------
+    float alpha = SAMPLE_TEXTURE2D(_OpacityTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).r;
+    #if defined(_CLIPPING)
+        clip(alpha - _Cutoff);
+    #endif
+
+    // ----------------------------------------------------------------------------------------------------
     // LOD Fade
     // ----------------------------------------------------------------------------------------------------
     #if defined(LOD_FADE_CROSSFADE)
@@ -157,7 +170,7 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
         clip(unity_LODFade.x + dither);
     #endif
     
-    return float4(renderingEquationContent.directSunLight + renderingEquationContent.directPunctualLights + renderingEquationContent.indirectLightDiffuse + renderingEquationContent.indirectLightSpecular, 1.0);
+    return float4(renderingEquationContent.directSunLight + renderingEquationContent.directPunctualLights + renderingEquationContent.indirectLightDiffuse + renderingEquationContent.indirectLightSpecular + standardPBRParams.emission, alpha);
 }
 
 #endif

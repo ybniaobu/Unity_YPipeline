@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6d090269ab8a8eb40a3f24edb1024efa, type: 3}
   m_Name: YRenderPipelineAsset
   m_EditorClassIdentifier: 
+  enableHDRFrameBufferFormat: 1
   renderPath: 0
   currentPipelineNodes:
   - {fileID: 0}
@@ -19,7 +20,8 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
-  volumeProfile: {fileID: 11400000, guid: eb8647ca7eb7e324fa7d7b19a82bc4f5, type: 2}
+  globalVolumeProfile: {fileID: 11400000, guid: eb8647ca7eb7e324fa7d7b19a82bc4f5,
+    type: 2}
   enableSRPBatcher: 1
   enableGPUInstancing: 1
   environmentBRDFLut: {fileID: 2800000, guid: d2c827fe86e2d6643be2b723f8ad8888, type: 3}
@@ -33,8 +35,8 @@ MonoBehaviour:
   sunLightShadowSampleNumber: 16
   sunLightPenumbraWidth: 0.25
   cascadeCount: 4
-  spiltRatio1: 0.15
-  spiltRatio2: 0.3
+  spiltRatio1: 0.05
+  spiltRatio2: 0.2
   spiltRatio3: 0.6
   cascadeEdgeFade: 0.05
   punctualLightShadowArraySize: 1024

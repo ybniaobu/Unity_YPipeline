@@ -3,14 +3,17 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Sirenix.OdinInspector;
+using UnityEngine.Serialization;
 
 namespace YPipeline
 {
     [CreateAssetMenu(menuName = "YPipeline/YRenderPipelineAsset")]
     public partial class YRenderPipelineAsset : RenderPipelineAsset<YRenderPipeline>
     {
-        // --------------------------------------------------------------------------------
+        // ----------------------------------------------------------------------------------------------------
         // RenderPipelineAsset
+        // ----------------------------------------------------------------------------------------------------
+        
         public override string renderPipelineShaderTag => string.Empty;
         public override Shader defaultShader => Shader.Find("YPipeline/PBR/Standard Forward");
 
@@ -18,6 +21,13 @@ namespace YPipeline
         {
             return new YRenderPipeline(this);
         }
+        
+        // ----------------------------------------------------------------------------------------------------
+        // 渲染设置
+        // ----------------------------------------------------------------------------------------------------
+        // TODO：参考 HDRP 的 Asset
+        [FoldoutGroup("Rendering Settings", expanded: true)]
+        public bool enableHDRFrameBufferFormat = true;
         
         // --------------------------------------------------------------------------------
         // 渲染路径配置
@@ -27,7 +37,7 @@ namespace YPipeline
         }
         
         [FoldoutGroup("Render Path Settings", expanded: true)]
-        [PropertyOrder(-1)] public RenderPath renderPath = RenderPath.Forward;
+        public RenderPath renderPath = RenderPath.Forward;
         
         [FoldoutGroup("Render Path Settings")]
         public List<PipelineNode> currentPipelineNodes = new List<PipelineNode>();
@@ -62,7 +72,7 @@ namespace YPipeline
         // --------------------------------------------------------------------------------
         // 后处理配置
         [FoldoutGroup("Post Processing Settings", expanded: true)]
-        public VolumeProfile volumeProfile;
+        public VolumeProfile globalVolumeProfile;
         
         // --------------------------------------------------------------------------------
         // 合批配置

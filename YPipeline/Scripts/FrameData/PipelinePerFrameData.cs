@@ -24,7 +24,7 @@ namespace YPipeline
         public static readonly int k_FrameBufferId = Shader.PropertyToID("_CameraFrameBuffer");
         public static readonly int k_FinalBlitTextureId = Shader.PropertyToID("_FinalBlitTexture");
         
-        // public static readonly int k_BloomTextureId = Shader.PropertyToID("_BloomTexture");
+        public static readonly int k_BloomTextureId = Shader.PropertyToID("_BloomTexture");
     }
     
     // public class PipelineData

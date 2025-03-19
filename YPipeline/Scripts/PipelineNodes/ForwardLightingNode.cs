@@ -157,7 +157,7 @@ namespace YPipeline
         
         protected override void Dispose()
         {
-            DestroyImmediate(this);
+            //DestroyImmediate(this);
         }
         
         protected override void OnRelease(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
