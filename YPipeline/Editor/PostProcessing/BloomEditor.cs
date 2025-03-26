@@ -47,7 +47,7 @@ namespace YPipeline.Editor
             
             if (m_Mode.value.enumValueIndex == 1)
             {
-                PropertyField(m_FinalIntensity);
+                PropertyField(m_FinalIntensity, EditorGUIUtility.TrTextContent("Intensity"));
                 PropertyField(m_Scatter);
             }
             PropertyField(m_Threshold);

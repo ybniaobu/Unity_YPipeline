@@ -18,6 +18,7 @@ namespace YPipeline
     public abstract class PostProcessingRenderer<T> : PostProcessingRenderer where T : VolumeComponent
     {
         public T settings;
+        public bool isActivated = true;
 
         public virtual void Initialize()
         {

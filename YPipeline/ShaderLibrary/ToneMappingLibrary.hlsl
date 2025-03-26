@@ -28,7 +28,7 @@ float3 Reinhard_ExtendedLuminance(float3 color, float minWhite)
 {
     float l_in = Luminance(color);
     float minWhite2 = minWhite * minWhite;
-    // float3 numerator = l_in * (1.0 + l_in / minWhite2);
+    // float numerator = l_in * (1.0 + l_in / minWhite2);
     // float l_out = numerator / (1.0 + l_in);
     // return color * l_out / l_in;
     float numerator = 1.0 + l_in / minWhite2;
@@ -130,11 +130,11 @@ float3 ACESStephenHillFit(float3 color)
 float3 ACESApproxFit(float3 color)
 {
     color *= 0.6;
-    float a = 2.51;
-    float b = 0.03;
-    float c = 2.43;
-    float d = 0.59;
-    float e = 0.14;
+    const float a = 2.51;
+    const float b = 0.03;
+    const float c = 2.43;
+    const float d = 0.59;
+    const float e = 0.14;
     return saturate(color * (a * color + b)/(color * (c * color + d) + e));
 }
 
@@ -197,8 +197,6 @@ float3 AgXEotf(float3 val)
     
     return val;
 }
-
-#define AGX_LOOK 2 // 0: Default, 1: Golden, 2: Punchy
 
 float3 AgXLook_Default(float3 val)
 {

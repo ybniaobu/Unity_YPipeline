@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Serialization;
 
 namespace YPipeline
 {
@@ -111,10 +110,11 @@ namespace YPipeline
         {
             if (!settings.IsActive())
             {
-                data.buffer.Blit(RenderTargetIDs.k_BloomTextureId, BuiltinRenderTextureType.CameraTarget);
+                isActivated = false;
                 return;
             }
             
+            isActivated = true;
             data.buffer.BeginSample("Tone Mapping");
             
             TonemappingMode mode = settings.mode.value;
@@ -153,7 +153,7 @@ namespace YPipeline
                     break;
             }
             
-            BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_BloomTextureId, BuiltinRenderTextureType.CameraTarget, ToneMappingMaterial, toneMappingPass);
+            BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_ColorGradingTextureId, BuiltinRenderTextureType.CameraTarget, ToneMappingMaterial, toneMappingPass);
             
             data.buffer.EndSample("Tone Mapping");
         }

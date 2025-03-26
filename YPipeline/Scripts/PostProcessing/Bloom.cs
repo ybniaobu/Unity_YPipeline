@@ -97,26 +97,11 @@ namespace YPipeline
                 return m_BloomMaterial;
             }
         }
-        
-        // private const string k_Copy = "Hidden/YPipeline/Copy";
-        // private Material m_CopyMaterial;
-        //
-        // private Material CopyMaterial
-        // {
-        //     get
-        //     {
-        //         if (m_CopyMaterial == null)
-        //         {
-        //             m_CopyMaterial = new Material(Shader.Find(k_Copy));
-        //             m_CopyMaterial.hideFlags = HideFlags.HideAndDontSave;
-        //         }
-        //         return m_CopyMaterial;
-        //     }
-        // }
 
         public override void Initialize()
         {
             base.Initialize();
+            
             m_BloomPyramidUpIds = new int[k_MaxBloomPyramidLevels];
             m_BloomPyramidDownIds = new int[k_MaxBloomPyramidLevels];
 
@@ -131,9 +116,11 @@ namespace YPipeline
         {
             if (!settings.IsActive())
             {
+                isActivated = false;
                 return;
             }
             
+            isActivated = true;
             data.buffer.BeginSample("Bloom");
             
             // do bloom at half or quarter resolution

@@ -11,12 +11,30 @@ namespace YPipeline
     public class PostProcessingNode : PipelineNode
     {
         private BloomRenderer m_BloomRenderer;
+        private ColorGradingRenderer m_ColorGradingRenderer;
         private ToneMappingRenderer m_ToneMappingRenderer;
+        
+        private const string k_Copy = "Hidden/YPipeline/Copy";
+        private Material m_CopyMaterial;
+        
+        private Material CopyMaterial
+        {
+            get
+            {
+                if (m_CopyMaterial == null)
+                {
+                    m_CopyMaterial = new Material(Shader.Find(k_Copy));
+                    m_CopyMaterial.hideFlags = HideFlags.HideAndDontSave;
+                }
+                return m_CopyMaterial;
+            }
+        }
         
         protected override void Initialize()
         {
             m_BloomRenderer = PostProcessingRenderer.Create<BloomRenderer, Bloom>();
             m_ToneMappingRenderer = PostProcessingRenderer.Create<ToneMappingRenderer, ToneMapping>();
+            m_ColorGradingRenderer = PostProcessingRenderer.Create<ColorGradingRenderer, ColorGrading>();
         }
         
         protected override void Dispose()
@@ -84,14 +102,24 @@ namespace YPipeline
         private void PostProcessingRender(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
         {
             RenderTextureFormat format = asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default;
+            
+            // Bloom
             data.buffer.GetTemporaryRT(RenderTargetIDs.k_BloomTextureId, data.camera.pixelWidth, data.camera.pixelHeight, 0, FilterMode.Bilinear, format);
             m_BloomRenderer.Render(asset, ref data);
+            if (!m_BloomRenderer.isActivated) BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_FrameBufferId, RenderTargetIDs.k_BloomTextureId, CopyMaterial,0);
+            
+            // Color Grading
+            data.buffer.GetTemporaryRT(RenderTargetIDs.k_ColorGradingTextureId, data.camera.pixelWidth, data.camera.pixelHeight, 0, FilterMode.Bilinear, format);
+            m_ColorGradingRenderer.Render(asset, ref data);
+            if (!m_ColorGradingRenderer.isActivated) BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_BloomTextureId, RenderTargetIDs.k_ColorGradingTextureId, CopyMaterial,0);;
             
             // Tonemapping
             m_ToneMappingRenderer.Render(asset, ref data);
+            if (!m_ToneMappingRenderer.isActivated) BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_ColorGradingTextureId, BuiltinRenderTextureType.CameraTarget, CopyMaterial,0);
             
-            
+            // Clear RT
             data.buffer.ReleaseTemporaryRT(RenderTargetIDs.k_BloomTextureId);
+            data.buffer.ReleaseTemporaryRT(RenderTargetIDs.k_ColorGradingTextureId);
         }
     }
 }
