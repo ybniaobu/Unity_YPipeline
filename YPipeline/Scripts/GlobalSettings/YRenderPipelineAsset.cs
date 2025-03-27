@@ -74,6 +74,9 @@ namespace YPipeline
         [FoldoutGroup("Post Processing Settings", expanded: true)]
         public VolumeProfile globalVolumeProfile;
         
+        [FoldoutGroup("Post Processing Settings")]
+        [ValueDropdown("m_LutSizes")] public int bakedLUTResolution = 32;
+        
         // --------------------------------------------------------------------------------
         // 合批配置
         [FoldoutGroup("Batching Settings", expanded: true)]
@@ -87,5 +90,6 @@ namespace YPipeline
         // 其他共用字段
         private static int[] m_TextureSizes = new int[] { 256, 512, 1024, 2048, 4096, 8192 };
         private static int[] m_SampleNumbers = new int[] { 1, 4, 8, 16, 32, 64, 128 };
+        private static int[] m_LutSizes = new int[] { 16, 32, 64 };
     }
 }

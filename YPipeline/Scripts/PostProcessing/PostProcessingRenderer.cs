@@ -5,26 +5,20 @@ namespace YPipeline
 {
     public abstract class PostProcessingRenderer
     {
-        public static T1 Create<T1, T2>() 
-            where T1 : PostProcessingRenderer<T2>, new() 
-            where T2 : VolumeComponent
-        {
-            T1 renderer = new T1();
-            renderer.Initialize();
-            return renderer;
-        }
-    }
-    
-    public abstract class PostProcessingRenderer<T> : PostProcessingRenderer where T : VolumeComponent
-    {
-        public T settings;
         public bool isActivated = true;
 
-        public virtual void Initialize()
+        protected virtual void Initialize()
         {
-            settings = VolumeManager.instance.stack.GetComponent<T>();
+            
         }
 
         public abstract void Render(YRenderPipelineAsset asset, ref PipelinePerFrameData data);
+        
+        public static T Create<T>() where T : PostProcessingRenderer, new()
+        {
+            T renderer = new T();
+            renderer.Initialize();
+            return renderer;
+        }
     }
 }

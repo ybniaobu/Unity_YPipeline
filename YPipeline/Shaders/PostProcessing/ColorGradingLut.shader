@@ -1,7 +1,7 @@
-﻿Shader "Hidden/YPipeline/ToneMapping"
+﻿Shader "Hidden/YPipeline/ColorGradingLut"
 {
     HLSLINCLUDE
-    #include "ToneMappingPass.hlsl"
+    #include "ColorGradingLutPass.hlsl"
     ENDHLSL
 
     SubShader
@@ -14,125 +14,136 @@
         ZTest Always
         ZWrite Off
         Cull Off
-
+        
         Pass
         {
-            Name "ToneMapping Reinhard Simple" // 0
+            Name "Color Grading - None" // 0
             
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex CopyVert
-            #pragma fragment ToneMappingReinhardSimpleFrag
+            #pragma fragment ColorGradingNoneFrag
             ENDHLSL
         }
 
         Pass
         {
-            Name "ToneMapping Reinhard Extended" // 1
+            Name "Color Grading - Reinhard Simple" // 1
             
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex CopyVert
-            #pragma fragment ToneMappingReinhardExtendedFrag
+            #pragma fragment ColorGradingReinhardSimpleFrag
             ENDHLSL
         }
 
         Pass
         {
-            Name "ToneMapping Reinhard Luminance" // 2
+            Name "ColorGrading - Reinhard Extended" // 2
             
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex CopyVert
-            #pragma fragment ToneMappingReinhardLuminanceFrag
+            #pragma fragment ColorGradingReinhardExtendedFrag
             ENDHLSL
         }
 
         Pass
         {
-            Name "ToneMapping Uncharted2 Filmic" // 3
+            Name "ColorGrading - Reinhard Luminance" // 3
             
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex CopyVert
-            #pragma fragment ToneMappingUncharted2FilmicFrag
+            #pragma fragment ColorGradingReinhardLuminanceFrag
             ENDHLSL
         }
 
         Pass
         {
-            Name "ToneMapping Khronos PBR Neutral" // 4
+            Name "ColorGrading - Uncharted2 Filmic" // 4
             
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex CopyVert
-            #pragma fragment ToneMappingKhronosPBRNeutralFrag
+            #pragma fragment ColorGradingUncharted2FilmicFrag
             ENDHLSL
         }
 
         Pass
         {
-            Name "ToneMapping ACES Full" // 5
+            Name "ColorGrading - Khronos PBR Neutral" // 5
             
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex CopyVert
-            #pragma fragment ToneMappingACESFullFrag
+            #pragma fragment ColorGradingKhronosPBRNeutralFrag
             ENDHLSL
         }
 
         Pass
         {
-            Name "ToneMapping ACES Stephen Hill Fit" // 6
+            Name "ColorGrading - ACES Full" // 6
             
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex CopyVert
-            #pragma fragment ToneMappingACESStephenHillFitFrag
+            #pragma fragment ColorGradingACESFullFrag
             ENDHLSL
         }
 
         Pass
         {
-            Name "ToneMapping ACES Approximation Fit" // 7
+            Name "ColorGrading - ACES Stephen Hill Fit" // 7
             
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex CopyVert
-            #pragma fragment ToneMappingACESApproxFitFrag
+            #pragma fragment ColorGradingACESStephenHillFitFrag
             ENDHLSL
         }
 
         Pass
         {
-            Name "ToneMapping AgX Approximation Default" // 8
+            Name "ColorGrading - ACES Approximation Fit" // 8
             
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex CopyVert
-            #pragma fragment ToneMappingAgXDefaultFrag
+            #pragma fragment ColorGradingACESApproxFitFrag
             ENDHLSL
         }
 
         Pass
         {
-            Name "ToneMapping AgX Approximation Golden" // 9
+            Name "ColorGrading - AgX Approximation Default" // 9
             
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex CopyVert
-            #pragma fragment ToneMappingAgXGoldenFrag
+            #pragma fragment ColorGradingAgXDefaultFrag
             ENDHLSL
         }
 
         Pass
         {
-            Name "ToneMapping AgX Approximation Punchy" // 10
+            Name "ColorGrading - AgX Approximation Golden" // 10
             
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex CopyVert
-            #pragma fragment ToneMappingAgXPunchyFrag
+            #pragma fragment ColorGradingAgXGoldenFrag
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "ColorGrading - AgX Approximation Punchy" // 11
+            
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex CopyVert
+            #pragma fragment ColorGradingAgXPunchyFrag
             ENDHLSL
         }
     }

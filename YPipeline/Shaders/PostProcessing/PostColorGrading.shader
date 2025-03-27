@@ -1,7 +1,7 @@
-﻿Shader "Hidden/YPipeline/ColorGrading"
+﻿Shader "Hidden/YPipeline/PostColorGrading"
 {
     HLSLINCLUDE
-    #include "ColorGradingPass.hlsl"
+    #include "PostColorGradingPass.hlsl"
     ENDHLSL
 
     SubShader
@@ -14,15 +14,15 @@
         ZTest Always
         ZWrite Off
         Cull Off
-
+        
         Pass
         {
-            Name "Color Grading" // 0
+            Name "Post Color Grading" // 0
             
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex CopyVert
-            #pragma fragment ColorGradingFrag
+            #pragma fragment PostColorGradingFrag
             ENDHLSL
         }
     }

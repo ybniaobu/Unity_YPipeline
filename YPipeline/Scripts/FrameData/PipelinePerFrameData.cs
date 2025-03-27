@@ -16,7 +16,6 @@ namespace YPipeline
         
         // ××××××××××××××××××××××××××××××××××××××××××××××××××××××××××××××××××××××××××××××××
         // Data 相关方法
-        
     }
 
     public static class RenderTargetIDs
@@ -25,7 +24,7 @@ namespace YPipeline
         public static readonly int k_FinalBlitTextureId = Shader.PropertyToID("_FinalBlitTexture");
         
         public static readonly int k_BloomTextureId = Shader.PropertyToID("_BloomTexture");
-        public static readonly int k_ColorGradingTextureId = Shader.PropertyToID("_ColorGradingTexture");
+        public static readonly int k_ColorGradingLutTextureId = Shader.PropertyToID("_ColorGradingLutTexture");
     }
     
     // public class PipelineData

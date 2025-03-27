@@ -24,6 +24,7 @@ Varyings CopyVert(uint vertexID : SV_VertexID)
     OUT.positionHCS = float4(OUT.uv * 2.0 - 1.0, UNITY_NEAR_CLIP_VALUE, 1.0);
     
     if (_ProjectionParams.x < 0.0) OUT.uv.y = 1.0 - OUT.uv.y;
+    
     // #if UNITY_UV_STARTS_AT_TOP
     //     OUT.uv.y = 1.0 - OUT.uv.y;
     // #endif

@@ -3,73 +3,7 @@ using UnityEngine.Rendering;
 
 namespace YPipeline
 {
-    public enum BloomMode
-    {
-        Additive,
-        Scattering
-    }
-    
-    public enum BloomDownscaleMode
-    {
-        Half,
-        Quarter,
-        HalfQuarter
-    }
-    
-    [System.Serializable]
-    public sealed class BloomModeParameter : VolumeParameter<BloomMode>
-    {
-        public BloomModeParameter(BloomMode value, bool overrideState = false) : base(value, overrideState) { }
-    }
-    
-    [System.Serializable]
-    public sealed class BloomDownscaleParameter : VolumeParameter<BloomDownscaleMode>
-    {
-        public BloomDownscaleParameter(BloomDownscaleMode value, bool overrideState = false) : base(value, overrideState) { }
-    }
-    
-    [System.Serializable, VolumeComponentMenu("YPipeline Post Processing/Bloom")]
-    [SupportedOnRenderPipeline(typeof(YRenderPipelineAsset))]
-    public class Bloom : VolumeComponent, IPostProcessComponent
-    {
-        [Tooltip("泛光模式 Choose classical additive or energy-conserving scattering bloom.")]
-        public BloomModeParameter mode = new BloomModeParameter(BloomMode.Scattering, true);
-        
-        [Tooltip("泛光强度 Strength of bloom during the final blit.")]
-        public MinFloatParameter intensity = new MinFloatParameter(0.5f, 0.0f, true);
-        
-        [Tooltip("泛光强度 Strength of bloom during the final blit")]
-        public ClampedFloatParameter finalIntensity = new ClampedFloatParameter(1.0f, 0.0f, 1.0f, true);
-        
-        [Tooltip("泛光上采样加强系数 Boosts the low-res source intensity during the upsampling stage.")]
-        public ClampedFloatParameter additiveStrength = new ClampedFloatParameter(0.5f, 0.0f, 2.0f);
-        
-        [Tooltip("泛光上采样散开插值系数 Interpolates between the high-res and low-res sources during upsampling stage. 1 means that only the low-res is used")]
-        public ClampedFloatParameter scatter = new ClampedFloatParameter(0.5f, 0.0f, 1.0f);
-        
-        [Tooltip("决定了像素开始泛光的亮度阈值 Filters out pixels under this level of brightness. Value is in gamma-space.")]
-        public MinFloatParameter threshold = new MinFloatParameter(1.0f, 0.0f);
-        
-        [Tooltip("缓和亮度阈值参数的效果 Smooths cutoff effect of the configured threshold. Higher value makes more transition.")]
-        public ClampedFloatParameter thresholdKnee = new ClampedFloatParameter(0.5f, 0.0f, 1.0f);
-        
-        [Tooltip("泛光模糊开始的分辨率(决定了模糊过程的最大分辨率) The starting resolution that this effect begins processing.")]
-        public BloomDownscaleParameter bloomDownscale = new BloomDownscaleParameter(BloomDownscaleMode.Half);
-        
-        [Tooltip("最大迭代次数或泛光金字塔层数(决定了模糊过程的最小分辨率) The maximum number of iterations/Pyramid Levels.")]
-        public ClampedIntParameter maxIterations = new ClampedIntParameter(6, 1, 15);
-        
-        [Tooltip("是否在向上采样阶段使用 Bicubic 插值以获取更平滑的效果（略微更费性能） Use bicubic sampling instead of bilinear sampling for the upsampling passes. This is slightly more expensive but helps getting smoother visuals.")]
-        public BoolParameter bicubicUpsampling = new BoolParameter(false);
-        
-        public bool IsActive()
-        {
-            if (mode.value == BloomMode.Additive) return intensity.value > 0f;
-            else return finalIntensity.value > 0f;
-        }
-    }
-
-    public class BloomRenderer : PostProcessingRenderer<Bloom>
+    public class BloomRenderer : PostProcessingRenderer
     {
         private const int k_MaxBloomPyramidLevels = 15;
         private static readonly int k_BloomLowerTextureID = Shader.PropertyToID("_BloomLowerTexture");
@@ -98,7 +32,7 @@ namespace YPipeline
             }
         }
 
-        public override void Initialize()
+        protected override void Initialize()
         {
             base.Initialize();
             
@@ -114,7 +48,9 @@ namespace YPipeline
 
         public override void Render(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
         {
-            if (!settings.IsActive())
+            var bloom = VolumeManager.instance.stack.GetComponent<Bloom>();
+            
+            if (!bloom.IsActive())
             {
                 isActivated = false;
                 return;
@@ -124,22 +60,22 @@ namespace YPipeline
             data.buffer.BeginSample("Bloom");
             
             // do bloom at half or quarter resolution
-            int width = data.camera.pixelWidth >> (int) settings.bloomDownscale.value;
-            int height = data.camera.pixelHeight >> (int) settings.bloomDownscale.value;
+            int width = data.camera.pixelWidth >> (int) bloom.bloomDownscale.value;
+            int height = data.camera.pixelHeight >> (int) bloom.bloomDownscale.value;
             
             // Determine the iteration count
             int minSize = Mathf.Min(width, height);
             int iterationCount = Mathf.FloorToInt(Mathf.Log(minSize, 2.0f) - 1);
-            iterationCount = Mathf.Clamp(iterationCount, 1, settings.maxIterations.value);
+            iterationCount = Mathf.Clamp(iterationCount, 1, bloom.maxIterations.value);
             
             // Shader property and keyword setup
-            Vector4 bloomParams = settings.mode.value == BloomMode.Additive ? new Vector4(settings.additiveStrength.value, 0.0f) : new Vector4(settings.scatter.value, 0.0f);
+            Vector4 bloomParams = bloom.mode.value == BloomMode.Additive ? new Vector4(bloom.additiveStrength.value, 0.0f) : new Vector4(bloom.scatter.value, 0.0f);
             data.buffer.SetGlobalVector(k_BloomParamsId, bloomParams);
-            float threshold = Mathf.GammaToLinearSpace(settings.threshold.value);
-            float knee = threshold * settings.thresholdKnee.value;
+            float threshold = Mathf.GammaToLinearSpace(bloom.threshold.value);
+            float knee = threshold * bloom.thresholdKnee.value;
             data.buffer.SetGlobalVector(k_BloomThresholdId, new Vector4(threshold, knee - threshold, 2.0f * knee, 0.25f / (knee + 1e-6f)));
             
-            CoreUtils.SetKeyword(BloomMaterial, k_BloomBicubicUpsampling, settings.bicubicUpsampling.value);
+            CoreUtils.SetKeyword(BloomMaterial, k_BloomBicubicUpsampling, bloom.bicubicUpsampling.value);
             
             // HDR
             RenderTextureFormat format = asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default;
@@ -164,7 +100,7 @@ namespace YPipeline
             }
             
             // Upsample - bilinear or bicubic
-            int upsamplePass = settings.mode.value == BloomMode.Additive ? 3 : 4;
+            int upsamplePass = bloom.mode.value == BloomMode.Additive ? 3 : 4;
             int lastDst = m_BloomPyramidDownIds[iterationCount - 1];
             for (int i = iterationCount - 2; i >= 0; i--)
             {
@@ -174,8 +110,8 @@ namespace YPipeline
             }
             
             // Final Blit
-            bloomParams = settings.mode.value == BloomMode.Additive ? new Vector4(settings.intensity.value, 0.0f) : new Vector4(settings.finalIntensity.value, 0.0f);
-            int finalPass = settings.mode.value == BloomMode.Additive ? 3 : 5;
+            bloomParams = bloom.mode.value == BloomMode.Additive ? new Vector4(bloom.intensity.value, 0.0f) : new Vector4(bloom.finalIntensity.value, 0.0f);
+            int finalPass = bloom.mode.value == BloomMode.Additive ? 3 : 5;
             data.buffer.SetGlobalVector(k_BloomParamsId, bloomParams);
             data.buffer.SetGlobalTexture(k_BloomLowerTextureID, new RenderTargetIdentifier(lastDst));
             BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_FrameBufferId, RenderTargetIDs.k_BloomTextureId, BloomMaterial, finalPass);

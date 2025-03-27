@@ -8,8 +8,8 @@ using YPipeline;
 
 namespace YPipeline.Editor
 {
-    [CustomEditor(typeof(ColorGrading))]
-    public class ColorGradingEditor : VolumeComponentEditor
+    [CustomEditor(typeof(ShadowsMidtonesHighlights))]
+    public class ShadowsMidtonesHighlightsEditor : VolumeComponentEditor
     {
         private static class Styles
         {
@@ -18,14 +18,6 @@ namespace YPipeline.Editor
             public static readonly GUIContent highlightsLabel = EditorGUIUtility.TrTextContent("Highlights", "Use this to control and apply a hue to the shadows.");
         }
         
-        private SerializedDataParameter m_Enable;
-        private SerializedDataParameter m_Temperature;
-        private SerializedDataParameter m_Tint;
-        private SerializedDataParameter m_ColorFilter;
-        private SerializedDataParameter m_Hue;
-        private SerializedDataParameter m_Exposure;
-        private SerializedDataParameter m_Contrast;
-        private SerializedDataParameter m_Saturation;
         private SerializedDataParameter m_Shadows;
         private SerializedDataParameter m_Midtones;
         private SerializedDataParameter m_Highlights;
@@ -38,19 +30,11 @@ namespace YPipeline.Editor
         private Rect m_CurveRect;
         private Material m_Material;
         private RenderTexture m_CurveTex;
-
+        
         public override void OnEnable()
         {
-            var o = new PropertyFetcher<ColorGrading>(serializedObject);
-
-            m_Enable = Unpack(o.Find(x => x.enable));
-            m_Temperature = Unpack(o.Find(x => x.temperature));
-            m_Tint = Unpack(o.Find(x => x.tint));
-            m_ColorFilter = Unpack(o.Find(x => x.colorFilter));
-            m_Hue = Unpack(o.Find(x => x.hue));
-            m_Exposure = Unpack(o.Find(x => x.exposure));
-            m_Contrast = Unpack(o.Find(x => x.contrast));
-            m_Saturation = Unpack(o.Find(x => x.saturation));
+            var o = new PropertyFetcher<ShadowsMidtonesHighlights>(serializedObject);
+            
             m_Shadows = Unpack(o.Find(x => x.shadows));
             m_Midtones = Unpack(o.Find(x => x.midtones));
             m_Highlights = Unpack(o.Find(x => x.highlights));
@@ -61,22 +45,9 @@ namespace YPipeline.Editor
             
             m_Material = new Material(Shader.Find("Hidden/Editor/Shadows Midtones Highlights Curve"));
         }
-
+        
         public override void OnInspectorGUI()
         {
-            PropertyField(m_Enable);
-            PropertyField(m_Temperature);
-            PropertyField(m_Tint);
-            PropertyField(m_ColorFilter);
-            PropertyField(m_Hue);
-            PropertyField(m_Exposure);
-            PropertyField(m_Contrast);
-            PropertyField(m_Saturation);
-            
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Shadows Midtones Highlights", EditorStyles.boldLabel);
-            EditorGUILayout.Space();
-            
             using (new EditorGUILayout.HorizontalScope())
             {
                 m_TrackballUIDrawer.OnGUI(m_Shadows.value, enableOverrides ? m_Shadows.overrideState : null, Styles.shadowsLabel, GetWheelValue);

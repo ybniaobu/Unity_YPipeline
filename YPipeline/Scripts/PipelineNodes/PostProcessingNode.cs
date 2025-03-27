@@ -11,8 +11,8 @@ namespace YPipeline
     public class PostProcessingNode : PipelineNode
     {
         private BloomRenderer m_BloomRenderer;
-        private ColorGradingRenderer m_ColorGradingRenderer;
-        private ToneMappingRenderer m_ToneMappingRenderer;
+        private ColorGradingLutRenderer m_ColorGradingLutRenderer;
+        private PostColorGradingRenderer m_PostColorGradingRenderer;
         
         private const string k_Copy = "Hidden/YPipeline/Copy";
         private Material m_CopyMaterial;
@@ -32,9 +32,9 @@ namespace YPipeline
         
         protected override void Initialize()
         {
-            m_BloomRenderer = PostProcessingRenderer.Create<BloomRenderer, Bloom>();
-            m_ToneMappingRenderer = PostProcessingRenderer.Create<ToneMappingRenderer, ToneMapping>();
-            m_ColorGradingRenderer = PostProcessingRenderer.Create<ColorGradingRenderer, ColorGrading>();
+            m_BloomRenderer = PostProcessingRenderer.Create<BloomRenderer>();
+            m_ColorGradingLutRenderer = PostProcessingRenderer.Create<ColorGradingLutRenderer>();
+            m_PostColorGradingRenderer = PostProcessingRenderer.Create<PostColorGradingRenderer>();
         }
         
         protected override void Dispose()
@@ -108,18 +108,15 @@ namespace YPipeline
             m_BloomRenderer.Render(asset, ref data);
             if (!m_BloomRenderer.isActivated) BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_FrameBufferId, RenderTargetIDs.k_BloomTextureId, CopyMaterial,0);
             
-            // Color Grading
-            data.buffer.GetTemporaryRT(RenderTargetIDs.k_ColorGradingTextureId, data.camera.pixelWidth, data.camera.pixelHeight, 0, FilterMode.Bilinear, format);
-            m_ColorGradingRenderer.Render(asset, ref data);
-            if (!m_ColorGradingRenderer.isActivated) BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_BloomTextureId, RenderTargetIDs.k_ColorGradingTextureId, CopyMaterial,0);;
+            // Color Grading Lut
+            m_ColorGradingLutRenderer.Render(asset, ref data);
             
-            // Tonemapping
-            m_ToneMappingRenderer.Render(asset, ref data);
-            if (!m_ToneMappingRenderer.isActivated) BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_ColorGradingTextureId, BuiltinRenderTextureType.CameraTarget, CopyMaterial,0);
+            // Post Color Grading
+            m_PostColorGradingRenderer.Render(asset, ref data);
             
             // Clear RT
             data.buffer.ReleaseTemporaryRT(RenderTargetIDs.k_BloomTextureId);
-            data.buffer.ReleaseTemporaryRT(RenderTargetIDs.k_ColorGradingTextureId);
+            data.buffer.ReleaseTemporaryRT(RenderTargetIDs.k_ColorGradingLutTextureId);
         }
     }
 }
