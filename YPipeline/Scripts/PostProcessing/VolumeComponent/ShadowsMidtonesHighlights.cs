@@ -3,7 +3,7 @@ using UnityEngine.Rendering;
 
 namespace YPipeline
 {
-    [System.Serializable, VolumeComponentMenu("YPipeline Post Processing/Shadows Midtones Highlights")]
+    [System.Serializable, VolumeComponentMenu("Post Processing/Color Grading/Shadows Midtones Highlights")]
     [SupportedOnRenderPipeline(typeof(YRenderPipelineAsset))]
     public class ShadowsMidtonesHighlights : VolumeComponent, IPostProcessComponent
     {

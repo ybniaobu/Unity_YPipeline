@@ -177,7 +177,7 @@ namespace YPipeline
             base.OnBegin(asset, ref context, buffer);
             
             // 只需传递一次的贴图或者变量
-            buffer.SetGlobalTexture(k_EnvBRDFLutID, new RenderTargetIdentifier(asset.environmentBRDFLut));
+            buffer.SetGlobalTexture(k_EnvBRDFLutID, new RenderTargetIdentifier(asset.pipelineResources.textures.environmentBRDFLut));
             
             buffer.SetGlobalVector(k_CascadeSettingsID, new Vector4(asset.maxShadowDistance, asset.distanceFade, asset.cascadeCount, asset.cascadeEdgeFade));
             buffer.SetGlobalVector(k_ShadowBiasID, new Vector4(asset.depthBias, asset.slopeScaledDepthBias, asset.normalBias, asset.slopeScaledNormalBias));

@@ -17,8 +17,21 @@ float4 _SMHShadows;
 float4 _SMHMidtones;
 float4 _SMHHighlights;
 float4 _SMHRange;
+float4 _LGGLift;
+float4 _LGGGamma;
+float4 _LGGGain;
 
 float4 _ToneMappingParams; // x: minWhite or exposureBias
+
+TEXTURE2D(_CurveMaster);
+TEXTURE2D(_CurveRed);
+TEXTURE2D(_CurveGreen);
+TEXTURE2D(_CurveBlue);
+
+TEXTURE2D(_CurveHueVsHue);
+TEXTURE2D(_CurveHueVsSat);
+TEXTURE2D(_CurveSatVsSat);
+TEXTURE2D(_CurveLumVsSat);
 
 // ----------------------------------------------------------------------------------------------------
 // White Balance
@@ -100,6 +113,91 @@ float3 ColorAdjustments_ACES(float3 color)
 }
 
 // ----------------------------------------------------------------------------------------------------
+// Color Curve
+// ----------------------------------------------------------------------------------------------------
+float EvaluateCurve(TEXTURE2D(curve), float t)
+{
+    float x = SAMPLE_TEXTURE2D(curve, sampler_LinearClamp, float2(t, 0.0)).x;
+    return saturate(x);
+}
+
+float3 HSVColorCurves(float3 color)
+{
+    float satMult;
+    float3 hsv = RgbToHsv(color);
+    
+    // Hue Vs Sat
+    satMult = EvaluateCurve(_CurveHueVsSat, hsv.x) * 2.0;
+
+    // Sat Vs Sat
+    satMult *= EvaluateCurve(_CurveSatVsSat, hsv.y) * 2.0;
+
+    // Lum Vs Sat
+    satMult *= EvaluateCurve(_CurveLumVsSat, Luminance(color)) * 2.0;
+
+    // Hue Vs Hue
+    float hue = hsv.x;
+    float offset = EvaluateCurve(_CurveHueVsHue, hue) - 0.5;
+    hue += offset;
+    hsv.x = RotateHue(hue, 0.0, 1.0);
+    
+    color = HsvToRgb(hsv);
+    float luminance = Luminance(color);
+    return lerp(float3(luminance, luminance, luminance), color, satMult);
+}
+
+float3 HSVColorCurves_ACES(float3 color)
+{
+    float satMult;
+    float3 hsv = RgbToHsv(color);
+    
+    // Hue Vs Sat
+    satMult = EvaluateCurve(_CurveHueVsSat, hsv.x) * 2.0;
+
+    // Sat Vs Sat
+    satMult *= EvaluateCurve(_CurveSatVsSat, hsv.y) * 2.0;
+
+    // Lum Vs Sat
+    satMult *= EvaluateCurve(_CurveLumVsSat, Luminance(color)) * 2.0;
+
+    // Hue Vs Hue
+    float hue = hsv.x;
+    float offset = EvaluateCurve(_CurveHueVsHue, hue) - 0.5;
+    hue += offset;
+    hsv.x = RotateHue(hue, 0.0, 1.0);
+    
+    color = HsvToRgb(hsv);
+    float luminance = AcesLuminance(color);
+    return lerp(float3(luminance, luminance, luminance), color, satMult);
+}
+
+float3 YRGBColorCurves(float3 color)
+{
+    color = FastTonemap(color);
+    
+    const float kHalfPixel = (1.0 / 128.0) / 2.0;
+    float3 c = color;
+
+    // Y (master)
+    c += kHalfPixel.xxx;
+    float mr = EvaluateCurve(_CurveMaster, c.r);
+    float mg = EvaluateCurve(_CurveMaster, c.g);
+    float mb = EvaluateCurve(_CurveMaster, c.b);
+    c = float3(mr, mg, mb);
+
+    // RGB
+    c += kHalfPixel.xxx;
+    float r = EvaluateCurve(_CurveRed, c.r);
+    float g = EvaluateCurve(_CurveGreen, c.g);
+    float b = EvaluateCurve(_CurveBlue, c.b);
+    color = float3(r, g, b);
+    
+    color = FastTonemapInvert(color);
+
+    return color;
+}
+
+// ----------------------------------------------------------------------------------------------------
 // Shadows Midtones Highlights
 // ----------------------------------------------------------------------------------------------------
 
@@ -122,25 +220,42 @@ float3 ShadowsMidtonesHighlights_ACES(float3 color)
 }
 
 // ----------------------------------------------------------------------------------------------------
+// Lift Gamma Gain
+// ----------------------------------------------------------------------------------------------------
+
+float3 LiftGammaGain(float3 color)
+{
+    color = color * _LGGGain.xyz + _LGGLift.xyz;
+    color = sign(color) * pow(abs(color), _LGGGamma.xyz);
+    return color;
+}
+
+// ----------------------------------------------------------------------------------------------------
 // Overall Color Grading
 // ----------------------------------------------------------------------------------------------------
 
-float4 ColorGrading(float3 color)
+float3 ColorGrading(float3 color)
 {
     color = WhiteBalance(color);
     color = ColorAdjustments(color);
+    color = YRGBColorCurves(color);
+    color = HSVColorCurves(color);
     color = ShadowsMidtonesHighlights(color);
-    return float4(max(color, 0.0), 1.0);
+    color = LiftGammaGain(color);
+    return max(color, 0.0);
 }
 
-float4 ColorGrading_ACES(float3 color)
+float3 ColorGrading_ACES(float3 color)
 {
     color = WhiteBalance(color);
 
     color = unity_to_ACEScg(color);
     color = ColorAdjustments_ACES(color);
+    color = YRGBColorCurves(color);
+    color = HSVColorCurves_ACES(color);
     color = ShadowsMidtonesHighlights_ACES(color);
-    return float4(max(color, 0.0), 1.0);
+    color = LiftGammaGain(color);
+    return max(color, 0.0);
 }
 
 // ----------------------------------------------------------------------------------------------------

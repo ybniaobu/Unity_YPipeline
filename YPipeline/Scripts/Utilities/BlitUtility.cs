@@ -7,6 +7,46 @@ namespace YPipeline
     {
         private static readonly int k_BlitTextureId = Shader.PropertyToID("_BlitTexture");
         
+        // ----------------------------------------------------------------------------------------------------
+        // Materials
+        // ----------------------------------------------------------------------------------------------------
+        
+        private const string k_Copy = "Hidden/YPipeline/Copy";
+        private static Material m_CopyMaterial;
+        public static Material CopyMaterial
+        {
+            get
+            {
+                if (m_CopyMaterial == null)
+                {
+                    m_CopyMaterial = new Material(Shader.Find(k_Copy))
+                    {
+                        name = "Copy",
+                        hideFlags = HideFlags.HideAndDontSave
+                    };
+                }
+                return m_CopyMaterial;
+            }
+        }
+
+        // ----------------------------------------------------------------------------------------------------
+        // Functions
+        // ----------------------------------------------------------------------------------------------------
+        
+        public static void BlitTexture(CommandBuffer cmd, int sourceID, int destinationID)
+        {
+            cmd.SetGlobalTexture(k_BlitTextureId, new RenderTargetIdentifier(sourceID));
+            cmd.SetRenderTarget(new RenderTargetIdentifier(destinationID), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            cmd.DrawProcedural(Matrix4x4.identity, CopyMaterial, 0, MeshTopology.Triangles, 3);
+        }
+        
+        public static void BlitTexture(CommandBuffer cmd, int sourceID, BuiltinRenderTextureType destination)
+        {
+            cmd.SetGlobalTexture(k_BlitTextureId, new RenderTargetIdentifier(sourceID));
+            cmd.SetRenderTarget(new RenderTargetIdentifier(destination), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            cmd.DrawProcedural(Matrix4x4.identity, CopyMaterial, 0, MeshTopology.Triangles, 3);
+        }
+        
         public static void BlitTexture(CommandBuffer cmd, int sourceID, int destinationID, Material material, int pass)
         {
             cmd.SetGlobalTexture(k_BlitTextureId, new RenderTargetIdentifier(sourceID));

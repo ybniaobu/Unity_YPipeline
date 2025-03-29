@@ -16,6 +16,8 @@ namespace YPipeline
         private int[] m_BloomPyramidUpIds;
         private int[] m_BloomPyramidDownIds;
         
+        private Bloom m_Bloom;
+        
         private const string k_Bloom = "Hidden/YPipeline/Bloom";
         private Material m_BloomMaterial;
 
@@ -35,6 +37,8 @@ namespace YPipeline
         protected override void Initialize()
         {
             base.Initialize();
+            var stack = VolumeManager.instance.stack;
+            m_Bloom = stack.GetComponent<Bloom>();
             
             m_BloomPyramidUpIds = new int[k_MaxBloomPyramidLevels];
             m_BloomPyramidDownIds = new int[k_MaxBloomPyramidLevels];
@@ -48,37 +52,35 @@ namespace YPipeline
 
         public override void Render(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
         {
-            var bloom = VolumeManager.instance.stack.GetComponent<Bloom>();
+            data.buffer.BeginSample("Bloom");
+            RenderTextureFormat format = asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default;
+            data.buffer.GetTemporaryRT(RenderTargetIDs.k_BloomTextureId, data.camera.pixelWidth, data.camera.pixelHeight, 0, FilterMode.Bilinear, format);
             
-            if (!bloom.IsActive())
+            if (!m_Bloom.IsActive())
             {
                 isActivated = false;
+                BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_FrameBufferId, RenderTargetIDs.k_BloomTextureId);
                 return;
             }
-            
             isActivated = true;
-            data.buffer.BeginSample("Bloom");
             
             // do bloom at half or quarter resolution
-            int width = data.camera.pixelWidth >> (int) bloom.bloomDownscale.value;
-            int height = data.camera.pixelHeight >> (int) bloom.bloomDownscale.value;
+            int width = data.camera.pixelWidth >> (int) m_Bloom.bloomDownscale.value;
+            int height = data.camera.pixelHeight >> (int) m_Bloom.bloomDownscale.value;
             
             // Determine the iteration count
             int minSize = Mathf.Min(width, height);
             int iterationCount = Mathf.FloorToInt(Mathf.Log(minSize, 2.0f) - 1);
-            iterationCount = Mathf.Clamp(iterationCount, 1, bloom.maxIterations.value);
+            iterationCount = Mathf.Clamp(iterationCount, 1, m_Bloom.maxIterations.value);
             
             // Shader property and keyword setup
-            Vector4 bloomParams = bloom.mode.value == BloomMode.Additive ? new Vector4(bloom.additiveStrength.value, 0.0f) : new Vector4(bloom.scatter.value, 0.0f);
+            Vector4 bloomParams = m_Bloom.mode.value == BloomMode.Additive ? new Vector4(m_Bloom.additiveStrength.value, 0.0f) : new Vector4(m_Bloom.scatter.value, 0.0f);
             data.buffer.SetGlobalVector(k_BloomParamsId, bloomParams);
-            float threshold = Mathf.GammaToLinearSpace(bloom.threshold.value);
-            float knee = threshold * bloom.thresholdKnee.value;
+            float threshold = Mathf.GammaToLinearSpace(m_Bloom.threshold.value);
+            float knee = threshold * m_Bloom.thresholdKnee.value;
             data.buffer.SetGlobalVector(k_BloomThresholdId, new Vector4(threshold, knee - threshold, 2.0f * knee, 0.25f / (knee + 1e-6f)));
             
-            CoreUtils.SetKeyword(BloomMaterial, k_BloomBicubicUpsampling, bloom.bicubicUpsampling.value);
-            
-            // HDR
-            RenderTextureFormat format = asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default;
+            CoreUtils.SetKeyword(BloomMaterial, k_BloomBicubicUpsampling, m_Bloom.bicubicUpsampling.value);
             
             // Prefilter
             data.buffer.GetTemporaryRT(k_BloomPrefilterId, width, height, 0, FilterMode.Bilinear, format);
@@ -100,7 +102,7 @@ namespace YPipeline
             }
             
             // Upsample - bilinear or bicubic
-            int upsamplePass = bloom.mode.value == BloomMode.Additive ? 3 : 4;
+            int upsamplePass = m_Bloom.mode.value == BloomMode.Additive ? 3 : 4;
             int lastDst = m_BloomPyramidDownIds[iterationCount - 1];
             for (int i = iterationCount - 2; i >= 0; i--)
             {
@@ -109,13 +111,13 @@ namespace YPipeline
                 lastDst = m_BloomPyramidUpIds[i];
             }
             
+            // TODO: 合并到 PostColorGrading 阶段中
             // Final Blit
-            bloomParams = bloom.mode.value == BloomMode.Additive ? new Vector4(bloom.intensity.value, 0.0f) : new Vector4(bloom.finalIntensity.value, 0.0f);
-            int finalPass = bloom.mode.value == BloomMode.Additive ? 3 : 5;
+            bloomParams = m_Bloom.mode.value == BloomMode.Additive ? new Vector4(m_Bloom.intensity.value, 0.0f) : new Vector4(m_Bloom.finalIntensity.value, 0.0f);
+            int finalPass = m_Bloom.mode.value == BloomMode.Additive ? 3 : 5;
             data.buffer.SetGlobalVector(k_BloomParamsId, bloomParams);
             data.buffer.SetGlobalTexture(k_BloomLowerTextureID, new RenderTargetIdentifier(lastDst));
             BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_FrameBufferId, RenderTargetIDs.k_BloomTextureId, BloomMaterial, finalPass);
-            //BlitUtility.BlitTexture(data.buffer, sourceId, RenderTargetIDs.k_FrameBufferId, CopyMaterial, 0);
             
             // Release RT
             data.buffer.ReleaseTemporaryRT(k_BloomPrefilterId);

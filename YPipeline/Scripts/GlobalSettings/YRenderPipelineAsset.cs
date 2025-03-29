@@ -28,6 +28,9 @@ namespace YPipeline
         // TODO：参考 HDRP 的 Asset
         [FoldoutGroup("Rendering Settings", expanded: true)]
         public bool enableHDRFrameBufferFormat = true;
+
+        [FoldoutGroup("Rendering Settings")]
+        public YPipelineResources pipelineResources;
         
         // --------------------------------------------------------------------------------
         // 渲染路径配置

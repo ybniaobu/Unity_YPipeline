@@ -29,7 +29,7 @@ Shader "YPipeline/PBR/Standard Forward"
     	
 	    [Header(Emission Settings)] [Space(8)]
         [HDR] _EmissionColor("Emission Color", Color) = (0.0, 0.0, 0.0, 1.0)
-        [NoScaleOffset] _EmissionTex("Emission Texture", 2D) = "Black" {}
+        [NoScaleOffset] _EmissionTex("Emission Texture", 2D) = "black" {}
         
     	[Header(Transparency Settings)] [Space(8)]
         [Enum(UnityEngine.Rendering.BlendMode)] _SrcBlend ("Src Blend", Float) = 1

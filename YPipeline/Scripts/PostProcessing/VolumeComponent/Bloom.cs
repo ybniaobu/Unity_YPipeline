@@ -28,7 +28,7 @@ namespace YPipeline
         public BloomDownscaleParameter(BloomDownscaleMode value, bool overrideState = false) : base(value, overrideState) { }
     }
     
-    [System.Serializable, VolumeComponentMenu("YPipeline Post Processing/Bloom")]
+    [System.Serializable, VolumeComponentMenu("Post Processing/Bloom")]
     [SupportedOnRenderPipeline(typeof(YRenderPipelineAsset))]
     public class Bloom : VolumeComponent, IPostProcessComponent
     {

@@ -14,22 +14,6 @@ namespace YPipeline
         private ColorGradingLutRenderer m_ColorGradingLutRenderer;
         private PostColorGradingRenderer m_PostColorGradingRenderer;
         
-        private const string k_Copy = "Hidden/YPipeline/Copy";
-        private Material m_CopyMaterial;
-        
-        private Material CopyMaterial
-        {
-            get
-            {
-                if (m_CopyMaterial == null)
-                {
-                    m_CopyMaterial = new Material(Shader.Find(k_Copy));
-                    m_CopyMaterial.hideFlags = HideFlags.HideAndDontSave;
-                }
-                return m_CopyMaterial;
-            }
-        }
-        
         protected override void Initialize()
         {
             m_BloomRenderer = PostProcessingRenderer.Create<BloomRenderer>();
@@ -65,14 +49,14 @@ namespace YPipeline
             if (data.camera.cameraType > CameraType.SceneView)
             {
                 // TODO: 改变逻辑
-                data.buffer.Blit(RenderTargetIDs.k_FrameBufferId, BuiltinRenderTextureType.CameraTarget);
+                BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_FrameBufferId, BuiltinRenderTextureType.CameraTarget);
                 return;
             }
             
             // enable or disable post-processing in the scene window via its effects dropdown menu in its toolbar
             if (data.camera.cameraType == CameraType.SceneView && !SceneView.currentDrawingSceneView.sceneViewState.showImageEffects)
             {
-                data.buffer.Blit(RenderTargetIDs.k_FrameBufferId, BuiltinRenderTextureType.CameraTarget);
+                BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_FrameBufferId, BuiltinRenderTextureType.CameraTarget);
                 return;
             }
 #endif
@@ -104,9 +88,7 @@ namespace YPipeline
             RenderTextureFormat format = asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default;
             
             // Bloom
-            data.buffer.GetTemporaryRT(RenderTargetIDs.k_BloomTextureId, data.camera.pixelWidth, data.camera.pixelHeight, 0, FilterMode.Bilinear, format);
             m_BloomRenderer.Render(asset, ref data);
-            if (!m_BloomRenderer.isActivated) BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_FrameBufferId, RenderTargetIDs.k_BloomTextureId, CopyMaterial,0);
             
             // Color Grading Lut
             m_ColorGradingLutRenderer.Render(asset, ref data);

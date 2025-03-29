@@ -70,8 +70,8 @@
         {
             CGPROGRAM
 
-                #pragma vertex vert_img
-                #pragma fragment FragCurveDark
+            #pragma vertex vert_img
+            #pragma fragment FragCurveDark
 
             ENDCG
         }
@@ -81,8 +81,8 @@
         {
             CGPROGRAM
 
-                #pragma vertex vert_img
-                #pragma fragment FragCurveLight
+            #pragma vertex vert_img
+            #pragma fragment FragCurveLight
 
             ENDCG
         }

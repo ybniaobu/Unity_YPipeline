@@ -100,8 +100,8 @@
         {
             CGPROGRAM
 
-                #pragma vertex vert_img
-                #pragma fragment FragTrackballDark
+            #pragma vertex vert_img
+            #pragma fragment FragTrackballDark
 
             ENDCG
         }
@@ -111,8 +111,8 @@
         {
             CGPROGRAM
 
-                #pragma vertex vert_img
-                #pragma fragment FragTrackballLight
+            #pragma vertex vert_img
+            #pragma fragment FragTrackballLight
 
             ENDCG
         }

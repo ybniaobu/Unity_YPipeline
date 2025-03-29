@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: YRenderPipelineAsset
   m_EditorClassIdentifier: 
   enableHDRFrameBufferFormat: 1
+  pipelineResources: {fileID: 11400000, guid: 908eb47731a80fb45a32453593164179, type: 2}
   renderPath: 0
   currentPipelineNodes:
   - {fileID: 0}

@@ -59,7 +59,7 @@ namespace YPipeline
         public AgXModeParameter(AgXMode value, bool overrideState = false) : base(value, overrideState) { }
     }
     
-    [System.Serializable, VolumeComponentMenu("YPipeline Post Processing/Tone Mapping")]
+    [System.Serializable, VolumeComponentMenu("Post Processing/Color Grading/Tone Mapping")]
     [SupportedOnRenderPipeline(typeof(YRenderPipelineAsset))]
     public class ToneMapping : VolumeComponent, IPostProcessComponent
     {
