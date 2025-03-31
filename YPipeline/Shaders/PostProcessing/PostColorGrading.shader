@@ -23,6 +23,12 @@
             #pragma target 3.5
             #pragma vertex CopyVert
             #pragma fragment PostColorGradingFrag
+
+            #pragma multi_compile_local_fragment _ _CHROMATIC_ABERRATION
+            #pragma multi_compile_local_fragment _ _VIGNETTE
+            #pragma multi_compile_local_fragment _ _EXTRA_LUT
+            #pragma multi_compile_local_fragment _ _FILM_GRAIN
+            
             ENDHLSL
         }
     }

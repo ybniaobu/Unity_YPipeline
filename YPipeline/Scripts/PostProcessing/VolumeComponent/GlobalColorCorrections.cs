@@ -24,11 +24,11 @@ namespace YPipeline
         [Tooltip("Adjusts the overall exposure of the scene in EV100. This is applied after HDR effect and right before tonemapping so it won't affect previous effects in the chain.")]
         public FloatParameter exposure = new ClampedFloatParameter(0.0f, -10.0f, 10.0f);
         
-        [Tooltip("Expands or shrinks the overall range of tonal values.")]
-        public ClampedFloatParameter contrast = new ClampedFloatParameter(1.0f, 0.0f, 2.0f);
-        
         [Tooltip("Pushes the intensity of all colors.")]
         public ClampedFloatParameter saturation = new ClampedFloatParameter(1.0f, 0.0f, 2.0f);
+        
+        [Tooltip("Expands or shrinks the overall range of tonal values.")]
+        public ClampedFloatParameter contrast = new ClampedFloatParameter(1.0f, 0.0f, 2.0f);
         
         [Header("Color Curve")]
         [Tooltip("Affects the luminance across the whole image.")]

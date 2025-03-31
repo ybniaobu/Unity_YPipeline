@@ -24,7 +24,7 @@ namespace YPipeline
         [Tooltip("Specifies the type of grain to use. Select a preset or select \"Custom\" to provide your own Texture.")]
         public FilmGrainKindsParameter type = new FilmGrainKindsParameter(FilmGrainKinds.Thin1);
         
-        [Tooltip("Specifies a tileable Texture to use for the grain. The neutral value for this Texture is 0.5 which means that HDRP does not apply grain at this value.")]
+        [Tooltip("Specifies a tileable Texture to use for the grain. The neutral value for this Texture is 0.5 which means that render pipeline does not apply grain at this value.")]
         public Texture2DParameter texture = new Texture2DParameter(null);
         
         [Tooltip("Use the slider to set the strength of the Film Grain effect.")]

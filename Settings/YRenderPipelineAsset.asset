@@ -26,7 +26,6 @@ MonoBehaviour:
   bakedLUTResolution: 32
   enableSRPBatcher: 1
   enableGPUInstancing: 1
-  environmentBRDFLut: {fileID: 2800000, guid: d2c827fe86e2d6643be2b723f8ad8888, type: 3}
   depthBias: 0.1
   slopeScaledDepthBias: 0.5
   normalBias: 0.1

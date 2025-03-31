@@ -48,6 +48,12 @@ float3 _WorldSpaceCameraPos;
 // w = 1/far plane
 float4 _ProjectionParams;
 
+// x = width
+// y = height
+// z = 1 + 1.0/width
+// w = 1 + 1.0/height
+float4 _ScreenParams;
+
 // x = orthographic camera's width
 // y = orthographic camera's height
 // z = unused

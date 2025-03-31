@@ -7,6 +7,7 @@
 TEXTURE2D(_BlitTexture);
 float4 _BlitTexture_TexelSize;
 SAMPLER(sampler_LinearClamp);
+SAMPLER(sampler_LinearRepeat);
 
 struct Varyings
 {

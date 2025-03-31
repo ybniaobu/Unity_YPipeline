@@ -19,8 +19,8 @@ namespace YPipeline.Editor
         private SerializedDataParameter m_ColorFilter;
         private SerializedDataParameter m_Hue;
         private SerializedDataParameter m_Exposure;
-        private SerializedDataParameter m_Contrast;
         private SerializedDataParameter m_Saturation;
+        private SerializedDataParameter m_Contrast;
         
         // Color Curve
         private SerializedDataParameter m_Master;
@@ -74,8 +74,8 @@ namespace YPipeline.Editor
             m_ColorFilter = Unpack(o.Find(x => x.colorFilter));
             m_Hue = Unpack(o.Find(x => x.hue));
             m_Exposure = Unpack(o.Find(x => x.exposure));
-            m_Contrast = Unpack(o.Find(x => x.contrast));
             m_Saturation = Unpack(o.Find(x => x.saturation));
+            m_Contrast = Unpack(o.Find(x => x.contrast));
             
             // Color Curve
             m_Master = Unpack(o.Find(x => x.master));
@@ -246,8 +246,8 @@ namespace YPipeline.Editor
             PropertyField(m_ColorFilter);
             PropertyField(m_Hue);
             PropertyField(m_Exposure);
-            PropertyField(m_Contrast);
             PropertyField(m_Saturation);
+            PropertyField(m_Contrast);
             
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Color Curves", EditorStyles.boldLabel);

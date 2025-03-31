@@ -69,7 +69,7 @@ float3 Exposure(float3 color)
 float3 Contrast(float3 color)
 {
     color = LinearToLogC(color);
-    color = lerp(ACEScc_MIDGRAY, color, _ColorAdjustmentsParams.z);
+    color = lerp(float3(0.5, 0.5, 0.5), color, _ColorAdjustmentsParams.z);
     return LogCToLinear(color);
 }
 
@@ -97,8 +97,8 @@ float3 ColorAdjustments(float3 color)
     color = ColorFilter(color);
     color = Hue(color);
     color = Exposure(color);
-    color = Contrast(color);
     color = Saturation(color);
+    color = Contrast(color);
     return max(color, 0.0);
 }
 
@@ -107,8 +107,8 @@ float3 ColorAdjustments_ACES(float3 color)
     color = ColorFilter(color);
     color = Hue(color);
     color = Exposure(color);
-    color = Contrast_ACES(color);
     color = Saturation_ACES(color);
+    color = Contrast_ACES(color);
     return max(color, 0.0);
 }
 

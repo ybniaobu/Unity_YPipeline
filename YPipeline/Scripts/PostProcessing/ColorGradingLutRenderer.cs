@@ -80,7 +80,7 @@ namespace YPipeline
             float contrast = m_GlobalColorCorrections.contrast.value;
             float saturation = m_GlobalColorCorrections.saturation.value;
             ColorGradingLutMaterial.SetVector(k_ColorAdjustmentsParamsId, new Vector4(hue, exposure, contrast, saturation));
-            ColorGradingLutMaterial.SetColor(k_ColorFilterId, m_GlobalColorCorrections.colorFilter.value);
+            ColorGradingLutMaterial.SetColor(k_ColorFilterId, m_GlobalColorCorrections.colorFilter.value.linear);
             
             ColorGradingLutMaterial.SetTexture(k_CurveMaster, m_GlobalColorCorrections.master.value.GetTexture());
             ColorGradingLutMaterial.SetTexture(k_CurveRed, m_GlobalColorCorrections.red.value.GetTexture());

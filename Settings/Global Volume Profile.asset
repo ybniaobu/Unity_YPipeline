@@ -30,7 +30,7 @@ MonoBehaviour:
     m_Value: 0.5
   threshold:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 2
   thresholdKnee:
     m_OverrideState: 1
     m_Value: 0.5
@@ -70,11 +70,11 @@ MonoBehaviour:
     m_Value: 0.5
   exposure:
     m_OverrideState: 1
-    m_Value: 1.25
-  contrast:
+    m_Value: 0
+  saturation:
     m_OverrideState: 1
     m_Value: 1.2
-  saturation:
+  contrast:
     m_OverrideState: 1
     m_Value: 1.2
   master:
@@ -355,31 +355,6 @@ MonoBehaviour:
   highlightsEnd:
     m_OverrideState: 1
     m_Value: 1
---- !u!114 &-159086803577951421
-MonoBehaviour:
-  m_ObjectHideFlags: 3
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4e59324034704e0dad48c8ada17f0673, type: 3}
-  m_Name: FilmGrain
-  m_EditorClassIdentifier: 
-  active: 1
-  type:
-    m_OverrideState: 0
-    m_Value: 0
-  texture:
-    m_OverrideState: 0
-    m_Value: {fileID: 0}
-  intensity:
-    m_OverrideState: 0
-    m_Value: 0
-  response:
-    m_OverrideState: 0
-    m_Value: 0.8
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -400,7 +375,8 @@ MonoBehaviour:
   - {fileID: 3089124390416847361}
   - {fileID: 7144626909907418994}
   - {fileID: 8792400353565013660}
-  - {fileID: -159086803577951421}
+  - {fileID: 3228833441281930345}
+  - {fileID: 5557600475121756230}
 --- !u!114 &1171536392866436449
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -524,13 +500,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   active: 1
   lift:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: {x: 1, y: 1, z: 1, w: 0}
   gamma:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: {x: 1, y: 1, z: 1, w: 0}
   gain:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: {x: 1, y: 1, z: 1, w: 0}
 --- !u!114 &3089124390416847361
 MonoBehaviour:
@@ -547,7 +523,7 @@ MonoBehaviour:
   active: 1
   mode:
     m_OverrideState: 1
-    m_Value: 4
+    m_Value: 5
   reinhardMode:
     m_OverrideState: 1
     m_Value: 2
@@ -563,6 +539,50 @@ MonoBehaviour:
   aGXMode:
     m_OverrideState: 1
     m_Value: 0
+--- !u!114 &3228833441281930345
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e59324034704e0dad48c8ada17f0673, type: 3}
+  m_Name: FilmGrain
+  m_EditorClassIdentifier: 
+  active: 1
+  type:
+    m_OverrideState: 1
+    m_Value: 9
+  texture:
+    m_OverrideState: 1
+    m_Value: {fileID: 0}
+  intensity:
+    m_OverrideState: 1
+    m_Value: 1
+  response:
+    m_OverrideState: 1
+    m_Value: 1
+--- !u!114 &5557600475121756230
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 58206b336e7c4ab79906f4bbbdadc7f5, type: 3}
+  m_Name: ChromaticAberration
+  m_EditorClassIdentifier: 
+  active: 1
+  intensity:
+    m_OverrideState: 1
+    m_Value: 1
+  maxSamples:
+    m_OverrideState: 1
+    m_Value: 9
 --- !u!114 &7144626909907418994
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -603,8 +623,8 @@ MonoBehaviour:
     m_OverrideState: 0
     m_Value: {x: 1, y: 1, z: 1, w: 0}
   highlights:
-    m_OverrideState: 0
-    m_Value: {x: 1, y: 1, z: 1, w: 0}
+    m_OverrideState: 1
+    m_Value: {x: 1, y: 1, z: 1, w: -0.4}
   shadowsStart:
     m_OverrideState: 0
     m_Value: 0
@@ -612,11 +632,11 @@ MonoBehaviour:
     m_OverrideState: 0
     m_Value: 0.5
   highlightsStart:
-    m_OverrideState: 0
-    m_Value: 0.5
+    m_OverrideState: 1
+    m_Value: 0.8
   highlightsEnd:
-    m_OverrideState: 0
-    m_Value: 1
+    m_OverrideState: 1
+    m_Value: 2
 --- !u!114 &8638038084918822704
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -676,13 +696,13 @@ MonoBehaviour:
     m_Value: {x: 0.5, y: 0.5}
   intensity:
     m_OverrideState: 1
-    m_Value: 0.4
+    m_Value: 0.6
   smoothness:
     m_OverrideState: 1
-    m_Value: 0.5
+    m_Value: 1
   roundness:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0
   rounded:
     m_OverrideState: 1
     m_Value: 0
