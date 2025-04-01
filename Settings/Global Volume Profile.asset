@@ -58,7 +58,7 @@ MonoBehaviour:
   active: 1
   temperature:
     m_OverrideState: 1
-    m_Value: 20
+    m_Value: 0
   tint:
     m_OverrideState: 1
     m_Value: 0
@@ -70,13 +70,13 @@ MonoBehaviour:
     m_Value: 0.5
   exposure:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 1
   saturation:
     m_OverrideState: 1
     m_Value: 1.2
   contrast:
     m_OverrideState: 1
-    m_Value: 1.2
+    m_Value: 1.5
   master:
     m_OverrideState: 1
     m_Value:
@@ -498,7 +498,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f3fe858f032045a3b5cf0556016f65ef, type: 3}
   m_Name: LiftGammaGain
   m_EditorClassIdentifier: 
-  active: 1
+  active: 0
   lift:
     m_OverrideState: 1
     m_Value: {x: 1, y: 1, z: 1, w: 0}
@@ -523,7 +523,7 @@ MonoBehaviour:
   active: 1
   mode:
     m_OverrideState: 1
-    m_Value: 5
+    m_Value: 4
   reinhardMode:
     m_OverrideState: 1
     m_Value: 2
@@ -551,19 +551,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e59324034704e0dad48c8ada17f0673, type: 3}
   m_Name: FilmGrain
   m_EditorClassIdentifier: 
-  active: 1
+  active: 0
   type:
     m_OverrideState: 1
-    m_Value: 9
+    m_Value: 0
   texture:
     m_OverrideState: 1
     m_Value: {fileID: 0}
   intensity:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0
   response:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0
 --- !u!114 &5557600475121756230
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -576,7 +576,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 58206b336e7c4ab79906f4bbbdadc7f5, type: 3}
   m_Name: ChromaticAberration
   m_EditorClassIdentifier: 
-  active: 1
+  active: 0
   intensity:
     m_OverrideState: 1
     m_Value: 1
@@ -598,7 +598,7 @@ MonoBehaviour:
   active: 1
   texture:
     m_OverrideState: 1
-    m_Value: {fileID: 2800000, guid: c75d3e3a813a6d442b82a7be40da99fe, type: 3}
+    m_Value: {fileID: 2800000, guid: 07c9243b10613f1479f1acbe96dc77ab, type: 3}
     dimension: 1
   contribution:
     m_OverrideState: 1
@@ -615,28 +615,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3fcc7b6a9fd94288a097d6c1f158c997, type: 3}
   m_Name: ShadowsMidtonesHighlights
   m_EditorClassIdentifier: 
-  active: 1
+  active: 0
   shadows:
-    m_OverrideState: 0
-    m_Value: {x: 1, y: 1, z: 1, w: 0}
+    m_OverrideState: 1
+    m_Value: {x: 0, y: 1, z: 0.0666666, w: 0.1264489}
   midtones:
-    m_OverrideState: 0
-    m_Value: {x: 1, y: 1, z: 1, w: 0}
+    m_OverrideState: 1
+    m_Value: {x: 0, y: 0.20000005, z: 1, w: 0}
   highlights:
     m_OverrideState: 1
-    m_Value: {x: 1, y: 1, z: 1, w: -0.4}
+    m_Value: {x: 1, y: 0.016666668, z: 0, w: 0}
   shadowsStart:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 0
   shadowsEnd:
-    m_OverrideState: 0
-    m_Value: 0.5
+    m_OverrideState: 1
+    m_Value: 0.4
   highlightsStart:
     m_OverrideState: 1
     m_Value: 0.8
   highlightsEnd:
     m_OverrideState: 1
-    m_Value: 2
+    m_Value: 1
 --- !u!114 &8638038084918822704
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -687,7 +687,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f021eeae69254c388de6f3da8e71b2a8, type: 3}
   m_Name: Vignette
   m_EditorClassIdentifier: 
-  active: 1
+  active: 0
   color:
     m_OverrideState: 1
     m_Value: {r: 0, g: 0, b: 0, a: 1}

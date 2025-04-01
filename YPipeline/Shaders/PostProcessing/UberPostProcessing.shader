@@ -1,7 +1,7 @@
-﻿Shader "Hidden/YPipeline/PostColorGrading"
+﻿Shader "Hidden/YPipeline/UberPostProcessing"
 {
     HLSLINCLUDE
-    #include "PostColorGradingPass.hlsl"
+    #include "UberPostProcessingPass.hlsl"
     ENDHLSL
 
     SubShader
@@ -17,12 +17,12 @@
         
         Pass
         {
-            Name "Post Color Grading" // 0
+            Name "Uber Post Processing" // 0
             
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex CopyVert
-            #pragma fragment PostColorGradingFrag
+            #pragma fragment UberPostProcessingFrag
 
             #pragma multi_compile_local_fragment _ _CHROMATIC_ABERRATION
             #pragma multi_compile_local_fragment _ _VIGNETTE

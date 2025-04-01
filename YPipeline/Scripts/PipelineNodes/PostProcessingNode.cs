@@ -12,13 +12,13 @@ namespace YPipeline
     {
         private BloomRenderer m_BloomRenderer;
         private ColorGradingLutRenderer m_ColorGradingLutRenderer;
-        private PostColorGradingRenderer m_PostColorGradingRenderer;
+        private UberPostProcessingRenderer m_UberPostProcessingRenderer;
         
         protected override void Initialize()
         {
             m_BloomRenderer = PostProcessingRenderer.Create<BloomRenderer>();
             m_ColorGradingLutRenderer = PostProcessingRenderer.Create<ColorGradingLutRenderer>();
-            m_PostColorGradingRenderer = PostProcessingRenderer.Create<PostColorGradingRenderer>();
+            m_UberPostProcessingRenderer = PostProcessingRenderer.Create<UberPostProcessingRenderer>();
         }
         
         protected override void Dispose()
@@ -94,7 +94,7 @@ namespace YPipeline
             m_ColorGradingLutRenderer.Render(asset, ref data);
             
             // Post Color Grading
-            m_PostColorGradingRenderer.Render(asset, ref data);
+            m_UberPostProcessingRenderer.Render(asset, ref data);
             
             // Clear RT
             data.buffer.ReleaseTemporaryRT(RenderTargetIDs.k_BloomTextureId);

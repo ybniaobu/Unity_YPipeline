@@ -4,7 +4,7 @@ using UnityEngine.Experimental.Rendering;
 
 namespace YPipeline
 {
-    public class PostColorGradingRenderer : PostProcessingRenderer
+    public class UberPostProcessingRenderer : PostProcessingRenderer
     {
         private const string k_ChromaticAberration = "_CHROMATIC_ABERRATION";
         private static readonly int k_SpectralLutID = Shader.PropertyToID("_SpectralLut");
@@ -15,7 +15,7 @@ namespace YPipeline
         private static readonly int k_VignetteParams1Id = Shader.PropertyToID("_VignetteParams1");
         private static readonly int k_VignetteParams2Id = Shader.PropertyToID("_VignetteParams2");
         
-        private static readonly int k_PostColorGradingParamsId = Shader.PropertyToID("_PostColorGradingParams");
+        private static readonly int k_ColorGradingLutParamsId = Shader.PropertyToID("_ColorGradingLutParams");
         
         private const string k_ExtraLut = "_EXTRA_LUT";
         private static readonly int k_ExtraLutId = Shader.PropertyToID("_ExtraLut");
@@ -33,19 +33,19 @@ namespace YPipeline
         
         private System.Random m_Random;
         
-        private const string k_PostColorGrading = "Hidden/YPipeline/PostColorGrading";
-        private Material m_PostColorGradingMaterial;
+        private const string k_UberPostProcessing = "Hidden/YPipeline/UberPostProcessing";
+        private Material m_UberPostProcessingMaterial;
 
-        private Material PostColorGradingMaterial
+        private Material UberPostProcessingMaterial
         {
             get
             {
-                if (m_PostColorGradingMaterial == null)
+                if (m_UberPostProcessingMaterial == null)
                 {
-                    m_PostColorGradingMaterial = new Material(Shader.Find(k_PostColorGrading));
-                    m_PostColorGradingMaterial.hideFlags = HideFlags.HideAndDontSave;
+                    m_UberPostProcessingMaterial = new Material(Shader.Find(k_UberPostProcessing));
+                    m_UberPostProcessingMaterial.hideFlags = HideFlags.HideAndDontSave;
                 }
-                return m_PostColorGradingMaterial;
+                return m_UberPostProcessingMaterial;
             }
         }
 
@@ -94,40 +94,40 @@ namespace YPipeline
         public override void Render(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
         {
             isActivated = true;
-            data.buffer.BeginSample("Post Color Grading");
+            data.buffer.BeginSample("Uber Post Processing");
             
             // Chromatic Aberration
-            CoreUtils.SetKeyword(PostColorGradingMaterial, k_ChromaticAberration, m_ChromaticAberration.IsActive());
-            PostColorGradingMaterial.SetTexture(k_SpectralLutID, InternalSpectralLut);
-            PostColorGradingMaterial.SetVector(k_ChromaticAberrationParamsID, new Vector4(m_ChromaticAberration.intensity.value * 0.05f, m_ChromaticAberration.maxSamples.value));
+            CoreUtils.SetKeyword(UberPostProcessingMaterial, k_ChromaticAberration, m_ChromaticAberration.IsActive());
+            UberPostProcessingMaterial.SetTexture(k_SpectralLutID, InternalSpectralLut);
+            UberPostProcessingMaterial.SetVector(k_ChromaticAberrationParamsID, new Vector4(m_ChromaticAberration.intensity.value * 0.05f, m_ChromaticAberration.maxSamples.value));
             
             // Vignette
-            CoreUtils.SetKeyword(PostColorGradingMaterial, k_Vignette, m_Vignette.IsActive());
+            CoreUtils.SetKeyword(UberPostProcessingMaterial, k_Vignette, m_Vignette.IsActive());
             float roundness = (1f - m_Vignette.roundness.value) * 6f + m_Vignette.roundness.value;
             float aspectRatio = data.camera.aspect;
             Vector4 vignetteParams1 = new Vector4(m_Vignette.center.value.x, m_Vignette.center.value.y, 0f, 0f);
             Vector4 vignetteParams2 = new Vector4(m_Vignette.intensity.value * 3f, m_Vignette.smoothness.value * 5f, roundness, m_Vignette.rounded.value ? aspectRatio : 1f);
-            PostColorGradingMaterial.SetColor(k_VignetteColorId, m_Vignette.color.value);
-            PostColorGradingMaterial.SetVector(k_VignetteParams1Id, vignetteParams1);
-            PostColorGradingMaterial.SetVector(k_VignetteParams2Id, vignetteParams2);
+            UberPostProcessingMaterial.SetColor(k_VignetteColorId, m_Vignette.color.value);
+            UberPostProcessingMaterial.SetVector(k_VignetteParams1Id, vignetteParams1);
+            UberPostProcessingMaterial.SetVector(k_VignetteParams2Id, vignetteParams2);
             
-            // Color Grading Baked Lut
+            // Baked Color Grading Lut
             int lutHeight = asset.bakedLUTResolution;
             int lutWidth = lutHeight * lutHeight;
-            PostColorGradingMaterial.SetVector(k_PostColorGradingParamsId, new Vector4(1.0f / lutWidth, 1.0f / lutHeight, lutHeight - 1.0f));
+            UberPostProcessingMaterial.SetVector(k_ColorGradingLutParamsId, new Vector4(1.0f / lutWidth, 1.0f / lutHeight, lutHeight - 1.0f));
             
             // Extra Lut
-            CoreUtils.SetKeyword(PostColorGradingMaterial, k_ExtraLut, m_LookupTable.IsActive());
+            CoreUtils.SetKeyword(UberPostProcessingMaterial, k_ExtraLut, m_LookupTable.IsActive());
             if (m_LookupTable.IsActive())
             {
-                PostColorGradingMaterial.SetTexture(k_ExtraLutId, m_LookupTable.texture.value);
+                UberPostProcessingMaterial.SetTexture(k_ExtraLutId, m_LookupTable.texture.value);
                 Vector4 extraLutParams = new Vector4(1.0f / m_LookupTable.texture.value.width, 1.0f / m_LookupTable.texture.value.height, m_LookupTable.texture.value.height - 1.0f, m_LookupTable.contribution.value);
-                PostColorGradingMaterial.SetVector(k_ExtraLutParamsID, extraLutParams);
+                UberPostProcessingMaterial.SetVector(k_ExtraLutParamsID, extraLutParams);
             }
             
             // Film Grain
-            CoreUtils.SetKeyword(PostColorGradingMaterial,k_FilmGrain, m_FilmGrain.IsActive());
-            if (m_LookupTable.IsActive())
+            CoreUtils.SetKeyword(UberPostProcessingMaterial,k_FilmGrain, m_FilmGrain.IsActive());
+            if (m_FilmGrain.IsActive())
             {
                 Texture texture = null;
                 if (m_FilmGrain.type.value != FilmGrainKinds.Custom)
@@ -143,14 +143,14 @@ namespace YPipeline
                 float offsetX = (float) m_Random.NextDouble();
                 float offsetY = (float) m_Random.NextDouble();
                 
-                PostColorGradingMaterial.SetVector(k_FilmGrainParamsID, new Vector4(m_FilmGrain.intensity.value * 4f, m_FilmGrain.response.value));
-                PostColorGradingMaterial.SetVector(k_FilmGrainTexParamsID, new Vector4(uvScaleX, uvScaleY, offsetX, offsetY));
-                PostColorGradingMaterial.SetTexture(k_FilmGrainTexID, texture);
+                UberPostProcessingMaterial.SetVector(k_FilmGrainParamsID, new Vector4(m_FilmGrain.intensity.value * 4f, m_FilmGrain.response.value));
+                UberPostProcessingMaterial.SetVector(k_FilmGrainTexParamsID, new Vector4(uvScaleX, uvScaleY, offsetX, offsetY));
+                UberPostProcessingMaterial.SetTexture(k_FilmGrainTexID, texture);
             }
             
-            BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_BloomTextureId, BuiltinRenderTextureType.CameraTarget, PostColorGradingMaterial, 0);
+            BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_BloomTextureId, BuiltinRenderTextureType.CameraTarget, UberPostProcessingMaterial, 0);
             
-            data.buffer.EndSample("Post Color Grading");
+            data.buffer.EndSample("Uber Post Processing");
         }
     }
 }

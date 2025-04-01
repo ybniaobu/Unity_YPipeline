@@ -1,5 +1,5 @@
-﻿#ifndef YPIPELINE_POST_COLOR_GRADING_PASS_INCLUDED
-#define YPIPELINE_POST_COLOR_GRADING_PASS_INCLUDED
+﻿#ifndef YPIPELINE_UBER_POST_PROCESSING_PASS_INCLUDED
+#define YPIPELINE_UBER_POST_PROCESSING_PASS_INCLUDED
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
@@ -12,7 +12,7 @@ float4 _VignetteColor;
 float4 _VignetteParams1; // xy: center
 float4 _VignetteParams2; // x: 3f * intensity, y: 5f * smoothness, z: roundness, w: rounded
 
-float4 _PostColorGradingParams; // x: 1f / lutWidth, y: 1f / lutHeight, z: lutHeight - 1f
+float4 _ColorGradingLutParams; // x: 1f / lutWidth, y: 1f / lutHeight, z: lutHeight - 1f
 float4 _ExtraLutParams; // x: 1f / lutWidth, y: 1f / lutHeight, z: lutHeight - 1f, w: contribution
 
 float4 _FilmGrainParams; // x: intensity, y: response
@@ -24,7 +24,7 @@ TEXTURE2D(_ExtraLut);
 TEXTURE2D(_FilmGrainTex);
 SAMPLER(sampler_SpectralLut);
 
-float4 PostColorGradingFrag(Varyings IN) : SV_TARGET
+float4 UberPostProcessingFrag(Varyings IN) : SV_TARGET
 {
     float3 color;
     
@@ -59,12 +59,12 @@ float4 PostColorGradingFrag(Varyings IN) : SV_TARGET
         distance.x *= _VignetteParams2.w;
         distance = pow(saturate(distance), _VignetteParams2.z);
         float vfactor = pow(saturate(1.0 - dot(distance, distance)), _VignetteParams2.y);
-        color *= lerp(_VignetteColor, (1.0).xxx, vfactor);
+        color *= lerp(_VignetteColor.rgb, (1.0).xxx, vfactor);
         color = max(color, 0);
     #endif
 
     // Color Grading Baked Lut
-    color = ApplyLut2D(_ColorGradingLutTexture, sampler_LinearClamp, saturate(LinearToLogC(color)), _PostColorGradingParams.xyz);
+    color = ApplyLut2D(_ColorGradingLutTexture, sampler_LinearClamp, saturate(LinearToLogC(color)), _ColorGradingLutParams.xyz);
     color = saturate(color);
 
     // Extra Lut
