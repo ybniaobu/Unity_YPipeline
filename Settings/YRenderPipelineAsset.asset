@@ -30,7 +30,7 @@ MonoBehaviour:
   slopeScaledDepthBias: 0.5
   normalBias: 0.1
   slopeScaledNormalBias: 0.5
-  maxShadowDistance: 100
+  maxShadowDistance: 80
   distanceFade: 0.05
   sunLightShadowArraySize: 4096
   sunLightShadowSampleNumber: 16
@@ -40,6 +40,6 @@ MonoBehaviour:
   spiltRatio2: 0.2
   spiltRatio3: 0.6
   cascadeEdgeFade: 0.05
-  punctualLightShadowArraySize: 1024
+  punctualLightShadowArraySize: 2048
   punctualLightShadowSampleNumber: 8
   punctualLightPenumbra: 0.095

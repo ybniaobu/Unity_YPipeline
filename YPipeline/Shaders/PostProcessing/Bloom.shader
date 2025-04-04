@@ -17,7 +17,7 @@ Shader "Hidden/YPipeline/Bloom"
         
         Pass
         {
-            Name "Bloom Prefilter"
+            Name "Bloom Prefilter" // 0
             
             HLSLPROGRAM
             #pragma target 3.5
@@ -28,7 +28,7 @@ Shader "Hidden/YPipeline/Bloom"
 
         Pass
         {
-            Name "Bloom Gaussian Blur Horizontal"
+            Name "Bloom Gaussian Blur Horizontal" // 1
             
             HLSLPROGRAM
             #pragma target 3.5
@@ -39,7 +39,7 @@ Shader "Hidden/YPipeline/Bloom"
 
         Pass
         {
-            Name "Bloom Gaussian Blur Vertical"
+            Name "Bloom Gaussian Blur Vertical" // 2
             
             HLSLPROGRAM
             #pragma target 3.5
@@ -50,7 +50,7 @@ Shader "Hidden/YPipeline/Bloom"
 
         Pass
         {
-            Name "Bloom Additive Upsample"
+            Name "Bloom Additive Upsample" // 3
             
             HLSLPROGRAM
             #pragma target 3.5
@@ -62,7 +62,7 @@ Shader "Hidden/YPipeline/Bloom"
 
         Pass
         {
-            Name "Bloom Scattering Upsample"
+            Name "Bloom Scattering Upsample" // 4
             
             HLSLPROGRAM
             #pragma target 3.5
@@ -74,7 +74,7 @@ Shader "Hidden/YPipeline/Bloom"
 
         Pass
         {
-            Name "Bloom Scattering Final Blit"
+            Name "Bloom Scattering Final Blit" // 5
             
             HLSLPROGRAM
             #pragma target 3.5

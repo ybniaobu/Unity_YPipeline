@@ -19,12 +19,16 @@
         {
             Name "Uber Post Processing" // 0
             
+            Blend One OneMinusSrcAlpha
+            
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex CopyVert
             #pragma fragment UberPostProcessingFrag
 
             #pragma multi_compile_local_fragment _ _CHROMATIC_ABERRATION
+            #pragma multi_compile_local_fragment _ _BLOOM
+            #pragma multi_compile_local_fragment _ _BLOOM_BICUBIC_UPSAMPLING
             #pragma multi_compile_local_fragment _ _VIGNETTE
             #pragma multi_compile_local_fragment _ _EXTRA_LUT
             #pragma multi_compile_local_fragment _ _FILM_GRAIN

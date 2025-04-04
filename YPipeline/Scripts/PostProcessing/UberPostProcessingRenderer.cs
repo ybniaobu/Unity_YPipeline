@@ -10,6 +10,12 @@ namespace YPipeline
         private static readonly int k_SpectralLutID = Shader.PropertyToID("_SpectralLut");
         private static readonly int k_ChromaticAberrationParamsID = Shader.PropertyToID("_ChromaticAberrationParams");
         
+        private const string k_Bloom = "_BLOOM";
+        private const string k_BloomBicubicUpsampling = "_BLOOM_BICUBIC_UPSAMPLING";
+        private static readonly int k_BloomTexID = Shader.PropertyToID("_BloomTex");
+        private static readonly int k_BloomParamsId = Shader.PropertyToID("_BloomParams");
+        private static readonly int k_BloomThresholdId = Shader.PropertyToID("_BloomThreshold");
+        
         private const string k_Vignette = "_VIGNETTE";
         private static readonly int k_VignetteColorId = Shader.PropertyToID("_VignetteColor");
         private static readonly int k_VignetteParams1Id = Shader.PropertyToID("_VignetteParams1");
@@ -27,6 +33,7 @@ namespace YPipeline
         private static readonly int k_FilmGrainTexParamsID = Shader.PropertyToID("_FilmGrainTexParams");
         
         private ChromaticAberration m_ChromaticAberration;
+        private Bloom m_Bloom;
         private Vignette m_Vignette;
         private LookupTable m_LookupTable;
         private FilmGrain m_FilmGrain;
@@ -85,6 +92,7 @@ namespace YPipeline
             base.Initialize();
             var stack = VolumeManager.instance.stack;
             m_ChromaticAberration = stack.GetComponent<ChromaticAberration>();
+            m_Bloom = stack.GetComponent<Bloom>();
             m_Vignette = stack.GetComponent<Vignette>();
             m_LookupTable = stack.GetComponent<LookupTable>();
             m_FilmGrain = stack.GetComponent<FilmGrain>();
@@ -100,6 +108,16 @@ namespace YPipeline
             CoreUtils.SetKeyword(UberPostProcessingMaterial, k_ChromaticAberration, m_ChromaticAberration.IsActive());
             UberPostProcessingMaterial.SetTexture(k_SpectralLutID, InternalSpectralLut);
             UberPostProcessingMaterial.SetVector(k_ChromaticAberrationParamsID, new Vector4(m_ChromaticAberration.intensity.value * 0.05f, m_ChromaticAberration.maxSamples.value));
+            
+            // Bloom
+            CoreUtils.SetKeyword(UberPostProcessingMaterial, k_Bloom, m_Bloom.IsActive());
+            CoreUtils.SetKeyword(UberPostProcessingMaterial, k_BloomBicubicUpsampling, m_Bloom.bicubicUpsampling.value);
+            Vector4 bloomParams = m_Bloom.mode.value == BloomMode.Additive ? new Vector4(m_Bloom.intensity.value, 0.0f) : new Vector4(m_Bloom.finalIntensity.value, 1.0f);
+            UberPostProcessingMaterial.SetVector(k_BloomParamsId, bloomParams);
+            float threshold = Mathf.GammaToLinearSpace(m_Bloom.threshold.value);
+            float knee = threshold * m_Bloom.thresholdKnee.value;
+            UberPostProcessingMaterial.SetVector(k_BloomThresholdId, new Vector4(threshold, knee - threshold, 2.0f * knee, 0.25f / (knee + 1e-6f)));
+            data.buffer.SetGlobalTexture(k_BloomTexID, new RenderTargetIdentifier(RenderTargetIDs.k_BloomTextureId));
             
             // Vignette
             CoreUtils.SetKeyword(UberPostProcessingMaterial, k_Vignette, m_Vignette.IsActive());
@@ -148,7 +166,8 @@ namespace YPipeline
                 UberPostProcessingMaterial.SetTexture(k_FilmGrainTexID, texture);
             }
             
-            BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_BloomTextureId, BuiltinRenderTextureType.CameraTarget, UberPostProcessingMaterial, 0);
+            // TODO: Final Pass
+            BlitUtility.BlitCameraTarget(data.buffer, RenderTargetIDs.k_FrameBufferId, data.camera.pixelRect, UberPostProcessingMaterial, 0);
             
             data.buffer.EndSample("Uber Post Processing");
         }

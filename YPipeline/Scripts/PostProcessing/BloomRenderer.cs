@@ -52,21 +52,16 @@ namespace YPipeline
 
         public override void Render(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
         {
-            data.buffer.BeginSample("Bloom");
-            RenderTextureFormat format = asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default;
-            data.buffer.GetTemporaryRT(RenderTargetIDs.k_BloomTextureId, data.camera.pixelWidth, data.camera.pixelHeight, 0, FilterMode.Bilinear, format);
-            
-            if (!m_Bloom.IsActive())
-            {
-                isActivated = false;
-                BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_FrameBufferId, RenderTargetIDs.k_BloomTextureId);
-                return;
-            }
             isActivated = true;
+            data.buffer.BeginSample("Bloom");
             
             // do bloom at half or quarter resolution
             int width = data.camera.pixelWidth >> (int) m_Bloom.bloomDownscale.value;
             int height = data.camera.pixelHeight >> (int) m_Bloom.bloomDownscale.value;
+            
+            // Temporary RT
+            RenderTextureFormat format = asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default;
+            data.buffer.GetTemporaryRT(RenderTargetIDs.k_BloomTextureId, width >> 1, height >> 1, 0, FilterMode.Bilinear, format);
             
             // Determine the iteration count
             int minSize = Mathf.Min(width, height);
@@ -75,10 +70,10 @@ namespace YPipeline
             
             // Shader property and keyword setup
             Vector4 bloomParams = m_Bloom.mode.value == BloomMode.Additive ? new Vector4(m_Bloom.additiveStrength.value, 0.0f) : new Vector4(m_Bloom.scatter.value, 0.0f);
-            data.buffer.SetGlobalVector(k_BloomParamsId, bloomParams);
+            BloomMaterial.SetVector(k_BloomParamsId, bloomParams);
             float threshold = Mathf.GammaToLinearSpace(m_Bloom.threshold.value);
             float knee = threshold * m_Bloom.thresholdKnee.value;
-            data.buffer.SetGlobalVector(k_BloomThresholdId, new Vector4(threshold, knee - threshold, 2.0f * knee, 0.25f / (knee + 1e-6f)));
+            BloomMaterial.SetVector(k_BloomThresholdId, new Vector4(threshold, knee - threshold, 2.0f * knee, 0.25f / (knee + 1e-6f)));
             
             CoreUtils.SetKeyword(BloomMaterial, k_BloomBicubicUpsampling, m_Bloom.bicubicUpsampling.value);
             
@@ -107,17 +102,17 @@ namespace YPipeline
             for (int i = iterationCount - 2; i >= 0; i--)
             {
                 data.buffer.SetGlobalTexture(k_BloomLowerTextureID, new RenderTargetIdentifier(lastDst));
-                BlitUtility.BlitTexture(data.buffer, m_BloomPyramidDownIds[i], m_BloomPyramidUpIds[i], BloomMaterial, upsamplePass);
+                if (i == 0) BlitUtility.BlitTexture(data.buffer, m_BloomPyramidDownIds[i], RenderTargetIDs.k_BloomTextureId, BloomMaterial, upsamplePass);
+                else BlitUtility.BlitTexture(data.buffer, m_BloomPyramidDownIds[i], m_BloomPyramidUpIds[i], BloomMaterial, upsamplePass);
                 lastDst = m_BloomPyramidUpIds[i];
             }
             
-            // TODO: 合并到 PostColorGrading 阶段中
             // Final Blit
-            bloomParams = m_Bloom.mode.value == BloomMode.Additive ? new Vector4(m_Bloom.intensity.value, 0.0f) : new Vector4(m_Bloom.finalIntensity.value, 0.0f);
-            int finalPass = m_Bloom.mode.value == BloomMode.Additive ? 3 : 5;
-            data.buffer.SetGlobalVector(k_BloomParamsId, bloomParams);
-            data.buffer.SetGlobalTexture(k_BloomLowerTextureID, new RenderTargetIdentifier(lastDst));
-            BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_FrameBufferId, RenderTargetIDs.k_BloomTextureId, BloomMaterial, finalPass);
+            // bloomParams = m_Bloom.mode.value == BloomMode.Additive ? new Vector4(m_Bloom.intensity.value, 0.0f) : new Vector4(m_Bloom.finalIntensity.value, 0.0f);
+            // int finalPass = m_Bloom.mode.value == BloomMode.Additive ? 3 : 5;
+            // data.buffer.SetGlobalVector(k_BloomParamsId, bloomParams);
+            // data.buffer.SetGlobalTexture(k_BloomLowerTextureID, new RenderTargetIdentifier(lastDst));
+            // BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_FrameBufferId, RenderTargetIDs.k_BloomTextureId, BloomMaterial, finalPass);
             
             // Release RT
             data.buffer.ReleaseTemporaryRT(k_BloomPrefilterId);

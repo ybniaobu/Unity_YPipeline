@@ -61,6 +61,22 @@ namespace YPipeline
             cmd.DrawProcedural(Matrix4x4.identity, material, pass, MeshTopology.Triangles, 3);
         }
         
+        public static void BlitCameraTarget(CommandBuffer cmd, int sourceID, Rect cameraRect)
+        {
+            cmd.SetGlobalTexture(k_BlitTextureId, new RenderTargetIdentifier(sourceID));
+            cmd.SetRenderTarget(new RenderTargetIdentifier(BuiltinRenderTextureType.CameraTarget), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            cmd.SetViewport(cameraRect);
+            cmd.DrawProcedural(Matrix4x4.identity, CopyMaterial, 0, MeshTopology.Triangles, 3);
+        }
+        
+        public static void BlitCameraTarget(CommandBuffer cmd, int sourceID, Rect cameraRect, Material material, int pass)
+        {
+            cmd.SetGlobalTexture(k_BlitTextureId, new RenderTargetIdentifier(sourceID));
+            cmd.SetRenderTarget(new RenderTargetIdentifier(BuiltinRenderTextureType.CameraTarget), RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
+            cmd.SetViewport(cameraRect);
+            cmd.DrawProcedural(Matrix4x4.identity, material, pass, MeshTopology.Triangles, 3);
+        }
+        
         public static void DrawTexture(CommandBuffer cmd, int destinationID, Material material, int pass)
         {
             cmd.SetRenderTarget(new RenderTargetIdentifier(destinationID), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);

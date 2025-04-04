@@ -38,7 +38,7 @@ namespace YPipeline
             data.buffer.SetRenderTarget(new RenderTargetIdentifier(RenderTargetIDs.k_FrameBufferId), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
             // CameraClearFlags flags = data.camera.clearFlags;
             // data.buffer.ClearRenderTarget(flags < CameraClearFlags.Nothing, flags < CameraClearFlags.Depth, data.camera.backgroundColor.linear);
-            data.buffer.ClearRenderTarget(true, true, Color.clear);
+            data.buffer.ClearRenderTarget(true, true, data.camera.backgroundColor.linear);
             
             RenderOpaqueAndAlphaTest(asset, ref data);
             data.context.ExecuteCommandBuffer(data.buffer);

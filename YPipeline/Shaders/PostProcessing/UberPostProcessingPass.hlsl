@@ -3,10 +3,14 @@
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Filtering.hlsl"
 #include "../../ShaderLibrary/Core/UnityInput.hlsl"
 #include "CopyPass.hlsl"
 
 float4 _ChromaticAberrationParams; // x: 0.05f * intensity, y: sample count
+
+float4 _BloomThreshold; // x: threshold, y: -threshold + threshold * thresholdKnee, z: 2 * threshold * thresholdKnee, w: 1 / 4 * threshold * thresholdKnee
+float4 _BloomParams; // x: intensity or scatter, y: mode
 
 float4 _VignetteColor;
 float4 _VignetteParams1; // xy: center
@@ -19,14 +23,28 @@ float4 _FilmGrainParams; // x: intensity, y: response
 float4 _FilmGrainTexParams; // xy: CameraSize.xy / FilmGrainTexSize.xy, zw: random offset in uv
 
 TEXTURE2D(_SpectralLut);
+TEXTURE2D(_BloomTex);
+float4 _BloomTex_TexelSize;
 TEXTURE2D(_ColorGradingLutTexture);
 TEXTURE2D(_ExtraLut);
 TEXTURE2D(_FilmGrainTex);
 SAMPLER(sampler_SpectralLut);
 
+float3 ApplyBloomThreshold(float3 color)
+{
+    float brightness = Max3(color.r, color.g, color.b);
+    float soft = brightness + _BloomThreshold.y;
+    soft = clamp(soft, 0.0, _BloomThreshold.z);
+    soft = soft * soft * _BloomThreshold.w;
+    float contribution = max(soft, brightness - _BloomThreshold.x);
+    contribution /= max(brightness, 0.00001);
+    return color * contribution;
+}
+
 float4 UberPostProcessingFrag(Varyings IN) : SV_TARGET
 {
-    float3 color;
+    float4 inputColor = SAMPLE_TEXTURE2D_LOD(_BlitTexture, sampler_LinearClamp, IN.uv, 0);
+    float3 color = inputColor.rgb;
     
     // Chromatic Aberration
     #if _CHROMATIC_ABERRATION
@@ -49,8 +67,26 @@ float4 UberPostProcessingFrag(Varyings IN) : SV_TARGET
             pos += delta;
         }
         color = sum / filterSum;
-    #else
-        color = SAMPLE_TEXTURE2D_LOD(_BlitTexture, sampler_LinearClamp, IN.uv, 0).rgb;
+    #endif
+
+    // Bloom
+    #if _BLOOM
+        #if _BLOOM_BICUBIC_UPSAMPLING
+            float3 bloomTex = SampleTexture2DBicubic(_BloomTex, sampler_LinearClamp, IN.uv, _BloomTex_TexelSize.zwxy, (1.0).xx, 0.0).rgb;
+        #else
+            float3 bloomTex = SAMPLE_TEXTURE2D_LOD(_BloomTex, sampler_LinearClamp, IN.uv, 0).rgb;
+        #endif
+    
+        UNITY_BRANCH
+        if (_BloomParams.y > 0)
+        {
+            bloomTex += color - ApplyBloomThreshold(color);
+            color = lerp(color, bloomTex, _BloomParams.x);
+        }
+        else
+        {
+            color = bloomTex * _BloomParams.x + color;
+        }
     #endif
     
     // Vignette
@@ -86,7 +122,7 @@ float4 UberPostProcessingFrag(Varyings IN) : SV_TARGET
     #endif
 
     color = saturate(color);
-    return float4(color, 1.0f);
+    return float4(color, inputColor.a);
 }
 
 #endif
