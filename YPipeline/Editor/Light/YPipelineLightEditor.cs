@@ -31,4 +31,9 @@ public class YPipelineLightEditor : LightEditor
             settings.ApplyModifiedProperties();
         }
     }
+
+    private void DrawYPipelineLight()
+    {
+        
+    }
 }

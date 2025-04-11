@@ -155,7 +155,7 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     // ----------------------------------------------------------------------------------------------------
     // Clipping
     // ----------------------------------------------------------------------------------------------------
-    float alpha = SAMPLE_TEXTURE2D(_OpacityTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).r;
+    float alpha = SAMPLE_TEXTURE2D(_OpacityTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).r * _BaseColor.a;
     #if defined(_CLIPPING)
         clip(alpha - _Cutoff);
     #endif

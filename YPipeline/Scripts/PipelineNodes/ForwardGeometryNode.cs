@@ -22,7 +22,8 @@ namespace YPipeline
         protected override void OnRelease(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
         {
             base.OnRelease(asset, ref data);
-            data.buffer.ReleaseTemporaryRT(RenderTargetIDs.k_FrameBufferId);
+            data.buffer.ReleaseTemporaryRT(RenderTargetIDs.k_ColorBufferId);
+            data.buffer.ReleaseTemporaryRT(RenderTargetIDs.k_DepthBufferId);
             data.context.ExecuteCommandBuffer(data.buffer);
             data.buffer.Clear();
             data.context.Submit();
@@ -33,9 +34,15 @@ namespace YPipeline
             base.OnRender(asset, ref data);
             data.context.SetupCameraProperties(data.camera);
             
-            data.buffer.GetTemporaryRT(RenderTargetIDs.k_FrameBufferId, data.camera.pixelWidth, data.camera.pixelHeight, 32, FilterMode.Bilinear, 
+            data.buffer.GetTemporaryRT(RenderTargetIDs.k_ColorBufferId, data.camera.pixelWidth, data.camera.pixelHeight, 0, FilterMode.Bilinear, 
                 asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
-            data.buffer.SetRenderTarget(new RenderTargetIdentifier(RenderTargetIDs.k_FrameBufferId), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            data.buffer.GetTemporaryRT(RenderTargetIDs.k_DepthBufferId, data.camera.pixelWidth, data.camera.pixelHeight, 32, FilterMode.Point, 
+                RenderTextureFormat.Depth);
+            
+            data.buffer.SetRenderTarget(new RenderTargetIdentifier(RenderTargetIDs.k_ColorBufferId), 
+                                        RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
+                                        new RenderTargetIdentifier(RenderTargetIDs.k_DepthBufferId),
+                                        RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
             // CameraClearFlags flags = data.camera.clearFlags;
             // data.buffer.ClearRenderTarget(flags < CameraClearFlags.Nothing, flags < CameraClearFlags.Depth, data.camera.backgroundColor.linear);
             data.buffer.ClearRenderTarget(true, true, data.camera.backgroundColor.linear);

@@ -140,4 +140,8 @@ SAMPLER(SHADOW_SAMPLER);
 TEXTURE2D(ENVIRONMENT_BRDF_LUT);
 SAMPLER(LUT_SAMPLER);
 
+// General Samplers
+SAMPLER(sampler_LinearClamp);
+SAMPLER(sampler_LinearRepeat);
+
 #endif

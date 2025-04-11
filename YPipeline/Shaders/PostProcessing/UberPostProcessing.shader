@@ -19,8 +19,6 @@
         {
             Name "Uber Post Processing" // 0
             
-            Blend One OneMinusSrcAlpha
-            
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex CopyVert

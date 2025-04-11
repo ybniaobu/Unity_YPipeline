@@ -25,6 +25,8 @@ Shader "YPipeline/Unlit"
     {
         Pass
         {
+        	Name "Unlit"
+        	
             Tags { "LightMode" = "SRPDefaultUnlit" }
             
             Blend [_SrcBlend] [_DstBlend]
@@ -38,6 +40,8 @@ Shader "YPipeline/Unlit"
             #pragma fragment UnlitFrag
 
             #pragma shader_feature_local_fragment _CLIPPING
+
+            #pragma multi_compile_instancing
             
             #include "UnlitPass.hlsl"
             ENDHLSL

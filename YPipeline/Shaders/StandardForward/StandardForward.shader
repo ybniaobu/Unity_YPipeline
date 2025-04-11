@@ -15,7 +15,7 @@ Shader "YPipeline/PBR/Standard Forward"
         [NoScaleOffset] _RoughnessTex("Roughness Texture", 2D) = "white" {}
         
         [Header(Metallic Settings)] [Space(8)]
-        [Gamma] _Metallic("Metallic", Range(0.0, 1.0)) = 0.0
+        _Metallic("Metallic", Range(0.0, 1.0)) = 0.0
         [Toggle(_USE_METALLICTEX)] _UseMetallicTex("use metallic texture?", Float) = 0
         [NoScaleOffset] _MetallicTex("Metallic Texture", 2D) = "white" {}
         
@@ -57,6 +57,8 @@ Shader "YPipeline/PBR/Standard Forward"
             
             Tags { "LightMode" = "YPipelineForward" }
             
+            Blend [_SrcBlend] [_DstBlend]
+            ZWrite [_ZWrite]
             Cull [_Cull]
             
             HLSLPROGRAM

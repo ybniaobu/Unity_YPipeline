@@ -167,7 +167,7 @@ namespace YPipeline
             }
             
             // TODO: Final Pass
-            BlitUtility.BlitCameraTarget(data.buffer, RenderTargetIDs.k_FrameBufferId, data.camera.pixelRect, UberPostProcessingMaterial, 0);
+            BlitUtility.BlitCameraTarget(data.buffer, RenderTargetIDs.k_ColorBufferId, data.camera.pixelRect, UberPostProcessingMaterial, 0);
             
             data.buffer.EndSample("Uber Post Processing");
         }

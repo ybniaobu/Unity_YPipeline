@@ -79,7 +79,7 @@ namespace YPipeline
             
             // Prefilter
             data.buffer.GetTemporaryRT(k_BloomPrefilterId, width, height, 0, FilterMode.Bilinear, format);
-            BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_FrameBufferId, k_BloomPrefilterId, BloomMaterial, 0);
+            BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_ColorBufferId, k_BloomPrefilterId, BloomMaterial, 0);
             width >>= 1;
             height >>= 1;
             

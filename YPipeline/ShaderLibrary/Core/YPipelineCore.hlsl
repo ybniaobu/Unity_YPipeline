@@ -85,6 +85,21 @@ float3 GetWorldSpaceNormalizeViewDir(float3 positionWS)
     }
 }
 
+float GetViewDepthFromSVPosition(float4 positionHCS)
+{
+    if (unity_OrthoParams.w < 0.5f) // Perspective
+    {
+        return positionHCS.w;
+    }
+    else // Orthographic
+    {
+        float normalizedDepth = positionHCS.z;
 
+        #if UNITY_REVERSED_Z
+            normalizedDepth = 1.0 - normalizedDepth;
+        #endif
+        return (_ProjectionParams.z - _ProjectionParams.y) * normalizedDepth + _ProjectionParams.y;
+    }
+}
 
 #endif

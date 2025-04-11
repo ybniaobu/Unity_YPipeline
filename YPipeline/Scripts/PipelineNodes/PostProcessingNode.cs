@@ -49,14 +49,14 @@ namespace YPipeline
             if (data.camera.cameraType > CameraType.SceneView)
             {
                 // TODO: 改变逻辑
-                BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_FrameBufferId, BuiltinRenderTextureType.CameraTarget);
+                BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_ColorBufferId, BuiltinRenderTextureType.CameraTarget);
                 return;
             }
             
             // enable or disable post-processing in the scene window via its effects dropdown menu in its toolbar
             if (data.camera.cameraType == CameraType.SceneView && !SceneView.currentDrawingSceneView.sceneViewState.showImageEffects)
             {
-                BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_FrameBufferId, BuiltinRenderTextureType.CameraTarget);
+                BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_ColorBufferId, BuiltinRenderTextureType.CameraTarget);
                 return;
             }
 #endif

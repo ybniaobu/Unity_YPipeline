@@ -37,7 +37,7 @@ MonoBehaviour:
   sunLightPenumbraWidth: 0.25
   cascadeCount: 4
   spiltRatio1: 0.05
-  spiltRatio2: 0.2
+  spiltRatio2: 0.15
   spiltRatio3: 0.6
   cascadeEdgeFade: 0.05
   punctualLightShadowArraySize: 2048
