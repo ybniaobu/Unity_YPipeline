@@ -8,6 +8,8 @@ UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
     UNITY_DEFINE_INSTANCED_PROP(float4, _BaseTex_ST)
     UNITY_DEFINE_INSTANCED_PROP(float, _NearFadeDistance)
     UNITY_DEFINE_INSTANCED_PROP(float, _NearFadeRange)
+    UNITY_DEFINE_INSTANCED_PROP(float, _SoftParticlesDistance)
+    UNITY_DEFINE_INSTANCED_PROP(float, _SoftParticlesRange)
     UNITY_DEFINE_INSTANCED_PROP(float, _Cutoff)
 UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
@@ -65,13 +67,24 @@ float4 ParticlesUnlitFrag(Varyings IN) : SV_Target
     #if defined(_FLIPBOOK_BLENDING)
         albedo = lerp(albedo, SAMPLE_TEXTURE2D(_BaseTex, sampler_Trilinear_Repeat_BaseTex, IN.uv2AndBlend.xy), IN.uv2AndBlend.z);
     #endif
-    
+
+    float viewDepth = GetViewDepthFromSVPosition(IN.positionHCS);
     #if defined(_CAMERA_NEAR_FADE)
-        float depth = GetViewDepthFromSVPosition(IN.positionHCS);
         float nearFadeDistance = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _NearFadeDistance);
         float nearFadeRange = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _NearFadeRange);
-        float nearAttenuation = (depth - nearFadeDistance) / nearFadeRange;
+        float nearAttenuation = (viewDepth - nearFadeDistance) / nearFadeRange;
         albedo.a *= saturate(nearAttenuation);
+    #endif
+
+    #if defined(_SOFT_PARTICLES)
+        float2 screenUV = IN.positionHCS.xy / _ScreenParams.xy;
+        float sampledDepth = SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_CameraDepthTexture, screenUV, 0);
+        float viewSampledDepth = GetViewDepthFromDepthTexture(sampledDepth);
+        float depthDelta = abs(viewSampledDepth - viewDepth);
+        float softParticlesDistance = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SoftParticlesDistance);
+        float softParticlesRange = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SoftParticlesRange);
+        float softParticlesAttenuation = (depthDelta - softParticlesDistance) / softParticlesRange;
+        albedo.a *= saturate(softParticlesAttenuation);
     #endif
     
     #if defined(_CLIPPING)

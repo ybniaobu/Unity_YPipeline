@@ -122,6 +122,8 @@ float4 GetPointLightDepthParams(int shadowIndex)            { return _PointLight
 // ----------------------------------------------------------------------------------------------------
 // Textures and Samplers
 // ----------------------------------------------------------------------------------------------------
+
+// Shadow Texture
 #define SUN_LIGHT_SHADOW_MAP            _SunLightShadowMap
 #define SPOT_LIGHT_SHADOW_MAP           _SpotLightShadowMap
 #define POINT_LIGHT_SHADOW_MAP          _PointLightShadowMap
@@ -134,13 +136,19 @@ TEXTURECUBE_ARRAY_SHADOW(POINT_LIGHT_SHADOW_MAP);
 SAMPLER_CMP(SHADOW_SAMPLER_COMPARE);
 SAMPLER(SHADOW_SAMPLER);
 
+// BRDF LUT
 #define ENVIRONMENT_BRDF_LUT            _EnvBRDFLut
 #define LUT_SAMPLER                     sampler_Point_Clamp_EnvBRDFLut
 
 TEXTURE2D(ENVIRONMENT_BRDF_LUT);
 SAMPLER(LUT_SAMPLER);
 
+// Depth & Normal & Opaque Texture
+TEXTURE2D(_CameraDepthTexture);
+SAMPLER(sampler_CameraDepthTexture);
+
 // General Samplers
+SAMPLER(sampler_PointRepeat);
 SAMPLER(sampler_LinearClamp);
 SAMPLER(sampler_LinearRepeat);
 

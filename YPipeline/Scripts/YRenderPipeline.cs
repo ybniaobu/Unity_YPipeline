@@ -14,7 +14,7 @@ namespace YPipeline
     public enum YPipelineProfileId
     {
         YPipelineTotal, BeginFrameRendering, EndFrameRendering, BeginCameraRendering, EndCameraRendering, 
-        LightingNode, Setup
+        LightingNode, GeometryNode, Setup
     }
     public partial class YRenderPipeline : RenderPipeline
     {

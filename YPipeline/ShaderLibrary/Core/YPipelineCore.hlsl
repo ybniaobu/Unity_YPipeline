@@ -102,4 +102,21 @@ float GetViewDepthFromSVPosition(float4 positionHCS)
     }
 }
 
+float GetViewDepthFromDepthTexture(float sampledDepth)
+{
+    if (unity_OrthoParams.w < 0.5f) // Perspective
+    {
+        return LinearEyeDepth(sampledDepth, _ZBufferParams);
+    }
+    else // Orthographic
+    {
+        float normalizedDepth = sampledDepth;
+
+        #if UNITY_REVERSED_Z
+        normalizedDepth = 1.0 - normalizedDepth;
+        #endif
+        return (_ProjectionParams.z - _ProjectionParams.y) * normalizedDepth + _ProjectionParams.y;
+    }
+}
+
 #endif

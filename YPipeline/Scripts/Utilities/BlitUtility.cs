@@ -28,6 +28,24 @@ namespace YPipeline
                 return m_CopyMaterial;
             }
         }
+        
+        private const string k_CopyDepth = "Hidden/YPipeline/CopyDepth";
+        private static Material m_CopyDepthMaterial;
+        public static Material CopyDepthMaterial
+        {
+            get
+            {
+                if (m_CopyDepthMaterial == null)
+                {
+                    m_CopyDepthMaterial = new Material(Shader.Find(k_CopyDepth))
+                    {
+                        name = "CopyDepth",
+                        hideFlags = HideFlags.HideAndDontSave
+                    };
+                }
+                return m_CopyDepthMaterial;
+            }
+        }
 
         // ----------------------------------------------------------------------------------------------------
         // Functions
@@ -87,6 +105,12 @@ namespace YPipeline
         {
             cmd.SetRenderTarget(new RenderTargetIdentifier(destination), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
             cmd.DrawProcedural(Matrix4x4.identity, material, pass, MeshTopology.Triangles, 3);
+        }
+        
+        public static void CopyDepth(CommandBuffer cmd, int destinationID)
+        {
+            cmd.SetRenderTarget(new RenderTargetIdentifier(destinationID), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            cmd.DrawProcedural(Matrix4x4.identity, CopyDepthMaterial, 0, MeshTopology.Triangles, 3);
         }
     }
 }

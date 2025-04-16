@@ -1,4 +1,4 @@
-Shader "YPipeline/PBR/Standard Forward"
+Shader "YPipeline/PBR/Standard Forward (Separated Texture)"
 {
     Properties
     {
@@ -31,10 +31,7 @@ Shader "YPipeline/PBR/Standard Forward"
         [HDR] _EmissionColor("Emission Color", Color) = (0.0, 0.0, 0.0, 1.0)
         [NoScaleOffset] _EmissionTex("Emission Texture", 2D) = "white" {}
         
-    	[Header(Transparency Settings)] [Space(8)]
-        [Enum(UnityEngine.Rendering.BlendMode)] _SrcBlend ("Src Blend", Float) = 1
-        [Enum(UnityEngine.Rendering.BlendMode)] _DstBlend ("Dst Blend", Float) = 0
-        [Enum(Off, 0, On, 1)] _ZWrite ("Z Write", Float) = 1
+    	[Header(Alpha Clipping Settings)] [Space(8)]
         [Toggle(_CLIPPING)] _Clipping ("Alpha Clipping", Float) = 0
         _Cutoff("Alpha CutOff", Range(0.0, 1.0)) = 0.5
     	[NoScaleOffset] _OpacityTex("Opacity Texture", 2D) = "white" {}
@@ -57,8 +54,9 @@ Shader "YPipeline/PBR/Standard Forward"
             
             Tags { "LightMode" = "YPipelineForward" }
             
-            Blend [_SrcBlend] [_DstBlend]
-            ZWrite [_ZWrite]
+            Blend One Zero
+            ZWrite Off
+            ZTest Equal
             Cull [_Cull]
             
             HLSLPROGRAM
@@ -99,6 +97,30 @@ Shader "YPipeline/PBR/Standard Forward"
 			#pragma shader_feature_local_fragment _CLIPPING
 			
 			#include "../ShadowCasterPass.hlsl"
+			ENDHLSL
+		}
+
+		Pass
+		{
+			Name "Depth"
+			
+			Tags { "LightMode" = "Depth" }
+			
+			ZWrite On
+			ColorMask 0
+			Cull [_Cull]
+			
+			HLSLPROGRAM
+			#pragma target 4.5
+
+			#pragma vertex DepthVert
+			#pragma fragment DepthFrag
+
+			#pragma shader_feature_local_fragment _CLIPPING
+
+			#pragma multi_compile _ LOD_FADE_CROSSFADE
+
+			#include "StandardForwardDepthPass.hlsl"
 			ENDHLSL
 		}
 		

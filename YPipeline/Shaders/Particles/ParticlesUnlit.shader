@@ -21,6 +21,9 @@ Shader "YPipeline/Particles/Unlit"
         [Toggle(_CAMERA_NEAR_FADE)] _CameraFading ("Camera Fading", Float) = 0.0
         _NearFadeDistance ("Near Fade Distance", Range(0.0, 10.0)) = 1
 		_NearFadeRange ("Near Fade Range", Range(0.0, 10.0)) = 1
+        [Toggle(_SOFT_PARTICLES)] _SoftParticles ("Soft Particles", Float) = 0.0
+        _SoftParticlesDistance ("Soft Particles Distance", Range(0.0, 10.0)) = 0
+		_SoftParticlesRange ("Soft Particles Range", Range(0.0, 10.0)) = 1
     }
     SubShader
     {
@@ -48,6 +51,7 @@ Shader "YPipeline/Particles/Unlit"
             #pragma shader_feature_local_fragment _CLIPPING
             #pragma shader_feature_local _FLIPBOOK_BLENDING
             #pragma shader_feature_local _CAMERA_NEAR_FADE
+            #pragma shader_feature_local _SOFT_PARTICLES
 
             #pragma multi_compile_instancing
             // #pragma instancing_options procedural:ParticleInstancingSetup

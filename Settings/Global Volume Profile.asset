@@ -70,13 +70,13 @@ MonoBehaviour:
     m_Value: 0.5
   exposure:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 2
   saturation:
     m_OverrideState: 1
     m_Value: 1
   contrast:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0.8
   master:
     m_OverrideState: 1
     m_Value:
@@ -500,13 +500,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   active: 0
   lift:
-    m_OverrideState: 1
+    m_OverrideState: 0
     m_Value: {x: 1, y: 1, z: 1, w: 0}
   gamma:
-    m_OverrideState: 1
+    m_OverrideState: 0
     m_Value: {x: 1, y: 1, z: 1, w: 0}
   gain:
-    m_OverrideState: 1
+    m_OverrideState: 0
     m_Value: {x: 1, y: 1, z: 1, w: 0}
 --- !u!114 &3089124390416847361
 MonoBehaviour:

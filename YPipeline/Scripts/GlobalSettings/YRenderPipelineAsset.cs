@@ -15,9 +15,9 @@ namespace YPipeline
         // ----------------------------------------------------------------------------------------------------
         
         public override string renderPipelineShaderTag => string.Empty;
-        public override Shader defaultShader => Shader.Find("YPipeline/PBR/Standard Forward");
+        public override Shader defaultShader => Shader.Find("YPipeline/PBR/Standard Forward (Separated Texture)");
 
-        protected override RenderPipeline CreatePipeline ()
+        protected override RenderPipeline CreatePipeline()
         {
             return new YRenderPipeline(this);
         }
