@@ -23,8 +23,8 @@ namespace YPipeline
         // public static readonly int k_FrameBufferId = Shader.PropertyToID("_CameraFrameBuffer");
         public static readonly int k_ColorBufferId = Shader.PropertyToID("_CameraColorBuffer");
         public static readonly int k_DepthBufferId = Shader.PropertyToID("_CameraDepthBuffer");
+        public static readonly int k_ColorTextureId = Shader.PropertyToID("_CameraColorTexture");
         public static readonly int k_DepthTextureId = Shader.PropertyToID("_CameraDepthTexture");
-        // public static readonly int k_FinalBlitTextureId = Shader.PropertyToID("_FinalBlitTexture");
         
         public static readonly int k_BloomTextureId = Shader.PropertyToID("_BloomTexture");
         public static readonly int k_ColorGradingLutTextureId = Shader.PropertyToID("_ColorGradingLutTexture");

@@ -19,7 +19,7 @@
             HLSLPROGRAM
             #pragma target 3.5
             
-            #pragma vertex CopyDepthVert
+            #pragma vertex CopyVert
             #pragma fragment CopyDepthFrag
 
             #include "CopyDepthPass.hlsl"

@@ -39,8 +39,9 @@ namespace YPipeline
             base.OnRender(asset, ref data);
             
 #if UNITY_EDITOR
-            if (Handles.ShouldRenderGizmos()) 
+            if (Handles.ShouldRenderGizmos())
             {
+                BlitUtility.CopyDepth(data.buffer, RenderTargetIDs.k_DepthBufferId, BuiltinRenderTextureType.CameraTarget);
                 RendererList gizmosRendererList = data.context.CreateGizmoRendererList(data.camera, GizmoSubset.PreImageEffects);
                 data.buffer.DrawRendererList(gizmosRendererList);
             }

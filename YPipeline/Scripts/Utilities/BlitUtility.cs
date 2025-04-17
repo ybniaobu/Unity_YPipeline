@@ -107,9 +107,17 @@ namespace YPipeline
             cmd.DrawProcedural(Matrix4x4.identity, material, pass, MeshTopology.Triangles, 3);
         }
         
-        public static void CopyDepth(CommandBuffer cmd, int destinationID)
+        public static void CopyDepth(CommandBuffer cmd, int sourceID, int destinationID)
         {
+            cmd.SetGlobalTexture(k_BlitTextureId, new RenderTargetIdentifier(sourceID));
             cmd.SetRenderTarget(new RenderTargetIdentifier(destinationID), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            cmd.DrawProcedural(Matrix4x4.identity, CopyDepthMaterial, 0, MeshTopology.Triangles, 3);
+        }
+        
+        public static void CopyDepth(CommandBuffer cmd, int sourceID, BuiltinRenderTextureType destination)
+        {
+            cmd.SetGlobalTexture(k_BlitTextureId, new RenderTargetIdentifier(sourceID));
+            cmd.SetRenderTarget(new RenderTargetIdentifier(destination), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
             cmd.DrawProcedural(Matrix4x4.identity, CopyDepthMaterial, 0, MeshTopology.Triangles, 3);
         }
     }

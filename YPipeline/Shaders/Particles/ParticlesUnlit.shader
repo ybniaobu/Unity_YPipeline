@@ -24,6 +24,10 @@ Shader "YPipeline/Particles/Unlit"
         [Toggle(_SOFT_PARTICLES)] _SoftParticles ("Soft Particles", Float) = 0.0
         _SoftParticlesDistance ("Soft Particles Distance", Range(0.0, 10.0)) = 0
 		_SoftParticlesRange ("Soft Particles Range", Range(0.0, 10.0)) = 1
+        [Toggle(_DISTORTION)] _Distortion ("Distortion", Float) = 0.0
+        [NoScaleOffset] _DistortionTex ("Distortion Texture", 2D) = "bump" {}
+        _DistortionStrength ("Distortion Strength", Range(0.0, 1.5)) = 0.1
+        _DistortionBlend ("Distortion Blend", Range(0.0, 1.0)) = 0.0
     }
     SubShader
     {
@@ -52,6 +56,7 @@ Shader "YPipeline/Particles/Unlit"
             #pragma shader_feature_local _FLIPBOOK_BLENDING
             #pragma shader_feature_local _CAMERA_NEAR_FADE
             #pragma shader_feature_local _SOFT_PARTICLES
+            #pragma shader_feature_local _DISTORTION
 
             #pragma multi_compile_instancing
             // #pragma instancing_options procedural:ParticleInstancingSetup

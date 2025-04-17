@@ -10,10 +10,13 @@ UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
     UNITY_DEFINE_INSTANCED_PROP(float, _NearFadeRange)
     UNITY_DEFINE_INSTANCED_PROP(float, _SoftParticlesDistance)
     UNITY_DEFINE_INSTANCED_PROP(float, _SoftParticlesRange)
+    UNITY_DEFINE_INSTANCED_PROP(float, _DistortionStrength)
+    UNITY_DEFINE_INSTANCED_PROP(float, _DistortionBlend)
     UNITY_DEFINE_INSTANCED_PROP(float, _Cutoff)
 UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
 Texture2D _BaseTex;     SamplerState sampler_Trilinear_Repeat_BaseTex;
+Texture2D _DistortionTex;
 
 struct Attributes
 {
@@ -62,11 +65,13 @@ float4 ParticlesUnlitFrag(Varyings IN) : SV_Target
 {
     UNITY_SETUP_INSTANCE_ID(IN);
     float4 baseColor = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _BaseColor);
-    float4 albedo = SAMPLE_TEXTURE2D(_BaseTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).rgba * baseColor;
+    float4 albedo = SAMPLE_TEXTURE2D(_BaseTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).rgba;
 
     #if defined(_FLIPBOOK_BLENDING)
         albedo = lerp(albedo, SAMPLE_TEXTURE2D(_BaseTex, sampler_Trilinear_Repeat_BaseTex, IN.uv2AndBlend.xy), IN.uv2AndBlend.z);
     #endif
+
+    albedo = albedo * baseColor * IN.color;
 
     float viewDepth = GetViewDepthFromSVPosition(IN.positionHCS);
     #if defined(_CAMERA_NEAR_FADE)
@@ -76,9 +81,9 @@ float4 ParticlesUnlitFrag(Varyings IN) : SV_Target
         albedo.a *= saturate(nearAttenuation);
     #endif
 
+    float2 screenUV = IN.positionHCS.xy / _ScreenParams.xy;
     #if defined(_SOFT_PARTICLES)
-        float2 screenUV = IN.positionHCS.xy / _ScreenParams.xy;
-        float sampledDepth = SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_CameraDepthTexture, screenUV, 0);
+        float sampledDepth = SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_PointClamp, screenUV, 0);
         float viewSampledDepth = GetViewDepthFromDepthTexture(sampledDepth);
         float depthDelta = abs(viewSampledDepth - viewDepth);
         float softParticlesDistance = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SoftParticlesDistance);
@@ -90,8 +95,23 @@ float4 ParticlesUnlitFrag(Varyings IN) : SV_Target
     #if defined(_CLIPPING)
         clip(albedo.a - UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Cutoff));
     #endif
+
+    #if defined(_DISTORTION)
+        float4 packedDistortion = SAMPLE_TEXTURE2D(_DistortionTex, sampler_Trilinear_Repeat_BaseTex, IN.uv);
+        #if defined(_FLIPBOOK_BLENDING)
+            float4 packedDistortion2 = SAMPLE_TEXTURE2D(_DistortionTex, sampler_Trilinear_Repeat_BaseTex, IN.uv2AndBlend.xy);
+            packedDistortion = lerp(packedDistortion, packedDistortion2, IN.uv2AndBlend.z);
+        #endif
+        float distortionStrength = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _DistortionStrength);
+        float3 distortion = UnpackNormalScale(packedDistortion, distortionStrength);
     
-    return float4(albedo.rgb * IN.color.rgb, albedo.a * IN.color.a);
+        float3 sampledColor = SAMPLE_TEXTURE2D_LOD(_CameraColorTexture, sampler_LinearClamp, screenUV + distortion * albedo.a, 0).rgb;
+        float distortionBlend = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _DistortionBlend);
+        albedo.rgb = lerp(sampledColor, albedo.rgb, saturate(albedo.a - distortionBlend));
+        
+    #endif
+    
+    return float4(albedo.rgb, albedo.a);
 }
 
 #endif

@@ -110,12 +110,10 @@ float GetViewDepthFromDepthTexture(float sampledDepth)
     }
     else // Orthographic
     {
-        float normalizedDepth = sampledDepth;
-
         #if UNITY_REVERSED_Z
-        normalizedDepth = 1.0 - normalizedDepth;
+            sampledDepth = 1.0 - sampledDepth;
         #endif
-        return (_ProjectionParams.z - _ProjectionParams.y) * normalizedDepth + _ProjectionParams.y;
+        return (_ProjectionParams.z - _ProjectionParams.y) * sampledDepth + _ProjectionParams.y;
     }
 }
 

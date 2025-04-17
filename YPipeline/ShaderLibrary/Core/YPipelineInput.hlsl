@@ -145,7 +145,7 @@ SAMPLER(LUT_SAMPLER);
 
 // Depth & Normal & Opaque Texture
 TEXTURE2D(_CameraDepthTexture);
-SAMPLER(sampler_CameraDepthTexture);
+TEXTURE2D(_CameraColorTexture);
 
 // General Samplers
 SAMPLER(sampler_PointRepeat);

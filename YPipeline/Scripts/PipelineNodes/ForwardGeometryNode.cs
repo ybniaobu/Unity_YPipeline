@@ -96,7 +96,7 @@ namespace YPipeline
             
             // Copy Depth
             data.buffer.BeginSample("Copy Depth");
-            BlitUtility.CopyDepth(data.buffer, RenderTargetIDs.k_DepthTextureId);
+            BlitUtility.CopyDepth(data.buffer, RenderTargetIDs.k_DepthBufferId, RenderTargetIDs.k_DepthTextureId);
             data.buffer.EndSample("Copy Depth");
             
             // Draw Opaque & AlphaTest
