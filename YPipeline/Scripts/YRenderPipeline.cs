@@ -9,34 +9,27 @@ using UnityEditor;
 
 namespace YPipeline
 {
-    // --------------------------------------------------------------------------------
-    // Profiling 相关
-    public enum YPipelineProfileId
-    {
-        YPipelineTotal, BeginFrameRendering, EndFrameRendering, BeginCameraRendering, EndCameraRendering, 
-        LightingNode, GeometryNode, Setup
-    }
     public partial class YRenderPipeline : RenderPipeline
     {
-        private YRenderPipelineAsset m_Asset;
-        private PipelinePerFrameData m_Data;
+        private YPipelineData m_Data;
         
-        private bool m_IsPipelineNodesBegan;
+        private GameCameraRenderer m_GameCameraRenderer;
+        private SceneCameraRenderer m_SceneCameraRenderer;
         
         public YRenderPipeline(YRenderPipelineAsset asset)
         {
-            m_Asset = asset;
-            m_Data = new PipelinePerFrameData();
-            
-            VolumeManager.instance.Initialize(null, asset.globalVolumeProfile);
-            asset.PresetRenderPaths();
+            m_Data = new YPipelineData();
+            m_Data.asset = asset;
             
             GraphicsSettings.useScriptableRenderPipelineBatching = asset.enableSRPBatcher;
             GraphicsSettings.lightsUseLinearIntensity = true;
+            
+            VolumeManager.instance.Initialize(null, asset.globalVolumeProfile);
 
-            m_IsPipelineNodesBegan = false;
+            m_GameCameraRenderer = CameraRenderer.Create<GameCameraRenderer>(ref m_Data);
             
 #if UNITY_EDITOR
+            m_SceneCameraRenderer = CameraRenderer.Create<SceneCameraRenderer>(ref m_Data);
             InitializeLightmapper();
 #endif
         }
@@ -48,78 +41,44 @@ namespace YPipeline
 
         protected override void Render(ScriptableRenderContext context, List<Camera> cameras)
         {
-            using var profilingScope = new ProfilingScope(ProfilingSampler.Get(YPipelineProfileId.YPipelineTotal));
-            
-            Begin(ref context);
-            
+            using var profilingScope = new ProfilingScope(ProfilingSampler.Get(YPipelineProfileIDs.YPipelineTotal));
             BeginContextRendering(context, cameras);
             m_Data.context = context;
+            
+            // TODO: 修改 Begin 方法
+            m_GameCameraRenderer.Begin(ref m_Data);
             
             foreach(Camera camera in cameras)
             {
                 BeginCameraRendering(context, camera);
-                if (!Setup(camera)) return;
+                m_Data.camera = camera;
                 
-                // 好像在这个版本中，要自己调用 Update，否则无法获取到 VolumeComponent 序列化后的数据。可能以后的版本要删除这段代码。
-                VolumeManager.instance.Update(camera.transform, 1);
+                if (camera.cameraType == CameraType.Game || camera.cameraType == CameraType.Preview || camera.cameraType == CameraType.Reflection)
+                {
+                    m_GameCameraRenderer.Render(ref m_Data);
+                }
                 
-                PipelineNode.Render(m_Asset, ref m_Data);
+#if UNITY_EDITOR
+                if (camera.cameraType == CameraType.SceneView)
+                {
+                    m_SceneCameraRenderer.Render(ref m_Data);
+                }
+#endif
                 
-                // Submit all scheduled commands
-                m_Data.context.ExecuteCommandBuffer(m_Data.buffer);
-                m_Data.buffer.Clear();
-                m_Data.context.Submit();
-                
-                PipelineNode.ReleaseResources(m_Asset, ref m_Data);
-                CommandBufferPool.Release(m_Data.buffer);
                 EndCameraRendering(context, camera);
             }
             
             EndContextRendering(context, cameras);
         }
-
-        private bool Setup(Camera camera)
-        {
-            using var profilingScope = new ProfilingScope(ProfilingSampler.Get(YPipelineProfileId.Setup));
-            if (!camera.TryGetCullingParameters(out ScriptableCullingParameters cullingParameters))
-            {
-                return false;
-            }
-            cullingParameters.shadowDistance = Mathf.Min(m_Asset.maxShadowDistance, camera.farClipPlane);
-            m_Data.cullingResults = m_Data.context.Cull(ref cullingParameters);
-            m_Data.camera = camera;
-            m_Data.buffer = CommandBufferPool.Get();
-#if UNITY_EDITOR
-            m_Data.buffer.name = camera.name;
-                
-            // Drawing UI
-            if (camera.cameraType == CameraType.SceneView) 
-            {
-                ScriptableRenderContext.EmitWorldGeometryForSceneView(camera);
-            }
-#endif
-            return true;
-        }
-
-        private void Begin(ref ScriptableRenderContext context)
-        {
-            if (!m_IsPipelineNodesBegan)
-            {
-                CommandBuffer cmd = CommandBufferPool.Get();
-                PipelineNode.Begin(m_Asset, ref context, cmd);
-                m_IsPipelineNodesBegan = true;
-                CommandBufferPool.Release(cmd);
-            }
-        }
         
         protected override void Dispose(bool disposing) 
         {
             base.Dispose(disposing);
+            VolumeManager.instance.Deinitialize();
+            
 #if UNITY_EDITOR
             UnityEngine.Experimental.GlobalIllumination.Lightmapping.ResetDelegate();
 #endif
-            //PipelineNode.DisposeNodes(m_Asset);
-            VolumeManager.instance.Deinitialize();
         }
     }
 }

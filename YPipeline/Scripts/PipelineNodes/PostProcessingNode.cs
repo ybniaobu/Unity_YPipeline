@@ -21,27 +21,27 @@ namespace YPipeline
             m_UberPostProcessingRenderer = PostProcessingRenderer.Create<UberPostProcessingRenderer>();
         }
         
-        protected override void Dispose()
+        protected override void OnDispose()
         {
             //DestroyImmediate(this);
         }
 
-        protected override void OnRelease(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
+        protected override void OnRelease(ref YPipelineData data)
         {
-            base.OnRelease(asset, ref data);
+            base.OnRelease(ref data);
             data.context.ExecuteCommandBuffer(data.buffer);
             data.buffer.Clear();
             data.context.Submit();
         }
 
-        protected override void OnRender(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
+        protected override void OnRender(ref YPipelineData data)
         {
-            base.OnRender(asset, ref data);
+            base.OnRender(ref data);
             
 #if UNITY_EDITOR
             if (Handles.ShouldRenderGizmos())
             {
-                BlitUtility.CopyDepth(data.buffer, RenderTargetIDs.k_DepthBufferId, BuiltinRenderTextureType.CameraTarget);
+                BlitUtility.CopyDepth(data.buffer, YPipelineShaderIDs.k_DepthBufferId, BuiltinRenderTextureType.CameraTarget);
                 RendererList gizmosRendererList = data.context.CreateGizmoRendererList(data.camera, GizmoSubset.PreImageEffects);
                 data.buffer.DrawRendererList(gizmosRendererList);
             }
@@ -50,21 +50,21 @@ namespace YPipeline
             if (data.camera.cameraType > CameraType.SceneView)
             {
                 // TODO: 改变逻辑
-                BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_ColorBufferId, BuiltinRenderTextureType.CameraTarget);
+                BlitUtility.BlitTexture(data.buffer, YPipelineShaderIDs.k_ColorBufferId, BuiltinRenderTextureType.CameraTarget);
                 return;
             }
             
             // enable or disable post-processing in the scene window via its effects dropdown menu in its toolbar
             if (data.camera.cameraType == CameraType.SceneView && !SceneView.currentDrawingSceneView.sceneViewState.showImageEffects)
             {
-                BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_ColorBufferId, BuiltinRenderTextureType.CameraTarget);
+                BlitUtility.BlitTexture(data.buffer, YPipelineShaderIDs.k_ColorBufferId, BuiltinRenderTextureType.CameraTarget);
                 return;
             }
 #endif
             data.buffer.BeginSample("Post Processing");
             
             // all post processing renderers entrance
-            PostProcessingRender(asset, ref data);
+            PostProcessingRender(data.asset, ref data);
             
             // TODO：Final Blit Node
             // data.buffer.Blit(RenderTargetIDs.k_FrameBufferId, BuiltinRenderTextureType.CameraTarget);
@@ -84,7 +84,7 @@ namespace YPipeline
             data.context.Submit();
         }
 
-        private void PostProcessingRender(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
+        private void PostProcessingRender(YRenderPipelineAsset asset, ref YPipelineData data)
         {
             RenderTextureFormat format = asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default;
             
@@ -98,8 +98,8 @@ namespace YPipeline
             m_UberPostProcessingRenderer.Render(asset, ref data);
             
             // Clear RT
-            data.buffer.ReleaseTemporaryRT(RenderTargetIDs.k_BloomTextureId);
-            data.buffer.ReleaseTemporaryRT(RenderTargetIDs.k_ColorGradingLutTextureId);
+            data.buffer.ReleaseTemporaryRT(YPipelineShaderIDs.k_BloomTextureId);
+            data.buffer.ReleaseTemporaryRT(YPipelineShaderIDs.k_ColorGradingLutTextureId);
         }
     }
 }

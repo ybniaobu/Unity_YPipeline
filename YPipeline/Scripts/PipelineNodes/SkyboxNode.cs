@@ -10,21 +10,21 @@ namespace YPipeline
             
         }
         
-        protected override void Dispose()
+        protected override void OnDispose()
         {
             //DestroyImmediate(this);
         }
         
-        protected override void OnRender(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
+        protected override void OnRender(ref YPipelineData data)
         {
-            base.OnRender(asset, ref data);
-            SkyboxRenderer(asset, ref data);
+            base.OnRender(ref data);
+            SkyboxRenderer(ref data);
             data.context.ExecuteCommandBuffer(data.buffer);
             data.buffer.Clear();
             data.context.Submit();
         }
 
-        private void SkyboxRenderer(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
+        private void SkyboxRenderer(ref YPipelineData data)
         {
             RendererList skyboxRendererList = data.context.CreateSkyboxRendererList(data.camera);
             data.buffer.DrawRendererList(skyboxRendererList);

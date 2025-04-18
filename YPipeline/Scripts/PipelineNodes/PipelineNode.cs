@@ -1,76 +1,87 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace YPipeline
 {
-    public abstract class PipelineNode : ScriptableObject
+    public abstract class PipelineNode
     {
         /// <summary>
         /// 创建 PipelineNode 实例并初始化
         /// </summary>
         /// <typeparam name="T">PipelineNode 子类</typeparam>
         /// <returns>PipelineNode 子类实例</returns>
-        public static T Create<T>() where T : PipelineNode
+        public static T Create<T>() where T : PipelineNode, new()
         {
-            T node = ScriptableObject.CreateInstance<T>();
+            T node = new T();
             node.Initialize();
             return node;
         }
         
         protected abstract void Initialize();
-        protected abstract void Dispose();
+        protected virtual void OnDispose() { }
 
         /// <summary>
         /// 用于只需要设置一次的全局贴图或者变量，不在 render 每帧调用
         /// </summary>
-        /// <param name="asset"></param>
-        /// <param name="context"></param>
-        /// <param name="buffer"></param>
-        protected virtual void OnBegin(YRenderPipelineAsset asset, ref ScriptableRenderContext context, CommandBuffer buffer) { }
-        protected virtual void OnRender(YRenderPipelineAsset asset, ref PipelinePerFrameData data) { }
-        protected virtual void OnRelease(YRenderPipelineAsset asset, ref PipelinePerFrameData data) { }
+        /// <param name="data"></param>
+        protected virtual void OnBegin(ref YPipelineData data) { }
+        protected virtual void OnRender(ref YPipelineData data) { }
+        /// <summary>
+        /// 需要延迟释放的资源
+        /// </summary>
+        /// <param name="data"></param>
+        protected virtual void OnRelease(ref YPipelineData data) { }
 
-        public static void Begin(YRenderPipelineAsset asset, ref ScriptableRenderContext context, CommandBuffer buffer)
+        public static void Begin(List<PipelineNode> cameraPipelineNodes, ref YPipelineData data)
         {
-            if (asset.currentPipelineNodes.Count != 0)
+            int nodeCount = cameraPipelineNodes.Count;
+            
+            if (nodeCount != 0)
             {
-                for (int i = 0; i < asset.currentPipelineNodes.Count; i++)
+                for (int i = 0; i < nodeCount; i++)
                 {
-                    asset.currentPipelineNodes[i].OnBegin(asset, ref context, buffer);
+                    cameraPipelineNodes[i].OnBegin(ref data);
                 }
             }
         }
 
-        public static void Render(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
+        public static void Render(List<PipelineNode> cameraPipelineNodes, ref YPipelineData data)
         {
-            if (asset.currentPipelineNodes.Count != 0)
+            int nodeCount = cameraPipelineNodes.Count;
+            
+            if (nodeCount != 0)
             {
-                for (int i = 0; i < asset.currentPipelineNodes.Count; i++)
+                for (int i = 0; i < nodeCount; i++)
                 {
-                    asset.currentPipelineNodes[i].OnRender(asset, ref data);
+                    cameraPipelineNodes[i].OnRender(ref data);
                 }
             }
         }
         
-        public static void ReleaseResources(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
+        public static void Release(List<PipelineNode> cameraPipelineNodes, ref YPipelineData data)
         {
-            if (asset.currentPipelineNodes.Count != 0)
+            int nodeCount = cameraPipelineNodes.Count;
+            
+            if (nodeCount != 0)
             {
-                for (int i = 0; i < asset.currentPipelineNodes.Count; i++)
+                for (int i = 0; i < nodeCount; i++)
                 {
-                    asset.currentPipelineNodes[i].OnRelease(asset, ref data);
+                    cameraPipelineNodes[i].OnRelease(ref data);
                 }
             }
         }
 
-        public static void DisposeNodes(YRenderPipelineAsset asset)
+        public static void Dispose(List<PipelineNode> cameraPipelineNodes)
         {
-            if (asset.currentPipelineNodes.Count != 0)
+            int nodeCount = cameraPipelineNodes.Count;
+            
+            if (nodeCount != 0)
             {
-                for (int i = 0; i < asset.currentPipelineNodes.Count; i++)
+                for (int i = 0; i < nodeCount; i++)
                 {
-                    asset.currentPipelineNodes[i].Dispose();
+                    cameraPipelineNodes[i].OnDispose();
                 }
             }
         }

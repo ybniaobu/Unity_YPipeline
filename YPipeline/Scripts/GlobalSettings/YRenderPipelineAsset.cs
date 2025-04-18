@@ -7,6 +7,11 @@ using UnityEngine.Serialization;
 
 namespace YPipeline
 {
+    public enum RenderPath
+    {
+        Forward, Deferred, Custom
+    }
+    
     [CreateAssetMenu(menuName = "YPipeline/YRenderPipelineAsset")]
     public partial class YRenderPipelineAsset : RenderPipelineAsset<YRenderPipeline>
     {
@@ -29,48 +34,16 @@ namespace YPipeline
         [FoldoutGroup("Rendering Settings", expanded: true)]
         public bool enableHDRFrameBufferFormat = true;
 
+        [FoldoutGroup("Rendering Settings")] 
+        [Range(0.1f, 2f)] public float renderScale = 1.0f;
+
         [FoldoutGroup("Rendering Settings")]
         public YPipelineResources pipelineResources;
         
         // --------------------------------------------------------------------------------
         // 渲染路径配置
-        public enum RenderPath
-        {
-            Forward, Deferred, Custom
-        }
-        
         [FoldoutGroup("Render Path Settings", expanded: true)]
         public RenderPath renderPath = RenderPath.Forward;
-        
-        [FoldoutGroup("Render Path Settings")]
-        public List<PipelineNode> currentPipelineNodes = new List<PipelineNode>();
-
-        public void PresetRenderPaths()
-        {
-            currentPipelineNodes.Clear();
-            switch (renderPath)
-            {
-                case RenderPath.Forward: 
-                    currentPipelineNodes.Add(PipelineNode.Create<ForwardLightingNode>());
-                    currentPipelineNodes.Add(PipelineNode.Create<ForwardGeometryNode>());
-                    currentPipelineNodes.Add(PipelineNode.Create<SkyboxNode>());
-                    currentPipelineNodes.Add(PipelineNode.Create<TransparencyNode>());
-                    currentPipelineNodes.Add(PipelineNode.Create<PostProcessingNode>());
-                    break;
-                case RenderPath.Deferred:
-                    currentPipelineNodes = new List<PipelineNode>()
-                    {
-
-                    };
-                    break;
-                case RenderPath.Custom:
-                    currentPipelineNodes = new List<PipelineNode>()
-                    {
-
-                    };
-                    break;
-            }
-        }
         
         // --------------------------------------------------------------------------------
         // 后处理配置

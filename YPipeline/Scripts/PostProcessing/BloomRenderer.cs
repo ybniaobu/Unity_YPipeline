@@ -6,12 +6,6 @@ namespace YPipeline
     public class BloomRenderer : PostProcessingRenderer
     {
         private const int k_MaxBloomPyramidLevels = 15;
-        private static readonly int k_BloomLowerTextureID = Shader.PropertyToID("_BloomLowerTexture");
-        private static readonly int k_BloomPrefilterId = Shader.PropertyToID("_BloomPrefilter");
-        
-        private static readonly int k_BloomParamsId = Shader.PropertyToID("_BloomParams");
-        private static readonly int k_BloomThresholdId = Shader.PropertyToID("_BloomThreshold");
-        private const string k_BloomBicubicUpsampling = "_BLOOM_BICUBIC_UPSAMPLING";
         
         private int[] m_BloomPyramidUpIds;
         private int[] m_BloomPyramidDownIds;
@@ -50,7 +44,7 @@ namespace YPipeline
             }
         }
 
-        public override void Render(YRenderPipelineAsset asset, ref PipelinePerFrameData data)
+        public override void Render(YRenderPipelineAsset asset, ref YPipelineData data)
         {
             isActivated = true;
             data.buffer.BeginSample("Bloom");
@@ -61,7 +55,7 @@ namespace YPipeline
             
             // Temporary RT
             RenderTextureFormat format = asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default;
-            data.buffer.GetTemporaryRT(RenderTargetIDs.k_BloomTextureId, width >> 1, height >> 1, 0, FilterMode.Bilinear, format);
+            data.buffer.GetTemporaryRT(YPipelineShaderIDs.k_BloomTextureId, width >> 1, height >> 1, 0, FilterMode.Bilinear, format);
             
             // Determine the iteration count
             int minSize = Mathf.Min(width, height);
@@ -70,21 +64,21 @@ namespace YPipeline
             
             // Shader property and keyword setup
             Vector4 bloomParams = m_Bloom.mode.value == BloomMode.Additive ? new Vector4(m_Bloom.additiveStrength.value, 0.0f) : new Vector4(m_Bloom.scatter.value, 0.0f);
-            BloomMaterial.SetVector(k_BloomParamsId, bloomParams);
+            BloomMaterial.SetVector(YPipelineShaderIDs.k_BloomParamsId, bloomParams);
             float threshold = Mathf.GammaToLinearSpace(m_Bloom.threshold.value);
             float knee = threshold * m_Bloom.thresholdKnee.value;
-            BloomMaterial.SetVector(k_BloomThresholdId, new Vector4(threshold, knee - threshold, 2.0f * knee, 0.25f / (knee + 1e-6f)));
+            BloomMaterial.SetVector(YPipelineShaderIDs.k_BloomThresholdId, new Vector4(threshold, knee - threshold, 2.0f * knee, 0.25f / (knee + 1e-6f)));
             
-            CoreUtils.SetKeyword(BloomMaterial, k_BloomBicubicUpsampling, m_Bloom.bicubicUpsampling.value);
+            CoreUtils.SetKeyword(BloomMaterial, YPipelineKeywords.k_BloomBicubicUpsampling, m_Bloom.bicubicUpsampling.value);
             
             // Prefilter
-            data.buffer.GetTemporaryRT(k_BloomPrefilterId, width, height, 0, FilterMode.Bilinear, format);
-            BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_ColorBufferId, k_BloomPrefilterId, BloomMaterial, 0);
+            data.buffer.GetTemporaryRT(YPipelineShaderIDs.k_BloomPrefilterTextureId, width, height, 0, FilterMode.Bilinear, format);
+            BlitUtility.BlitTexture(data.buffer, YPipelineShaderIDs.k_ColorBufferId, YPipelineShaderIDs.k_BloomPrefilterTextureId, BloomMaterial, 0);
             width >>= 1;
             height >>= 1;
             
             // Downsample - gaussian pyramid
-            int sourceId = k_BloomPrefilterId;
+            int sourceId = YPipelineShaderIDs.k_BloomPrefilterTextureId;
             for (int i = 0; i < iterationCount; i++)
             {
                 data.buffer.GetTemporaryRT(m_BloomPyramidUpIds[i], width, height, 0, FilterMode.Bilinear, format);
@@ -101,8 +95,8 @@ namespace YPipeline
             int lastDst = m_BloomPyramidDownIds[iterationCount - 1];
             for (int i = iterationCount - 2; i >= 0; i--)
             {
-                data.buffer.SetGlobalTexture(k_BloomLowerTextureID, new RenderTargetIdentifier(lastDst));
-                if (i == 0) BlitUtility.BlitTexture(data.buffer, m_BloomPyramidDownIds[i], RenderTargetIDs.k_BloomTextureId, BloomMaterial, upsamplePass);
+                data.buffer.SetGlobalTexture(YPipelineShaderIDs.k_BloomLowerTextureID, new RenderTargetIdentifier(lastDst));
+                if (i == 0) BlitUtility.BlitTexture(data.buffer, m_BloomPyramidDownIds[i], YPipelineShaderIDs.k_BloomTextureId, BloomMaterial, upsamplePass);
                 else BlitUtility.BlitTexture(data.buffer, m_BloomPyramidDownIds[i], m_BloomPyramidUpIds[i], BloomMaterial, upsamplePass);
                 lastDst = m_BloomPyramidUpIds[i];
             }
@@ -115,7 +109,7 @@ namespace YPipeline
             // BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_FrameBufferId, RenderTargetIDs.k_BloomTextureId, BloomMaterial, finalPass);
             
             // Release RT
-            data.buffer.ReleaseTemporaryRT(k_BloomPrefilterId);
+            data.buffer.ReleaseTemporaryRT(YPipelineShaderIDs.k_BloomPrefilterTextureId);
             for (int i = 0; i < iterationCount; i++)
             {
                 data.buffer.ReleaseTemporaryRT(m_BloomPyramidUpIds[i]);
