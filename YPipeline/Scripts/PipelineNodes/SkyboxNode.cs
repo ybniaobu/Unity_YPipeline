@@ -14,7 +14,7 @@ namespace YPipeline
         {
             //DestroyImmediate(this);
         }
-        
+
         protected override void OnRender(ref YPipelineData data)
         {
             base.OnRender(ref data);

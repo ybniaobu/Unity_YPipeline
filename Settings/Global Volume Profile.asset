@@ -42,7 +42,10 @@ MonoBehaviour:
     m_Value: 5
   bicubicUpsampling:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0
+  ignoreRenderScale:
+    m_OverrideState: 1
+    m_Value: 0
 --- !u!114 &-3172449948836970238
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -617,25 +620,25 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   active: 0
   shadows:
-    m_OverrideState: 1
-    m_Value: {x: 0, y: 1, z: 0.0666666, w: 0.1264489}
+    m_OverrideState: 0
+    m_Value: {x: 1, y: 1, z: 1, w: 0}
   midtones:
-    m_OverrideState: 1
-    m_Value: {x: 0, y: 0.20000005, z: 1, w: 0}
+    m_OverrideState: 0
+    m_Value: {x: 1, y: 1, z: 1, w: 0}
   highlights:
-    m_OverrideState: 1
-    m_Value: {x: 1, y: 0.016666668, z: 0, w: 0}
+    m_OverrideState: 0
+    m_Value: {x: 1, y: 1, z: 1, w: 0}
   shadowsStart:
-    m_OverrideState: 1
+    m_OverrideState: 0
     m_Value: 0
   shadowsEnd:
-    m_OverrideState: 1
-    m_Value: 0.4
+    m_OverrideState: 0
+    m_Value: 0.5
   highlightsStart:
-    m_OverrideState: 1
-    m_Value: 0.8
+    m_OverrideState: 0
+    m_Value: 0.5
   highlightsEnd:
-    m_OverrideState: 1
+    m_OverrideState: 0
     m_Value: 1
 --- !u!114 &8638038084918822704
 MonoBehaviour:

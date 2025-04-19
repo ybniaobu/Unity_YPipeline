@@ -100,7 +100,7 @@ namespace YPipeline
         {
             //DestroyImmediate(this);
         }
-        
+
         protected override void OnRelease(ref YPipelineData data)
         {
             base.OnRelease(ref data);
@@ -281,30 +281,30 @@ namespace YPipeline
         {
             if (m_SunLightCount > 0)
             {
-                data.buffer.SetGlobalVector(YPipelineShaderIDs.k_SunLightColorId, m_SunLightColor);
-                data.buffer.SetGlobalVector(YPipelineShaderIDs.k_SunLightDirectionId, m_SunLightDirection);
+                data.buffer.SetGlobalVector(YPipelineShaderIDs.k_SunLightColorID, m_SunLightColor);
+                data.buffer.SetGlobalVector(YPipelineShaderIDs.k_SunLightDirectionID, m_SunLightDirection);
             }
             else
             {
-                data.buffer.SetGlobalVector(YPipelineShaderIDs.k_SunLightColorId, Vector4.zero);
-                data.buffer.SetGlobalVector(YPipelineShaderIDs.k_SunLightDirectionId, Vector4.zero);
+                data.buffer.SetGlobalVector(YPipelineShaderIDs.k_SunLightColorID, Vector4.zero);
+                data.buffer.SetGlobalVector(YPipelineShaderIDs.k_SunLightDirectionID, Vector4.zero);
             }
             
-            data.buffer.SetGlobalVector(YPipelineShaderIDs.k_PunctualLightCountId, new Vector4(m_SpotLightCount, m_PointLightCount, 0.0f, 0.0f));
+            data.buffer.SetGlobalVector(YPipelineShaderIDs.k_PunctualLightCountID, new Vector4(m_SpotLightCount, m_PointLightCount, 0.0f, 0.0f));
             
             if (m_SpotLightCount > 0)
             {
-                data.buffer.SetGlobalVectorArray(YPipelineShaderIDs.k_SpotLightColorsId, m_SpotLightColors);
-                data.buffer.SetGlobalVectorArray(YPipelineShaderIDs.k_SpotLightPositionsId, m_SpotLightPositions);
-                data.buffer.SetGlobalVectorArray(YPipelineShaderIDs.k_SpotLightDirectionsId, m_SpotLightDirections);
-                data.buffer.SetGlobalVectorArray(YPipelineShaderIDs.k_SpotLightParamsId, m_SpotLightParams);
+                data.buffer.SetGlobalVectorArray(YPipelineShaderIDs.k_SpotLightColorsID, m_SpotLightColors);
+                data.buffer.SetGlobalVectorArray(YPipelineShaderIDs.k_SpotLightPositionsID, m_SpotLightPositions);
+                data.buffer.SetGlobalVectorArray(YPipelineShaderIDs.k_SpotLightDirectionsID, m_SpotLightDirections);
+                data.buffer.SetGlobalVectorArray(YPipelineShaderIDs.k_SpotLightParamsID, m_SpotLightParams);
             }
                 
             if (m_PointLightCount > 0)
             {
-                data.buffer.SetGlobalVectorArray(YPipelineShaderIDs.k_PointLightColorsId, m_PointLightColors);
-                data.buffer.SetGlobalVectorArray(YPipelineShaderIDs.k_PointLightPositionsId, m_PointLightPositions);
-                data.buffer.SetGlobalVectorArray(YPipelineShaderIDs.k_PointLightParamsId, m_PointLightParams);
+                data.buffer.SetGlobalVectorArray(YPipelineShaderIDs.k_PointLightColorsID, m_PointLightColors);
+                data.buffer.SetGlobalVectorArray(YPipelineShaderIDs.k_PointLightPositionsID, m_PointLightPositions);
+                data.buffer.SetGlobalVectorArray(YPipelineShaderIDs.k_PointLightParamsID, m_PointLightParams);
             }
         }
 
@@ -321,7 +321,7 @@ namespace YPipeline
         private void RenderSunLightShadowArray(ref YPipelineData data)
         {
             ShadowDrawingSettings shadowDrawingSettings = new ShadowDrawingSettings(data.cullingResults, m_SunLightIndex);
-            data.buffer.SetGlobalFloat(YPipelineShaderIDs.k_ShadowPancakingId, 1.0f);
+            data.buffer.SetGlobalFloat(YPipelineShaderIDs.k_ShadowPancakingID, 1.0f);
             
             for (int i = 0; i < data.asset.cascadeCount; i++)
             {
@@ -373,7 +373,7 @@ namespace YPipeline
         
         private void RenderSpotLightShadowArray(ref YPipelineData data)
         {
-            data.buffer.SetGlobalFloat(YPipelineShaderIDs.k_ShadowPancakingId, 0.0f);
+            data.buffer.SetGlobalFloat(YPipelineShaderIDs.k_ShadowPancakingID, 0.0f);
             for (int i = 0; i < m_ShadowingSpotLightCount; i++)
             {
                 ShadowDrawingSettings shadowDrawingSettings = new ShadowDrawingSettings(data.cullingResults, m_ShadowingSpotLightIndices[i]);
@@ -395,7 +395,7 @@ namespace YPipeline
         
         private void RenderPointLightShadowArray(ref YPipelineData data)
         {
-            data.buffer.SetGlobalFloat(YPipelineShaderIDs.k_ShadowPancakingId, 0.0f);
+            data.buffer.SetGlobalFloat(YPipelineShaderIDs.k_ShadowPancakingID, 0.0f);
             for (int i = 0; i < m_ShadowingPointLightCount; i++)
             {
                 ShadowDrawingSettings shadowDrawingSettings = new ShadowDrawingSettings(data.cullingResults, m_ShadowingPointLightIndices[i]);

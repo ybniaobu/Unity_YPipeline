@@ -18,6 +18,7 @@ namespace YPipeline.Editor
         private SerializedDataParameter m_BloomDownscale;
         private SerializedDataParameter m_MaxIterations;
         private SerializedDataParameter m_BicubicUpsampling;
+        private SerializedDataParameter m_IgnoreRenderScale;
         
         public override void OnEnable()
         {
@@ -33,6 +34,7 @@ namespace YPipeline.Editor
             m_BloomDownscale = Unpack(o.Find(x => x.bloomDownscale));
             m_MaxIterations = Unpack(o.Find(x => x.maxIterations));
             m_BicubicUpsampling = Unpack(o.Find(x => x.bicubicUpsampling));
+            m_IgnoreRenderScale = Unpack(o.Find(x => x.ignoreRenderScale));
         }
     
         public override void OnInspectorGUI()
@@ -55,6 +57,7 @@ namespace YPipeline.Editor
             PropertyField(m_BloomDownscale);
             PropertyField(m_MaxIterations);
             PropertyField(m_BicubicUpsampling);
+            PropertyField(m_IgnoreRenderScale);
         }
     }
 }

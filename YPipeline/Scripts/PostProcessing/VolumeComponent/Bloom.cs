@@ -62,6 +62,9 @@ namespace YPipeline
         [Tooltip("是否在向上采样阶段使用 Bicubic 插值以获取更平滑的效果（略微更费性能） Use bicubic sampling instead of bilinear sampling for the upsampling passes. This is slightly more expensive but helps getting smoother visuals.")]
         public BoolParameter bicubicUpsampling = new BoolParameter(false);
         
+        [Tooltip("Bloom is a resolution-dependent effect, decreasing the render scale will make Bloom effect larger.")]
+        public BoolParameter ignoreRenderScale = new BoolParameter(false);
+        
         public bool IsActive()
         {
             if (mode.value == BloomMode.Additive) return intensity.value > 0f;

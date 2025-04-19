@@ -33,7 +33,7 @@ namespace YPipeline
         }
         
         /// <summary>
-        /// 用于只需要设置一次的全局贴图或者变量，不在 render() 里每帧调用，只调用一次
+        /// 待删除
         /// </summary>
         public void Begin(ref YPipelineData data)
         {
@@ -73,6 +73,13 @@ namespace YPipeline
         {
             using var profilingScope = new ProfilingScope(ProfilingSampler.Get(YPipelineProfileIDs.CameraSetup));
             
+#if UNITY_EDITOR
+            if (data.camera.cameraType == CameraType.SceneView) 
+            {
+                ScriptableRenderContext.EmitWorldGeometryForSceneView(data.camera);
+            }
+#endif
+            
             if (!data.camera.TryGetCullingParameters(out ScriptableCullingParameters cullingParameters))
             {
                 return false;
@@ -83,6 +90,29 @@ namespace YPipeline
             data.buffer = CommandBufferPool.Get();
             data.buffer.name =data.camera.name;
             return true;
+        }
+
+        protected void PrepareBuffers(ref YPipelineData data)
+        {
+            Vector2Int bufferSize = data.bufferSize;
+            data.buffer.SetGlobalVector(YPipelineShaderIDs.k_BufferSizeID, new Vector4(1f / bufferSize.x, 1f / bufferSize.y, bufferSize.x, bufferSize.y));
+            
+            data.buffer.GetTemporaryRT(YPipelineShaderIDs.k_ColorBufferID, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, 
+                data.asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+            data.buffer.GetTemporaryRT(YPipelineShaderIDs.k_DepthBufferID, bufferSize.x, bufferSize.y, 32, FilterMode.Point, 
+                RenderTextureFormat.Depth);
+            data.buffer.GetTemporaryRT(YPipelineShaderIDs.k_ColorTextureID, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, 
+                data.asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
+            data.buffer.GetTemporaryRT(YPipelineShaderIDs.k_DepthTextureID, bufferSize.x, bufferSize.y, 32, FilterMode.Point, 
+                RenderTextureFormat.Depth);
+        }
+
+        protected void ReleaseBuffers(ref YPipelineData data)
+        {
+            data.buffer.ReleaseTemporaryRT(YPipelineShaderIDs.k_ColorBufferID);
+            data.buffer.ReleaseTemporaryRT(YPipelineShaderIDs.k_DepthBufferID);
+            data.buffer.ReleaseTemporaryRT(YPipelineShaderIDs.k_ColorTextureID);
+            data.buffer.ReleaseTemporaryRT(YPipelineShaderIDs.k_DepthTextureID);
         }
     }
 }

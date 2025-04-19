@@ -64,12 +64,6 @@ namespace YPipeline
         protected override void Initialize()
         {
             base.Initialize();
-            var stack = VolumeManager.instance.stack;
-            m_ChromaticAberration = stack.GetComponent<ChromaticAberration>();
-            m_Bloom = stack.GetComponent<Bloom>();
-            m_Vignette = stack.GetComponent<Vignette>();
-            m_LookupTable = stack.GetComponent<LookupTable>();
-            m_FilmGrain = stack.GetComponent<FilmGrain>();
             m_Random = new System.Random();
         }
 
@@ -77,6 +71,13 @@ namespace YPipeline
         {
             isActivated = true;
             data.buffer.BeginSample("Uber Post Processing");
+            
+            var stack = VolumeManager.instance.stack;
+            m_ChromaticAberration = stack.GetComponent<ChromaticAberration>();
+            m_Bloom = stack.GetComponent<Bloom>();
+            m_Vignette = stack.GetComponent<Vignette>();
+            m_LookupTable = stack.GetComponent<LookupTable>();
+            m_FilmGrain = stack.GetComponent<FilmGrain>();
             
             // Chromatic Aberration
             CoreUtils.SetKeyword(UberPostProcessingMaterial, YPipelineKeywords.k_ChromaticAberration, m_ChromaticAberration.IsActive());
@@ -87,11 +88,11 @@ namespace YPipeline
             CoreUtils.SetKeyword(UberPostProcessingMaterial, YPipelineKeywords.k_Bloom, m_Bloom.IsActive());
             CoreUtils.SetKeyword(UberPostProcessingMaterial, YPipelineKeywords.k_BloomBicubicUpsampling, m_Bloom.bicubicUpsampling.value);
             Vector4 bloomParams = m_Bloom.mode.value == BloomMode.Additive ? new Vector4(m_Bloom.intensity.value, 0.0f) : new Vector4(m_Bloom.finalIntensity.value, 1.0f);
-            UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_BloomParamsId, bloomParams);
+            UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_BloomParamsID, bloomParams);
             float threshold = Mathf.GammaToLinearSpace(m_Bloom.threshold.value);
             float knee = threshold * m_Bloom.thresholdKnee.value;
-            UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_BloomThresholdId, new Vector4(threshold, knee - threshold, 2.0f * knee, 0.25f / (knee + 1e-6f)));
-            data.buffer.SetGlobalTexture(YPipelineShaderIDs.k_BloomTexID, new RenderTargetIdentifier(YPipelineShaderIDs.k_BloomTextureId));
+            UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_BloomThresholdID, new Vector4(threshold, knee - threshold, 2.0f * knee, 0.25f / (knee + 1e-6f)));
+            data.buffer.SetGlobalTexture(YPipelineShaderIDs.k_BloomTexID, new RenderTargetIdentifier(YPipelineShaderIDs.k_BloomTextureID));
             
             // Vignette
             CoreUtils.SetKeyword(UberPostProcessingMaterial, YPipelineKeywords.k_Vignette, m_Vignette.IsActive());
@@ -99,20 +100,20 @@ namespace YPipeline
             float aspectRatio = data.camera.aspect;
             Vector4 vignetteParams1 = new Vector4(m_Vignette.center.value.x, m_Vignette.center.value.y, 0f, 0f);
             Vector4 vignetteParams2 = new Vector4(m_Vignette.intensity.value * 3f, m_Vignette.smoothness.value * 5f, roundness, m_Vignette.rounded.value ? aspectRatio : 1f);
-            UberPostProcessingMaterial.SetColor(YPipelineShaderIDs.k_VignetteColorId, m_Vignette.color.value);
-            UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_VignetteParams1Id, vignetteParams1);
-            UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_VignetteParams2Id, vignetteParams2);
+            UberPostProcessingMaterial.SetColor(YPipelineShaderIDs.k_VignetteColorID, m_Vignette.color.value);
+            UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_VignetteParams1ID, vignetteParams1);
+            UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_VignetteParams2ID, vignetteParams2);
             
             // Baked Color Grading Lut
             int lutHeight = asset.bakedLUTResolution;
             int lutWidth = lutHeight * lutHeight;
-            UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_ColorGradingLutParamsId, new Vector4(1.0f / lutWidth, 1.0f / lutHeight, lutHeight - 1.0f));
+            UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_ColorGradingLutParamsID, new Vector4(1.0f / lutWidth, 1.0f / lutHeight, lutHeight - 1.0f));
             
             // Extra Lut
             CoreUtils.SetKeyword(UberPostProcessingMaterial, YPipelineKeywords.k_ExtraLut, m_LookupTable.IsActive());
             if (m_LookupTable.IsActive())
             {
-                UberPostProcessingMaterial.SetTexture(YPipelineShaderIDs.k_ExtraLutId, m_LookupTable.texture.value);
+                UberPostProcessingMaterial.SetTexture(YPipelineShaderIDs.k_ExtraLutID, m_LookupTable.texture.value);
                 Vector4 extraLutParams = new Vector4(1.0f / m_LookupTable.texture.value.width, 1.0f / m_LookupTable.texture.value.height, m_LookupTable.texture.value.height - 1.0f, m_LookupTable.contribution.value);
                 UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_ExtraLutParamsID, extraLutParams);
             }
@@ -141,7 +142,7 @@ namespace YPipeline
             }
             
             // TODO: Final Pass
-            BlitUtility.BlitCameraTarget(data.buffer, YPipelineShaderIDs.k_ColorBufferId, data.camera.pixelRect, UberPostProcessingMaterial, 0);
+            BlitUtility.BlitCameraTarget(data.buffer, YPipelineShaderIDs.k_ColorBufferID, data.camera.pixelRect, UberPostProcessingMaterial, 0);
             
             data.buffer.EndSample("Uber Post Processing");
         }

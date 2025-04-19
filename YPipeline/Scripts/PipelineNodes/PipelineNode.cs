@@ -23,10 +23,11 @@ namespace YPipeline
         protected virtual void OnDispose() { }
 
         /// <summary>
-        /// 用于只需要设置一次的全局贴图或者变量，不在 render 每帧调用
+        /// 待删除
         /// </summary>
         /// <param name="data"></param>
         protected virtual void OnBegin(ref YPipelineData data) { }
+
         protected virtual void OnRender(ref YPipelineData data) { }
         /// <summary>
         /// 需要延迟释放的资源

@@ -18,7 +18,6 @@ namespace YPipeline
         protected override void OnRelease(ref YPipelineData data)
         {
             base.OnRelease(ref data);
-            data.buffer.ReleaseTemporaryRT(YPipelineShaderIDs.k_ColorTextureId);
         }
 
         protected override void OnRender(ref YPipelineData data)
@@ -27,14 +26,11 @@ namespace YPipeline
             
             // Copy Color
             data.buffer.BeginSample("Copy Color");
-            data.buffer.GetTemporaryRT(YPipelineShaderIDs.k_ColorTextureId, data.camera.pixelWidth, data.camera.pixelHeight, 0, FilterMode.Bilinear, 
-                data.asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
-            BlitUtility.BlitTexture(data.buffer, YPipelineShaderIDs.k_ColorBufferId, YPipelineShaderIDs.k_ColorTextureId);
-            
+            BlitUtility.BlitTexture(data.buffer, YPipelineShaderIDs.k_ColorBufferID, YPipelineShaderIDs.k_ColorTextureID);
             data.buffer.EndSample("Copy Color");
             
-            
             TransparencyRenderer(ref data);
+            
             data.context.ExecuteCommandBuffer(data.buffer);
             data.buffer.Clear();
             data.context.Submit();
@@ -62,9 +58,9 @@ namespace YPipeline
             
             RendererList transparencyRendererList = data.context.CreateRendererList(ref transparencyRendererListParams);
             
-            data.buffer.SetRenderTarget(new RenderTargetIdentifier(YPipelineShaderIDs.k_ColorBufferId), 
+            data.buffer.SetRenderTarget(new RenderTargetIdentifier(YPipelineShaderIDs.k_ColorBufferID), 
                 RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
-                new RenderTargetIdentifier(YPipelineShaderIDs.k_DepthBufferId),
+                new RenderTargetIdentifier(YPipelineShaderIDs.k_DepthBufferID),
                 RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
             data.buffer.DrawRendererList(transparencyRendererList);
             data.buffer.EndSample("Transparency");

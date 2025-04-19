@@ -81,7 +81,7 @@ float4 ParticlesUnlitFrag(Varyings IN) : SV_Target
         albedo.a *= saturate(nearAttenuation);
     #endif
 
-    float2 screenUV = IN.positionHCS.xy / _ScreenParams.xy;
+    float2 screenUV = IN.positionHCS.xy * _CameraBufferSize.xy;
     #if defined(_SOFT_PARTICLES)
         float sampledDepth = SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture, sampler_PointClamp, screenUV, 0);
         float viewSampledDepth = GetViewDepthFromDepthTexture(sampledDepth);

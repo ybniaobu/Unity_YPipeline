@@ -26,9 +26,10 @@ namespace YPipeline
             
             // TODO: 添加绘制错误材质的功能
             
+            PrepareBuffers(ref data);
             PipelineNode.Render(cameraPipelineNodes, ref data);
             PipelineNode.Release(cameraPipelineNodes, ref data);
-            
+            ReleaseBuffers(ref data);
             CommandBufferPool.Release(data.buffer);
         }
     }

@@ -16,6 +16,8 @@
 // Constant Buffers
 // ----------------------------------------------------------------------------------------------------
 
+float4 _CameraBufferSize; // x: 1.0 / bufferSize.x, y: 1.0 / bufferSize.y, z: bufferSize.x, w: bufferSize.y
+
 CBUFFER_START(LightParamsPerSetting)
     float4 _CascadeSettings; // x: max shadow distance, y: shadow distance fade, z: sun light cascade count, w: cascade edge fade
     float4 _ShadowBias; // x: depth bias, y: slope scaled depth bias, z: normal bias, w: slope scaled normal bias

@@ -19,9 +19,6 @@ namespace YPipeline
         protected override void OnRelease(ref YPipelineData data)
         {
             base.OnRelease(ref data);
-            data.buffer.ReleaseTemporaryRT(YPipelineShaderIDs.k_ColorBufferId);
-            data.buffer.ReleaseTemporaryRT(YPipelineShaderIDs.k_DepthBufferId);
-            data.buffer.ReleaseTemporaryRT(YPipelineShaderIDs.k_DepthTextureId);
             data.context.ExecuteCommandBuffer(data.buffer);
             data.buffer.Clear();
             data.context.Submit();
@@ -32,16 +29,6 @@ namespace YPipeline
             using var profilingScope = new ProfilingScope(ProfilingSampler.Get(YPipelineProfileIDs.GeometryNode));
             base.OnRender(ref data);
             data.context.SetupCameraProperties(data.camera);
-
-            Vector2Int bufferSize = new Vector2Int((int) (data.camera.pixelWidth * data.asset.renderScale), (int) (data.camera.pixelHeight * data.asset.renderScale));
-            
-            // RT
-            data.buffer.GetTemporaryRT(YPipelineShaderIDs.k_ColorBufferId, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, 
-                data.asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
-            data.buffer.GetTemporaryRT(YPipelineShaderIDs.k_DepthBufferId, bufferSize.x, bufferSize.y, 32, FilterMode.Point, 
-                RenderTextureFormat.Depth);
-            data.buffer.GetTemporaryRT(YPipelineShaderIDs.k_DepthTextureId, bufferSize.x, bufferSize.y, 32, FilterMode.Point, 
-                RenderTextureFormat.Depth);
             
             // Filtering & Sorting
             FilteringSettings opaqueFiltering = 
@@ -62,7 +49,7 @@ namespace YPipeline
             
             // Depth PrePass
             data.buffer.BeginSample("Depth PrePass");
-            data.buffer.SetRenderTarget(new RenderTargetIdentifier(YPipelineShaderIDs.k_DepthBufferId), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            data.buffer.SetRenderTarget(new RenderTargetIdentifier(YPipelineShaderIDs.k_DepthBufferID), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
             data.buffer.ClearRenderTarget(true, false, data.camera.backgroundColor.linear);
             
             DrawingSettings depthOpaqueDrawing = new DrawingSettings(YPipelineShaderTagIDs.k_DepthShaderTagId, opaqueSorting)
@@ -93,14 +80,14 @@ namespace YPipeline
             
             // Copy Depth
             data.buffer.BeginSample("Copy Depth");
-            BlitUtility.CopyDepth(data.buffer, YPipelineShaderIDs.k_DepthBufferId, YPipelineShaderIDs.k_DepthTextureId);
+            BlitUtility.CopyDepth(data.buffer, YPipelineShaderIDs.k_DepthBufferID, YPipelineShaderIDs.k_DepthTextureID);
             data.buffer.EndSample("Copy Depth");
             
             // Draw Opaque & AlphaTest
             data.buffer.BeginSample("Draw Opaque & AlphaTest");
-            data.buffer.SetRenderTarget(new RenderTargetIdentifier(YPipelineShaderIDs.k_ColorBufferId), 
+            data.buffer.SetRenderTarget(new RenderTargetIdentifier(YPipelineShaderIDs.k_ColorBufferID), 
                 RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
-                new RenderTargetIdentifier(YPipelineShaderIDs.k_DepthBufferId),
+                new RenderTargetIdentifier(YPipelineShaderIDs.k_DepthBufferID),
                 RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
             
             data.buffer.ClearRenderTarget(false, true, data.camera.backgroundColor.linear);

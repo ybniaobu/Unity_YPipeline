@@ -45,7 +45,7 @@ namespace YPipeline
             BeginContextRendering(context, cameras);
             m_Data.context = context;
             
-            // TODO: 修改 Begin 方法
+            // TODO: 删除 Begin 方法
             m_GameCameraRenderer.Begin(ref m_Data);
             
             foreach(Camera camera in cameras)
@@ -53,17 +53,7 @@ namespace YPipeline
                 BeginCameraRendering(context, camera);
                 m_Data.camera = camera;
                 
-                if (camera.cameraType == CameraType.Game || camera.cameraType == CameraType.Preview || camera.cameraType == CameraType.Reflection)
-                {
-                    m_GameCameraRenderer.Render(ref m_Data);
-                }
-                
-#if UNITY_EDITOR
-                if (camera.cameraType == CameraType.SceneView)
-                {
-                    m_SceneCameraRenderer.Render(ref m_Data);
-                }
-#endif
+                m_GameCameraRenderer.Render(ref m_Data);
                 
                 EndCameraRendering(context, camera);
             }
