@@ -31,7 +31,7 @@ namespace YPipeline
             base.Initialize();
         }
 
-        public override void Render(YRenderPipelineAsset asset, ref YPipelineData data)
+        public override void Render(ref YPipelineData data)
         {
             isActivated = true;
             data.buffer.BeginSample("Color Grading Lut");
@@ -42,7 +42,7 @@ namespace YPipeline
             m_LiftGammaGain = stack.GetComponent<LiftGammaGain>();
             m_ToneMapping = stack.GetComponent<ToneMapping>();
             
-            int lutHeight = asset.bakedLUTResolution;
+            int lutHeight = data.asset.bakedLUTResolution;
             int lutWidth = lutHeight * lutHeight;
             data.buffer.GetTemporaryRT(YPipelineShaderIDs.k_ColorGradingLutTextureID, lutWidth, lutHeight, 0, FilterMode.Bilinear, RenderTextureFormat.DefaultHDR);
             ColorGradingLutMaterial.SetVector(YPipelineShaderIDs.k_ColorGradingLUTParamsID, new Vector4(lutHeight, 0.5f / lutWidth, 0.5f / lutHeight, lutHeight / (lutHeight - 1.0f)));

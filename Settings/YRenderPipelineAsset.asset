@@ -14,6 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enableHDRFrameBufferFormat: 1
   renderScale: 1
+  antiAliasing: 1
+  fxaaMode: 1
   pipelineResources: {fileID: 11400000, guid: 908eb47731a80fb45a32453593164179, type: 2}
   renderPath: 0
   globalVolumeProfile: {fileID: 11400000, guid: eb8647ca7eb7e324fa7d7b19a82bc4f5,

@@ -10,9 +10,6 @@ namespace YPipeline
         private Bloom m_Bloom;
         private Vignette m_Vignette;
         private LookupTable m_LookupTable;
-        private FilmGrain m_FilmGrain;
-        
-        private System.Random m_Random;
         
         private const string k_UberPostProcessing = "Hidden/YPipeline/UberPostProcessing";
         private Material m_UberPostProcessingMaterial;
@@ -64,10 +61,9 @@ namespace YPipeline
         protected override void Initialize()
         {
             base.Initialize();
-            m_Random = new System.Random();
         }
 
-        public override void Render(YRenderPipelineAsset asset, ref YPipelineData data)
+        public override void Render(ref YPipelineData data)
         {
             isActivated = true;
             data.buffer.BeginSample("Uber Post Processing");
@@ -77,7 +73,6 @@ namespace YPipeline
             m_Bloom = stack.GetComponent<Bloom>();
             m_Vignette = stack.GetComponent<Vignette>();
             m_LookupTable = stack.GetComponent<LookupTable>();
-            m_FilmGrain = stack.GetComponent<FilmGrain>();
             
             // Chromatic Aberration
             CoreUtils.SetKeyword(UberPostProcessingMaterial, YPipelineKeywords.k_ChromaticAberration, m_ChromaticAberration.IsActive());
@@ -105,7 +100,7 @@ namespace YPipeline
             UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_VignetteParams2ID, vignetteParams2);
             
             // Baked Color Grading Lut
-            int lutHeight = asset.bakedLUTResolution;
+            int lutHeight = data.asset.bakedLUTResolution;
             int lutWidth = lutHeight * lutHeight;
             UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_ColorGradingLutParamsID, new Vector4(1.0f / lutWidth, 1.0f / lutHeight, lutHeight - 1.0f));
             
@@ -118,31 +113,8 @@ namespace YPipeline
                 UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_ExtraLutParamsID, extraLutParams);
             }
             
-            // Film Grain
-            CoreUtils.SetKeyword(UberPostProcessingMaterial, YPipelineKeywords.k_FilmGrain, m_FilmGrain.IsActive());
-            if (m_FilmGrain.IsActive())
-            {
-                Texture texture = null;
-                if (m_FilmGrain.type.value != FilmGrainKinds.Custom)
-                {
-                    texture = asset.pipelineResources.textures.filmGrainTex[(int)m_FilmGrain.type.value];
-                }
-                else
-                {
-                    texture = m_FilmGrain.texture.value;
-                }
-                float uvScaleX = data.camera.pixelWidth / (float) texture.width;
-                float uvScaleY = data.camera.pixelHeight / (float) texture.height;
-                float offsetX = (float) m_Random.NextDouble();
-                float offsetY = (float) m_Random.NextDouble();
-                
-                UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_FilmGrainParamsID, new Vector4(m_FilmGrain.intensity.value * 4f, m_FilmGrain.response.value));
-                UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_FilmGrainTexParamsID, new Vector4(uvScaleX, uvScaleY, offsetX, offsetY));
-                UberPostProcessingMaterial.SetTexture(YPipelineShaderIDs.k_FilmGrainTexID, texture);
-            }
-            
-            // TODO: Final Pass
-            BlitUtility.BlitCameraTarget(data.buffer, YPipelineShaderIDs.k_ColorBufferID, data.camera.pixelRect, UberPostProcessingMaterial, 0);
+            // Blit
+            BlitUtility.BlitTexture(data.buffer, YPipelineShaderIDs.k_ColorBufferID, YPipelineShaderIDs.k_FinalTextureID, UberPostProcessingMaterial, 0);
             
             data.buffer.EndSample("Uber Post Processing");
         }

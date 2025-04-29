@@ -12,7 +12,7 @@ namespace YPipeline
             
         }
 
-        public abstract void Render(YRenderPipelineAsset asset, ref YPipelineData data);
+        public abstract void Render(ref YPipelineData data);
         
         public static T Create<T>() where T : PostProcessingRenderer, new()
         {

@@ -29,7 +29,6 @@
             #pragma multi_compile_local_fragment _ _BLOOM_BICUBIC_UPSAMPLING
             #pragma multi_compile_local_fragment _ _VIGNETTE
             #pragma multi_compile_local_fragment _ _EXTRA_LUT
-            #pragma multi_compile_local_fragment _ _FILM_GRAIN
             
             ENDHLSL
         }

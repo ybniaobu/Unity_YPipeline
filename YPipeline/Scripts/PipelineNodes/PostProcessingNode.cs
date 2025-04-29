@@ -13,12 +13,14 @@ namespace YPipeline
         private BloomRenderer m_BloomRenderer;
         private ColorGradingLutRenderer m_ColorGradingLutRenderer;
         private UberPostProcessingRenderer m_UberPostProcessingRenderer;
+        private FinalPostProcessingRenderer m_FinalPostProcessingRenderer;
         
         protected override void Initialize()
         {
             m_BloomRenderer = PostProcessingRenderer.Create<BloomRenderer>();
             m_ColorGradingLutRenderer = PostProcessingRenderer.Create<ColorGradingLutRenderer>();
             m_UberPostProcessingRenderer = PostProcessingRenderer.Create<UberPostProcessingRenderer>();
+            m_FinalPostProcessingRenderer = PostProcessingRenderer.Create<FinalPostProcessingRenderer>();
         }
         
         protected override void OnDispose()
@@ -86,16 +88,17 @@ namespace YPipeline
 
         private void PostProcessingRender(YRenderPipelineAsset asset, ref YPipelineData data)
         {
-            RenderTextureFormat format = asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default;
-            
             // Bloom
-            m_BloomRenderer.Render(asset, ref data);
+            m_BloomRenderer.Render(ref data);
             
             // Color Grading Lut
-            m_ColorGradingLutRenderer.Render(asset, ref data);
+            m_ColorGradingLutRenderer.Render(ref data);
             
             // Post Color Grading
-            m_UberPostProcessingRenderer.Render(asset, ref data);
+            m_UberPostProcessingRenderer.Render(ref data);
+            
+            // Final Post Processing
+            m_FinalPostProcessingRenderer.Render(ref data);
             
             // Clear RT
             data.buffer.ReleaseTemporaryRT(YPipelineShaderIDs.k_BloomTextureID);

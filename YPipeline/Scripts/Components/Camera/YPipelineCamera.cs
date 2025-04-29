@@ -24,7 +24,6 @@ namespace YPipeline
     [RequireComponent(typeof(Camera))]
     public class YPipelineCamera : MonoBehaviour, ISerializationCallbackReceiver
     {
-        
         public void OnBeforeSerialize()
         {
             

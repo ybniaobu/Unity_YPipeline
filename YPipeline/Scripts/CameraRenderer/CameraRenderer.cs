@@ -105,6 +105,8 @@ namespace YPipeline
                 data.asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
             data.buffer.GetTemporaryRT(YPipelineShaderIDs.k_DepthTextureID, bufferSize.x, bufferSize.y, 32, FilterMode.Point, 
                 RenderTextureFormat.Depth);
+            data.buffer.GetTemporaryRT(YPipelineShaderIDs.k_FinalTextureID, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear,
+                data.asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
         }
 
         protected void ReleaseBuffers(ref YPipelineData data)
@@ -113,6 +115,7 @@ namespace YPipeline
             data.buffer.ReleaseTemporaryRT(YPipelineShaderIDs.k_DepthBufferID);
             data.buffer.ReleaseTemporaryRT(YPipelineShaderIDs.k_ColorTextureID);
             data.buffer.ReleaseTemporaryRT(YPipelineShaderIDs.k_DepthTextureID);
+            data.buffer.ReleaseTemporaryRT(YPipelineShaderIDs.k_FinalTextureID);
         }
     }
 }

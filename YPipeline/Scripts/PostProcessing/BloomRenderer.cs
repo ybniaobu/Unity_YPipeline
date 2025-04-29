@@ -42,7 +42,7 @@ namespace YPipeline
             }
         }
 
-        public override void Render(YRenderPipelineAsset asset, ref YPipelineData data)
+        public override void Render(ref YPipelineData data)
         {
             isActivated = true;
             data.buffer.BeginSample("Bloom");
@@ -65,7 +65,7 @@ namespace YPipeline
             }
             
             // Temporary RT
-            RenderTextureFormat format = asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default;
+            RenderTextureFormat format = data.asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default;
             data.buffer.GetTemporaryRT(YPipelineShaderIDs.k_BloomTextureID, width >> 1, height >> 1, 0, FilterMode.Bilinear, format);
             
             // Determine the iteration count

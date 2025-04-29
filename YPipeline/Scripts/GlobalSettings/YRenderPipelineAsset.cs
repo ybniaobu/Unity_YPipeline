@@ -12,6 +12,16 @@ namespace YPipeline
         Forward, Deferred, Custom
     }
     
+    public enum AntiAliasing
+    {
+        None, FXAA, TAA
+    }
+
+    public enum FXAAMode
+    {
+        Quality, Console
+    }
+    
     [CreateAssetMenu(menuName = "YPipeline/YRenderPipelineAsset")]
     public partial class YRenderPipelineAsset : RenderPipelineAsset<YRenderPipeline>
     {
@@ -36,6 +46,12 @@ namespace YPipeline
 
         [FoldoutGroup("Rendering Settings")] 
         [Range(0.1f, 2f)] public float renderScale = 1.0f;
+        
+        [FoldoutGroup("Rendering Settings")]
+        public AntiAliasing antiAliasing = AntiAliasing.FXAA;
+        
+        [FoldoutGroup("Rendering Settings")]
+        public FXAAMode fxaaMode = FXAAMode.Quality;
 
         [FoldoutGroup("Rendering Settings")]
         public YPipelineResources pipelineResources;

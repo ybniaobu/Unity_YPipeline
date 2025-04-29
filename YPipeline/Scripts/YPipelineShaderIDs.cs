@@ -23,6 +23,7 @@ namespace YPipeline
         public static readonly int k_DepthBufferID = Shader.PropertyToID("_CameraDepthBuffer");
         public static readonly int k_ColorTextureID = Shader.PropertyToID("_CameraColorTexture");
         public static readonly int k_DepthTextureID = Shader.PropertyToID("_CameraDepthTexture");
+        public static readonly int k_FinalTextureID = Shader.PropertyToID("_CameraFinalTexture");
         
         // Deferred
         
@@ -152,6 +153,10 @@ namespace YPipeline
         public static readonly int k_ExtraLutID = Shader.PropertyToID("_ExtraLut");
         public static readonly int k_ExtraLutParamsID = Shader.PropertyToID("_ExtraLutParams");
         
+        // ----------------------------------------------------------------------------------------------------
+        // Final Post Related Texture or Param IDs
+        // ----------------------------------------------------------------------------------------------------
+        
         public static readonly int k_FilmGrainTexID = Shader.PropertyToID("_FilmGrainTex");
         public static readonly int k_FilmGrainParamsID = Shader.PropertyToID("_FilmGrainParams");
         public static readonly int k_FilmGrainTexParamsID = Shader.PropertyToID("_FilmGrainTexParams");
@@ -176,6 +181,9 @@ namespace YPipeline
         public const string k_ChromaticAberration = "_CHROMATIC_ABERRATION";
         public const string k_Vignette = "_VIGNETTE";
         public const string k_ExtraLut = "_EXTRA_LUT";
+        
+        public const string k_FXAAQuality = "_FXAA_QUALITY";
+        public const string k_FXAAConsole = "_FXAA_CONSOLE";
         public const string k_FilmGrain = "_FILM_GRAIN";
     }
 }
