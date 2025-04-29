@@ -39,7 +39,7 @@
 // 0.50 - lower limit (sharper, less sub-pixel aliasing removal)
 // 0.25 - almost off
 // 0.00 - completely off
-#define FXAA_QUALITY_BLEND_FACTOR 0.75
+#define FXAA_QUALITY_BLEND_FACTOR 1.00
 
 // ----------------------------------------------------------------------------------------------------
 // FXAA Console Marcos
@@ -52,7 +52,7 @@
 // 0.06 - faster but more aliasing in darks
 // 0.05 - default
 // 0.04 - slower and less aliasing in darks
-#define FXAA_CONSOLE_CONTRAST_THRESHOLD 0.05
+#define FXAA_CONSOLE_CONTRAST_THRESHOLD 0.04
 
 // 0.50 - default
 // 0.33 (sharper)
@@ -61,7 +61,7 @@
 // 8.0 is sharper (default!!!)
 // 4.0 is softer
 // 2.0 is really soft (good only for vector graphics inputs)
-#define FXAA_CONSOLE_EDGE_SHARPNESS 8
+#define FXAA_CONSOLE_EDGE_SHARPNESS 4
 
 // ----------------------------------------------------------------------------------------------------
 // FXAA Quality and Console Function
@@ -250,8 +250,8 @@ float3 ApplyFXAAConsole(float2 uv, float4 middleColor)
     float4 rgbP1 = SampleOffsetZero(uv + dir1);
     float4 rgbA = (rgbN1 + rgbP1) * 0.5;
     
-    float dirAbsMinTimesC = min(abs(dir1.x), abs(dir1.y)) * FXAA_CONSOLE_EDGE_SHARPNESS;
-    float2 dir2 = clamp(dir1 / dirAbsMinTimesC, -2.0, 2.0) * 2.0;
+    float dirAbsMinTimesC = min(abs(dir.x), abs(dir.y)) * FXAA_CONSOLE_EDGE_SHARPNESS;
+    float2 dir2 = clamp(dir / dirAbsMinTimesC, -2.0, 2.0) * 2.0;
     float4 rgbN2 = SampleOffsetZero(uv - dir2 * TEXEL_SIZE.xy);
     float4 rgbP2 = SampleOffsetZero(uv + dir2 * TEXEL_SIZE.xy);
     float4 rgbB = rgbA * 0.5 + (rgbN2 + rgbP2) * 0.25;
