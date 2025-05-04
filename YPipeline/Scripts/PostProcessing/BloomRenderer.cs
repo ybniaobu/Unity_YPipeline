@@ -45,7 +45,7 @@ namespace YPipeline
         public override void Render(ref YPipelineData data)
         {
             isActivated = true;
-            data.buffer.BeginSample("Bloom");
+            data.cmd.BeginSample("Bloom");
             
             var stack = VolumeManager.instance.stack;
             m_Bloom = stack.GetComponent<Bloom>();
@@ -66,7 +66,7 @@ namespace YPipeline
             
             // Temporary RT
             RenderTextureFormat format = data.asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default;
-            data.buffer.GetTemporaryRT(YPipelineShaderIDs.k_BloomTextureID, width >> 1, height >> 1, 0, FilterMode.Bilinear, format);
+            data.cmd.GetTemporaryRT(YPipelineShaderIDs.k_BloomTextureID, width >> 1, height >> 1, 0, FilterMode.Bilinear, format);
             
             // Determine the iteration count
             int minSize = Mathf.Min(width, height);
@@ -83,8 +83,8 @@ namespace YPipeline
             CoreUtils.SetKeyword(BloomMaterial, YPipelineKeywords.k_BloomBicubicUpsampling, m_Bloom.bicubicUpsampling.value);
             
             // Prefilter
-            data.buffer.GetTemporaryRT(YPipelineShaderIDs.k_BloomPrefilterTextureID, width, height, 0, FilterMode.Bilinear, format);
-            BlitUtility.BlitTexture(data.buffer, YPipelineShaderIDs.k_ColorBufferID, YPipelineShaderIDs.k_BloomPrefilterTextureID, BloomMaterial, 0);
+            data.cmd.GetTemporaryRT(YPipelineShaderIDs.k_BloomPrefilterTextureID, width, height, 0, FilterMode.Bilinear, format);
+            BlitUtility.BlitTexture(data.cmd, YPipelineShaderIDs.k_ColorBufferID, YPipelineShaderIDs.k_BloomPrefilterTextureID, BloomMaterial, 0);
             width >>= 1;
             height >>= 1;
             
@@ -92,10 +92,10 @@ namespace YPipeline
             int sourceId = YPipelineShaderIDs.k_BloomPrefilterTextureID;
             for (int i = 0; i < iterationCount; i++)
             {
-                data.buffer.GetTemporaryRT(m_BloomPyramidUpIds[i], width, height, 0, FilterMode.Bilinear, format);
-                data.buffer.GetTemporaryRT(m_BloomPyramidDownIds[i], width, height, 0, FilterMode.Bilinear, format);
-                BlitUtility.BlitTexture(data.buffer, sourceId, m_BloomPyramidUpIds[i], BloomMaterial, 1);
-                BlitUtility.BlitTexture(data.buffer, m_BloomPyramidUpIds[i], m_BloomPyramidDownIds[i], BloomMaterial, 2);
+                data.cmd.GetTemporaryRT(m_BloomPyramidUpIds[i], width, height, 0, FilterMode.Bilinear, format);
+                data.cmd.GetTemporaryRT(m_BloomPyramidDownIds[i], width, height, 0, FilterMode.Bilinear, format);
+                BlitUtility.BlitTexture(data.cmd, sourceId, m_BloomPyramidUpIds[i], BloomMaterial, 1);
+                BlitUtility.BlitTexture(data.cmd, m_BloomPyramidUpIds[i], m_BloomPyramidDownIds[i], BloomMaterial, 2);
                 sourceId = m_BloomPyramidDownIds[i];
                 width >>= 1;
                 height >>= 1;
@@ -106,9 +106,9 @@ namespace YPipeline
             int lastDst = m_BloomPyramidDownIds[iterationCount - 1];
             for (int i = iterationCount - 2; i >= 0; i--)
             {
-                data.buffer.SetGlobalTexture(YPipelineShaderIDs.k_BloomLowerTextureID, new RenderTargetIdentifier(lastDst));
-                if (i == 0) BlitUtility.BlitTexture(data.buffer, m_BloomPyramidDownIds[i], YPipelineShaderIDs.k_BloomTextureID, BloomMaterial, upsamplePass);
-                else BlitUtility.BlitTexture(data.buffer, m_BloomPyramidDownIds[i], m_BloomPyramidUpIds[i], BloomMaterial, upsamplePass);
+                data.cmd.SetGlobalTexture(YPipelineShaderIDs.k_BloomLowerTextureID, new RenderTargetIdentifier(lastDst));
+                if (i == 0) BlitUtility.BlitTexture(data.cmd, m_BloomPyramidDownIds[i], YPipelineShaderIDs.k_BloomTextureID, BloomMaterial, upsamplePass);
+                else BlitUtility.BlitTexture(data.cmd, m_BloomPyramidDownIds[i], m_BloomPyramidUpIds[i], BloomMaterial, upsamplePass);
                 lastDst = m_BloomPyramidUpIds[i];
             }
             
@@ -120,14 +120,14 @@ namespace YPipeline
             // BlitUtility.BlitTexture(data.buffer, RenderTargetIDs.k_FrameBufferId, RenderTargetIDs.k_BloomTextureId, BloomMaterial, finalPass);
             
             // Release RT
-            data.buffer.ReleaseTemporaryRT(YPipelineShaderIDs.k_BloomPrefilterTextureID);
+            data.cmd.ReleaseTemporaryRT(YPipelineShaderIDs.k_BloomPrefilterTextureID);
             for (int i = 0; i < iterationCount; i++)
             {
-                data.buffer.ReleaseTemporaryRT(m_BloomPyramidUpIds[i]);
-                data.buffer.ReleaseTemporaryRT(m_BloomPyramidDownIds[i]);
+                data.cmd.ReleaseTemporaryRT(m_BloomPyramidUpIds[i]);
+                data.cmd.ReleaseTemporaryRT(m_BloomPyramidDownIds[i]);
             }
                 
-            data.buffer.EndSample("Bloom");
+            data.cmd.EndSample("Bloom");
         }
     }
 }

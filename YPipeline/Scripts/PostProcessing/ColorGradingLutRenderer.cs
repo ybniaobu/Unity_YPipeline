@@ -34,7 +34,7 @@ namespace YPipeline
         public override void Render(ref YPipelineData data)
         {
             isActivated = true;
-            data.buffer.BeginSample("Color Grading Lut");
+            data.cmd.BeginSample("Color Grading Lut");
             
             var stack = VolumeManager.instance.stack;
             m_GlobalColorCorrections = stack.GetComponent<GlobalColorCorrections>();
@@ -44,7 +44,7 @@ namespace YPipeline
             
             int lutHeight = data.asset.bakedLUTResolution;
             int lutWidth = lutHeight * lutHeight;
-            data.buffer.GetTemporaryRT(YPipelineShaderIDs.k_ColorGradingLutTextureID, lutWidth, lutHeight, 0, FilterMode.Bilinear, RenderTextureFormat.DefaultHDR);
+            data.cmd.GetTemporaryRT(YPipelineShaderIDs.k_ColorGradingLutTextureID, lutWidth, lutHeight, 0, FilterMode.Bilinear, RenderTextureFormat.DefaultHDR);
             ColorGradingLutMaterial.SetVector(YPipelineShaderIDs.k_ColorGradingLUTParamsID, new Vector4(lutHeight, 0.5f / lutWidth, 0.5f / lutHeight, lutHeight / (lutHeight - 1.0f)));
             
             // Global Color Corrections
@@ -120,9 +120,9 @@ namespace YPipeline
             }
             
             // Blit
-            BlitUtility.DrawTexture(data.buffer, YPipelineShaderIDs.k_ColorGradingLutTextureID, ColorGradingLutMaterial, toneMappingPass);
+            BlitUtility.DrawTexture(data.cmd, YPipelineShaderIDs.k_ColorGradingLutTextureID, ColorGradingLutMaterial, toneMappingPass);
             
-            data.buffer.EndSample("Color Grading Lut");
+            data.cmd.EndSample("Color Grading Lut");
         }
     }
 }

@@ -36,7 +36,7 @@ namespace YPipeline
         public override void Render(ref YPipelineData data)
         {
             isActivated = true;
-            data.buffer.BeginSample("Final Post Processing");
+            data.cmd.BeginSample("Final Post Processing");
             
             var stack = VolumeManager.instance.stack;
             m_FilmGrain = stack.GetComponent<FilmGrain>();
@@ -69,9 +69,9 @@ namespace YPipeline
             }
             
             // Blit
-            BlitUtility.BlitCameraTarget(data.buffer, YPipelineShaderIDs.k_FinalTextureID, data.camera.pixelRect, FinalPostProcessingMaterial, 0);
+            BlitUtility.BlitCameraTarget(data.cmd, YPipelineShaderIDs.k_FinalTextureID, data.camera.pixelRect, FinalPostProcessingMaterial, 0);
             
-            data.buffer.EndSample("Final Post Processing");
+            data.cmd.EndSample("Final Post Processing");
         }
     }
 }

@@ -40,10 +40,10 @@ namespace YPipeline
             if (!m_IsBegan)
             {
                 CommandBuffer cmd = CommandBufferPool.Get();
-                data.buffer = cmd;
+                data.cmd = cmd;
                 PipelineNode.Begin(cameraPipelineNodes, ref data);
                 m_IsBegan = true;
-                data.buffer = null;
+                data.cmd = null;
                 CommandBufferPool.Release(cmd);
             }
         }
@@ -87,35 +87,39 @@ namespace YPipeline
             
             cullingParameters.shadowDistance = Mathf.Min(data.asset.maxShadowDistance, data.camera.farClipPlane);
             data.cullingResults = data.context.Cull(ref cullingParameters);
-            data.buffer = CommandBufferPool.Get();
-            data.buffer.name =data.camera.name;
+            data.cmd = CommandBufferPool.Get();
+            
+#if UNITY_EDITOR
+            data.cmd.name = data.camera.name;
+#endif
+            
             return true;
         }
 
         protected void PrepareBuffers(ref YPipelineData data)
         {
             Vector2Int bufferSize = data.bufferSize;
-            data.buffer.SetGlobalVector(YPipelineShaderIDs.k_BufferSizeID, new Vector4(1f / bufferSize.x, 1f / bufferSize.y, bufferSize.x, bufferSize.y));
+            data.cmd.SetGlobalVector(YPipelineShaderIDs.k_BufferSizeID, new Vector4(1f / bufferSize.x, 1f / bufferSize.y, bufferSize.x, bufferSize.y));
             
-            data.buffer.GetTemporaryRT(YPipelineShaderIDs.k_ColorBufferID, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, 
+            data.cmd.GetTemporaryRT(YPipelineShaderIDs.k_ColorBufferID, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, 
                 data.asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
-            data.buffer.GetTemporaryRT(YPipelineShaderIDs.k_DepthBufferID, bufferSize.x, bufferSize.y, 32, FilterMode.Point, 
+            data.cmd.GetTemporaryRT(YPipelineShaderIDs.k_DepthBufferID, bufferSize.x, bufferSize.y, 32, FilterMode.Point, 
                 RenderTextureFormat.Depth);
-            data.buffer.GetTemporaryRT(YPipelineShaderIDs.k_ColorTextureID, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, 
+            data.cmd.GetTemporaryRT(YPipelineShaderIDs.k_ColorTextureID, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, 
                 data.asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
-            data.buffer.GetTemporaryRT(YPipelineShaderIDs.k_DepthTextureID, bufferSize.x, bufferSize.y, 32, FilterMode.Point, 
+            data.cmd.GetTemporaryRT(YPipelineShaderIDs.k_DepthTextureID, bufferSize.x, bufferSize.y, 32, FilterMode.Point, 
                 RenderTextureFormat.Depth);
-            data.buffer.GetTemporaryRT(YPipelineShaderIDs.k_FinalTextureID, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear,
+            data.cmd.GetTemporaryRT(YPipelineShaderIDs.k_FinalTextureID, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear,
                 data.asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
         }
 
         protected void ReleaseBuffers(ref YPipelineData data)
         {
-            data.buffer.ReleaseTemporaryRT(YPipelineShaderIDs.k_ColorBufferID);
-            data.buffer.ReleaseTemporaryRT(YPipelineShaderIDs.k_DepthBufferID);
-            data.buffer.ReleaseTemporaryRT(YPipelineShaderIDs.k_ColorTextureID);
-            data.buffer.ReleaseTemporaryRT(YPipelineShaderIDs.k_DepthTextureID);
-            data.buffer.ReleaseTemporaryRT(YPipelineShaderIDs.k_FinalTextureID);
+            data.cmd.ReleaseTemporaryRT(YPipelineShaderIDs.k_ColorBufferID);
+            data.cmd.ReleaseTemporaryRT(YPipelineShaderIDs.k_DepthBufferID);
+            data.cmd.ReleaseTemporaryRT(YPipelineShaderIDs.k_ColorTextureID);
+            data.cmd.ReleaseTemporaryRT(YPipelineShaderIDs.k_DepthTextureID);
+            data.cmd.ReleaseTemporaryRT(YPipelineShaderIDs.k_FinalTextureID);
         }
     }
 }

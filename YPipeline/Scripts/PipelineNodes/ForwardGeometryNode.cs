@@ -19,8 +19,8 @@ namespace YPipeline
         protected override void OnRelease(ref YPipelineData data)
         {
             base.OnRelease(ref data);
-            data.context.ExecuteCommandBuffer(data.buffer);
-            data.buffer.Clear();
+            data.context.ExecuteCommandBuffer(data.cmd);
+            data.cmd.Clear();
             data.context.Submit();
         }
 
@@ -48,9 +48,9 @@ namespace YPipeline
             };
             
             // Depth PrePass
-            data.buffer.BeginSample("Depth PrePass");
-            data.buffer.SetRenderTarget(new RenderTargetIdentifier(YPipelineShaderIDs.k_DepthBufferID), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
-            data.buffer.ClearRenderTarget(true, false, data.camera.backgroundColor.linear);
+            data.cmd.BeginSample("Depth PrePass");
+            data.cmd.SetRenderTarget(new RenderTargetIdentifier(YPipelineShaderIDs.k_DepthBufferID), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            data.cmd.ClearRenderTarget(true, false, data.camera.backgroundColor.linear);
             
             DrawingSettings depthOpaqueDrawing = new DrawingSettings(YPipelineShaderTagIDs.k_DepthShaderTagId, opaqueSorting)
             {
@@ -73,24 +73,24 @@ namespace YPipeline
             RendererList depthOpaqueRendererList = data.context.CreateRendererList(ref depthOpaqueRendererListParams);
             RendererList depthAlphaTestRendererList = data.context.CreateRendererList(ref depthAlphaTestRendererListParams);
             
-            data.buffer.DrawRendererList(depthOpaqueRendererList);
-            data.buffer.DrawRendererList(depthAlphaTestRendererList);
+            data.cmd.DrawRendererList(depthOpaqueRendererList);
+            data.cmd.DrawRendererList(depthAlphaTestRendererList);
             
-            data.buffer.EndSample("Depth PrePass");
+            data.cmd.EndSample("Depth PrePass");
             
             // Copy Depth
-            data.buffer.BeginSample("Copy Depth");
-            BlitUtility.CopyDepth(data.buffer, YPipelineShaderIDs.k_DepthBufferID, YPipelineShaderIDs.k_DepthTextureID);
-            data.buffer.EndSample("Copy Depth");
+            data.cmd.BeginSample("Copy Depth");
+            BlitUtility.CopyDepth(data.cmd, YPipelineShaderIDs.k_DepthBufferID, YPipelineShaderIDs.k_DepthTextureID);
+            data.cmd.EndSample("Copy Depth");
             
             // Draw Opaque & AlphaTest
-            data.buffer.BeginSample("Draw Opaque & AlphaTest");
-            data.buffer.SetRenderTarget(new RenderTargetIdentifier(YPipelineShaderIDs.k_ColorBufferID), 
+            data.cmd.BeginSample("Draw Opaque & AlphaTest");
+            data.cmd.SetRenderTarget(new RenderTargetIdentifier(YPipelineShaderIDs.k_ColorBufferID), 
                 RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
                 new RenderTargetIdentifier(YPipelineShaderIDs.k_DepthBufferID),
                 RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
             
-            data.buffer.ClearRenderTarget(false, true, data.camera.backgroundColor.linear);
+            data.cmd.ClearRenderTarget(false, true, data.camera.backgroundColor.linear);
 
             DrawingSettings opaqueDrawing = new DrawingSettings(YPipelineShaderTagIDs.k_SRPDefaultShaderTagId, opaqueSorting)
             {
@@ -115,14 +115,14 @@ namespace YPipeline
             RendererList opaqueRendererList = data.context.CreateRendererList(ref opaqueRendererListParams);
             RendererList alphaTestRendererList = data.context.CreateRendererList(ref alphaTestRendererListParams);
             
-            data.buffer.DrawRendererList(opaqueRendererList);
-            data.buffer.DrawRendererList(alphaTestRendererList);
+            data.cmd.DrawRendererList(opaqueRendererList);
+            data.cmd.DrawRendererList(alphaTestRendererList);
             
-            data.buffer.EndSample("Draw Opaque & AlphaTest");
+            data.cmd.EndSample("Draw Opaque & AlphaTest");
             
             // Submit
-            data.context.ExecuteCommandBuffer(data.buffer);
-            data.buffer.Clear();
+            data.context.ExecuteCommandBuffer(data.cmd);
+            data.cmd.Clear();
             data.context.Submit();
         }
     }

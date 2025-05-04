@@ -19,15 +19,15 @@ namespace YPipeline
         {
             base.OnRender(ref data);
             SkyboxRenderer(ref data);
-            data.context.ExecuteCommandBuffer(data.buffer);
-            data.buffer.Clear();
+            data.context.ExecuteCommandBuffer(data.cmd);
+            data.cmd.Clear();
             data.context.Submit();
         }
 
         private void SkyboxRenderer(ref YPipelineData data)
         {
             RendererList skyboxRendererList = data.context.CreateSkyboxRendererList(data.camera);
-            data.buffer.DrawRendererList(skyboxRendererList);
+            data.cmd.DrawRendererList(skyboxRendererList);
         }
     }
 }

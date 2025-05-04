@@ -25,20 +25,20 @@ namespace YPipeline
             base.OnRender(ref data);
             
             // Copy Color
-            data.buffer.BeginSample("Copy Color");
-            BlitUtility.BlitTexture(data.buffer, YPipelineShaderIDs.k_ColorBufferID, YPipelineShaderIDs.k_ColorTextureID);
-            data.buffer.EndSample("Copy Color");
+            data.cmd.BeginSample("Copy Color");
+            BlitUtility.BlitTexture(data.cmd, YPipelineShaderIDs.k_ColorBufferID, YPipelineShaderIDs.k_ColorTextureID);
+            data.cmd.EndSample("Copy Color");
             
             TransparencyRenderer(ref data);
             
-            data.context.ExecuteCommandBuffer(data.buffer);
-            data.buffer.Clear();
+            data.context.ExecuteCommandBuffer(data.cmd);
+            data.cmd.Clear();
             data.context.Submit();
         }
 
         private void TransparencyRenderer(ref YPipelineData data)
         {
-            data.buffer.BeginSample("Transparency");
+            data.cmd.BeginSample("Transparency");
             FilteringSettings transparencyFiltering = new FilteringSettings(RenderQueueRange.transparent);
             
             SortingSettings transparencySorting = new SortingSettings(data.camera)
@@ -58,12 +58,12 @@ namespace YPipeline
             
             RendererList transparencyRendererList = data.context.CreateRendererList(ref transparencyRendererListParams);
             
-            data.buffer.SetRenderTarget(new RenderTargetIdentifier(YPipelineShaderIDs.k_ColorBufferID), 
+            data.cmd.SetRenderTarget(new RenderTargetIdentifier(YPipelineShaderIDs.k_ColorBufferID), 
                 RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
                 new RenderTargetIdentifier(YPipelineShaderIDs.k_DepthBufferID),
                 RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
-            data.buffer.DrawRendererList(transparencyRendererList);
-            data.buffer.EndSample("Transparency");
+            data.cmd.DrawRendererList(transparencyRendererList);
+            data.cmd.EndSample("Transparency");
         }
     }
 }

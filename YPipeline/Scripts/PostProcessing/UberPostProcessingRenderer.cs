@@ -66,7 +66,7 @@ namespace YPipeline
         public override void Render(ref YPipelineData data)
         {
             isActivated = true;
-            data.buffer.BeginSample("Uber Post Processing");
+            data.cmd.BeginSample("Uber Post Processing");
             
             var stack = VolumeManager.instance.stack;
             m_ChromaticAberration = stack.GetComponent<ChromaticAberration>();
@@ -87,7 +87,7 @@ namespace YPipeline
             float threshold = Mathf.GammaToLinearSpace(m_Bloom.threshold.value);
             float knee = threshold * m_Bloom.thresholdKnee.value;
             UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_BloomThresholdID, new Vector4(threshold, knee - threshold, 2.0f * knee, 0.25f / (knee + 1e-6f)));
-            data.buffer.SetGlobalTexture(YPipelineShaderIDs.k_BloomTexID, new RenderTargetIdentifier(YPipelineShaderIDs.k_BloomTextureID));
+            data.cmd.SetGlobalTexture(YPipelineShaderIDs.k_BloomTexID, new RenderTargetIdentifier(YPipelineShaderIDs.k_BloomTextureID));
             
             // Vignette
             CoreUtils.SetKeyword(UberPostProcessingMaterial, YPipelineKeywords.k_Vignette, m_Vignette.IsActive());
@@ -114,9 +114,9 @@ namespace YPipeline
             }
             
             // Blit
-            BlitUtility.BlitTexture(data.buffer, YPipelineShaderIDs.k_ColorBufferID, YPipelineShaderIDs.k_FinalTextureID, UberPostProcessingMaterial, 0);
+            BlitUtility.BlitTexture(data.cmd, YPipelineShaderIDs.k_ColorBufferID, YPipelineShaderIDs.k_FinalTextureID, UberPostProcessingMaterial, 0);
             
-            data.buffer.EndSample("Uber Post Processing");
+            data.cmd.EndSample("Uber Post Processing");
         }
     }
 }

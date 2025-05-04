@@ -30,7 +30,7 @@ namespace YPipeline
             PipelineNode.Render(cameraPipelineNodes, ref data);
             PipelineNode.Release(cameraPipelineNodes, ref data);
             ReleaseBuffers(ref data);
-            CommandBufferPool.Release(data.buffer);
+            CommandBufferPool.Release(data.cmd);
         }
     }
 }

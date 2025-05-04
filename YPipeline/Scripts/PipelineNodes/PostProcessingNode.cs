@@ -31,8 +31,8 @@ namespace YPipeline
         protected override void OnRelease(ref YPipelineData data)
         {
             base.OnRelease(ref data);
-            data.context.ExecuteCommandBuffer(data.buffer);
-            data.buffer.Clear();
+            data.context.ExecuteCommandBuffer(data.cmd);
+            data.cmd.Clear();
             data.context.Submit();
         }
 
@@ -43,27 +43,27 @@ namespace YPipeline
 #if UNITY_EDITOR
             if (Handles.ShouldRenderGizmos())
             {
-                BlitUtility.CopyDepth(data.buffer, YPipelineShaderIDs.k_DepthBufferID, BuiltinRenderTextureType.CameraTarget);
+                BlitUtility.CopyDepth(data.cmd, YPipelineShaderIDs.k_DepthBufferID, BuiltinRenderTextureType.CameraTarget);
                 RendererList gizmosRendererList = data.context.CreateGizmoRendererList(data.camera, GizmoSubset.PreImageEffects);
-                data.buffer.DrawRendererList(gizmosRendererList);
+                data.cmd.DrawRendererList(gizmosRendererList);
             }
             
             // disable post-processing in material preview and reflection probe preview
             if (data.camera.cameraType > CameraType.SceneView)
             {
                 // TODO: 改变逻辑
-                BlitUtility.BlitTexture(data.buffer, YPipelineShaderIDs.k_ColorBufferID, BuiltinRenderTextureType.CameraTarget);
+                BlitUtility.BlitTexture(data.cmd, YPipelineShaderIDs.k_ColorBufferID, BuiltinRenderTextureType.CameraTarget);
                 return;
             }
             
             // enable or disable post-processing in the scene window via its effects dropdown menu in its toolbar
             if (data.camera.cameraType == CameraType.SceneView && !SceneView.currentDrawingSceneView.sceneViewState.showImageEffects)
             {
-                BlitUtility.BlitTexture(data.buffer, YPipelineShaderIDs.k_ColorBufferID, BuiltinRenderTextureType.CameraTarget);
+                BlitUtility.BlitTexture(data.cmd, YPipelineShaderIDs.k_ColorBufferID, BuiltinRenderTextureType.CameraTarget);
                 return;
             }
 #endif
-            data.buffer.BeginSample("Post Processing");
+            data.cmd.BeginSample("Post Processing");
             
             // all post processing renderers entrance
             PostProcessingRender(data.asset, ref data);
@@ -71,18 +71,18 @@ namespace YPipeline
             // TODO：Final Blit Node
             // data.buffer.Blit(RenderTargetIDs.k_FrameBufferId, BuiltinRenderTextureType.CameraTarget);
             
-            data.buffer.EndSample("Post Processing");
+            data.cmd.EndSample("Post Processing");
             
 #if UNITY_EDITOR
             if (Handles.ShouldRenderGizmos()) 
             {
                 RendererList gizmosRendererList = data.context.CreateGizmoRendererList(data.camera, GizmoSubset.PostImageEffects);
-                data.buffer.DrawRendererList(gizmosRendererList);
+                data.cmd.DrawRendererList(gizmosRendererList);
             }
 #endif
             
-            data.context.ExecuteCommandBuffer(data.buffer);
-            data.buffer.Clear();
+            data.context.ExecuteCommandBuffer(data.cmd);
+            data.cmd.Clear();
             data.context.Submit();
         }
 
@@ -101,8 +101,8 @@ namespace YPipeline
             m_FinalPostProcessingRenderer.Render(ref data);
             
             // Clear RT
-            data.buffer.ReleaseTemporaryRT(YPipelineShaderIDs.k_BloomTextureID);
-            data.buffer.ReleaseTemporaryRT(YPipelineShaderIDs.k_ColorGradingLutTextureID);
+            data.cmd.ReleaseTemporaryRT(YPipelineShaderIDs.k_BloomTextureID);
+            data.cmd.ReleaseTemporaryRT(YPipelineShaderIDs.k_ColorGradingLutTextureID);
         }
     }
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.RenderGraphModule;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -20,6 +21,7 @@ namespace YPipeline
         {
             m_Data = new YPipelineData();
             m_Data.asset = asset;
+            m_Data.renderGraph = new RenderGraph("YPipeline Render Graph");
             
             GraphicsSettings.useScriptableRenderPipelineBatching = asset.enableSRPBatcher;
             GraphicsSettings.lightsUseLinearIntensity = true;
@@ -58,6 +60,7 @@ namespace YPipeline
                 EndCameraRendering(context, camera);
             }
             
+            m_Data.renderGraph.EndFrame();
             EndContextRendering(context, cameras);
         }
         
@@ -65,6 +68,9 @@ namespace YPipeline
         {
             base.Dispose(disposing);
             VolumeManager.instance.Deinitialize();
+            m_Data.renderGraph.Cleanup();
+            m_Data.renderGraph = null;
+            
             
 #if UNITY_EDITOR
             UnityEngine.Experimental.GlobalIllumination.Lightmapping.ResetDelegate();
