@@ -155,6 +155,7 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     // ----------------------------------------------------------------------------------------------------
     // Clipping
     // ----------------------------------------------------------------------------------------------------
+    // TODO：去除 _OpacityTex，因为和烘焙系统不太兼容
     float alpha = SAMPLE_TEXTURE2D(_OpacityTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).r * _BaseColor.a;
     #if defined(_CLIPPING)
         clip(alpha - _Cutoff);

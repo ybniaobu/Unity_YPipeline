@@ -129,5 +129,10 @@ namespace YPipeline
                 
             data.cmd.EndSample("Bloom");
         }
+
+        public override void OnRecord(ref YPipelineData data)
+        {
+            
+        }
     }
 }

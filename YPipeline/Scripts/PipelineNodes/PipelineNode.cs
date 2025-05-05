@@ -29,6 +29,13 @@ namespace YPipeline
         protected virtual void OnBegin(ref YPipelineData data) { }
 
         protected virtual void OnRender(ref YPipelineData data) { }
+        
+        /// <summary>
+        /// Recording pipeline node to the render graph. 
+        /// </summary>
+        /// <param name="data">YPipelineData</param>
+        protected virtual void OnRecord(ref YPipelineData data) { }
+        
         /// <summary>
         /// 需要延迟释放的资源
         /// </summary>
@@ -57,6 +64,19 @@ namespace YPipeline
                 for (int i = 0; i < nodeCount; i++)
                 {
                     cameraPipelineNodes[i].OnRender(ref data);
+                }
+            }
+        }
+
+        public static void Record(List<PipelineNode> cameraPipelineNodes, ref YPipelineData data)
+        {
+            int nodeCount = cameraPipelineNodes.Count;
+            
+            if (nodeCount != 0)
+            {
+                for (int i = 0; i < nodeCount; i++)
+                {
+                    cameraPipelineNodes[i].OnRecord(ref data);
                 }
             }
         }

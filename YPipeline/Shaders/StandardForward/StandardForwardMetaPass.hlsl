@@ -16,6 +16,7 @@ CBUFFER_START(UnityPerMaterial)
 CBUFFER_END
 
 Texture2D _BaseTex;             SamplerState sampler_Trilinear_Repeat_BaseTex;
+Texture2D _EmissionTex;
 
 struct Attributes
 {
@@ -42,7 +43,7 @@ float4 MetaFrag(Varyings IN) : SV_TARGET
 {
     UnityMetaParams meta = (UnityMetaParams) 0.0;
     meta.albedo = SAMPLE_TEXTURE2D(_BaseTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).rgb * _BaseColor.rgb;
-    meta.emission = 0.0;
+    meta.emission = SAMPLE_TEXTURE2D(_EmissionTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).rgb * _EmissionColor.rgb;
     return TransportMetaColor(meta);
 }
 

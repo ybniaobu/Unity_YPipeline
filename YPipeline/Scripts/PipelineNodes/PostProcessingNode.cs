@@ -41,13 +41,6 @@ namespace YPipeline
             base.OnRender(ref data);
             
 #if UNITY_EDITOR
-            if (Handles.ShouldRenderGizmos())
-            {
-                BlitUtility.CopyDepth(data.cmd, YPipelineShaderIDs.k_DepthBufferID, BuiltinRenderTextureType.CameraTarget);
-                RendererList gizmosRendererList = data.context.CreateGizmoRendererList(data.camera, GizmoSubset.PreImageEffects);
-                data.cmd.DrawRendererList(gizmosRendererList);
-            }
-            
             // disable post-processing in material preview and reflection probe preview
             if (data.camera.cameraType > CameraType.SceneView)
             {
@@ -68,18 +61,7 @@ namespace YPipeline
             // all post processing renderers entrance
             PostProcessingRender(data.asset, ref data);
             
-            // TODO：Final Blit Node
-            // data.buffer.Blit(RenderTargetIDs.k_FrameBufferId, BuiltinRenderTextureType.CameraTarget);
-            
             data.cmd.EndSample("Post Processing");
-            
-#if UNITY_EDITOR
-            if (Handles.ShouldRenderGizmos()) 
-            {
-                RendererList gizmosRendererList = data.context.CreateGizmoRendererList(data.camera, GizmoSubset.PostImageEffects);
-                data.cmd.DrawRendererList(gizmosRendererList);
-            }
-#endif
             
             data.context.ExecuteCommandBuffer(data.cmd);
             data.cmd.Clear();

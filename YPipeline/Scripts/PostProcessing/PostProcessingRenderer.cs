@@ -13,6 +13,8 @@ namespace YPipeline
         }
 
         public abstract void Render(ref YPipelineData data);
+
+        public abstract void OnRecord(ref YPipelineData data);
         
         public static T Create<T>() where T : PostProcessingRenderer, new()
         {

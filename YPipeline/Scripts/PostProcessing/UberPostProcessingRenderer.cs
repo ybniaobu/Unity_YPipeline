@@ -118,5 +118,10 @@ namespace YPipeline
             
             data.cmd.EndSample("Uber Post Processing");
         }
+        
+        public override void OnRecord(ref YPipelineData data)
+        {
+            
+        }
     }
 }

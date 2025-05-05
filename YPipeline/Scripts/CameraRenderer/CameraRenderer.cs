@@ -59,6 +59,7 @@ namespace YPipeline
                     cameraPipelineNodes.Add(PipelineNode.Create<SkyboxNode>());
                     cameraPipelineNodes.Add(PipelineNode.Create<TransparencyNode>());
                     cameraPipelineNodes.Add(PipelineNode.Create<PostProcessingNode>());
+                    cameraPipelineNodes.Add(PipelineNode.Create<GizmosNode>());
                     break;
                 case RenderPath.Deferred:
                     
@@ -89,9 +90,9 @@ namespace YPipeline
             data.cullingResults = data.context.Cull(ref cullingParameters);
             data.cmd = CommandBufferPool.Get();
             
-#if UNITY_EDITOR
-            data.cmd.name = data.camera.name;
-#endif
+// #if UNITY_EDITOR
+//             data.cmd.name = data.camera.name;
+// #endif
             
             return true;
         }

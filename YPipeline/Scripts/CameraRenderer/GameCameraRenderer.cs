@@ -19,24 +19,26 @@ namespace YPipeline
             
             if (!Setup(ref data)) return;
             
+            // 好像在这个版本中，要自己调用 Update，否则无法获取到 VolumeComponent 序列化后的数据。可能以后的版本要删除这段代码。
+            VolumeManager.instance.Update(data.camera.transform, 1);
+            
             RenderGraphParameters renderGraphParams = new RenderGraphParameters()
             {
-                executionName = data.camera.name,
+                executionName = "Render Camera",
                 scriptableRenderContext = data.context,
                 commandBuffer = data.cmd,
                 currentFrameIndex = Time.frameCount,
             };
             data.renderGraph.BeginRecording(renderGraphParams);
             
-            // 好像在这个版本中，要自己调用 Update，否则无法获取到 VolumeComponent 序列化后的数据。可能以后的版本要删除这段代码。
-            VolumeManager.instance.Update(data.camera.transform, 1);
-            
             PrepareBuffers(ref data);
             PipelineNode.Render(cameraPipelineNodes, ref data);
+            
+            PipelineNode.Record(cameraPipelineNodes, ref data);
+            data.renderGraph.EndRecordingAndExecute();
+            
             PipelineNode.Release(cameraPipelineNodes, ref data);
             ReleaseBuffers(ref data);
-            
-            data.renderGraph.EndRecordingAndExecute();
             
             CommandBufferPool.Release(data.cmd);
         }

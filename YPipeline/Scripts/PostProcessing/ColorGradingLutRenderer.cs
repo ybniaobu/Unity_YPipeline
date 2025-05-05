@@ -124,5 +124,10 @@ namespace YPipeline
             
             data.cmd.EndSample("Color Grading Lut");
         }
+        
+        public override void OnRecord(ref YPipelineData data)
+        {
+            
+        }
     }
 }

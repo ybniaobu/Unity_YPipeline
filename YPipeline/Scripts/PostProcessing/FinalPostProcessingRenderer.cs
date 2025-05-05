@@ -73,5 +73,10 @@ namespace YPipeline
             
             data.cmd.EndSample("Final Post Processing");
         }
+        
+        public override void OnRecord(ref YPipelineData data)
+        {
+            
+        }
     }
 }
