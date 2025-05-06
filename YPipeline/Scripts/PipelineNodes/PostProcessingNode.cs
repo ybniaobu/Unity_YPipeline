@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
-using System.Collections.Generic;
+using UnityEngine.Rendering.RenderGraphModule;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -10,6 +10,11 @@ namespace YPipeline
 {
     public class PostProcessingNode : PipelineNode
     {
+        private class PostProcessingNodeData
+        {
+            
+        }
+        
         private BloomRenderer m_BloomRenderer;
         private ColorGradingLutRenderer m_ColorGradingLutRenderer;
         private UberPostProcessingRenderer m_UberPostProcessingRenderer;
@@ -59,7 +64,7 @@ namespace YPipeline
             data.cmd.BeginSample("Post Processing");
             
             // all post processing renderers entrance
-            PostProcessingRender(data.asset, ref data);
+            PostProcessingRender(ref data);
             
             data.cmd.EndSample("Post Processing");
             
@@ -68,7 +73,7 @@ namespace YPipeline
             data.context.Submit();
         }
 
-        private void PostProcessingRender(YRenderPipelineAsset asset, ref YPipelineData data)
+        private void PostProcessingRender(ref YPipelineData data)
         {
             // Bloom
             m_BloomRenderer.Render(ref data);
@@ -85,6 +90,33 @@ namespace YPipeline
             // Clear RT
             data.cmd.ReleaseTemporaryRT(YPipelineShaderIDs.k_BloomTextureID);
             data.cmd.ReleaseTemporaryRT(YPipelineShaderIDs.k_ColorGradingLutTextureID);
+        }
+
+        protected override void OnRecord(ref YPipelineData data)
+        {
+// #if UNITY_EDITOR
+//             // disable post-processing in material preview and reflection probe preview
+//             if (data.camera.cameraType > CameraType.SceneView)
+//             {
+//                 // TODO: 改变逻辑
+//                 BlitUtility.BlitTexture(data.cmd, YPipelineShaderIDs.k_ColorBufferID, BuiltinRenderTextureType.CameraTarget);
+//                 return;
+//             }
+//             
+//             // enable or disable post-processing in the scene window via its effects dropdown menu in its toolbar
+//             if (data.camera.cameraType == CameraType.SceneView && !SceneView.currentDrawingSceneView.sceneViewState.showImageEffects)
+//             {
+//                 BlitUtility.BlitTexture(data.cmd, YPipelineShaderIDs.k_ColorBufferID, BuiltinRenderTextureType.CameraTarget);
+//                 return;
+//             }
+// #endif
+
+            // using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<PostProcessingNodeData>("Post Processing", out var nodeData))
+            // {
+            //     builder.SetRenderFunc((PostProcessingNodeData data, RenderGraphContext context) => {});
+            // }
+            
+            // m_FinalPostProcessingRenderer.OnRecord(ref data);
         }
     }
 }

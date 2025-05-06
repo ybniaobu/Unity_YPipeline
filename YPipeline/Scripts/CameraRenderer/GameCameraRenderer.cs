@@ -19,12 +19,11 @@ namespace YPipeline
             
             if (!Setup(ref data)) return;
             
-            // 好像在这个版本中，要自己调用 Update，否则无法获取到 VolumeComponent 序列化后的数据。可能以后的版本要删除这段代码。
             VolumeManager.instance.Update(data.camera.transform, 1);
             
             RenderGraphParameters renderGraphParams = new RenderGraphParameters()
             {
-                executionName = "Render Camera",
+                executionName = "YPipeline",
                 scriptableRenderContext = data.context,
                 commandBuffer = data.cmd,
                 currentFrameIndex = Time.frameCount,

@@ -12,7 +12,7 @@ namespace YPipeline
         Forward, Deferred, Custom
     }
     
-    public enum AntiAliasing
+    public enum AntiAliasingMode
     {
         None, FXAA, TAA
     }
@@ -47,8 +47,8 @@ namespace YPipeline
         [FoldoutGroup("Rendering Settings")] 
         [Range(0.1f, 2f)] public float renderScale = 1.0f;
         
-        [FoldoutGroup("Rendering Settings")]
-        public AntiAliasing antiAliasing = AntiAliasing.FXAA;
+        [FormerlySerializedAs("antiAliasing")] [FoldoutGroup("Rendering Settings")]
+        public AntiAliasingMode antiAliasingMode = AntiAliasingMode.FXAA;
         
         [FoldoutGroup("Rendering Settings")]
         public FXAAMode fxaaMode = FXAAMode.Quality;

@@ -121,6 +121,12 @@ namespace YPipeline
         
         public override void OnRecord(ref YPipelineData data)
         {
+            var stack = VolumeManager.instance.stack;
+            m_ChromaticAberration = stack.GetComponent<ChromaticAberration>();
+            m_Bloom = stack.GetComponent<Bloom>();
+            m_Vignette = stack.GetComponent<Vignette>();
+            m_LookupTable = stack.GetComponent<LookupTable>();
+            
             
         }
     }
