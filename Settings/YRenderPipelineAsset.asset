@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enableHDRFrameBufferFormat: 1
   renderScale: 1
-  antiAliasing: 1
+  antiAliasingMode: 1
   fxaaMode: 0
   pipelineResources: {fileID: 11400000, guid: 908eb47731a80fb45a32453593164179, type: 2}
   renderPath: 0
@@ -27,7 +27,7 @@ MonoBehaviour:
   slopeScaledDepthBias: 0.5
   normalBias: 0.1
   slopeScaledNormalBias: 0.5
-  maxShadowDistance: 80
+  maxShadowDistance: 150
   distanceFade: 0.05
   sunLightShadowArraySize: 4096
   sunLightShadowSampleNumber: 16

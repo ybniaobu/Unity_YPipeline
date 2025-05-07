@@ -8,13 +8,13 @@ namespace YPipeline
     {
         private class FinalPostProcessingData
         {
-            //TODO: 完善 Texture Handles
-            //public TextureHandle finalTexture;
-            //public TextureHandle cameraTarget;
+            public TextureHandle finalTexture;
+            public TextureHandle cameraTarget;
             
             public bool isFXAAEnabled;
             public bool isFXAAQualityEnabled;
             
+            public bool isFilmGrainEnabled;
             public TextureHandle filmGrainTexture;
             public Vector4 filmGrainParams;
             public Vector4 filmGrainTexParams;
@@ -23,13 +23,14 @@ namespace YPipeline
         }
         
         private FilmGrain m_FilmGrain;
+        
         private RTHandle m_FilmGrainTexture;
         private System.Random m_Random;
         
         private const string k_FinalPostProcessing = "Hidden/YPipeline/FinalPostProcessing";
         private Material m_FinalPostProcessingMaterial;
         
-        public Material FinalPostProcessingMaterial
+        private Material FinalPostProcessingMaterial
         {
             get
             {
@@ -96,34 +97,47 @@ namespace YPipeline
             
             using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<FinalPostProcessingData>("Final Post Processing", out var nodeData))
             {
+                // nodeData.finalTexture = builder.ReadTexture(new RenderTargetIdentifier(YPipelineShaderIDs.k_FinalTextureID));
+                
                 nodeData.isFXAAEnabled = data.asset.antiAliasingMode == AntiAliasingMode.FXAA;
                 nodeData.isFXAAQualityEnabled = data.asset.fxaaMode == FXAAMode.Quality;
+                nodeData.isFilmGrainEnabled = m_FilmGrain.IsActive();
                 nodeData.cameraPixelRect = data.camera.pixelRect;
                 
                 if (m_FilmGrain.IsActive())
                 {
-                    if (m_FilmGrainTexture == null || m_FilmGrain.type.value != FilmGrainKinds.Custom && m_FilmGrainTexture.externalTexture != data.asset.pipelineResources.textures.filmGrainTex[(int)m_FilmGrain.type.value])
+                    if (m_FilmGrain.type.value != FilmGrainKinds.Custom)
                     {
-                        m_FilmGrainTexture?.Release();
-                        m_FilmGrainTexture = RTHandles.Alloc(data.asset.pipelineResources.textures.filmGrainTex[(int)m_FilmGrain.type.value]);
+                        if (m_FilmGrainTexture == null || m_FilmGrainTexture.externalTexture != data.asset.pipelineResources.textures.filmGrainTex[(int)m_FilmGrain.type.value])
+                        {
+                            m_FilmGrainTexture?.Release();
+                            m_FilmGrainTexture = RTHandles.Alloc(data.asset.pipelineResources.textures.filmGrainTex[(int)m_FilmGrain.type.value]);
+                        }
                     }
-                    else if (m_FilmGrainTexture == null || m_FilmGrain.type.value == FilmGrainKinds.Custom && m_FilmGrainTexture.externalTexture != m_FilmGrain.texture.value)
+                    else
                     {
-                        m_FilmGrainTexture?.Release();
-                        m_FilmGrainTexture = RTHandles.Alloc(m_FilmGrain.texture.value);
+                        if (m_FilmGrainTexture == null || m_FilmGrainTexture.externalTexture != m_FilmGrain.texture.value)
+                        {
+                            m_FilmGrainTexture?.Release();
+                            m_FilmGrainTexture = RTHandles.Alloc(m_FilmGrain.texture.value);
+                        }
                     }
+                    
+                    TextureHandle filmGrainTexture = data.renderGraph.ImportTexture(m_FilmGrainTexture);
+                    nodeData.filmGrainTexture = filmGrainTexture;
+                    builder.ReadTexture(filmGrainTexture);
                     
                     float uvScaleX = data.camera.pixelWidth / (float) m_FilmGrainTexture.externalTexture.width;
                     float uvScaleY = data.camera.pixelHeight / (float) m_FilmGrainTexture.externalTexture.height;
                     float offsetX = (float) m_Random.NextDouble();
                     float offsetY = (float) m_Random.NextDouble();
                     
-                    TextureHandle filmGrainTexture = data.renderGraph.ImportTexture(m_FilmGrainTexture);
-                    nodeData.filmGrainTexture = filmGrainTexture;
-                    builder.ReadTexture(filmGrainTexture);
-                    
                     nodeData.filmGrainParams = new Vector4(m_FilmGrain.intensity.value * 4f, m_FilmGrain.response.value);
                     nodeData.filmGrainTexParams = new Vector4(uvScaleX, uvScaleY, offsetX, offsetY);
+                }
+                else
+                {
+                    m_FilmGrainTexture?.Release();
                 }
                 
                 builder.SetRenderFunc((FinalPostProcessingData data, RenderGraphContext context) =>
@@ -131,9 +145,8 @@ namespace YPipeline
                     CoreUtils.SetKeyword(FinalPostProcessingMaterial, YPipelineKeywords.k_FXAAQuality, data.isFXAAEnabled && data.isFXAAQualityEnabled);
                     CoreUtils.SetKeyword(FinalPostProcessingMaterial, YPipelineKeywords.k_FXAAConsole, data.isFXAAEnabled && !data.isFXAAQualityEnabled);
                     
-                    CoreUtils.SetKeyword(FinalPostProcessingMaterial, YPipelineKeywords.k_FilmGrain, m_FilmGrain.IsActive());
-
-                    if (m_FilmGrain.IsActive())
+                    CoreUtils.SetKeyword(FinalPostProcessingMaterial, YPipelineKeywords.k_FilmGrain, data.isFilmGrainEnabled);
+                    if (data.isFilmGrainEnabled)
                     {
                         FinalPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_FilmGrainParamsID, data.filmGrainParams);
                         FinalPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_FilmGrainTexParamsID, data.filmGrainTexParams);

@@ -142,8 +142,6 @@ namespace YPipeline
         public static readonly int k_SpectralLutID = Shader.PropertyToID("_SpectralLut");
         public static readonly int k_ChromaticAberrationParamsID = Shader.PropertyToID("_ChromaticAberrationParams");
         
-        public static readonly int k_BloomTexID = Shader.PropertyToID("_BloomTex");
-        
         public static readonly int k_VignetteColorID = Shader.PropertyToID("_VignetteColor");
         public static readonly int k_VignetteParams1ID = Shader.PropertyToID("_VignetteParams1");
         public static readonly int k_VignetteParams2ID = Shader.PropertyToID("_VignetteParams2");

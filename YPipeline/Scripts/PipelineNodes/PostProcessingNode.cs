@@ -81,42 +81,44 @@ namespace YPipeline
             // Color Grading Lut
             m_ColorGradingLutRenderer.Render(ref data);
             
-            // Post Color Grading
-            m_UberPostProcessingRenderer.Render(ref data);
-            
-            // Final Post Processing
-            m_FinalPostProcessingRenderer.Render(ref data);
+            // // Post Color Grading
+            // m_UberPostProcessingRenderer.Render(ref data);
+            //
+            // // Final Post Processing
+            // m_FinalPostProcessingRenderer.Render(ref data);
             
             // Clear RT
-            data.cmd.ReleaseTemporaryRT(YPipelineShaderIDs.k_BloomTextureID);
-            data.cmd.ReleaseTemporaryRT(YPipelineShaderIDs.k_ColorGradingLutTextureID);
+            // data.cmd.ReleaseTemporaryRT(YPipelineShaderIDs.k_BloomTextureID);
+            // data.cmd.ReleaseTemporaryRT(YPipelineShaderIDs.k_ColorGradingLutTextureID);
         }
 
         protected override void OnRecord(ref YPipelineData data)
         {
-// #if UNITY_EDITOR
-//             // disable post-processing in material preview and reflection probe preview
-//             if (data.camera.cameraType > CameraType.SceneView)
-//             {
-//                 // TODO: 改变逻辑
-//                 BlitUtility.BlitTexture(data.cmd, YPipelineShaderIDs.k_ColorBufferID, BuiltinRenderTextureType.CameraTarget);
-//                 return;
-//             }
-//             
-//             // enable or disable post-processing in the scene window via its effects dropdown menu in its toolbar
-//             if (data.camera.cameraType == CameraType.SceneView && !SceneView.currentDrawingSceneView.sceneViewState.showImageEffects)
-//             {
-//                 BlitUtility.BlitTexture(data.cmd, YPipelineShaderIDs.k_ColorBufferID, BuiltinRenderTextureType.CameraTarget);
-//                 return;
-//             }
-// #endif
+#if UNITY_EDITOR
+            // disable post-processing in material preview and reflection probe preview
+            if (data.camera.cameraType > CameraType.SceneView)
+            {
+                // TODO: 改变逻辑
+                // BlitUtility.BlitTexture(data.cmd, YPipelineShaderIDs.k_ColorBufferID, BuiltinRenderTextureType.CameraTarget);
+                return;
+            }
+            
+            // enable or disable post-processing in the scene window via its effects dropdown menu in its toolbar
+            if (data.camera.cameraType == CameraType.SceneView && !SceneView.currentDrawingSceneView.sceneViewState.showImageEffects)
+            {
+                // BlitUtility.BlitTexture(data.cmd, YPipelineShaderIDs.k_ColorBufferID, BuiltinRenderTextureType.CameraTarget);
+                return;
+            }
+#endif
 
             // using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<PostProcessingNodeData>("Post Processing", out var nodeData))
             // {
             //     builder.SetRenderFunc((PostProcessingNodeData data, RenderGraphContext context) => {});
             // }
             
-            // m_FinalPostProcessingRenderer.OnRecord(ref data);
+            m_UberPostProcessingRenderer.OnRecord(ref data);
+            
+            m_FinalPostProcessingRenderer.OnRecord(ref data);
         }
     }
 }

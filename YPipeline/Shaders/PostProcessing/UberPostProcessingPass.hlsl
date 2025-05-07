@@ -22,8 +22,8 @@ float4 _ColorGradingLutParams; // x: 1f / lutWidth, y: 1f / lutHeight, z: lutHei
 float4 _ExtraLutParams; // x: 1f / lutWidth, y: 1f / lutHeight, z: lutHeight - 1f, w: contribution
 
 TEXTURE2D(_SpectralLut);
-TEXTURE2D(_BloomTex);
-float4 _BloomTex_TexelSize;
+TEXTURE2D(_BloomTexture);
+float4 _BloomTexture_TexelSize;
 TEXTURE2D(_ColorGradingLutTexture);
 TEXTURE2D(_ExtraLut);
 SAMPLER(sampler_SpectralLut);
@@ -70,9 +70,9 @@ float4 UberPostProcessingFrag(Varyings IN) : SV_TARGET
     // Bloom
     #if _BLOOM
         #if _BLOOM_BICUBIC_UPSAMPLING
-            float3 bloomTex = SampleTexture2DBicubic(_BloomTex, sampler_LinearClamp, IN.uv, _BloomTex_TexelSize.zwxy, (1.0).xx, 0.0).rgb;
+            float3 bloomTex = SampleTexture2DBicubic(_BloomTexture, sampler_LinearClamp, IN.uv, _BloomTexture_TexelSize.zwxy, (1.0).xx, 0.0).rgb;
         #else
-            float3 bloomTex = SAMPLE_TEXTURE2D_LOD(_BloomTex, sampler_LinearClamp, IN.uv, 0).rgb;
+            float3 bloomTex = SAMPLE_TEXTURE2D_LOD(_BloomTexture, sampler_LinearClamp, IN.uv, 0).rgb;
         #endif
     
         UNITY_BRANCH
