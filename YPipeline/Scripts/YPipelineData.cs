@@ -19,7 +19,9 @@ namespace YPipeline
         public static TextureHandle CameraDepthBuffer { set; get; }
         public static TextureHandle CameraColorTexture { set; get; }
         public static TextureHandle CameraDepthTexture { set; get; }
-        public static TextureHandle CameraFinalTexture { set; get; }
+        
         public static TextureHandle BloomTexture { set; get; }
+        public static TextureHandle ColorGradingLutTexture { set; get; }
+        public static TextureHandle CameraFinalTexture { set; get; }
     }
 }

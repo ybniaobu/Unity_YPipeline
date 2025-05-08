@@ -28,6 +28,7 @@ namespace YPipeline
                 commandBuffer = data.cmd,
                 currentFrameIndex = Time.frameCount,
             };
+        
             data.renderGraph.BeginRecording(renderGraphParams);
             
             PrepareBuffers(ref data);

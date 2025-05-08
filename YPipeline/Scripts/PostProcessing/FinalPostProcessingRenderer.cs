@@ -8,8 +8,7 @@ namespace YPipeline
     {
         private class FinalPostProcessingData
         {
-            public TextureHandle finalTexture;
-            public TextureHandle cameraTarget;
+            public Material material;
             
             public bool isFXAAEnabled;
             public bool isFXAAQualityEnabled;
@@ -45,7 +44,6 @@ namespace YPipeline
         
         protected override void Initialize()
         {
-            base.Initialize();
             m_Random = new System.Random();
         }
 
@@ -95,9 +93,10 @@ namespace YPipeline
             var stack = VolumeManager.instance.stack;
             m_FilmGrain = stack.GetComponent<FilmGrain>();
             
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<FinalPostProcessingData>("Final Post Processing", out var nodeData))
+            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<FinalPostProcessingData>("Final Post Processing", out var nodeData, ProfilingSampler.Get(YPipelineProfileIDs.FinalPostProcessing)))
             {
                 // nodeData.finalTexture = builder.ReadTexture(new RenderTargetIdentifier(YPipelineShaderIDs.k_FinalTextureID));
+                nodeData.material = FinalPostProcessingMaterial;
                 
                 nodeData.isFXAAEnabled = data.asset.antiAliasingMode == AntiAliasingMode.FXAA;
                 nodeData.isFXAAQualityEnabled = data.asset.fxaaMode == FXAAMode.Quality;
@@ -142,18 +141,18 @@ namespace YPipeline
                 
                 builder.SetRenderFunc((FinalPostProcessingData data, RenderGraphContext context) =>
                 {
-                    CoreUtils.SetKeyword(FinalPostProcessingMaterial, YPipelineKeywords.k_FXAAQuality, data.isFXAAEnabled && data.isFXAAQualityEnabled);
-                    CoreUtils.SetKeyword(FinalPostProcessingMaterial, YPipelineKeywords.k_FXAAConsole, data.isFXAAEnabled && !data.isFXAAQualityEnabled);
+                    CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_FXAAQuality, data.isFXAAEnabled && data.isFXAAQualityEnabled);
+                    CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_FXAAConsole, data.isFXAAEnabled && !data.isFXAAQualityEnabled);
                     
-                    CoreUtils.SetKeyword(FinalPostProcessingMaterial, YPipelineKeywords.k_FilmGrain, data.isFilmGrainEnabled);
+                    CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_FilmGrain, data.isFilmGrainEnabled);
                     if (data.isFilmGrainEnabled)
                     {
-                        FinalPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_FilmGrainParamsID, data.filmGrainParams);
-                        FinalPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_FilmGrainTexParamsID, data.filmGrainTexParams);
-                        FinalPostProcessingMaterial.SetTexture(YPipelineShaderIDs.k_FilmGrainTexID, data.filmGrainTexture);
+                        data.material.SetVector(YPipelineShaderIDs.k_FilmGrainParamsID, data.filmGrainParams);
+                        data.material.SetVector(YPipelineShaderIDs.k_FilmGrainTexParamsID, data.filmGrainTexParams);
+                        data.material.SetTexture(YPipelineShaderIDs.k_FilmGrainTexID, data.filmGrainTexture);
                     }
                     
-                    BlitUtility.BlitCameraTarget(context.cmd, YPipelineShaderIDs.k_FinalTextureID, data.cameraPixelRect, FinalPostProcessingMaterial, 0);
+                    BlitUtility.BlitCameraTarget(context.cmd, YPipelineShaderIDs.k_FinalTextureID, data.cameraPixelRect, data.material, 0);
                 });
             }
         }

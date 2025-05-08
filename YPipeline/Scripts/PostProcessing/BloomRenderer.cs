@@ -30,8 +30,6 @@ namespace YPipeline
 
         protected override void Initialize()
         {
-            base.Initialize();
-            
             m_BloomPyramidUpIds = new int[k_MaxBloomPyramidLevels];
             m_BloomPyramidDownIds = new int[k_MaxBloomPyramidLevels];
 

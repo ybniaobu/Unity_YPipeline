@@ -72,7 +72,7 @@ namespace YPipeline
         
         protected bool Setup(ref YPipelineData data)
         {
-            using var profilingScope = new ProfilingScope(ProfilingSampler.Get(YPipelineProfileIDs.CameraSetup));
+            using var profilingScope = new ProfilingScope(ProfilingSampler.Get(YPipelineProfileIDs.FrustumCulling));
             
 #if UNITY_EDITOR
             if (data.camera.cameraType == CameraType.SceneView) 

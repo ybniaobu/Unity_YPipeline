@@ -3,12 +3,16 @@
     public enum YPipelineProfileIDs
     {
         YPipelineTotal,
-        CameraSetup,
-        CameraBegin,
+        FrustumCulling,
         OcclusionCulling,
         LightingNode, 
         GeometryNode,
         TransparencyNode,
         PostProcessingNode,
+        Bloom,
+        ColorGradingLut,
+        UberPostProcessing,
+        FinalPostProcessing,
+        Test
     }
 }

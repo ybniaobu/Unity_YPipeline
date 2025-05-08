@@ -78,8 +78,8 @@ namespace YPipeline
             // Bloom
             m_BloomRenderer.Render(ref data);
             
-            // Color Grading Lut
-            m_ColorGradingLutRenderer.Render(ref data);
+            // // Color Grading Lut
+            // m_ColorGradingLutRenderer.Render(ref data);
             
             // // Post Color Grading
             // m_UberPostProcessingRenderer.Render(ref data);
@@ -115,6 +115,7 @@ namespace YPipeline
             // {
             //     builder.SetRenderFunc((PostProcessingNodeData data, RenderGraphContext context) => {});
             // }
+            m_ColorGradingLutRenderer.OnRecord(ref data);
             
             m_UberPostProcessingRenderer.OnRecord(ref data);
             

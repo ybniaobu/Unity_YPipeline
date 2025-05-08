@@ -6,15 +6,6 @@ namespace YPipeline
     public abstract class PostProcessingRenderer
     {
         public bool isActivated = true;
-
-        protected virtual void Initialize()
-        {
-            
-        }
-
-        public abstract void Render(ref YPipelineData data);
-
-        public abstract void OnRecord(ref YPipelineData data);
         
         public static T Create<T>() where T : PostProcessingRenderer, new()
         {
@@ -22,5 +13,11 @@ namespace YPipeline
             renderer.Initialize();
             return renderer;
         }
+
+        protected abstract void Initialize();
+
+        public abstract void Render(ref YPipelineData data);
+
+        public abstract void OnRecord(ref YPipelineData data);
     }
 }

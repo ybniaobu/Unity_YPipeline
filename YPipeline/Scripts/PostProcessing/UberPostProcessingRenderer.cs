@@ -9,15 +9,13 @@ namespace YPipeline
     {
         private class UberPostProcessingData
         {
-            public TextureHandle colorBuffer;
-            public TextureHandle finalTexture;
+            public Material material;
             
             public bool isChromaticAberrationEnabled;
             public TextureHandle spectralLut;
             public Vector4 chromaticAberrationParams;
             
             public bool isBloomEnabled;
-            public TextureHandle bloomTexture;
             public bool isBloomBicubicUpsampling;
             public Vector4 bloomParams;
             public Vector4 bloomThreshold;
@@ -91,7 +89,7 @@ namespace YPipeline
         
         protected override void Initialize()
         {
-            base.Initialize();
+            
         }
 
         public override void Render(ref YPipelineData data)
@@ -157,8 +155,10 @@ namespace YPipeline
             m_Vignette = stack.GetComponent<Vignette>();
             m_LookupTable = stack.GetComponent<LookupTable>();
 
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<UberPostProcessingData>("Uber Post Processing", out var nodeData))
+            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<UberPostProcessingData>("Uber Post Processing", out var nodeData, ProfilingSampler.Get(YPipelineProfileIDs.UberPostProcessing)))
             {
+                nodeData.material = UberPostProcessingMaterial;
+                
                 // Chromatic Aberration
                 nodeData.isChromaticAberrationEnabled = m_ChromaticAberration.IsActive();
                 if (m_ChromaticAberration.IsActive())
@@ -236,45 +236,45 @@ namespace YPipeline
                 builder.SetRenderFunc((UberPostProcessingData data, RenderGraphContext context) =>
                 {
                     // Chromatic Aberration
-                    CoreUtils.SetKeyword(UberPostProcessingMaterial, YPipelineKeywords.k_ChromaticAberration, data.isChromaticAberrationEnabled);
+                    CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_ChromaticAberration, data.isChromaticAberrationEnabled);
                     if (data.isChromaticAberrationEnabled)
                     {
-                        UberPostProcessingMaterial.SetTexture(YPipelineShaderIDs.k_SpectralLutID, data.spectralLut);
-                        UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_ChromaticAberrationParamsID, data.chromaticAberrationParams);
+                        data.material.SetTexture(YPipelineShaderIDs.k_SpectralLutID, data.spectralLut);
+                        data.material.SetVector(YPipelineShaderIDs.k_ChromaticAberrationParamsID, data.chromaticAberrationParams);
                     }
                     
                     // Bloom
-                    CoreUtils.SetKeyword(UberPostProcessingMaterial, YPipelineKeywords.k_Bloom, data.isBloomEnabled);
+                    CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_Bloom, data.isBloomEnabled);
                     if (data.isBloomEnabled)
                     {
-                        CoreUtils.SetKeyword(UberPostProcessingMaterial, YPipelineKeywords.k_BloomBicubicUpsampling, data.isBloomBicubicUpsampling);
-                        UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_BloomParamsID, data.bloomParams);
-                        UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_BloomThresholdID, data.bloomThreshold);
+                        CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_BloomBicubicUpsampling, data.isBloomBicubicUpsampling);
+                        data.material.SetVector(YPipelineShaderIDs.k_BloomParamsID, data.bloomParams);
+                        data.material.SetVector(YPipelineShaderIDs.k_BloomThresholdID, data.bloomThreshold);
                     }
                     
                     // Vignette
-                    CoreUtils.SetKeyword(UberPostProcessingMaterial, YPipelineKeywords.k_Vignette, data.isVignetteEnabled);
+                    CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_Vignette, data.isVignetteEnabled);
                     if (data.isVignetteEnabled)
                     {
-                        UberPostProcessingMaterial.SetColor(YPipelineShaderIDs.k_VignetteColorID, data.vignetteColor);
-                        UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_VignetteParams1ID, data.vignetteParams1);
-                        UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_VignetteParams2ID, data.vignetteParams2);
+                        data.material.SetColor(YPipelineShaderIDs.k_VignetteColorID, data.vignetteColor);
+                        data.material.SetVector(YPipelineShaderIDs.k_VignetteParams1ID, data.vignetteParams1);
+                        data.material.SetVector(YPipelineShaderIDs.k_VignetteParams2ID, data.vignetteParams2);
                     }
                     
                     // Baked Color Grading Lut
-                    UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_ColorGradingLutParamsID, data.colorGradingLutParams);
+                    data.material.SetVector(YPipelineShaderIDs.k_ColorGradingLutParamsID, data.colorGradingLutParams);
                     
                     // Extra Lut
-                    CoreUtils.SetKeyword(UberPostProcessingMaterial, YPipelineKeywords.k_ExtraLut, data.isExtraLutEnabled);
+                    CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_ExtraLut, data.isExtraLutEnabled);
                     if (data.isExtraLutEnabled)
                     {
-                        UberPostProcessingMaterial.SetTexture(YPipelineShaderIDs.k_ExtraLutID, data.extraLut);
-                        UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_ExtraLutParamsID, data.extraLutParams);
+                        data.material.SetTexture(YPipelineShaderIDs.k_ExtraLutID, data.extraLut);
+                        data.material.SetVector(YPipelineShaderIDs.k_ExtraLutParamsID, data.extraLutParams);
                     }
                     
                     // Blit
                     // TODO: 修改
-                    BlitUtility.BlitTexture(context.cmd, YPipelineShaderIDs.k_ColorBufferID, YPipelineShaderIDs.k_FinalTextureID, UberPostProcessingMaterial, 0);
+                    BlitUtility.BlitTexture(context.cmd, YPipelineShaderIDs.k_ColorBufferID, YPipelineShaderIDs.k_FinalTextureID, data.material, 0);
                 });
             }
         }
