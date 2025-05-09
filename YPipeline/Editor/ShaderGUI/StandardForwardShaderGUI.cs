@@ -11,22 +11,22 @@ namespace YPipeline.Editor
             base.OnGUI(materialEditor, properties);
             // DrawMaterialProperties();
             
-            // UnityEmissionProperty();
+            UnityEmissionProperty();
         }
 
-        // private void UnityEmissionProperty()
-        // {
-        //     EditorGUI.BeginChangeCheck();
-        //     m_MaterialEditor.LightmapEmissionProperty();
-        //     //m_MaterialEditor.LightmapEmissionFlagsProperty(0, true);
-        //     if (EditorGUI.EndChangeCheck())
-        //     {
-        //         foreach (Material m in m_Materials) 
-        //         {
-        //             m.globalIlluminationFlags &= ~MaterialGlobalIlluminationFlags.EmissiveIsBlack;
-        //         }
-        //     }
-        // }
+        private void UnityEmissionProperty()
+        {
+            EditorGUI.BeginChangeCheck();
+            m_MaterialEditor.LightmapEmissionProperty();
+            //m_MaterialEditor.LightmapEmissionFlagsProperty(0, true);
+            if (EditorGUI.EndChangeCheck())
+            {
+                foreach (Material m in m_Materials) 
+                {
+                    m.globalIlluminationFlags &= ~MaterialGlobalIlluminationFlags.EmissiveIsBlack;
+                }
+            }
+        }
 
         // private void DrawMaterialProperties()
         // {

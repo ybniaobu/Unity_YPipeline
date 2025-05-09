@@ -34,7 +34,7 @@ namespace YPipeline
         /// Recording pipeline node to the render graph. 
         /// </summary>
         /// <param name="data">YPipelineData</param>
-        protected virtual void OnRecord(ref YPipelineData data) { }
+        public virtual void OnRecord(ref YPipelineData data) { }
         
         /// <summary>
         /// 需要延迟释放的资源

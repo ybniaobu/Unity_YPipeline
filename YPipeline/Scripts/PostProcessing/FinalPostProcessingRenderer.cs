@@ -93,7 +93,7 @@ namespace YPipeline
             var stack = VolumeManager.instance.stack;
             m_FilmGrain = stack.GetComponent<FilmGrain>();
             
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<FinalPostProcessingData>("Final Post Processing", out var nodeData, ProfilingSampler.Get(YPipelineProfileIDs.FinalPostProcessing)))
+            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<FinalPostProcessingData>("Final Post Processing", out var nodeData))
             {
                 // nodeData.finalTexture = builder.ReadTexture(new RenderTargetIdentifier(YPipelineShaderIDs.k_FinalTextureID));
                 nodeData.material = FinalPostProcessingMaterial;

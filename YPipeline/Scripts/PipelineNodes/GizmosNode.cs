@@ -24,7 +24,7 @@ namespace YPipeline
             
         }
 
-        protected override void OnRecord(ref YPipelineData data)
+        public override void OnRecord(ref YPipelineData data)
         {
 #if UNITY_EDITOR
             if (Handles.ShouldRenderGizmos())

@@ -35,7 +35,7 @@ MonoBehaviour:
   cascadeCount: 4
   spiltRatio1: 0.05
   spiltRatio2: 0.15
-  spiltRatio3: 0.6
+  spiltRatio3: 0.4
   cascadeEdgeFade: 0.05
   punctualLightShadowArraySize: 2048
   punctualLightShadowSampleNumber: 8

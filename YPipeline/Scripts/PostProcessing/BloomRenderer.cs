@@ -1,12 +1,24 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.RenderGraphModule;
 
 namespace YPipeline
 {
     public class BloomRenderer : PostProcessingRenderer
     {
-        private const int k_MaxBloomPyramidLevels = 15;
+        private class BloomData
+        {
+            public Material material;
+            
+            public bool isBloomEnabled;
+            public BloomMode bloomMode;
+            public int iterationCount;
+            public Vector4 bloomParams;
+            public Vector4 bloomThreshold;
+            public bool isBloomBicubicUpsampling;
+        }
         
+        private const int k_MaxBloomPyramidLevels = 15;
         private int[] m_BloomPyramidUpIds;
         private int[] m_BloomPyramidDownIds;
         
@@ -130,7 +142,106 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            
+            var stack = VolumeManager.instance.stack;
+            m_Bloom = stack.GetComponent<Bloom>();
+
+            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<BloomData>("Bloom", out var nodeData, ProfilingSampler.Get(YPipelineProfileIDs.Bloom)))
+            {
+                nodeData.material = BloomMaterial;
+                nodeData.isBloomEnabled = m_Bloom.IsActive();
+                
+                if (m_Bloom.IsActive())
+                {
+                    // do bloom at half or quarter resolution
+                    int width;
+                    int height;
+                    if (m_Bloom.ignoreRenderScale.value)
+                    {
+                        width = data.camera.pixelWidth >> (int)m_Bloom.bloomDownscale.value;
+                        height = data.camera.pixelHeight >> (int)m_Bloom.bloomDownscale.value;
+                    }
+                    else
+                    {
+                        width = data.bufferSize.x >> (int)m_Bloom.bloomDownscale.value;
+                        height = data.bufferSize.y >> (int)m_Bloom.bloomDownscale.value;
+                    }
+
+                    // Determine the iteration count
+                    int minSize = Mathf.Min(width, height);
+                    int iterationCount = Mathf.FloorToInt(Mathf.Log(minSize, 2.0f) - 1);
+                    iterationCount = Mathf.Clamp(iterationCount, 1, m_Bloom.maxIterations.value);
+                    nodeData.iterationCount = iterationCount;
+
+                    // Texture Recording
+                    RenderTextureFormat format = data.asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default;
+                    data.cmd.GetTemporaryRT(YPipelineShaderIDs.k_BloomTextureID, width >> 1, height >> 1, 0, FilterMode.Bilinear, format);
+
+                    data.cmd.GetTemporaryRT(YPipelineShaderIDs.k_BloomPrefilterTextureID, width, height, 0, FilterMode.Bilinear, format);
+                    width >>= 1;
+                    height >>= 1;
+
+                    for (int i = 0; i < iterationCount; i++)
+                    {
+                        data.cmd.GetTemporaryRT(m_BloomPyramidUpIds[i], width, height, 0, FilterMode.Bilinear, format);
+                        data.cmd.GetTemporaryRT(m_BloomPyramidDownIds[i], width, height, 0, FilterMode.Bilinear, format);
+                        width >>= 1;
+                        height >>= 1;
+                    }
+
+                    // Data Recording
+                    Vector4 bloomParams = m_Bloom.mode.value == BloomMode.Additive ? new Vector4(m_Bloom.additiveStrength.value, 0.0f) : new Vector4(m_Bloom.scatter.value, 0.0f);
+                    nodeData.bloomParams = bloomParams;
+                    float threshold = Mathf.GammaToLinearSpace(m_Bloom.threshold.value);
+                    float knee = threshold * m_Bloom.thresholdKnee.value;
+                    nodeData.bloomThreshold = new Vector4(threshold, knee - threshold, 2.0f * knee, 0.25f / (knee + 1e-6f));
+                    nodeData.isBloomBicubicUpsampling = m_Bloom.bicubicUpsampling.value;
+                    nodeData.bloomMode = m_Bloom.mode.value;
+                }
+
+                builder.SetRenderFunc((BloomData data, RenderGraphContext context) =>
+                {
+                    if (data.isBloomEnabled)
+                    {
+                        // Shader property and keyword setup
+                        data.material.SetVector(YPipelineShaderIDs.k_BloomParamsID, data.bloomParams);
+                        data.material.SetVector(YPipelineShaderIDs.k_BloomThresholdID, data.bloomThreshold);
+                        CoreUtils.SetKeyword(BloomMaterial, YPipelineKeywords.k_BloomBicubicUpsampling, data.isBloomBicubicUpsampling);
+                        
+                        // Prefilter
+                        BlitUtility.BlitTexture(context.cmd, YPipelineShaderIDs.k_ColorBufferID, YPipelineShaderIDs.k_BloomPrefilterTextureID, data.material, 0);
+                        
+                        // Downsample - gaussian pyramid
+                        int sourceId = YPipelineShaderIDs.k_BloomPrefilterTextureID;
+                        for (int i = 0; i < data.iterationCount; i++)
+                        {
+                            BlitUtility.BlitTexture(context.cmd, sourceId, m_BloomPyramidUpIds[i], BloomMaterial, 1);
+                            BlitUtility.BlitTexture(context.cmd, m_BloomPyramidUpIds[i], m_BloomPyramidDownIds[i], BloomMaterial, 2);
+                            sourceId = m_BloomPyramidDownIds[i];
+                        }
+                        
+                        // TODO: Texture Handle 和 GC 问题一起处理
+                        // Upsample - bilinear or bicubic
+                        int upsamplePass = data.bloomMode == BloomMode.Additive ? 3 : 4;
+                        int lastDst = m_BloomPyramidDownIds[data.iterationCount - 1];
+                        for (int i = data.iterationCount - 2; i >= 0; i--)
+                        {
+                            context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_BloomLowerTextureID, new RenderTargetIdentifier(lastDst));
+                            if (i == 0) BlitUtility.BlitTexture(context.cmd, m_BloomPyramidDownIds[i], YPipelineShaderIDs.k_BloomTextureID, data.material, upsamplePass);
+                            else BlitUtility.BlitTexture(context.cmd, m_BloomPyramidDownIds[i], m_BloomPyramidUpIds[i], data.material, upsamplePass);
+                            lastDst = m_BloomPyramidUpIds[i];
+                        }
+                        
+                        // Release RT
+                        context.cmd.ReleaseTemporaryRT(YPipelineShaderIDs.k_BloomPrefilterTextureID);
+                        for (int i = 0; i < data.iterationCount; i++)
+                        {
+                            context.cmd.ReleaseTemporaryRT(m_BloomPyramidUpIds[i]);
+                            context.cmd.ReleaseTemporaryRT(m_BloomPyramidDownIds[i]);
+                        }
+                    }
+                });
+
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
+using System.Collections.Generic;
 
 namespace YPipeline
 {
@@ -10,6 +11,16 @@ namespace YPipeline
         public static ShaderTagId k_ForwardLitShaderTagId = new ShaderTagId("YPipelineForward");
         public static ShaderTagId k_DepthShaderTagId = new ShaderTagId("Depth");
         public static ShaderTagId k_TransparencyShaderTagId = new ShaderTagId("YPipelineTransparency");
+        
+        public static List<ShaderTagId> k_LegacyShaderPassNames = new List<ShaderTagId>
+        {
+            new ShaderTagId("Always"),
+            new ShaderTagId("ForwardBase"),
+            new ShaderTagId("PrepassBase"),
+            new ShaderTagId("Vertex"),
+            new ShaderTagId("VertexLMRGBM"),
+            new ShaderTagId("VertexLM"),
+        };
     }
     
     public static class YPipelineShaderIDs

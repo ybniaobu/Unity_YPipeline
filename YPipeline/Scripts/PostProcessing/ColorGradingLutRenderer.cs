@@ -167,7 +167,7 @@ namespace YPipeline
             m_LiftGammaGain = stack.GetComponent<LiftGammaGain>();
             m_ToneMapping = stack.GetComponent<ToneMapping>();
 
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<ColorGradingLutData>("Color Grading Lut", out var nodeData, ProfilingSampler.Get(YPipelineProfileIDs.ColorGradingLut)))
+            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<ColorGradingLutData>("Color Grading Lut", out var nodeData))
             {
                 nodeData.material = ColorGradingLutMaterial;
                 

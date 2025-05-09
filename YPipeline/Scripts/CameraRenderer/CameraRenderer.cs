@@ -55,8 +55,11 @@ namespace YPipeline
             {
                 case RenderPath.Forward: 
                     cameraPipelineNodes.Add(PipelineNode.Create<ForwardLightingNode>());
+                    cameraPipelineNodes.Add(PipelineNode.Create<DepthNormalNode>());
+                    cameraPipelineNodes.Add(PipelineNode.Create<CopyDepthNode>());
                     cameraPipelineNodes.Add(PipelineNode.Create<ForwardGeometryNode>());
                     cameraPipelineNodes.Add(PipelineNode.Create<SkyboxNode>());
+                    cameraPipelineNodes.Add(PipelineNode.Create<CopyColorNode>());
                     cameraPipelineNodes.Add(PipelineNode.Create<TransparencyNode>());
                     cameraPipelineNodes.Add(PipelineNode.Create<PostProcessingNode>());
                     cameraPipelineNodes.Add(PipelineNode.Create<GizmosNode>());

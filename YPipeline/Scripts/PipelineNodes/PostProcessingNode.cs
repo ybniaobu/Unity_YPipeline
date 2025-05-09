@@ -12,7 +12,8 @@ namespace YPipeline
     {
         private class PostProcessingNodeData
         {
-            
+            // TODO: 更改到 SceneCameraRenderer 内后删除
+            public CameraType cameraType;
         }
         
         private BloomRenderer m_BloomRenderer;
@@ -45,28 +46,26 @@ namespace YPipeline
         {
             base.OnRender(ref data);
             
-#if UNITY_EDITOR
-            // disable post-processing in material preview and reflection probe preview
-            if (data.camera.cameraType > CameraType.SceneView)
-            {
-                // TODO: 改变逻辑
-                BlitUtility.BlitTexture(data.cmd, YPipelineShaderIDs.k_ColorBufferID, BuiltinRenderTextureType.CameraTarget);
-                return;
-            }
-            
-            // enable or disable post-processing in the scene window via its effects dropdown menu in its toolbar
-            if (data.camera.cameraType == CameraType.SceneView && !SceneView.currentDrawingSceneView.sceneViewState.showImageEffects)
-            {
-                BlitUtility.BlitTexture(data.cmd, YPipelineShaderIDs.k_ColorBufferID, BuiltinRenderTextureType.CameraTarget);
-                return;
-            }
-#endif
-            data.cmd.BeginSample("Post Processing");
-            
-            // all post processing renderers entrance
-            PostProcessingRender(ref data);
-            
-            data.cmd.EndSample("Post Processing");
+// #if UNITY_EDITOR
+//             // disable post-processing in material preview and reflection probe preview
+//             if (data.camera.cameraType > CameraType.SceneView)
+//             {
+//                 BlitUtility.BlitTexture(data.cmd, YPipelineShaderIDs.k_ColorBufferID, BuiltinRenderTextureType.CameraTarget);
+//                 return;
+//             }
+//             
+//             // enable or disable post-processing in the scene window via its effects dropdown menu in its toolbar
+//             if (data.camera.cameraType == CameraType.SceneView && !SceneView.currentDrawingSceneView.sceneViewState.showImageEffects)
+//             {
+//                 BlitUtility.BlitTexture(data.cmd, YPipelineShaderIDs.k_ColorBufferID, BuiltinRenderTextureType.CameraTarget);
+//                 return;
+//             }
+// #endif
+//             data.cmd.BeginSample("Post Processing");
+//             
+//             PostProcessingRender(ref data);
+//             
+//             data.cmd.EndSample("Post Processing");
             
             data.context.ExecuteCommandBuffer(data.cmd);
             data.cmd.Clear();
@@ -76,7 +75,7 @@ namespace YPipeline
         private void PostProcessingRender(ref YPipelineData data)
         {
             // Bloom
-            m_BloomRenderer.Render(ref data);
+            // m_BloomRenderer.Render(ref data);
             
             // // Color Grading Lut
             // m_ColorGradingLutRenderer.Render(ref data);
@@ -92,34 +91,43 @@ namespace YPipeline
             // data.cmd.ReleaseTemporaryRT(YPipelineShaderIDs.k_ColorGradingLutTextureID);
         }
 
-        protected override void OnRecord(ref YPipelineData data)
+        public override void OnRecord(ref YPipelineData data)
         {
+            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<PostProcessingNodeData>("Post Processing", out var nodeData))
+            {
+                nodeData.cameraType = data.camera.cameraType;
+                
+                builder.SetRenderFunc((PostProcessingNodeData data, RenderGraphContext context) =>
+                {
 #if UNITY_EDITOR
-            // disable post-processing in material preview and reflection probe preview
-            if (data.camera.cameraType > CameraType.SceneView)
-            {
-                // TODO: 改变逻辑
-                // BlitUtility.BlitTexture(data.cmd, YPipelineShaderIDs.k_ColorBufferID, BuiltinRenderTextureType.CameraTarget);
-                return;
-            }
+                    // disable post-processing in material preview and reflection probe preview
+                    if (data.cameraType > CameraType.SceneView)
+                    {
+                        // TODO: 改变逻辑
+                        BlitUtility.BlitTexture(context.cmd, YPipelineShaderIDs.k_ColorBufferID, BuiltinRenderTextureType.CameraTarget);
+                    }
             
-            // enable or disable post-processing in the scene window via its effects dropdown menu in its toolbar
-            if (data.camera.cameraType == CameraType.SceneView && !SceneView.currentDrawingSceneView.sceneViewState.showImageEffects)
-            {
-                // BlitUtility.BlitTexture(data.cmd, YPipelineShaderIDs.k_ColorBufferID, BuiltinRenderTextureType.CameraTarget);
-                return;
-            }
+                    // enable or disable post-processing in the scene window via its effects dropdown menu in its toolbar
+                    if (data.cameraType == CameraType.SceneView && !SceneView.currentDrawingSceneView.sceneViewState.showImageEffects)
+                    {
+                        BlitUtility.BlitTexture(context.cmd, YPipelineShaderIDs.k_ColorBufferID, BuiltinRenderTextureType.CameraTarget);
+                    }
 #endif
-
-            // using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<PostProcessingNodeData>("Post Processing", out var nodeData))
-            // {
-            //     builder.SetRenderFunc((PostProcessingNodeData data, RenderGraphContext context) => {});
-            // }
-            m_ColorGradingLutRenderer.OnRecord(ref data);
-            
-            m_UberPostProcessingRenderer.OnRecord(ref data);
-            
-            m_FinalPostProcessingRenderer.OnRecord(ref data);
+                });
+                
+                // TODO: 更改到 SceneCameraRenderer 内
+#if UNITY_EDITOR
+                if (data.camera.cameraType > CameraType.SceneView || data.camera.cameraType == CameraType.SceneView && !SceneView.currentDrawingSceneView.sceneViewState.showImageEffects)
+                {
+                    return;
+                }
+#endif
+                
+                m_BloomRenderer.OnRecord(ref data);
+                m_ColorGradingLutRenderer.OnRecord(ref data);
+                m_UberPostProcessingRenderer.OnRecord(ref data);
+                m_FinalPostProcessingRenderer.OnRecord(ref data);
+            }
         }
     }
 }

@@ -155,7 +155,7 @@ namespace YPipeline
             m_Vignette = stack.GetComponent<Vignette>();
             m_LookupTable = stack.GetComponent<LookupTable>();
 
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<UberPostProcessingData>("Uber Post Processing", out var nodeData, ProfilingSampler.Get(YPipelineProfileIDs.UberPostProcessing)))
+            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<UberPostProcessingData>("Uber Post Processing", out var nodeData))
             {
                 nodeData.material = UberPostProcessingMaterial;
                 
