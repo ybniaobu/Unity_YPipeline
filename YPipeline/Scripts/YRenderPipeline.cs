@@ -47,17 +47,23 @@ namespace YPipeline
             BeginContextRendering(context, cameras);
             m_Data.context = context;
             
-            // TODO: 删除 Begin 方法
-            m_GameCameraRenderer.Begin(ref m_Data);
-            
             foreach(Camera camera in cameras)
             {
                 BeginCameraRendering(context, camera);
                 m_Data.camera = camera;
+                m_Data.cmd = CommandBufferPool.Get();
+                
+#if UNITY_EDITOR
+                if (m_Data.camera.cameraType == CameraType.SceneView) 
+                {
+                    ScriptableRenderContext.EmitWorldGeometryForSceneView(m_Data.camera);
+                }
+#endif
                 
                 m_GameCameraRenderer.Render(ref m_Data);
                 
                 EndCameraRendering(context, camera);
+                CommandBufferPool.Release(m_Data.cmd);
             }
             
             m_Data.renderGraph.EndFrame();

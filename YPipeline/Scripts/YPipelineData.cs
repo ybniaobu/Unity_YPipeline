@@ -13,7 +13,7 @@ namespace YPipeline
         public CommandBuffer cmd;
         public CullingResults cullingResults;
         
-        public Vector2Int bufferSize => new Vector2Int((int) (camera.pixelWidth * asset.renderScale), (int) (camera.pixelHeight * asset.renderScale));
+        public Vector2Int BufferSize => new Vector2Int((int) (camera.pixelWidth * asset.renderScale), (int) (camera.pixelHeight * asset.renderScale));
         
         public static TextureHandle CameraColorBuffer { set; get; }
         public static TextureHandle CameraDepthBuffer { set; get; }

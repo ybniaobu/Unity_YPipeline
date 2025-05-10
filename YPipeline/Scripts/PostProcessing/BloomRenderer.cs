@@ -70,8 +70,8 @@ namespace YPipeline
             }
             else
             {
-                width = data.bufferSize.x >> (int) m_Bloom.bloomDownscale.value;
-                height = data.bufferSize.y >> (int) m_Bloom.bloomDownscale.value;
+                width = data.BufferSize.x >> (int) m_Bloom.bloomDownscale.value;
+                height = data.BufferSize.y >> (int) m_Bloom.bloomDownscale.value;
             }
             
             // Temporary RT
@@ -162,8 +162,8 @@ namespace YPipeline
                     }
                     else
                     {
-                        width = data.bufferSize.x >> (int)m_Bloom.bloomDownscale.value;
-                        height = data.bufferSize.y >> (int)m_Bloom.bloomDownscale.value;
+                        width = data.BufferSize.x >> (int)m_Bloom.bloomDownscale.value;
+                        height = data.BufferSize.y >> (int)m_Bloom.bloomDownscale.value;
                     }
 
                     // Determine the iteration count

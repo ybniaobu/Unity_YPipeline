@@ -12,10 +12,12 @@ namespace YPipeline
         public static ShaderTagId k_DepthShaderTagId = new ShaderTagId("Depth");
         public static ShaderTagId k_TransparencyShaderTagId = new ShaderTagId("YPipelineTransparency");
         
-        public static List<ShaderTagId> k_LegacyShaderPassNames = new List<ShaderTagId>
+        public static List<ShaderTagId> k_LegacyShaderTagIds = new List<ShaderTagId>
         {
             new ShaderTagId("Always"),
             new ShaderTagId("ForwardBase"),
+            new ShaderTagId("ForwardAdd"),
+            new ShaderTagId("Deferred"),
             new ShaderTagId("PrepassBase"),
             new ShaderTagId("Vertex"),
             new ShaderTagId("VertexLMRGBM"),

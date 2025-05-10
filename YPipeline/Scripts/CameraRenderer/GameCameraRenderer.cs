@@ -9,15 +9,14 @@ namespace YPipeline
     {
         protected override void Initialize(ref YPipelineData data)
         {
-            base.Initialize(ref data);
-            PresetRenderPaths(data.asset.renderPath);
+            SetRenderPaths(data.asset.renderPath);
         }
         
         public override void Render(ref YPipelineData data)
         {
             base.Render(ref data);
             
-            if (!Setup(ref data)) return;
+            //if (!Culling(ref data)) return;
             
             VolumeManager.instance.Update(data.camera.transform, 1);
             
@@ -31,16 +30,11 @@ namespace YPipeline
         
             data.renderGraph.BeginRecording(renderGraphParams);
             
-            PrepareBuffers(ref data);
-            PipelineNode.Render(cameraPipelineNodes, ref data);
+            PipelineNode.Record(m_CameraPipelineNodes, ref data);
             
-            PipelineNode.Record(cameraPipelineNodes, ref data);
             data.renderGraph.EndRecordingAndExecute();
             
-            PipelineNode.Release(cameraPipelineNodes, ref data);
-            ReleaseBuffers(ref data);
-            
-            CommandBufferPool.Release(data.cmd);
+            PipelineNode.Release(m_CameraPipelineNodes, ref data);
         }
     }
 }
