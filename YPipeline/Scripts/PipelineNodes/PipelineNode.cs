@@ -20,53 +20,14 @@ namespace YPipeline
         }
         
         protected abstract void Initialize();
+        
         protected virtual void OnDispose() { }
-
-        /// <summary>
-        /// 待删除
-        /// </summary>
-        /// <param name="data"></param>
-        protected virtual void OnBegin(ref YPipelineData data) { }
-
-        protected virtual void OnRender(ref YPipelineData data) { }
         
         /// <summary>
         /// Recording pipeline node to the render graph. 
         /// </summary>
         /// <param name="data">YPipelineData</param>
         public virtual void OnRecord(ref YPipelineData data) { }
-        
-        /// <summary>
-        /// 需要延迟释放的资源
-        /// </summary>
-        /// <param name="data"></param>
-        protected virtual void OnRelease(ref YPipelineData data) { }
-
-        public static void Begin(List<PipelineNode> cameraPipelineNodes, ref YPipelineData data)
-        {
-            int nodeCount = cameraPipelineNodes.Count;
-            
-            if (nodeCount != 0)
-            {
-                for (int i = 0; i < nodeCount; i++)
-                {
-                    cameraPipelineNodes[i].OnBegin(ref data);
-                }
-            }
-        }
-
-        public static void Render(List<PipelineNode> cameraPipelineNodes, ref YPipelineData data)
-        {
-            int nodeCount = cameraPipelineNodes.Count;
-            
-            if (nodeCount != 0)
-            {
-                for (int i = 0; i < nodeCount; i++)
-                {
-                    cameraPipelineNodes[i].OnRender(ref data);
-                }
-            }
-        }
 
         public static void Record(List<PipelineNode> cameraPipelineNodes, ref YPipelineData data)
         {
@@ -77,19 +38,6 @@ namespace YPipeline
                 for (int i = 0; i < nodeCount; i++)
                 {
                     cameraPipelineNodes[i].OnRecord(ref data);
-                }
-            }
-        }
-        
-        public static void Release(List<PipelineNode> cameraPipelineNodes, ref YPipelineData data)
-        {
-            int nodeCount = cameraPipelineNodes.Count;
-            
-            if (nodeCount != 0)
-            {
-                for (int i = 0; i < nodeCount; i++)
-                {
-                    cameraPipelineNodes[i].OnRelease(ref data);
                 }
             }
         }

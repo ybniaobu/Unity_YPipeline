@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.RendererUtils;
 using UnityEngine.Rendering.RenderGraphModule;
 
 namespace YPipeline
@@ -8,6 +9,9 @@ namespace YPipeline
     {
         private class TransparencyNodeData
         {
+            public TextureHandle colorAttachment;
+            public TextureHandle depthAttachment;
+            
             public RendererListHandle transparencyRendererList;
         }
         
@@ -21,87 +25,35 @@ namespace YPipeline
             //DestroyImmediate(this);
         }
 
-        protected override void OnRelease(ref YPipelineData data)
-        {
-            base.OnRelease(ref data);
-        }
-
-        protected override void OnRender(ref YPipelineData data)
-        {
-            base.OnRender(ref data);
-            
-            // Copy Color
-            // data.cmd.BeginSample("Copy Color");
-            // BlitUtility.BlitTexture(data.cmd, YPipelineShaderIDs.k_ColorBufferID, YPipelineShaderIDs.k_ColorTextureID);
-            // data.cmd.EndSample("Copy Color");
-            
-            // TransparencyRenderer(ref data);
-            
-            // data.context.ExecuteCommandBuffer(data.cmd);
-            // data.cmd.Clear();
-            // data.context.Submit();
-        }
-
-        private void TransparencyRenderer(ref YPipelineData data)
-        {
-            data.cmd.BeginSample("Transparency");
-            FilteringSettings transparencyFiltering = new FilteringSettings(RenderQueueRange.transparent);
-            
-            SortingSettings transparencySorting = new SortingSettings(data.camera)
-            {
-                criteria = SortingCriteria.CommonTransparent
-            };
-            
-            DrawingSettings transparencyDrawing = new DrawingSettings(YPipelineShaderTagIDs.k_TransparencyShaderTagId, transparencySorting)
-            {
-                enableInstancing = data.asset.enableGPUInstancing,
-                perObjectData = PerObjectData.ReflectionProbes | PerObjectData.Lightmaps | PerObjectData.ShadowMask | PerObjectData.LightProbe | PerObjectData.OcclusionProbe
-            };
-            transparencyDrawing.SetShaderPassName(1, YPipelineShaderTagIDs.k_SRPDefaultShaderTagId);
-            
-            RendererListParams transparencyRendererListParams =
-                new RendererListParams(data.cullingResults, transparencyDrawing, transparencyFiltering);
-            
-            RendererList transparencyRendererList = data.context.CreateRendererList(ref transparencyRendererListParams);
-            
-            data.cmd.SetRenderTarget(new RenderTargetIdentifier(YPipelineShaderIDs.k_ColorBufferID), 
-                RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
-                new RenderTargetIdentifier(YPipelineShaderIDs.k_DepthBufferID),
-                RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
-            data.cmd.DrawRendererList(transparencyRendererList);
-            data.cmd.EndSample("Transparency");
-        }
-
         public override void OnRecord(ref YPipelineData data)
         {
             using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<TransparencyNodeData>("Draw Transparency", out var nodeData))
             {
-                FilteringSettings transparencyFiltering = new FilteringSettings(RenderQueueRange.transparent);
-            
-                SortingSettings transparencySorting = new SortingSettings(data.camera)
+                RendererListDesc transparencyRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_TransparencyShaderTagIds, data.cullingResults, data.camera)
                 {
-                    criteria = SortingCriteria.CommonTransparent
+                    rendererConfiguration = PerObjectData.ReflectionProbes | PerObjectData.Lightmaps | PerObjectData.ShadowMask | PerObjectData.LightProbe | PerObjectData.OcclusionProbe,
+                    renderQueueRange = RenderQueueRange.transparent,
+                    sortingCriteria = SortingCriteria.CommonTransparent
                 };
-            
-                DrawingSettings transparencyDrawing = new DrawingSettings(YPipelineShaderTagIDs.k_TransparencyShaderTagId, transparencySorting)
-                {
-                    enableInstancing = data.asset.enableGPUInstancing,
-                    perObjectData = PerObjectData.ReflectionProbes | PerObjectData.Lightmaps | PerObjectData.ShadowMask | PerObjectData.LightProbe | PerObjectData.OcclusionProbe
-                };
-                transparencyDrawing.SetShaderPassName(1, YPipelineShaderTagIDs.k_SRPDefaultShaderTagId);
-            
-                RendererListParams transparencyRendererListParams = new RendererListParams(data.cullingResults, transparencyDrawing, transparencyFiltering);
                 
-                nodeData.transparencyRendererList = data.renderGraph.CreateRendererList(transparencyRendererListParams);
+                nodeData.transparencyRendererList = data.renderGraph.CreateRendererList(transparencyRendererListDesc);
                 builder.UseRendererList(nodeData.transparencyRendererList);
+                
+                nodeData.colorAttachment = data.CameraColorAttachment;
+                nodeData.depthAttachment = data.CameraDepthAttachment;
+                builder.WriteTexture(nodeData.colorAttachment);
+                builder.WriteTexture(nodeData.depthAttachment);
+                
+                builder.ReadTexture(data.CameraColorTexture);
+                builder.ReadTexture(data.CameraDepthTexture);
 
                 builder.SetRenderFunc((TransparencyNodeData data, RenderGraphContext context) =>
                 {
-                    context.cmd.SetRenderTarget(new RenderTargetIdentifier(YPipelineShaderIDs.k_ColorBufferID), 
-                        RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
-                        new RenderTargetIdentifier(YPipelineShaderIDs.k_DepthBufferID),
-                        RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
+                    context.cmd.SetRenderTarget(data.colorAttachment, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store,
+                        data.depthAttachment, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
                     context.cmd.DrawRendererList(data.transparencyRendererList);
+                    context.renderContext.ExecuteCommandBuffer(context.cmd);
+                    context.cmd.Clear();
                 });
             }
         }

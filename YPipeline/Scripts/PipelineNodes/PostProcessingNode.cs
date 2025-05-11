@@ -14,6 +14,9 @@ namespace YPipeline
         {
             // TODO: 更改到 SceneCameraRenderer 内后删除
             public CameraType cameraType;
+            
+            public TextureHandle colorAttachment;
+            public TextureHandle cameraTarget;
         }
         
         private BloomRenderer m_BloomRenderer;
@@ -34,68 +37,15 @@ namespace YPipeline
             //DestroyImmediate(this);
         }
 
-        protected override void OnRelease(ref YPipelineData data)
-        {
-            base.OnRelease(ref data);
-            data.context.ExecuteCommandBuffer(data.cmd);
-            data.cmd.Clear();
-            data.context.Submit();
-        }
-
-        protected override void OnRender(ref YPipelineData data)
-        {
-            base.OnRender(ref data);
-            
-// #if UNITY_EDITOR
-//             // disable post-processing in material preview and reflection probe preview
-//             if (data.camera.cameraType > CameraType.SceneView)
-//             {
-//                 BlitUtility.BlitTexture(data.cmd, YPipelineShaderIDs.k_ColorBufferID, BuiltinRenderTextureType.CameraTarget);
-//                 return;
-//             }
-//             
-//             // enable or disable post-processing in the scene window via its effects dropdown menu in its toolbar
-//             if (data.camera.cameraType == CameraType.SceneView && !SceneView.currentDrawingSceneView.sceneViewState.showImageEffects)
-//             {
-//                 BlitUtility.BlitTexture(data.cmd, YPipelineShaderIDs.k_ColorBufferID, BuiltinRenderTextureType.CameraTarget);
-//                 return;
-//             }
-// #endif
-//             data.cmd.BeginSample("Post Processing");
-//             
-//             PostProcessingRender(ref data);
-//             
-//             data.cmd.EndSample("Post Processing");
-            
-            data.context.ExecuteCommandBuffer(data.cmd);
-            data.cmd.Clear();
-            data.context.Submit();
-        }
-
-        private void PostProcessingRender(ref YPipelineData data)
-        {
-            // Bloom
-            // m_BloomRenderer.Render(ref data);
-            
-            // // Color Grading Lut
-            // m_ColorGradingLutRenderer.Render(ref data);
-            
-            // // Post Color Grading
-            // m_UberPostProcessingRenderer.Render(ref data);
-            //
-            // // Final Post Processing
-            // m_FinalPostProcessingRenderer.Render(ref data);
-            
-            // Clear RT
-            // data.cmd.ReleaseTemporaryRT(YPipelineShaderIDs.k_BloomTextureID);
-            // data.cmd.ReleaseTemporaryRT(YPipelineShaderIDs.k_ColorGradingLutTextureID);
-        }
-
         public override void OnRecord(ref YPipelineData data)
         {
             using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<PostProcessingNodeData>("Post Processing", out var nodeData))
             {
                 nodeData.cameraType = data.camera.cameraType;
+                nodeData.colorAttachment = data.CameraColorAttachment;
+                nodeData.cameraTarget = data.CameraTarget;
+                builder.ReadTexture(nodeData.colorAttachment);
+                builder.WriteTexture(nodeData.cameraTarget);
                 
                 builder.SetRenderFunc((PostProcessingNodeData data, RenderGraphContext context) =>
                 {
@@ -104,15 +54,17 @@ namespace YPipeline
                     if (data.cameraType > CameraType.SceneView)
                     {
                         // TODO: 改变逻辑
-                        BlitUtility.BlitTexture(context.cmd, YPipelineShaderIDs.k_ColorBufferID, BuiltinRenderTextureType.CameraTarget);
+                        BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.cameraTarget);
                     }
             
                     // enable or disable post-processing in the scene window via its effects dropdown menu in its toolbar
                     if (data.cameraType == CameraType.SceneView && !SceneView.currentDrawingSceneView.sceneViewState.showImageEffects)
                     {
-                        BlitUtility.BlitTexture(context.cmd, YPipelineShaderIDs.k_ColorBufferID, BuiltinRenderTextureType.CameraTarget);
+                        BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.cameraTarget);
                     }
 #endif
+                    context.renderContext.ExecuteCommandBuffer(context.cmd);
+                    context.cmd.Clear();
                 });
                 
                 // TODO: 更改到 SceneCameraRenderer 内

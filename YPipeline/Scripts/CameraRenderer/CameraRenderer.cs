@@ -49,20 +49,5 @@ namespace YPipeline
                     break;
             }
         }
-        
-        protected bool Culling(ref YPipelineData data)
-        {
-            using var profilingScope = new ProfilingScope(ProfilingSampler.Get(YPipelineProfileIDs.FrustumCulling));
-            
-            if (!data.camera.TryGetCullingParameters(out ScriptableCullingParameters cullingParameters))
-            {
-                return false;
-            }
-            
-            cullingParameters.shadowDistance = Mathf.Min(data.asset.maxShadowDistance, data.camera.farClipPlane);
-            data.cullingResults = data.context.Cull(ref cullingParameters);
-            
-            return true;
-        }
     }
 }

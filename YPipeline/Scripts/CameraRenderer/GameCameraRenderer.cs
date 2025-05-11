@@ -7,6 +7,8 @@ namespace YPipeline
 {
     public class GameCameraRenderer : CameraRenderer
     {
+        private string m_CameraName;
+        
         protected override void Initialize(ref YPipelineData data)
         {
             SetRenderPaths(data.asset.renderPath);
@@ -16,9 +18,11 @@ namespace YPipeline
         {
             base.Render(ref data);
             
-            //if (!Culling(ref data)) return;
-            
-            VolumeManager.instance.Update(data.camera.transform, 1);
+            if (string.IsNullOrEmpty(m_CameraName))
+            {
+                m_CameraName = data.camera.name;
+            }
+            data.cmd.BeginSample(m_CameraName);
             
             RenderGraphParameters renderGraphParams = new RenderGraphParameters()
             {
@@ -26,6 +30,7 @@ namespace YPipeline
                 scriptableRenderContext = data.context,
                 commandBuffer = data.cmd,
                 currentFrameIndex = Time.frameCount,
+                rendererListCulling = true
             };
         
             data.renderGraph.BeginRecording(renderGraphParams);
@@ -34,7 +39,7 @@ namespace YPipeline
             
             data.renderGraph.EndRecordingAndExecute();
             
-            PipelineNode.Release(m_CameraPipelineNodes, ref data);
+            data.cmd.EndSample(m_CameraName);
         }
     }
 }

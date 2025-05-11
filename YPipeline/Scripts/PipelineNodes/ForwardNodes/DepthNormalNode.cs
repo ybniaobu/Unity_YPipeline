@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.RendererUtils;
 using UnityEngine.Rendering.RenderGraphModule;
 
 namespace YPipeline
@@ -9,6 +10,8 @@ namespace YPipeline
         private class DepthNormalNodeData
         {
             public Camera camera;
+            
+            public TextureHandle depthAttachment;
             
             public RendererListHandle opaqueRendererList;
             public RendererListHandle alphaTestRendererList;
@@ -22,44 +25,40 @@ namespace YPipeline
             {
                 nodeData.camera = data.camera;
                 
-                FilteringSettings opaqueFiltering = new FilteringSettings(new RenderQueueRange(2000, 2449));
-                FilteringSettings alphaTestFiltering = new FilteringSettings(new RenderQueueRange(2450, 2499));
-                SortingSettings opaqueSorting = new SortingSettings(data.camera)
+                RendererListDesc opaqueRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_DepthShaderTagId, data.cullingResults, data.camera)
                 {
-                    criteria = SortingCriteria.CommonOpaque
+                    rendererConfiguration = PerObjectData.None,
+                    renderQueueRange = new RenderQueueRange(2000, 2449),
+                    sortingCriteria = SortingCriteria.CommonOpaque
                 };
-                SortingSettings alphaTestSorting = new SortingSettings(data.camera)
-                {
-                    criteria = SortingCriteria.OptimizeStateChanges
-                };
-                DrawingSettings opaqueDrawing = new DrawingSettings(YPipelineShaderTagIDs.k_DepthShaderTagId, opaqueSorting)
-                {
-                    enableInstancing = data.asset.enableGPUInstancing,
-                    perObjectData = PerObjectData.None
-                };
-                DrawingSettings alphaTestDrawing = new DrawingSettings(YPipelineShaderTagIDs.k_DepthShaderTagId, alphaTestSorting)
-                {
-                    enableInstancing = data.asset.enableGPUInstancing,
-                    perObjectData = PerObjectData.None
-                };
-                RendererListParams opaqueRendererListParams = new RendererListParams(data.cullingResults, opaqueDrawing, opaqueFiltering);
-                RendererListParams alphaTestRendererListParams = new RendererListParams(data.cullingResults, alphaTestDrawing, alphaTestFiltering);
                 
-                nodeData.opaqueRendererList = data.renderGraph.CreateRendererList(opaqueRendererListParams);
-                nodeData.alphaTestRendererList = data.renderGraph.CreateRendererList(alphaTestRendererListParams);
+                RendererListDesc alphaTestRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_DepthShaderTagId, data.cullingResults, data.camera)
+                {
+                    rendererConfiguration = PerObjectData.None,
+                    renderQueueRange = new RenderQueueRange(2450, 2499),
+                    sortingCriteria = SortingCriteria.OptimizeStateChanges
+                };
+                
+                nodeData.opaqueRendererList = data.renderGraph.CreateRendererList(opaqueRendererListDesc);
+                nodeData.alphaTestRendererList = data.renderGraph.CreateRendererList(alphaTestRendererListDesc);
                 builder.UseRendererList(nodeData.opaqueRendererList);
                 builder.UseRendererList(nodeData.alphaTestRendererList);
+
+                nodeData.depthAttachment = data.CameraDepthAttachment;
+                builder.WriteTexture(nodeData.depthAttachment);
 
                 builder.SetRenderFunc((DepthNormalNodeData data, RenderGraphContext context) =>
                 {
                     // 暂时先放这里
                     context.cmd.SetupCameraProperties(data.camera);
                     
-                    context.cmd.SetRenderTarget(new RenderTargetIdentifier(YPipelineShaderIDs.k_DepthBufferID), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                    context.cmd.SetRenderTarget(data.depthAttachment, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
                     context.cmd.ClearRenderTarget(true, false, Color.clear);
                     
                     context.cmd.DrawRendererList(data.opaqueRendererList);
                     context.cmd.DrawRendererList(data.alphaTestRendererList);
+                    context.renderContext.ExecuteCommandBuffer(context.cmd);
+                    context.cmd.Clear();
                 });
             }
         }

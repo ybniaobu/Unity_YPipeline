@@ -8,7 +8,8 @@ namespace YPipeline
     {
         private class CopyDepthNodeData
         {
-            
+            public TextureHandle depthAttachment;
+            public TextureHandle depthTexture;
         }
 
         protected override void Initialize() { }
@@ -17,9 +18,17 @@ namespace YPipeline
         {
             using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<CopyDepthNodeData>("Copy Depth", out var nodeData))
             {
+                nodeData.depthAttachment = data.CameraDepthAttachment;
+                nodeData.depthTexture = data.CameraDepthTexture;
+                builder.ReadTexture(nodeData.depthAttachment);
+                builder.ReadWriteTexture(nodeData.depthTexture);
+                
                 builder.SetRenderFunc((CopyDepthNodeData data, RenderGraphContext context) =>
                 {
-                    BlitUtility.CopyDepth(context.cmd, YPipelineShaderIDs.k_DepthBufferID, YPipelineShaderIDs.k_DepthTextureID);
+                    BlitUtility.CopyDepth(context.cmd, data.depthAttachment, data.depthTexture);
+                    context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_DepthTextureID, data.depthTexture);
+                    context.renderContext.ExecuteCommandBuffer(context.cmd);
+                    context.cmd.Clear();
                 });
             }
         }

@@ -22,7 +22,6 @@ MonoBehaviour:
     type: 2}
   bakedLUTResolution: 32
   enableSRPBatcher: 1
-  enableGPUInstancing: 1
   depthBias: 0.1
   slopeScaledDepthBias: 0.5
   normalBias: 0.1

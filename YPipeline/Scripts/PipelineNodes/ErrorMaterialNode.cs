@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.RendererUtils;
 using UnityEngine.Rendering.RenderGraphModule;
 
 namespace YPipeline
@@ -24,24 +25,23 @@ namespace YPipeline
                 if (m_ErrorMaterial == null)
                 {
                     m_ErrorMaterial = new Material(Shader.Find("Hidden/InternalErrorShader"));
+                    m_ErrorMaterial.hideFlags = HideFlags.HideAndDontSave;
                 }
                 
-                DrawingSettings drawingSettings = new DrawingSettings(YPipelineShaderTagIDs.k_LegacyShaderTagIds[0], new SortingSettings(data.camera))
+                RendererListDesc rendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_LegacyShaderTagIds, data.cullingResults, data.camera)
                 {
-                    overrideMaterial = m_ErrorMaterial
+                    overrideMaterial = m_ErrorMaterial,
+                    renderQueueRange = RenderQueueRange.all,
                 };
-                for (int i = 1; i < YPipelineShaderTagIDs.k_LegacyShaderTagIds.Count; i++) 
-                {
-                    drawingSettings.SetShaderPassName(i, YPipelineShaderTagIDs.k_LegacyShaderTagIds[i]);
-                }
-                RendererListParams rendererListParams = new RendererListParams(data.cullingResults, drawingSettings, FilteringSettings.defaultValue);
 
-                nodeData.rendererList = data.renderGraph.CreateRendererList(rendererListParams);
+                nodeData.rendererList = data.renderGraph.CreateRendererList(rendererListDesc);
                 builder.UseRendererList(nodeData.rendererList);
                 
                 builder.SetRenderFunc((ErrorMaterialNodeData data, RenderGraphContext context) =>
                 {
                     context.cmd.DrawRendererList(data.rendererList);
+                    context.renderContext.ExecuteCommandBuffer(context.cmd);
+                    context.cmd.Clear();
                 });
             }
 #endif

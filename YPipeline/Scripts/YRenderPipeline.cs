@@ -59,10 +59,14 @@ namespace YPipeline
                     ScriptableRenderContext.EmitWorldGeometryForSceneView(m_Data.camera);
                 }
 #endif
+                VolumeManager.instance.Update(camera.transform, 1);
                 
                 m_GameCameraRenderer.Render(ref m_Data);
-                
                 EndCameraRendering(context, camera);
+                
+                m_Data.context.ExecuteCommandBuffer(m_Data.cmd);
+                m_Data.cmd.Clear();
+                m_Data.context.Submit();
                 CommandBufferPool.Release(m_Data.cmd);
             }
             

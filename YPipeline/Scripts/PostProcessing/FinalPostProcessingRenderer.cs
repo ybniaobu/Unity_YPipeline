@@ -10,6 +10,9 @@ namespace YPipeline
         {
             public Material material;
             
+            public TextureHandle finalTexture;
+            public TextureHandle cameraTarget;
+                
             public bool isFXAAEnabled;
             public bool isFXAAQualityEnabled;
             
@@ -46,47 +49,6 @@ namespace YPipeline
         {
             m_Random = new System.Random();
         }
-
-        public override void Render(ref YPipelineData data)
-        {
-            isActivated = true;
-            data.cmd.BeginSample("Final Post Processing");
-            
-            var stack = VolumeManager.instance.stack;
-            m_FilmGrain = stack.GetComponent<FilmGrain>();
-            
-            // FXAA
-            CoreUtils.SetKeyword(FinalPostProcessingMaterial, YPipelineKeywords.k_FXAAQuality, data.asset.antiAliasingMode == AntiAliasingMode.FXAA && data.asset.fxaaMode == FXAAMode.Quality);
-            CoreUtils.SetKeyword(FinalPostProcessingMaterial, YPipelineKeywords.k_FXAAConsole, data.asset.antiAliasingMode == AntiAliasingMode.FXAA && data.asset.fxaaMode == FXAAMode.Console);
-            
-            // Film Grain
-            CoreUtils.SetKeyword(FinalPostProcessingMaterial, YPipelineKeywords.k_FilmGrain, m_FilmGrain.IsActive());
-            if (m_FilmGrain.IsActive())
-            {
-                Texture texture = null;
-                if (m_FilmGrain.type.value != FilmGrainKinds.Custom)
-                {
-                    texture = data.asset.pipelineResources.textures.filmGrainTex[(int)m_FilmGrain.type.value];
-                }
-                else
-                {
-                    texture = m_FilmGrain.texture.value;
-                }
-                float uvScaleX = data.camera.pixelWidth / (float) texture.width;
-                float uvScaleY = data.camera.pixelHeight / (float) texture.height;
-                float offsetX = (float) m_Random.NextDouble();
-                float offsetY = (float) m_Random.NextDouble();
-                
-                FinalPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_FilmGrainParamsID, new Vector4(m_FilmGrain.intensity.value * 4f, m_FilmGrain.response.value));
-                FinalPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_FilmGrainTexParamsID, new Vector4(uvScaleX, uvScaleY, offsetX, offsetY));
-                FinalPostProcessingMaterial.SetTexture(YPipelineShaderIDs.k_FilmGrainTexID, texture);
-            }
-            
-            // Blit
-            BlitUtility.BlitCameraTarget(data.cmd, YPipelineShaderIDs.k_FinalTextureID, data.camera.pixelRect, FinalPostProcessingMaterial, 0);
-            
-            data.cmd.EndSample("Final Post Processing");
-        }
         
         public override void OnRecord(ref YPipelineData data)
         {
@@ -95,8 +57,11 @@ namespace YPipeline
             
             using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<FinalPostProcessingData>("Final Post Processing", out var nodeData))
             {
-                // nodeData.finalTexture = builder.ReadTexture(new RenderTargetIdentifier(YPipelineShaderIDs.k_FinalTextureID));
                 nodeData.material = FinalPostProcessingMaterial;
+                nodeData.finalTexture = data.CameraFinalTexture;
+                nodeData.cameraTarget = data.CameraTarget;
+                builder.ReadTexture(nodeData.finalTexture);
+                builder.WriteTexture(nodeData.cameraTarget);
                 
                 nodeData.isFXAAEnabled = data.asset.antiAliasingMode == AntiAliasingMode.FXAA;
                 nodeData.isFXAAQualityEnabled = data.asset.fxaaMode == FXAAMode.Quality;
@@ -152,7 +117,7 @@ namespace YPipeline
                         data.material.SetTexture(YPipelineShaderIDs.k_FilmGrainTexID, data.filmGrainTexture);
                     }
                     
-                    BlitUtility.BlitCameraTarget(context.cmd, YPipelineShaderIDs.k_FinalTextureID, data.cameraPixelRect, data.material, 0);
+                    BlitUtility.BlitTexture(context.cmd, data.finalTexture, data.cameraTarget, data.cameraPixelRect, data.material, 0);
                 });
             }
         }

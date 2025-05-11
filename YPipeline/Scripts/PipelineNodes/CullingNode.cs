@@ -21,10 +21,8 @@ namespace YPipeline
                 cullingParameters.shadowDistance = Mathf.Min(data.asset.maxShadowDistance, data.camera.farClipPlane);
                 data.cullingResults = data.context.Cull(ref cullingParameters);
                 
-                builder.SetRenderFunc((CullingNodeData data, RenderGraphContext context) =>
-                {
-                    
-                });
+                builder.AllowPassCulling(false);
+                builder.SetRenderFunc((CullingNodeData data, RenderGraphContext context) => { });
             }
         }
     }

@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
-using System.Collections.Generic;
 
 namespace YPipeline
 {
@@ -8,11 +7,24 @@ namespace YPipeline
     {
         public static ShaderTagId k_SRPDefaultShaderTagId = new ShaderTagId("SRPDefaultUnlit");
         
-        public static ShaderTagId k_ForwardLitShaderTagId = new ShaderTagId("YPipelineForward");
         public static ShaderTagId k_DepthShaderTagId = new ShaderTagId("Depth");
+        public static ShaderTagId k_DepthNormalShaderTagId = new ShaderTagId("DepthNormal");
+        public static ShaderTagId k_ForwardLitShaderTagId = new ShaderTagId("YPipelineForward");
         public static ShaderTagId k_TransparencyShaderTagId = new ShaderTagId("YPipelineTransparency");
         
-        public static List<ShaderTagId> k_LegacyShaderTagIds = new List<ShaderTagId>
+        public static ShaderTagId[] k_OpaqueShaderTagIds = new ShaderTagId[]
+        {
+            new ShaderTagId("SRPDefaultUnlit"),
+            new ShaderTagId("YPipelineForward"),
+        };
+
+        public static ShaderTagId[] k_TransparencyShaderTagIds = new ShaderTagId[]
+        {
+            new ShaderTagId("SRPDefaultUnlit"),
+            new ShaderTagId("YPipelineTransparency"),
+        };
+        
+        public static ShaderTagId[] k_LegacyShaderTagIds = new ShaderTagId[]
         {
             new ShaderTagId("Always"),
             new ShaderTagId("ForwardBase"),
@@ -32,8 +44,6 @@ namespace YPipeline
         // ----------------------------------------------------------------------------------------------------
         
         // Forward
-        public static readonly int k_ColorBufferID = Shader.PropertyToID("_CameraColorBuffer");
-        public static readonly int k_DepthBufferID = Shader.PropertyToID("_CameraDepthBuffer");
         public static readonly int k_ColorTextureID = Shader.PropertyToID("_CameraColorTexture");
         public static readonly int k_DepthTextureID = Shader.PropertyToID("_CameraDepthTexture");
         public static readonly int k_FinalTextureID = Shader.PropertyToID("_CameraFinalTexture");

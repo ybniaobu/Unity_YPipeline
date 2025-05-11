@@ -74,9 +74,6 @@ namespace YPipeline
         [FoldoutGroup("Batching Settings", expanded: true)]
         public bool enableSRPBatcher = true;
         
-        [FoldoutGroup("Batching Settings")]
-        public bool enableGPUInstancing = true;
-        
         
         // --------------------------------------------------------------------------------
         // 其他共用字段

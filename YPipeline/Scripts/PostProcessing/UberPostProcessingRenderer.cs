@@ -11,6 +11,9 @@ namespace YPipeline
         {
             public Material material;
             
+            public TextureHandle colorAttachment;
+            public TextureHandle finalTexture;
+            
             public bool isChromaticAberrationEnabled;
             public TextureHandle spectralLut;
             public Vector4 chromaticAberrationParams;
@@ -91,61 +94,6 @@ namespace YPipeline
         {
             
         }
-
-        public override void Render(ref YPipelineData data)
-        {
-            isActivated = true;
-            data.cmd.BeginSample("Uber Post Processing");
-            
-            var stack = VolumeManager.instance.stack;
-            m_ChromaticAberration = stack.GetComponent<ChromaticAberration>();
-            m_Bloom = stack.GetComponent<Bloom>();
-            m_Vignette = stack.GetComponent<Vignette>();
-            m_LookupTable = stack.GetComponent<LookupTable>();
-            
-            // Chromatic Aberration
-            CoreUtils.SetKeyword(UberPostProcessingMaterial, YPipelineKeywords.k_ChromaticAberration, m_ChromaticAberration.IsActive());
-            UberPostProcessingMaterial.SetTexture(YPipelineShaderIDs.k_SpectralLutID, InternalSpectralLut);
-            UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_ChromaticAberrationParamsID, new Vector4(m_ChromaticAberration.intensity.value * 0.05f, m_ChromaticAberration.maxSamples.value));
-            
-            // Bloom
-            CoreUtils.SetKeyword(UberPostProcessingMaterial, YPipelineKeywords.k_Bloom, m_Bloom.IsActive());
-            CoreUtils.SetKeyword(UberPostProcessingMaterial, YPipelineKeywords.k_BloomBicubicUpsampling, m_Bloom.bicubicUpsampling.value);
-            Vector4 bloomParams = m_Bloom.mode.value == BloomMode.Additive ? new Vector4(m_Bloom.intensity.value, 0.0f) : new Vector4(m_Bloom.finalIntensity.value, 1.0f);
-            UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_BloomParamsID, bloomParams);
-            float threshold = Mathf.GammaToLinearSpace(m_Bloom.threshold.value);
-            float knee = threshold * m_Bloom.thresholdKnee.value;
-            UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_BloomThresholdID, new Vector4(threshold, knee - threshold, 2.0f * knee, 0.25f / (knee + 1e-6f)));
-            
-            // Vignette
-            CoreUtils.SetKeyword(UberPostProcessingMaterial, YPipelineKeywords.k_Vignette, m_Vignette.IsActive());
-            float roundness = (1f - m_Vignette.roundness.value) * 6f + m_Vignette.roundness.value;
-            float aspectRatio = data.camera.aspect;
-            Vector4 vignetteParams1 = new Vector4(m_Vignette.center.value.x, m_Vignette.center.value.y, 0f, 0f);
-            Vector4 vignetteParams2 = new Vector4(m_Vignette.intensity.value * 3f, m_Vignette.smoothness.value * 5f, roundness, m_Vignette.rounded.value ? aspectRatio : 1f);
-            UberPostProcessingMaterial.SetColor(YPipelineShaderIDs.k_VignetteColorID, m_Vignette.color.value);
-            UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_VignetteParams1ID, vignetteParams1);
-            UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_VignetteParams2ID, vignetteParams2);
-            
-            // Baked Color Grading Lut
-            int lutHeight = data.asset.bakedLUTResolution;
-            int lutWidth = lutHeight * lutHeight;
-            UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_ColorGradingLutParamsID, new Vector4(1.0f / lutWidth, 1.0f / lutHeight, lutHeight - 1.0f));
-            
-            // Extra Lut
-            CoreUtils.SetKeyword(UberPostProcessingMaterial, YPipelineKeywords.k_ExtraLut, m_LookupTable.IsActive());
-            if (m_LookupTable.IsActive())
-            {
-                UberPostProcessingMaterial.SetTexture(YPipelineShaderIDs.k_ExtraLutID, m_LookupTable.texture.value);
-                Vector4 extraLutParams = new Vector4(1.0f / m_LookupTable.texture.value.width, 1.0f / m_LookupTable.texture.value.height, m_LookupTable.texture.value.height - 1.0f, m_LookupTable.contribution.value);
-                UberPostProcessingMaterial.SetVector(YPipelineShaderIDs.k_ExtraLutParamsID, extraLutParams);
-            }
-            
-            // Blit
-            BlitUtility.BlitTexture(data.cmd, YPipelineShaderIDs.k_ColorBufferID, YPipelineShaderIDs.k_FinalTextureID, UberPostProcessingMaterial, 0);
-            
-            data.cmd.EndSample("Uber Post Processing");
-        }
         
         public override void OnRecord(ref YPipelineData data)
         {
@@ -158,6 +106,19 @@ namespace YPipeline
             using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<UberPostProcessingData>("Uber Post Processing", out var nodeData))
             {
                 nodeData.material = UberPostProcessingMaterial;
+                nodeData.colorAttachment = data.CameraColorAttachment;
+                builder.ReadTexture(nodeData.colorAttachment);
+                
+                Vector2Int bufferSize = data.BufferSize;
+                TextureDesc finalTextureDesc = new TextureDesc(bufferSize.x,bufferSize.y)
+                {
+                    colorFormat = SystemInfo.GetGraphicsFormat(data.asset.enableHDRFrameBufferFormat ? DefaultFormat.HDR : DefaultFormat.LDR),
+                    filterMode = FilterMode.Bilinear,
+                    name = "Final Texture"
+                };
+                data.CameraFinalTexture = data.renderGraph.CreateTexture(finalTextureDesc);
+                nodeData.finalTexture = data.CameraFinalTexture;
+                builder.WriteTexture(nodeData.finalTexture);
                 
                 // Chromatic Aberration
                 nodeData.isChromaticAberrationEnabled = m_ChromaticAberration.IsActive();
@@ -274,7 +235,9 @@ namespace YPipeline
                     
                     // Blit
                     // TODO: 修改
-                    BlitUtility.BlitTexture(context.cmd, YPipelineShaderIDs.k_ColorBufferID, YPipelineShaderIDs.k_FinalTextureID, data.material, 0);
+                    BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.finalTexture, data.material, 0);
+                    context.renderContext.ExecuteCommandBuffer(context.cmd);
+                    context.cmd.Clear();
                 });
             }
         }

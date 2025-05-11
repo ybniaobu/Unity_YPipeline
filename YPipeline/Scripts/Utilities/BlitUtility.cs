@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.RenderGraphModule;
 
 namespace YPipeline
 {
@@ -57,6 +58,13 @@ namespace YPipeline
             cmd.SetRenderTarget(new RenderTargetIdentifier(destinationID), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
             cmd.DrawProcedural(Matrix4x4.identity, CopyMaterial, 0, MeshTopology.Triangles, 3);
         }
+
+        public static void BlitTexture(CommandBuffer cmd, TextureHandle source, TextureHandle destination)
+        {
+            cmd.SetGlobalTexture(k_BlitTextureId, source);
+            cmd.SetRenderTarget(destination, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            cmd.DrawProcedural(Matrix4x4.identity, CopyMaterial, 0, MeshTopology.Triangles, 3);
+        }
         
         public static void BlitTexture(CommandBuffer cmd, int sourceID, BuiltinRenderTextureType destination)
         {
@@ -72,6 +80,13 @@ namespace YPipeline
             cmd.DrawProcedural(Matrix4x4.identity, material, pass, MeshTopology.Triangles, 3);
         }
         
+        public static void BlitTexture(CommandBuffer cmd, TextureHandle source, TextureHandle destination, Material material, int pass)
+        {
+            cmd.SetGlobalTexture(k_BlitTextureId, source);
+            cmd.SetRenderTarget(destination, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            cmd.DrawProcedural(Matrix4x4.identity, material, pass, MeshTopology.Triangles, 3);
+        }
+        
         public static void BlitTexture(CommandBuffer cmd, int sourceID, BuiltinRenderTextureType destination, Material material, int pass)
         {
             cmd.SetGlobalTexture(k_BlitTextureId, new RenderTargetIdentifier(sourceID));
@@ -79,18 +94,10 @@ namespace YPipeline
             cmd.DrawProcedural(Matrix4x4.identity, material, pass, MeshTopology.Triangles, 3);
         }
         
-        public static void BlitCameraTarget(CommandBuffer cmd, int sourceID, Rect cameraRect)
+        public static void BlitTexture(CommandBuffer cmd, TextureHandle source, TextureHandle destination, Rect cameraRect, Material material, int pass)
         {
-            cmd.SetGlobalTexture(k_BlitTextureId, new RenderTargetIdentifier(sourceID));
-            cmd.SetRenderTarget(new RenderTargetIdentifier(BuiltinRenderTextureType.CameraTarget), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
-            cmd.SetViewport(cameraRect);
-            cmd.DrawProcedural(Matrix4x4.identity, CopyMaterial, 0, MeshTopology.Triangles, 3);
-        }
-        
-        public static void BlitCameraTarget(CommandBuffer cmd, int sourceID, Rect cameraRect, Material material, int pass)
-        {
-            cmd.SetGlobalTexture(k_BlitTextureId, new RenderTargetIdentifier(sourceID));
-            cmd.SetRenderTarget(new RenderTargetIdentifier(BuiltinRenderTextureType.CameraTarget), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            cmd.SetGlobalTexture(k_BlitTextureId, source);
+            cmd.SetRenderTarget(destination, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
             cmd.SetViewport(cameraRect);
             cmd.DrawProcedural(Matrix4x4.identity, material, pass, MeshTopology.Triangles, 3);
         }
@@ -118,6 +125,13 @@ namespace YPipeline
         {
             cmd.SetGlobalTexture(k_BlitTextureId, new RenderTargetIdentifier(sourceID));
             cmd.SetRenderTarget(new RenderTargetIdentifier(destination), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            cmd.DrawProcedural(Matrix4x4.identity, CopyDepthMaterial, 0, MeshTopology.Triangles, 3);
+        }
+
+        public static void CopyDepth(CommandBuffer cmd, TextureHandle source, TextureHandle destination)
+        {
+            cmd.SetGlobalTexture(k_BlitTextureId, source);
+            cmd.SetRenderTarget(destination, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
             cmd.DrawProcedural(Matrix4x4.identity, CopyDepthMaterial, 0, MeshTopology.Triangles, 3);
         }
     }
