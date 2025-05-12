@@ -42,10 +42,8 @@ namespace YPipeline
             using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<PostProcessingNodeData>("Post Processing", out var nodeData))
             {
                 nodeData.cameraType = data.camera.cameraType;
-                nodeData.colorAttachment = data.CameraColorAttachment;
-                nodeData.cameraTarget = data.CameraTarget;
-                builder.ReadTexture(nodeData.colorAttachment);
-                builder.WriteTexture(nodeData.cameraTarget);
+                nodeData.colorAttachment = builder.ReadTexture(data.CameraColorAttachment);
+                nodeData.cameraTarget = builder.WriteTexture(data.CameraTarget);
                 
                 builder.SetRenderFunc((PostProcessingNodeData data, RenderGraphContext context) =>
                 {
@@ -66,20 +64,20 @@ namespace YPipeline
                     context.renderContext.ExecuteCommandBuffer(context.cmd);
                     context.cmd.Clear();
                 });
-                
-                // TODO: 更改到 SceneCameraRenderer 内
+            }
+            
+            // TODO: 更改到 SceneCameraRenderer 内
 #if UNITY_EDITOR
-                if (data.camera.cameraType > CameraType.SceneView || data.camera.cameraType == CameraType.SceneView && !SceneView.currentDrawingSceneView.sceneViewState.showImageEffects)
-                {
-                    return;
-                }
+            if (data.camera.cameraType > CameraType.SceneView || data.camera.cameraType == CameraType.SceneView && !SceneView.currentDrawingSceneView.sceneViewState.showImageEffects)
+            {
+                return;
+            }
 #endif
                 
-                m_BloomRenderer.OnRecord(ref data);
-                m_ColorGradingLutRenderer.OnRecord(ref data);
-                m_UberPostProcessingRenderer.OnRecord(ref data);
-                m_FinalPostProcessingRenderer.OnRecord(ref data);
-            }
+            m_BloomRenderer.OnRecord(ref data);
+            m_ColorGradingLutRenderer.OnRecord(ref data);
+            m_UberPostProcessingRenderer.OnRecord(ref data);
+            m_FinalPostProcessingRenderer.OnRecord(ref data);
         }
     }
 }

@@ -29,8 +29,8 @@ namespace YPipeline
             {
                 case RenderPath.Forward: 
                     m_CameraPipelineNodes.Add(PipelineNode.Create<CullingNode>());
-                    m_CameraPipelineNodes.Add(PipelineNode.Create<ForwardBuffersNode>());
                     m_CameraPipelineNodes.Add(PipelineNode.Create<ForwardLightingNode>());
+                    m_CameraPipelineNodes.Add(PipelineNode.Create<ForwardBuffersNode>());
                     m_CameraPipelineNodes.Add(PipelineNode.Create<DepthNormalNode>());
                     m_CameraPipelineNodes.Add(PipelineNode.Create<CopyDepthNode>());
                     m_CameraPipelineNodes.Add(PipelineNode.Create<ForwardGeometryNode>());

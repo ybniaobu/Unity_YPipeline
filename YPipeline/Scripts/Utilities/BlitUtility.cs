@@ -51,50 +51,36 @@ namespace YPipeline
         // ----------------------------------------------------------------------------------------------------
         // Functions
         // ----------------------------------------------------------------------------------------------------
-        
-        public static void BlitTexture(CommandBuffer cmd, int sourceID, int destinationID)
-        {
-            cmd.SetGlobalTexture(k_BlitTextureId, new RenderTargetIdentifier(sourceID));
-            cmd.SetRenderTarget(new RenderTargetIdentifier(destinationID), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
-            cmd.DrawProcedural(Matrix4x4.identity, CopyMaterial, 0, MeshTopology.Triangles, 3);
-        }
 
-        public static void BlitTexture(CommandBuffer cmd, TextureHandle source, TextureHandle destination)
+        public static void BlitGlobalTexture(CommandBuffer cmd, TextureHandle source, TextureHandle destination)
         {
             cmd.SetGlobalTexture(k_BlitTextureId, source);
             cmd.SetRenderTarget(destination, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
             cmd.DrawProcedural(Matrix4x4.identity, CopyMaterial, 0, MeshTopology.Triangles, 3);
         }
         
-        public static void BlitTexture(CommandBuffer cmd, int sourceID, BuiltinRenderTextureType destination)
+        public static void BlitTexture(CommandBuffer cmd, TextureHandle source, TextureHandle destination)
         {
-            cmd.SetGlobalTexture(k_BlitTextureId, new RenderTargetIdentifier(sourceID));
-            cmd.SetRenderTarget(new RenderTargetIdentifier(destination), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            CopyMaterial.SetTexture(k_BlitTextureId, source);
+            cmd.SetRenderTarget(destination, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
             cmd.DrawProcedural(Matrix4x4.identity, CopyMaterial, 0, MeshTopology.Triangles, 3);
         }
         
-        public static void BlitTexture(CommandBuffer cmd, int sourceID, int destinationID, Material material, int pass)
+        public static void BlitGlobalTexture(CommandBuffer cmd, TextureHandle source, TextureHandle destination, Material material, int pass)
         {
-            cmd.SetGlobalTexture(k_BlitTextureId, new RenderTargetIdentifier(sourceID));
-            cmd.SetRenderTarget(new RenderTargetIdentifier(destinationID), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            cmd.SetGlobalTexture(k_BlitTextureId, source);
+            cmd.SetRenderTarget(destination, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
             cmd.DrawProcedural(Matrix4x4.identity, material, pass, MeshTopology.Triangles, 3);
         }
         
         public static void BlitTexture(CommandBuffer cmd, TextureHandle source, TextureHandle destination, Material material, int pass)
         {
-            cmd.SetGlobalTexture(k_BlitTextureId, source);
+            material.SetTexture(k_BlitTextureId, source);
             cmd.SetRenderTarget(destination, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
             cmd.DrawProcedural(Matrix4x4.identity, material, pass, MeshTopology.Triangles, 3);
         }
         
-        public static void BlitTexture(CommandBuffer cmd, int sourceID, BuiltinRenderTextureType destination, Material material, int pass)
-        {
-            cmd.SetGlobalTexture(k_BlitTextureId, new RenderTargetIdentifier(sourceID));
-            cmd.SetRenderTarget(new RenderTargetIdentifier(destination), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
-            cmd.DrawProcedural(Matrix4x4.identity, material, pass, MeshTopology.Triangles, 3);
-        }
-        
-        public static void BlitTexture(CommandBuffer cmd, TextureHandle source, TextureHandle destination, Rect cameraRect, Material material, int pass)
+        public static void BlitGlobalTexture(CommandBuffer cmd, TextureHandle source, TextureHandle destination, Rect cameraRect, Material material, int pass)
         {
             cmd.SetGlobalTexture(k_BlitTextureId, source);
             cmd.SetRenderTarget(destination, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
@@ -102,35 +88,24 @@ namespace YPipeline
             cmd.DrawProcedural(Matrix4x4.identity, material, pass, MeshTopology.Triangles, 3);
         }
         
-        public static void DrawTexture(CommandBuffer cmd, int destinationID, Material material, int pass)
+        public static void BlitTexture(CommandBuffer cmd, TextureHandle source, TextureHandle destination, Rect cameraRect, Material material, int pass)
         {
-            cmd.SetRenderTarget(new RenderTargetIdentifier(destinationID), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            material.SetTexture(k_BlitTextureId, source);
+            cmd.SetRenderTarget(destination, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            cmd.SetViewport(cameraRect);
             cmd.DrawProcedural(Matrix4x4.identity, material, pass, MeshTopology.Triangles, 3);
         }
         
-        public static void DrawTexture(CommandBuffer cmd, BuiltinRenderTextureType destination, Material material, int pass)
+        public static void DrawTexture(CommandBuffer cmd, TextureHandle destination, Material material, int pass)
         {
-            cmd.SetRenderTarget(new RenderTargetIdentifier(destination), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            cmd.SetRenderTarget(destination, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
             cmd.DrawProcedural(Matrix4x4.identity, material, pass, MeshTopology.Triangles, 3);
-        }
-        
-        public static void CopyDepth(CommandBuffer cmd, int sourceID, int destinationID)
-        {
-            cmd.SetGlobalTexture(k_BlitTextureId, new RenderTargetIdentifier(sourceID));
-            cmd.SetRenderTarget(new RenderTargetIdentifier(destinationID), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
-            cmd.DrawProcedural(Matrix4x4.identity, CopyDepthMaterial, 0, MeshTopology.Triangles, 3);
-        }
-        
-        public static void CopyDepth(CommandBuffer cmd, int sourceID, BuiltinRenderTextureType destination)
-        {
-            cmd.SetGlobalTexture(k_BlitTextureId, new RenderTargetIdentifier(sourceID));
-            cmd.SetRenderTarget(new RenderTargetIdentifier(destination), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
-            cmd.DrawProcedural(Matrix4x4.identity, CopyDepthMaterial, 0, MeshTopology.Triangles, 3);
         }
 
         public static void CopyDepth(CommandBuffer cmd, TextureHandle source, TextureHandle destination)
         {
-            cmd.SetGlobalTexture(k_BlitTextureId, source);
+            //cmd.SetGlobalTexture(k_BlitTextureId, source);
+            CopyDepthMaterial.SetTexture(k_BlitTextureId, source);
             cmd.SetRenderTarget(destination, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
             cmd.DrawProcedural(Matrix4x4.identity, CopyDepthMaterial, 0, MeshTopology.Triangles, 3);
         }

@@ -10,6 +10,8 @@ namespace YPipeline
 #if UNITY_EDITOR
         private class ErrorMaterialNodeData
         {
+            public TextureHandle colorAttachment;
+            public TextureHandle depthAttachment;
             public RendererListHandle rendererList;
         }
         
@@ -36,6 +38,9 @@ namespace YPipeline
 
                 nodeData.rendererList = data.renderGraph.CreateRendererList(rendererListDesc);
                 builder.UseRendererList(nodeData.rendererList);
+                
+                nodeData.colorAttachment = builder.UseColorBuffer(data.CameraColorAttachment, 0);
+                nodeData.depthAttachment = builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.Read);
                 
                 builder.SetRenderFunc((ErrorMaterialNodeData data, RenderGraphContext context) =>
                 {

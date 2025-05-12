@@ -357,9 +357,8 @@ namespace YPipeline
             {
                 m_EnvBRDFLut = RTHandles.Alloc(data.asset.pipelineResources.textures.environmentBRDFLut);
             }
-            TextureHandle envBRDFLut = data.renderGraph.ImportTexture(m_EnvBRDFLut);
-            nodeData.envBRDFLut = envBRDFLut;
-            builder.ReadTexture(envBRDFLut);
+            nodeData.envBRDFLut = data.renderGraph.ImportTexture(m_EnvBRDFLut);
+            builder.ReadTexture(nodeData.envBRDFLut);
                 
             nodeData.cascadeSettings = new Vector4(data.asset.maxShadowDistance, data.asset.distanceFade, data.asset.cascadeCount, data.asset.cascadeEdgeFade);
             nodeData.shadowBias = new Vector4(data.asset.depthBias, data.asset.slopeScaledDepthBias, data.asset.normalBias, data.asset.slopeScaledNormalBias);

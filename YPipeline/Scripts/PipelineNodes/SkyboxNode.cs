@@ -28,8 +28,8 @@ namespace YPipeline
                 nodeData.skyboxRendererList = data.renderGraph.CreateSkyboxRendererList(data.camera);
                 builder.UseRendererList(nodeData.skyboxRendererList);
                 
-                builder.WriteTexture(data.CameraColorAttachment);
-                builder.ReadTexture(data.CameraDepthAttachment);
+                builder.UseColorBuffer(data.CameraColorAttachment, 0);
+                builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.Read);
 
                 builder.SetRenderFunc((SkyboxNodeData data, RenderGraphContext context) =>
                 {

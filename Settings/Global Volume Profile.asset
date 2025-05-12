@@ -30,7 +30,7 @@ MonoBehaviour:
     m_Value: 0.5
   threshold:
     m_OverrideState: 1
-    m_Value: 4
+    m_Value: 3
   thresholdKnee:
     m_OverrideState: 1
     m_Value: 0.5
@@ -114,7 +114,7 @@ MonoBehaviour:
   red:
     m_OverrideState: 0
     m_Value:
-      <length>k__BackingField: 2
+      <length>k__BackingField: 3
       m_Loop: 0
       m_ZeroValue: 0
       m_Range: 1
@@ -155,7 +155,7 @@ MonoBehaviour:
         - serializedVersion: 3
           time: 0
           value: 0
-          inSlope: 1
+          inSlope: 0
           outSlope: 1
           tangentMode: 0
           weightedMode: 0
@@ -165,7 +165,7 @@ MonoBehaviour:
           time: 1
           value: 1
           inSlope: 1
-          outSlope: 1
+          outSlope: 0
           tangentMode: 0
           weightedMode: 0
           inWeight: 0
@@ -256,7 +256,7 @@ MonoBehaviour:
         m_PreInfinity: 2
         m_PostInfinity: 2
         m_RotationOrder: 4
-  m_SelectedCurve: 0
+  m_SelectedCurve: 2
 --- !u!114 &-1710404950045096949
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -554,16 +554,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e59324034704e0dad48c8ada17f0673, type: 3}
   m_Name: FilmGrain
   m_EditorClassIdentifier: 
-  active: 0
+  active: 1
   type:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0
   texture:
     m_OverrideState: 1
     m_Value: {fileID: 0}
   intensity:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0.5
   response:
     m_OverrideState: 1
     m_Value: 1

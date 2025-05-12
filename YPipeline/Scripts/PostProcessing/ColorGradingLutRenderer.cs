@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
+using UnityEngine.Experimental.Rendering;
 
 namespace YPipeline
 {
@@ -9,6 +10,8 @@ namespace YPipeline
         private class ColorGradingLutData
         {
             public Material material;
+
+            public TextureHandle colorGradingLut;
             
             public Vector4 colorGradingLUTParams;
             
@@ -78,7 +81,15 @@ namespace YPipeline
                 // Lut
                 int lutHeight = data.asset.bakedLUTResolution;
                 int lutWidth = lutHeight * lutHeight;
-                data.cmd.GetTemporaryRT(YPipelineShaderIDs.k_ColorGradingLutTextureID, lutWidth, lutHeight, 0, FilterMode.Bilinear, RenderTextureFormat.DefaultHDR);
+                TextureDesc desc = new TextureDesc(lutWidth, lutHeight)
+                {
+                    colorFormat = SystemInfo.GetGraphicsFormat(DefaultFormat.HDR),
+                    filterMode = FilterMode.Bilinear,
+                    name = "Color Grading Baked Lut"
+                };
+                data.ColorGradingLutTexture = data.renderGraph.CreateTexture(desc);
+                nodeData.colorGradingLut = builder.WriteTexture(data.ColorGradingLutTexture);
+                
                 nodeData.colorGradingLUTParams = new Vector4(lutHeight, 0.5f / lutWidth, 0.5f / lutHeight, lutHeight / (lutHeight - 1.0f));
                 
                 // Global Color Corrections
@@ -188,7 +199,7 @@ namespace YPipeline
                     if (data.toneMappingPass <= 4) data.material.SetVector(YPipelineShaderIDs.k_ToneMappingParamsID, data.toneMappingParams);
                     
                     // Blit
-                    BlitUtility.DrawTexture(context.cmd, YPipelineShaderIDs.k_ColorGradingLutTextureID, data.material, data.toneMappingPass);
+                    BlitUtility.DrawTexture(context.cmd, data.colorGradingLut, data.material, data.toneMappingPass);
                 });
             }
         }

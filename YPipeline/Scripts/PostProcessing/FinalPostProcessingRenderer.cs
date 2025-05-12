@@ -58,10 +58,8 @@ namespace YPipeline
             using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<FinalPostProcessingData>("Final Post Processing", out var nodeData))
             {
                 nodeData.material = FinalPostProcessingMaterial;
-                nodeData.finalTexture = data.CameraFinalTexture;
-                nodeData.cameraTarget = data.CameraTarget;
-                builder.ReadTexture(nodeData.finalTexture);
-                builder.WriteTexture(nodeData.cameraTarget);
+                nodeData.finalTexture = builder.ReadTexture(data.CameraFinalTexture);
+                nodeData.cameraTarget = builder.WriteTexture(data.CameraTarget);
                 
                 nodeData.isFXAAEnabled = data.asset.antiAliasingMode == AntiAliasingMode.FXAA;
                 nodeData.isFXAAQualityEnabled = data.asset.fxaaMode == FXAAMode.Quality;

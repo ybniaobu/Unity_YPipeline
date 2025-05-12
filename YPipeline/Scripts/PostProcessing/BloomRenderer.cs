@@ -67,13 +67,13 @@ namespace YPipeline
                     int height;
                     if (m_Bloom.ignoreRenderScale.value)
                     {
-                        width = data.camera.pixelWidth >> ((int)m_Bloom.bloomDownscale.value + 1);
-                        height = data.camera.pixelHeight >> ((int)m_Bloom.bloomDownscale.value + 1);
+                        width = data.camera.pixelWidth >> (int)m_Bloom.bloomDownscale.value;
+                        height = data.camera.pixelHeight >> (int)m_Bloom.bloomDownscale.value;
                     }
                     else
                     {
-                        width = data.BufferSize.x >> ((int)m_Bloom.bloomDownscale.value + 1);
-                        height = data.BufferSize.y >> ((int)m_Bloom.bloomDownscale.value + 1);
+                        width = data.BufferSize.x >> (int)m_Bloom.bloomDownscale.value;
+                        height = data.BufferSize.y >> (int)m_Bloom.bloomDownscale.value;
                     }
 
                     // Determine the iteration count
@@ -83,19 +83,17 @@ namespace YPipeline
                     nodeData.iterationCount = iterationCount;
 
                     // Texture Recording
-                    nodeData.colorAttachment = data.CameraColorAttachment;
-                    builder.ReadTexture(nodeData.colorAttachment);
+                    nodeData.colorAttachment = builder.ReadTexture(data.CameraColorAttachment);
                     
                     DefaultFormat format = data.asset.enableHDRFrameBufferFormat ? DefaultFormat.HDR : DefaultFormat.LDR;
-                    TextureDesc bloomTextureDesc = new TextureDesc(width, height)
+                    TextureDesc bloomTextureDesc = new TextureDesc(width >> 1, height >> 1)
                     {
                         colorFormat = SystemInfo.GetGraphicsFormat(format),
                         filterMode = FilterMode.Bilinear,
                         name = "Bloom Texture"
                     };
                     data.BloomTexture = data.renderGraph.CreateTexture(bloomTextureDesc);
-                    nodeData.bloomTexture = data.BloomTexture;
-                    builder.ReadWriteTexture(nodeData.bloomTexture);
+                    nodeData.bloomTexture = builder.WriteTexture(data.BloomTexture);
 
                     TextureDesc bloomPrefilteredTextureDesc = new TextureDesc(width, height)
                     {
@@ -103,26 +101,29 @@ namespace YPipeline
                         filterMode = FilterMode.Bilinear,
                         name = "Bloom Prefiltered Texture"
                     };
-                    nodeData.bloomPrefilteredTexture = data.renderGraph.CreateTexture(bloomPrefilteredTextureDesc);
-                    builder.ReadWriteTexture(nodeData.bloomPrefilteredTexture);
+                    nodeData.bloomPrefilteredTexture = builder.CreateTransientTexture(bloomPrefilteredTextureDesc);
                     
-                    width >>= 1;
-                    height >>= 1;
                     for (int i = 0; i < iterationCount; i++)
                     {
-                        TextureDesc bloomPyramidDesc = new TextureDesc(width, height)
+                        width >>= 1;
+                        height >>= 1;
+                        TextureDesc bloomPyramidUpDesc = new TextureDesc(width, height)
                         {
                             colorFormat = SystemInfo.GetGraphicsFormat(format),
                             filterMode = FilterMode.Bilinear,
+                            name = "Bloom Pyramid Up"
+                            //name = "Bloom Pyramid Up" + i
                         };
-                        bloomPyramidDesc.name = "Bloom Pyramid Up" + i;
-                        nodeData.bloomPyramidUpTextures[i] = data.renderGraph.CreateTexture(bloomPyramidDesc);
-                        builder.ReadWriteTexture(nodeData.bloomPyramidUpTextures[i]);
-                        bloomPyramidDesc.name = "Bloom Pyramid Down" + i;
-                        nodeData.bloomPyramidDownTextures[i] = data.renderGraph.CreateTexture(bloomPyramidDesc);
-                        builder.ReadWriteTexture(nodeData.bloomPyramidDownTextures[i]);
-                        width >>= 1;
-                        height >>= 1;
+                        nodeData.bloomPyramidUpTextures[i] = builder.CreateTransientTexture(bloomPyramidUpDesc);
+                        
+                        TextureDesc bloomPyramidDownDesc = new TextureDesc(width, height)
+                        {
+                            colorFormat = SystemInfo.GetGraphicsFormat(format),
+                            filterMode = FilterMode.Bilinear,
+                            name = "Bloom Pyramid Down"
+                            //name = "Bloom Pyramid Down" + i
+                        };
+                        nodeData.bloomPyramidDownTextures[i] = builder.CreateTransientTexture(bloomPyramidDownDesc);
                     }
 
                     // Data Recording
@@ -142,17 +143,17 @@ namespace YPipeline
                         // Shader property and keyword setup
                         data.material.SetVector(YPipelineShaderIDs.k_BloomParamsID, data.bloomParams);
                         data.material.SetVector(YPipelineShaderIDs.k_BloomThresholdID, data.bloomThreshold);
-                        CoreUtils.SetKeyword(BloomMaterial, YPipelineKeywords.k_BloomBicubicUpsampling, data.isBloomBicubicUpsampling);
+                        CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_BloomBicubicUpsampling, data.isBloomBicubicUpsampling);
                         
                         // Prefilter
-                        BlitUtility.BlitTexture(context.cmd, nodeData.colorAttachment, nodeData.bloomPrefilteredTexture, data.material, 0);
+                        BlitUtility.BlitGlobalTexture(context.cmd, data.colorAttachment, data.bloomPrefilteredTexture, data.material, 0);
                         
                         // Downsample - gaussian pyramid
-                        TextureHandle source = nodeData.bloomPrefilteredTexture;
+                        TextureHandle source = data.bloomPrefilteredTexture;
                         for (int i = 0; i < data.iterationCount; i++)
                         {
-                            BlitUtility.BlitTexture(context.cmd, source, data.bloomPyramidUpTextures[i], BloomMaterial, 1);
-                            BlitUtility.BlitTexture(context.cmd, data.bloomPyramidUpTextures[i], data.bloomPyramidDownTextures[i], BloomMaterial, 2);
+                            BlitUtility.BlitGlobalTexture(context.cmd, source, data.bloomPyramidUpTextures[i], data.material, 1);
+                            BlitUtility.BlitGlobalTexture(context.cmd, data.bloomPyramidUpTextures[i], data.bloomPyramidDownTextures[i], data.material, 2);
                             source = data.bloomPyramidDownTextures[i];
                         }
                         
@@ -162,14 +163,11 @@ namespace YPipeline
                         for (int i = data.iterationCount - 2; i >= 0; i--)
                         {
                             context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_BloomLowerTextureID, lastDst);
-                            BlitUtility.BlitTexture(context.cmd, data.bloomPyramidDownTextures[i], data.bloomPyramidUpTextures[i], data.material, upsamplePass);
+                            if (i == 0) BlitUtility.BlitGlobalTexture(context.cmd, data.bloomPyramidDownTextures[i], data.bloomTexture, data.material, upsamplePass);
+                            else BlitUtility.BlitGlobalTexture(context.cmd, data.bloomPyramidDownTextures[i], data.bloomPyramidUpTextures[i], data.material, upsamplePass);
                             lastDst = data.bloomPyramidUpTextures[i];
                         }
                         
-                        // 有问题，待修改
-                        context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_BloomLowerTextureID, data.bloomPrefilteredTexture);
-                        BlitUtility.BlitTexture(context.cmd, data.bloomPyramidDownTextures[0], data.bloomTexture, data.material, upsamplePass);
-                        context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_BloomTextureID, data.bloomTexture);
                         context.renderContext.ExecuteCommandBuffer(context.cmd);
                         context.cmd.Clear();
                     }

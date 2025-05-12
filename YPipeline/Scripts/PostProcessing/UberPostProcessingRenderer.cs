@@ -12,6 +12,8 @@ namespace YPipeline
             public Material material;
             
             public TextureHandle colorAttachment;
+            public TextureHandle bloomTexture;
+            public TextureHandle colorGradingLut;
             public TextureHandle finalTexture;
             
             public bool isChromaticAberrationEnabled;
@@ -106,19 +108,18 @@ namespace YPipeline
             using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<UberPostProcessingData>("Uber Post Processing", out var nodeData))
             {
                 nodeData.material = UberPostProcessingMaterial;
-                nodeData.colorAttachment = data.CameraColorAttachment;
-                builder.ReadTexture(nodeData.colorAttachment);
+                nodeData.colorAttachment = builder.ReadTexture(data.CameraColorAttachment);
                 
                 Vector2Int bufferSize = data.BufferSize;
                 TextureDesc finalTextureDesc = new TextureDesc(bufferSize.x,bufferSize.y)
                 {
                     colorFormat = SystemInfo.GetGraphicsFormat(data.asset.enableHDRFrameBufferFormat ? DefaultFormat.HDR : DefaultFormat.LDR),
                     filterMode = FilterMode.Bilinear,
-                    name = "Final Texture"
+                    name = "Final Texture",
                 };
+                
                 data.CameraFinalTexture = data.renderGraph.CreateTexture(finalTextureDesc);
-                nodeData.finalTexture = data.CameraFinalTexture;
-                builder.WriteTexture(nodeData.finalTexture);
+                nodeData.finalTexture = builder.WriteTexture(data.CameraFinalTexture);
                 
                 // Chromatic Aberration
                 nodeData.isChromaticAberrationEnabled = m_ChromaticAberration.IsActive();
@@ -145,6 +146,7 @@ namespace YPipeline
                 nodeData.isBloomEnabled = m_Bloom.IsActive();
                 if (m_Bloom.IsActive())
                 {
+                    nodeData.bloomTexture = builder.ReadTexture(data.BloomTexture);
                     nodeData.isBloomBicubicUpsampling = m_Bloom.bicubicUpsampling.value;
                     
                     Vector4 bloomParams = m_Bloom.mode.value == BloomMode.Additive ? new Vector4(m_Bloom.intensity.value, 0.0f) : new Vector4(m_Bloom.finalIntensity.value, 1.0f);
@@ -171,6 +173,7 @@ namespace YPipeline
                 int lutHeight = data.asset.bakedLUTResolution;
                 int lutWidth = lutHeight * lutHeight;
                 nodeData.colorGradingLutParams = new Vector4(1.0f / lutWidth, 1.0f / lutHeight, lutHeight - 1.0f);
+                nodeData.colorGradingLut = builder.ReadTexture(data.ColorGradingLutTexture);
                 
                 // Extra Lut
                 nodeData.isExtraLutEnabled = m_LookupTable.IsActive();
@@ -208,6 +211,7 @@ namespace YPipeline
                     CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_Bloom, data.isBloomEnabled);
                     if (data.isBloomEnabled)
                     {
+                        data.material.SetTexture(YPipelineShaderIDs.k_BloomTextureID, data.bloomTexture);
                         CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_BloomBicubicUpsampling, data.isBloomBicubicUpsampling);
                         data.material.SetVector(YPipelineShaderIDs.k_BloomParamsID, data.bloomParams);
                         data.material.SetVector(YPipelineShaderIDs.k_BloomThresholdID, data.bloomThreshold);
@@ -223,6 +227,7 @@ namespace YPipeline
                     }
                     
                     // Baked Color Grading Lut
+                    data.material.SetTexture(YPipelineShaderIDs.k_ColorGradingLutTextureID, data.colorGradingLut);
                     data.material.SetVector(YPipelineShaderIDs.k_ColorGradingLutParamsID, data.colorGradingLutParams);
                     
                     // Extra Lut
@@ -234,7 +239,6 @@ namespace YPipeline
                     }
                     
                     // Blit
-                    // TODO: 修改
                     BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.finalTexture, data.material, 0);
                     context.renderContext.ExecuteCommandBuffer(context.cmd);
                     context.cmd.Clear();

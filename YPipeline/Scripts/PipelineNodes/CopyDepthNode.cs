@@ -18,10 +18,8 @@ namespace YPipeline
         {
             using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<CopyDepthNodeData>("Copy Depth", out var nodeData))
             {
-                nodeData.depthAttachment = data.CameraDepthAttachment;
-                nodeData.depthTexture = data.CameraDepthTexture;
-                builder.ReadTexture(nodeData.depthAttachment);
-                builder.ReadWriteTexture(nodeData.depthTexture);
+                nodeData.depthAttachment = builder.ReadTexture(data.CameraDepthAttachment);
+                nodeData.depthTexture = builder.WriteTexture(data.CameraDepthTexture);
                 
                 builder.SetRenderFunc((CopyDepthNodeData data, RenderGraphContext context) =>
                 {

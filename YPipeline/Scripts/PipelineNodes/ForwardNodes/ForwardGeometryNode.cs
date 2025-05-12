@@ -31,7 +31,7 @@ namespace YPipeline
                 {
                     rendererConfiguration = PerObjectData.ReflectionProbes | PerObjectData.Lightmaps | PerObjectData.ShadowMask | PerObjectData.LightProbe | PerObjectData.OcclusionProbe,
                     renderQueueRange = new RenderQueueRange(2000, 2449),
-                    sortingCriteria = SortingCriteria.CommonOpaque
+                    sortingCriteria = SortingCriteria.OptimizeStateChanges
                 };
                 
                 RendererListDesc alphaTestRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_OpaqueShaderTagIds, data.cullingResults, data.camera)
@@ -46,18 +46,15 @@ namespace YPipeline
                 builder.UseRendererList(nodeData.opaqueRendererList);
                 builder.UseRendererList(nodeData.alphaTestRendererList);
 
-                nodeData.colorAttachment = data.CameraColorAttachment;
-                nodeData.depthAttachment = data.CameraDepthAttachment;
-                builder.WriteTexture(nodeData.colorAttachment);
-                builder.ReadTexture(nodeData.depthAttachment);
+                nodeData.colorAttachment = builder.UseColorBuffer(data.CameraColorAttachment, 0);
+                nodeData.depthAttachment = builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.Read);
                
                 builder.AllowPassCulling(false);
 
                 builder.SetRenderFunc((ForwardGeometryNodeData data, RenderGraphContext context) =>
                 {
-                    context.cmd.SetRenderTarget(nodeData.colorAttachment, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
-                        nodeData.depthAttachment, RenderBufferLoadAction.Load, RenderBufferStoreAction.DontCare);
-                    context.cmd.ClearRenderTarget(false, true, Color.clear);
+                    context.cmd.SetRenderTarget(data.colorAttachment, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
+                        data.depthAttachment, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
                     
                     context.cmd.DrawRendererList(data.opaqueRendererList);
                     context.cmd.DrawRendererList(data.alphaTestRendererList);

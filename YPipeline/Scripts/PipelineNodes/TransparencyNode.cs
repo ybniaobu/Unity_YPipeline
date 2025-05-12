@@ -39,18 +39,18 @@ namespace YPipeline
                 nodeData.transparencyRendererList = data.renderGraph.CreateRendererList(transparencyRendererListDesc);
                 builder.UseRendererList(nodeData.transparencyRendererList);
                 
-                nodeData.colorAttachment = data.CameraColorAttachment;
-                nodeData.depthAttachment = data.CameraDepthAttachment;
-                builder.WriteTexture(nodeData.colorAttachment);
-                builder.WriteTexture(nodeData.depthAttachment);
-                
                 builder.ReadTexture(data.CameraColorTexture);
                 builder.ReadTexture(data.CameraDepthTexture);
+                nodeData.colorAttachment = builder.UseColorBuffer(data.CameraColorAttachment, 0);
+                nodeData.depthAttachment = builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.Read);
+                // builder.AllowPassCulling(false);
+                // builder.AllowRendererListCulling(false);
 
                 builder.SetRenderFunc((TransparencyNodeData data, RenderGraphContext context) =>
                 {
-                    context.cmd.SetRenderTarget(data.colorAttachment, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store,
-                        data.depthAttachment, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
+                    // context.cmd.SetRenderTarget(data.colorAttachment, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store,
+                    //     data.depthAttachment, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
+                    
                     context.cmd.DrawRendererList(data.transparencyRendererList);
                     context.renderContext.ExecuteCommandBuffer(context.cmd);
                     context.cmd.Clear();

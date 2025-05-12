@@ -16,9 +16,9 @@ namespace YPipeline
         [System.Serializable]
         public struct Textures
         {
-            public Texture2D environmentBRDFLut;
-            public Texture2D[] filmGrainTex;
-            public Texture2D[] blueNoise64;
+            public Texture environmentBRDFLut;
+            public Texture[] filmGrainTex;
+            public Texture[] blueNoise64;
         }
         
         public Textures textures;

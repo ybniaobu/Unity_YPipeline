@@ -7,8 +7,6 @@ namespace YPipeline
 {
     public class GameCameraRenderer : CameraRenderer
     {
-        private string m_CameraName;
-        
         protected override void Initialize(ref YPipelineData data)
         {
             SetRenderPaths(data.asset.renderPath);
@@ -17,12 +15,6 @@ namespace YPipeline
         public override void Render(ref YPipelineData data)
         {
             base.Render(ref data);
-            
-            if (string.IsNullOrEmpty(m_CameraName))
-            {
-                m_CameraName = data.camera.name;
-            }
-            data.cmd.BeginSample(m_CameraName);
             
             RenderGraphParameters renderGraphParams = new RenderGraphParameters()
             {
@@ -38,8 +30,6 @@ namespace YPipeline
             PipelineNode.Record(m_CameraPipelineNodes, ref data);
             
             data.renderGraph.EndRecordingAndExecute();
-            
-            data.cmd.EndSample(m_CameraName);
         }
     }
 }

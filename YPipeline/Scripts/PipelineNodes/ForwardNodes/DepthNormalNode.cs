@@ -44,8 +44,7 @@ namespace YPipeline
                 builder.UseRendererList(nodeData.opaqueRendererList);
                 builder.UseRendererList(nodeData.alphaTestRendererList);
 
-                nodeData.depthAttachment = data.CameraDepthAttachment;
-                builder.WriteTexture(nodeData.depthAttachment);
+                nodeData.depthAttachment = builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.Write);
 
                 builder.SetRenderFunc((DepthNormalNodeData data, RenderGraphContext context) =>
                 {
@@ -53,7 +52,6 @@ namespace YPipeline
                     context.cmd.SetupCameraProperties(data.camera);
                     
                     context.cmd.SetRenderTarget(data.depthAttachment, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
-                    context.cmd.ClearRenderTarget(true, false, Color.clear);
                     
                     context.cmd.DrawRendererList(data.opaqueRendererList);
                     context.cmd.DrawRendererList(data.alphaTestRendererList);

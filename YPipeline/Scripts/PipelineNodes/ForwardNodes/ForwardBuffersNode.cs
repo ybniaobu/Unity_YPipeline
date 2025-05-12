@@ -25,6 +25,8 @@ namespace YPipeline
                 {
                     colorFormat = SystemInfo.GetGraphicsFormat(data.asset.enableHDRFrameBufferFormat ? DefaultFormat.HDR : DefaultFormat.LDR),
                     filterMode = FilterMode.Bilinear,
+                    clearBuffer = true,
+                    clearColor = Color.clear,
                     name = "Color Attachment"
                 };
                 
@@ -32,6 +34,8 @@ namespace YPipeline
                 {
                     colorFormat = SystemInfo.GetGraphicsFormat(data.asset.enableHDRFrameBufferFormat ? DefaultFormat.HDR : DefaultFormat.LDR),
                     filterMode = FilterMode.Bilinear,
+                    clearBuffer = true,
+                    clearColor = Color.clear,
                     name = "Color Texture"
                 };
                 
@@ -39,6 +43,7 @@ namespace YPipeline
                 {
                     depthBufferBits = DepthBits.Depth32,
                     filterMode = FilterMode.Point,
+                    clearBuffer = true,
                     name = "Depth Attachment"
                 };
                 
@@ -46,6 +51,7 @@ namespace YPipeline
                 {
                     depthBufferBits = DepthBits.Depth32,
                     filterMode = FilterMode.Point,
+                    clearBuffer = true,
                     name = "Depth Texture"
                 };
                 
@@ -56,22 +62,6 @@ namespace YPipeline
                 data.CameraDepthTexture = data.renderGraph.CreateTexture(depthTextureDesc);
                 builder.AllowPassCulling(false);
                 
-                // // 待删除!!!!!!!!!!!!!!!!!!
-                // data.cmd.GetTemporaryRT(YPipelineShaderIDs.k_ColorBufferID, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, 
-                //     data.asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
-                // data.cmd.GetTemporaryRT(YPipelineShaderIDs.k_DepthBufferID, bufferSize.x, bufferSize.y, 32, FilterMode.Point, 
-                //     RenderTextureFormat.Depth);
-                // data.cmd.GetTemporaryRT(YPipelineShaderIDs.k_ColorTextureID, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear, 
-                //     data.asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
-                // data.cmd.GetTemporaryRT(YPipelineShaderIDs.k_DepthTextureID, bufferSize.x, bufferSize.y, 32, FilterMode.Point, 
-                //     RenderTextureFormat.Depth);
-                //
-                //
-                // data.cmd.GetTemporaryRT(YPipelineShaderIDs.k_FinalTextureID, bufferSize.x, bufferSize.y, 0, FilterMode.Bilinear,
-                //     data.asset.enableHDRFrameBufferFormat ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default);
-                
-                    
-                    
                 builder.SetRenderFunc((ForwardBuffersNodeData data, RenderGraphContext context) =>
                 {
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_BufferSizeID, new Vector4(1f / data.bufferSize.x, 1f / data.bufferSize.y, data.bufferSize.x, data.bufferSize.y));
