@@ -9,7 +9,6 @@ namespace YPipeline
     {
         private class ForwardLightingNodeData
         {
-            public bool isAlreadySet = false;
             public TextureHandle envBRDFLut;
             // PCSS 和 PCF 整合后待修改
             public Vector4 cascadeSettings;
@@ -106,17 +105,16 @@ namespace YPipeline
                 CreateSpotLightShadowMap(ref data, builder, nodeData);
                 CreatePointLightShadowMap(ref data, builder, nodeData);
                 
+                builder.AllowPassCulling(false);
+                builder.AllowRendererListCulling(false);
+                
                 builder.SetRenderFunc((ForwardLightingNodeData data, RenderGraphContext context) =>
                 {
-                    if (!data.isAlreadySet)
-                    {
-                        context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_EnvBRDFLutID, data.envBRDFLut);
-                        context.cmd.SetGlobalVector(YPipelineShaderIDs.k_CascadeSettingsID, data.cascadeSettings);
-                        context.cmd.SetGlobalVector(YPipelineShaderIDs.k_ShadowBiasID, data.shadowBias);
-                        context.cmd.SetGlobalVector(YPipelineShaderIDs.k_SunLightShadowSettingsID, data.sunLightShadowSettings);
-                        context.cmd.SetGlobalVector(YPipelineShaderIDs.k_PunctualLightShadowSettingsID, data.punctualLightShadowSettings);
-                        data.isAlreadySet = true;
-                    }
+                    context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_EnvBRDFLutID, data.envBRDFLut);
+                    context.cmd.SetGlobalVector(YPipelineShaderIDs.k_CascadeSettingsID, data.cascadeSettings);
+                    context.cmd.SetGlobalVector(YPipelineShaderIDs.k_ShadowBiasID, data.shadowBias);
+                    context.cmd.SetGlobalVector(YPipelineShaderIDs.k_SunLightShadowSettingsID, data.sunLightShadowSettings);
+                    context.cmd.SetGlobalVector(YPipelineShaderIDs.k_PunctualLightShadowSettingsID, data.punctualLightShadowSettings);
                     
                     if (data.sunLightCount > 0)
                     {
@@ -353,7 +351,7 @@ namespace YPipeline
             nodeData.shadowingPointLightCount = shadowingPointLightCount;
             nodeData.useShadowMask = useShadowMask;
             
-            if (m_EnvBRDFLut == null)
+            if (m_EnvBRDFLut == null || m_EnvBRDFLut.externalTexture != data.asset.pipelineResources.textures.environmentBRDFLut)
             {
                 m_EnvBRDFLut = RTHandles.Alloc(data.asset.pipelineResources.textures.environmentBRDFLut);
             }

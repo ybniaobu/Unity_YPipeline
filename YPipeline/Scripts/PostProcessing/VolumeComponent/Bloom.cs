@@ -48,13 +48,13 @@ namespace YPipeline
         public ClampedFloatParameter scatter = new ClampedFloatParameter(0.5f, 0.0f, 1.0f);
         
         [Tooltip("决定了像素开始泛光的亮度阈值 Filters out pixels under this level of brightness. Value is in gamma-space.")]
-        public MinFloatParameter threshold = new MinFloatParameter(1.0f, 0.0f);
+        public MinFloatParameter threshold = new MinFloatParameter(4.0f, 0.0f);
         
         [Tooltip("缓和亮度阈值参数的效果 Smooths cutoff effect of the configured threshold. Higher value makes more transition.")]
         public ClampedFloatParameter thresholdKnee = new ClampedFloatParameter(0.5f, 0.0f, 1.0f);
         
         [Tooltip("泛光模糊开始的分辨率(决定了模糊过程的最大分辨率) The starting resolution that this effect begins processing.")]
-        public BloomDownscaleParameter bloomDownscale = new BloomDownscaleParameter(BloomDownscaleMode.Half);
+        public BloomDownscaleParameter bloomDownscale = new BloomDownscaleParameter(BloomDownscaleMode.Quarter);
         
         [Tooltip("最大迭代次数或泛光金字塔层数(决定了模糊过程的最小分辨率) The maximum number of iterations/Pyramid Levels.")]
         public ClampedIntParameter maxIterations = new ClampedIntParameter(6, 1, 15);

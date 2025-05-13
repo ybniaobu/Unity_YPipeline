@@ -53,6 +53,10 @@ namespace YPipeline
                 m_Data.camera = camera;
                 m_Data.cmd = CommandBufferPool.Get();
                 
+                
+                // 待修改
+                if (camera.cameraType == CameraType.Reflection || camera.cameraType == CameraType.Preview)
+                    ScriptableRenderContext.EmitGeometryForCamera(camera);
 #if UNITY_EDITOR
                 if (m_Data.camera.cameraType == CameraType.SceneView) 
                 {

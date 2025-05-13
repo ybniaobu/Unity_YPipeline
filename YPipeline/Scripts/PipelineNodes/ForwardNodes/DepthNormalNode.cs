@@ -45,6 +45,9 @@ namespace YPipeline
                 builder.UseRendererList(nodeData.alphaTestRendererList);
 
                 nodeData.depthAttachment = builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.Write);
+                
+                builder.AllowPassCulling(false);
+                builder.AllowRendererListCulling(false);
 
                 builder.SetRenderFunc((DepthNormalNodeData data, RenderGraphContext context) =>
                 {

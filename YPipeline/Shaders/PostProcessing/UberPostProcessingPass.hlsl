@@ -44,7 +44,7 @@ float4 UberPostProcessingFrag(Varyings IN) : SV_TARGET
     float4 inputColor = SAMPLE_TEXTURE2D_LOD(_BlitTexture, sampler_PointClamp, IN.uv, 0);
     float3 color = inputColor.rgb;
     
-    // Chromatic Aberration
+    // Chromatic Aberration，这个效果最好采样的是 bloom 后的 Color Attachment 否则 bloom 的效果没法被影响到
     #if _CHROMATIC_ABERRATION
         float2 coords = 2.0 * IN.uv - 1.0;
         float2 end = IN.uv - coords * dot(coords, coords) * _ChromaticAberrationParams.x;

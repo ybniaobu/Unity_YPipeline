@@ -11,6 +11,9 @@ namespace YPipeline
         {
             public Vector2Int bufferSize;
         }
+        
+        private RTHandle m_CameraColorTarget;
+        private RTHandle m_CameraDepthTarget;
             
         protected override void Initialize() { }
 
@@ -55,11 +58,12 @@ namespace YPipeline
                     name = "Depth Texture"
                 };
                 
-                data.CameraTarget = data.renderGraph.ImportBackbuffer(BuiltinRenderTextureType.CameraTarget);
+                ImportBackBuffers(ref data);
                 data.CameraColorAttachment = data.renderGraph.CreateTexture(colorAttachmentDesc);
                 data.CameraDepthAttachment = data.renderGraph.CreateTexture(depthAttachmentDesc);
                 data.CameraColorTexture = data.renderGraph.CreateTexture(colorTextureDesc);
                 data.CameraDepthTexture = data.renderGraph.CreateTexture(depthTextureDesc);
+                
                 builder.AllowPassCulling(false);
                 
                 builder.SetRenderFunc((ForwardBuffersNodeData data, RenderGraphContext context) =>
@@ -69,6 +73,66 @@ namespace YPipeline
                     context.cmd.Clear();
                 });
             }
+        }
+
+        private void ImportBackBuffers(ref YPipelineData data)
+        {
+            RenderTargetIdentifier targetColorId = data.camera.targetTexture != null ? new RenderTargetIdentifier(data.camera.targetTexture) : BuiltinRenderTextureType.CameraTarget;
+            RenderTargetIdentifier targetDepthId = data.camera.targetTexture != null ? new RenderTargetIdentifier(data.camera.targetTexture) : BuiltinRenderTextureType.Depth;
+            
+            if (m_CameraColorTarget == null || m_CameraColorTarget.nameID != targetColorId)
+            {
+                m_CameraColorTarget?.Release();
+                m_CameraColorTarget = RTHandles.Alloc(targetColorId, "Backbuffer Color");
+            }
+
+            if (m_CameraDepthTarget == null || m_CameraDepthTarget.nameID != targetDepthId)
+            {
+                m_CameraDepthTarget?.Release();
+                m_CameraDepthTarget = RTHandles.Alloc(targetDepthId, "Backbuffer Depth");
+            }
+            
+            RenderTargetInfo importInfoColor = new RenderTargetInfo();
+            RenderTargetInfo importInfoDepth = new RenderTargetInfo();
+            
+            if (data.camera.targetTexture == null)
+            {
+                importInfoColor.width = Screen.width;
+                importInfoColor.height = Screen.height;
+                importInfoColor.volumeDepth = 1;
+                importInfoColor.msaaSamples = 1;
+
+                importInfoColor.format = SystemInfo.GetGraphicsFormat(data.camera.allowHDR ? DefaultFormat.HDR : DefaultFormat.LDR);
+
+                importInfoDepth = importInfoColor;
+                importInfoDepth.format = SystemInfo.GetGraphicsFormat(DefaultFormat.DepthStencil);
+            }
+            else
+            {
+                importInfoColor.width = data.camera.targetTexture.width;
+                importInfoColor.height = data.camera.targetTexture.height;
+                importInfoColor.volumeDepth = data.camera.targetTexture.volumeDepth;
+                importInfoColor.msaaSamples = data.camera.targetTexture.antiAliasing;
+                importInfoColor.format = data.camera.targetTexture.graphicsFormat;
+
+                importInfoDepth = importInfoColor;
+                importInfoDepth.format = data.camera.targetTexture.depthStencilFormat;
+            }
+            
+            if (importInfoDepth.format == GraphicsFormat.None)
+            {
+                throw new System.Exception("In the render graph API, the output Render Texture must have a depth buffer.");
+            }
+            
+            ImportResourceParams importBackbufferParams = new ImportResourceParams()
+            {
+                clearOnFirstUse = true,
+                clearColor = Color.clear,
+                discardOnLastUse = false
+            };
+            
+            data.CameraColorTarget = data.renderGraph.ImportTexture(m_CameraColorTarget, importInfoColor, importBackbufferParams);
+            data.CameraDepthTarget = data.renderGraph.ImportTexture(m_CameraDepthTarget, importInfoDepth, importBackbufferParams);
         }
     }
 }

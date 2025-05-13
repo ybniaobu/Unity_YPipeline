@@ -30,13 +30,13 @@ MonoBehaviour:
     m_Value: 0.5
   threshold:
     m_OverrideState: 1
-    m_Value: 3
+    m_Value: 4
   thresholdKnee:
     m_OverrideState: 1
     m_Value: 0.5
   bloomDownscale:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 1
   maxIterations:
     m_OverrideState: 1
     m_Value: 5
@@ -554,7 +554,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e59324034704e0dad48c8ada17f0673, type: 3}
   m_Name: FilmGrain
   m_EditorClassIdentifier: 
-  active: 1
+  active: 0
   type:
     m_OverrideState: 1
     m_Value: 0

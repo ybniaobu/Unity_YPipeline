@@ -43,8 +43,8 @@ namespace YPipeline
                 builder.ReadTexture(data.CameraDepthTexture);
                 nodeData.colorAttachment = builder.UseColorBuffer(data.CameraColorAttachment, 0);
                 nodeData.depthAttachment = builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.Read);
-                // builder.AllowPassCulling(false);
-                // builder.AllowRendererListCulling(false);
+                builder.AllowPassCulling(false);
+                builder.AllowRendererListCulling(false);
 
                 builder.SetRenderFunc((TransparencyNodeData data, RenderGraphContext context) =>
                 {

@@ -11,6 +11,7 @@
         {
             base.Render(ref data);
             
+            // TODO：反射探针不能用 depth prepass 渲染，效果不好
         }
     }
 }

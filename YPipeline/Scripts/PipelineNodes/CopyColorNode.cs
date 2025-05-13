@@ -24,6 +24,9 @@ namespace YPipeline
                 nodeData.colorAttachment = builder.ReadTexture(data.CameraColorAttachment);
                 nodeData.colorTexture = builder.WriteTexture(data.CameraColorTexture);
                 
+                builder.AllowPassCulling(false);
+                builder.AllowRendererListCulling(false);
+                
                 builder.SetRenderFunc((CopyColorNodeData data, RenderGraphContext context) =>
                 {
                     BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.colorTexture);

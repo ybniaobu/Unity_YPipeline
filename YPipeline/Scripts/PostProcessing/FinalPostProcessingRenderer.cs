@@ -11,7 +11,7 @@ namespace YPipeline
             public Material material;
             
             public TextureHandle finalTexture;
-            public TextureHandle cameraTarget;
+            public TextureHandle cameraColorTarget;
                 
             public bool isFXAAEnabled;
             public bool isFXAAQualityEnabled;
@@ -59,12 +59,14 @@ namespace YPipeline
             {
                 nodeData.material = FinalPostProcessingMaterial;
                 nodeData.finalTexture = builder.ReadTexture(data.CameraFinalTexture);
-                nodeData.cameraTarget = builder.WriteTexture(data.CameraTarget);
+                nodeData.cameraColorTarget = builder.WriteTexture(data.CameraColorTarget);
                 
                 nodeData.isFXAAEnabled = data.asset.antiAliasingMode == AntiAliasingMode.FXAA;
                 nodeData.isFXAAQualityEnabled = data.asset.fxaaMode == FXAAMode.Quality;
                 nodeData.isFilmGrainEnabled = m_FilmGrain.IsActive();
                 nodeData.cameraPixelRect = data.camera.pixelRect;
+                
+                builder.AllowPassCulling(false);
                 
                 if (m_FilmGrain.IsActive())
                 {
@@ -85,9 +87,8 @@ namespace YPipeline
                         }
                     }
                     
-                    TextureHandle filmGrainTexture = data.renderGraph.ImportTexture(m_FilmGrainTexture);
-                    nodeData.filmGrainTexture = filmGrainTexture;
-                    builder.ReadTexture(filmGrainTexture);
+                    nodeData.filmGrainTexture = data.renderGraph.ImportTexture(m_FilmGrainTexture);
+                    builder.ReadTexture(nodeData.filmGrainTexture);
                     
                     float uvScaleX = data.camera.pixelWidth / (float) m_FilmGrainTexture.externalTexture.width;
                     float uvScaleY = data.camera.pixelHeight / (float) m_FilmGrainTexture.externalTexture.height;
@@ -115,7 +116,7 @@ namespace YPipeline
                         data.material.SetTexture(YPipelineShaderIDs.k_FilmGrainTexID, data.filmGrainTexture);
                     }
                     
-                    BlitUtility.BlitTexture(context.cmd, data.finalTexture, data.cameraTarget, data.cameraPixelRect, data.material, 0);
+                    BlitUtility.BlitTexture(context.cmd, data.finalTexture, data.cameraColorTarget, data.cameraPixelRect, data.material, 0);
                 });
             }
         }

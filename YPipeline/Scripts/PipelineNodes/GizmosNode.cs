@@ -14,7 +14,7 @@ namespace YPipeline
         private class GizmosNodeData
         {
             public TextureHandle depthAttachment;
-            public TextureHandle cameraTarget;
+            public TextureHandle cameraDepthTarget;
             
             public RendererListHandle preGizmosRendererList;
             public RendererListHandle postGizmosRendererList;
@@ -34,9 +34,9 @@ namespace YPipeline
                 using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<GizmosNodeData>("Gizmos (Editor)", out var nodeData))
                 {
                     nodeData.depthAttachment = data.CameraDepthAttachment;
-                    nodeData.cameraTarget = data.CameraTarget;
+                    nodeData.cameraDepthTarget = data.CameraDepthTarget;
                     builder.ReadTexture(nodeData.depthAttachment);
-                    builder.WriteTexture(nodeData.cameraTarget);
+                    builder.WriteTexture(nodeData.cameraDepthTarget);
                     
                     nodeData.preGizmosRendererList = data.renderGraph.CreateGizmoRendererList(data.camera, GizmoSubset.PreImageEffects);
                     builder.UseRendererList(nodeData.preGizmosRendererList);
@@ -45,7 +45,7 @@ namespace YPipeline
                     
                     builder.SetRenderFunc((GizmosNodeData data, RenderGraphContext context) =>
                     {
-                        BlitUtility.CopyDepth(context.cmd, data.depthAttachment, data.cameraTarget);
+                        BlitUtility.CopyDepth(context.cmd, data.depthAttachment, data.cameraDepthTarget);
                         context.cmd.DrawRendererList(data.preGizmosRendererList);
                         context.cmd.DrawRendererList(data.postGizmosRendererList);
                         context.renderContext.ExecuteCommandBuffer(context.cmd);

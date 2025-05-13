@@ -78,6 +78,8 @@ namespace YPipeline
             {
                 nodeData.material = ColorGradingLutMaterial;
                 
+                builder.AllowPassCulling(false);
+                
                 // Lut
                 int lutHeight = data.asset.bakedLUTResolution;
                 int lutWidth = lutHeight * lutHeight;

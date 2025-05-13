@@ -60,6 +60,8 @@ namespace YPipeline
                 nodeData.material = BloomMaterial;
                 nodeData.isBloomEnabled = m_Bloom.IsActive();
                 
+                builder.AllowPassCulling(false);
+                
                 if (m_Bloom.IsActive())
                 {
                     // do bloom at half or quarter resolution

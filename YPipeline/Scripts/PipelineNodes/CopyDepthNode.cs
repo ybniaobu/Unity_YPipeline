@@ -21,6 +21,9 @@ namespace YPipeline
                 nodeData.depthAttachment = builder.ReadTexture(data.CameraDepthAttachment);
                 nodeData.depthTexture = builder.WriteTexture(data.CameraDepthTexture);
                 
+                builder.AllowPassCulling(false);
+                builder.AllowRendererListCulling(false);
+                
                 builder.SetRenderFunc((CopyDepthNodeData data, RenderGraphContext context) =>
                 {
                     BlitUtility.CopyDepth(context.cmd, data.depthAttachment, data.depthTexture);

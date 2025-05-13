@@ -110,6 +110,8 @@ namespace YPipeline
                 nodeData.material = UberPostProcessingMaterial;
                 nodeData.colorAttachment = builder.ReadTexture(data.CameraColorAttachment);
                 
+                builder.AllowPassCulling(false);
+                
                 Vector2Int bufferSize = data.BufferSize;
                 TextureDesc finalTextureDesc = new TextureDesc(bufferSize.x,bufferSize.y)
                 {
@@ -131,9 +133,8 @@ namespace YPipeline
                         m_SpectralLut = RTHandles.Alloc(InternalSpectralLut);
                     }
                     
-                    TextureHandle spectralLut = data.renderGraph.ImportTexture(m_SpectralLut);
-                    nodeData.spectralLut = spectralLut;
-                    builder.ReadTexture(spectralLut);
+                    nodeData.spectralLut = data.renderGraph.ImportTexture(m_SpectralLut);
+                    builder.ReadTexture(nodeData.spectralLut);
                     
                     nodeData.chromaticAberrationParams = new Vector4(m_ChromaticAberration.intensity.value * 0.05f, m_ChromaticAberration.maxSamples.value);
                 }

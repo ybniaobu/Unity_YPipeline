@@ -16,7 +16,7 @@ namespace YPipeline
             public CameraType cameraType;
             
             public TextureHandle colorAttachment;
-            public TextureHandle cameraTarget;
+            public TextureHandle cameraColorTarget;
         }
         
         private BloomRenderer m_BloomRenderer;
@@ -43,7 +43,7 @@ namespace YPipeline
             {
                 nodeData.cameraType = data.camera.cameraType;
                 nodeData.colorAttachment = builder.ReadTexture(data.CameraColorAttachment);
-                nodeData.cameraTarget = builder.WriteTexture(data.CameraTarget);
+                nodeData.cameraColorTarget = builder.WriteTexture(data.CameraColorTarget);
                 
                 builder.SetRenderFunc((PostProcessingNodeData data, RenderGraphContext context) =>
                 {
@@ -52,13 +52,13 @@ namespace YPipeline
                     if (data.cameraType > CameraType.SceneView)
                     {
                         // TODO: 改变逻辑
-                        BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.cameraTarget);
+                        BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.cameraColorTarget);
                     }
             
                     // enable or disable post-processing in the scene window via its effects dropdown menu in its toolbar
                     if (data.cameraType == CameraType.SceneView && !SceneView.currentDrawingSceneView.sceneViewState.showImageEffects)
                     {
-                        BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.cameraTarget);
+                        BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.cameraColorTarget);
                     }
 #endif
                     context.renderContext.ExecuteCommandBuffer(context.cmd);

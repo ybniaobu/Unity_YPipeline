@@ -50,6 +50,7 @@ namespace YPipeline
                 nodeData.depthAttachment = builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.Read);
                
                 builder.AllowPassCulling(false);
+                builder.AllowRendererListCulling(false);
 
                 builder.SetRenderFunc((ForwardGeometryNodeData data, RenderGraphContext context) =>
                 {

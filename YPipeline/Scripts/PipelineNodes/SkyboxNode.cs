@@ -30,6 +30,9 @@ namespace YPipeline
                 
                 builder.UseColorBuffer(data.CameraColorAttachment, 0);
                 builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.Read);
+                
+                builder.AllowPassCulling(false);
+                builder.AllowRendererListCulling(false);
 
                 builder.SetRenderFunc((SkyboxNodeData data, RenderGraphContext context) =>
                 {
