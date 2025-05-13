@@ -29,8 +29,12 @@ namespace YPipeline
                 
                 builder.SetRenderFunc((CopyColorNodeData data, RenderGraphContext context) =>
                 {
-                    BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.colorTexture);
+                    bool copyTextureSupported = SystemInfo.copyTextureSupport > CopyTextureSupport.None;
+                    if (copyTextureSupported) context.cmd.CopyTexture(data.colorAttachment, data.colorTexture);
+                    else BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.colorTexture);
+                    
                     context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_ColorTextureID, data.colorTexture);
+                    
                     context.renderContext.ExecuteCommandBuffer(context.cmd);
                     context.cmd.Clear();
                 });

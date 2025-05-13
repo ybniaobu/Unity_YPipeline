@@ -148,9 +148,12 @@ namespace YPipeline
                         CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_BloomBicubicUpsampling, data.isBloomBicubicUpsampling);
                         
                         // Prefilter
+                        context.cmd.BeginSample("Prefilter");
                         BlitUtility.BlitGlobalTexture(context.cmd, data.colorAttachment, data.bloomPrefilteredTexture, data.material, 0);
+                        context.cmd.EndSample("Prefilter");
                         
                         // Downsample - gaussian pyramid
+                        context.cmd.BeginSample("Downsample");
                         TextureHandle source = data.bloomPrefilteredTexture;
                         for (int i = 0; i < data.iterationCount; i++)
                         {
@@ -158,8 +161,10 @@ namespace YPipeline
                             BlitUtility.BlitGlobalTexture(context.cmd, data.bloomPyramidUpTextures[i], data.bloomPyramidDownTextures[i], data.material, 2);
                             source = data.bloomPyramidDownTextures[i];
                         }
+                        context.cmd.EndSample("Downsample");
                         
                         // Upsample - bilinear or bicubic
+                        context.cmd.BeginSample("Upsample");
                         int upsamplePass = data.bloomMode == BloomMode.Additive ? 3 : 4;
                         TextureHandle lastDst = data.bloomPyramidDownTextures[data.iterationCount - 1];
                         for (int i = data.iterationCount - 2; i >= 0; i--)
@@ -169,6 +174,7 @@ namespace YPipeline
                             else BlitUtility.BlitGlobalTexture(context.cmd, data.bloomPyramidDownTextures[i], data.bloomPyramidUpTextures[i], data.material, upsamplePass);
                             lastDst = data.bloomPyramidUpTextures[i];
                         }
+                        context.cmd.EndSample("Upsample");
                         
                         context.renderContext.ExecuteCommandBuffer(context.cmd);
                         context.cmd.Clear();

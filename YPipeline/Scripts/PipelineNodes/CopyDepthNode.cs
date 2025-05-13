@@ -26,8 +26,12 @@ namespace YPipeline
                 
                 builder.SetRenderFunc((CopyDepthNodeData data, RenderGraphContext context) =>
                 {
-                    BlitUtility.CopyDepth(context.cmd, data.depthAttachment, data.depthTexture);
+                    bool copyTextureSupported = SystemInfo.copyTextureSupport > CopyTextureSupport.None;
+                    if (copyTextureSupported) context.cmd.CopyTexture(data.depthAttachment, data.depthTexture);
+                    else BlitUtility.CopyDepth(context.cmd, data.depthAttachment, data.depthTexture);
+                    
                     context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_DepthTextureID, data.depthTexture);
+                    
                     context.renderContext.ExecuteCommandBuffer(context.cmd);
                     context.cmd.Clear();
                 });

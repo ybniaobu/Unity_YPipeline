@@ -24,12 +24,15 @@ namespace YPipeline
                 currentFrameIndex = Time.frameCount,
                 rendererListCulling = true
             };
-        
-            data.renderGraph.BeginRecording(renderGraphParams);
             
-            PipelineNode.Record(m_CameraPipelineNodes, ref data);
-            
-            data.renderGraph.EndRecordingAndExecute();
+            // using (new ProfilingScope(data.cmd, ProfilingSampler.Get(YPipelineProfileIDs.Test)))
+            {
+                data.renderGraph.BeginRecording(renderGraphParams);
+
+                PipelineNode.Record(m_CameraPipelineNodes, ref data);
+
+                data.renderGraph.EndRecordingAndExecute();
+            }
         }
     }
 }

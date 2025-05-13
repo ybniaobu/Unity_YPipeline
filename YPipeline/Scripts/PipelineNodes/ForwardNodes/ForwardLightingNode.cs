@@ -143,7 +143,8 @@ namespace YPipeline
                         context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_PointLightPositionsID, data.pointLightPositions);
                         context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_PointLightParamsID, data.pointLightParams);
                     }
-
+                    
+                    context.cmd.BeginSample("Sun Light Shadows");
                     if (data.shadowingSunLightCount > 0)
                     {
                         context.cmd.SetGlobalFloat(YPipelineShaderIDs.k_ShadowPancakingID, 1.0f);
@@ -161,7 +162,9 @@ namespace YPipeline
                         context.cmd.SetGlobalVector(YPipelineShaderIDs.k_SunLightShadowParamsID, data.sunLightShadowParams);
                         context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_SunLightDepthParamsID, data.sunLightDepthParams);
                     }
-
+                    context.cmd.EndSample("Sun Light Shadows");
+                    
+                    context.cmd.BeginSample("Spot Light Shadows");
                     if (data.shadowingSpotLightCount > 0)
                     {
                         context.cmd.SetGlobalFloat(YPipelineShaderIDs.k_ShadowPancakingID, 0.0f);
@@ -178,7 +181,9 @@ namespace YPipeline
                         context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_SpotLightShadowParamsID, data.spotLightShadowParams);
                         context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_SpotLightDepthParamsID, data.spotLightDepthParams);
                     }
+                    context.cmd.EndSample("Spot Light Shadows");
 
+                    context.cmd.BeginSample("Point Light Shadows");
                     if (data.shadowingPointLightCount > 0)
                     {
                         context.cmd.SetGlobalFloat(YPipelineShaderIDs.k_ShadowPancakingID, 0.0f);
@@ -198,6 +203,7 @@ namespace YPipeline
                         context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_PointLightShadowParamsID, data.pointLightShadowParams);
                         context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_PointLightDepthParamsID, data.pointLightDepthParams);
                     }
+                    context.cmd.EndSample("Point Light Shadows");
                     
                     if (QualitySettings.shadowmaskMode == ShadowmaskMode.DistanceShadowmask)
                     {

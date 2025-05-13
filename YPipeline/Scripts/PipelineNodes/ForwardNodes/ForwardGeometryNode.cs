@@ -57,8 +57,14 @@ namespace YPipeline
                     context.cmd.SetRenderTarget(data.colorAttachment, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
                         data.depthAttachment, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
                     
+                    context.cmd.BeginSample("Draw Opaque");
                     context.cmd.DrawRendererList(data.opaqueRendererList);
+                    context.cmd.EndSample("Draw Opaque");
+                    
+                    context.cmd.BeginSample("Draw AlphaTest");
                     context.cmd.DrawRendererList(data.alphaTestRendererList);
+                    context.cmd.EndSample("Draw AlphaTest");
+                    
                     context.renderContext.ExecuteCommandBuffer(context.cmd);
                     context.cmd.Clear();
                 });
