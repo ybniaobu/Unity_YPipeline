@@ -87,6 +87,8 @@ Shader "YPipeline/PBR/Standard Forward (Separated Texture)"
 
 			ColorMask 0
 			Cull [_Cull]
+			// Cull Back
+			// Cull Front
 
 			HLSLPROGRAM
 			#pragma target 4.5

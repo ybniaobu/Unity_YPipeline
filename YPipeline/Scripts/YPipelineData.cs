@@ -22,6 +22,15 @@ namespace YPipeline
         public TextureHandle CameraColorTexture { set; get; }
         public TextureHandle CameraDepthTexture { set; get; }
         
+        public TextureHandle SunLightShadowMap { set; get; }
+        public bool isSunLightShadowMapCreated;
+        
+        public TextureHandle SpotLightShadowMap { set; get; }
+        public bool isSpotLightShadowMapCreated;
+        
+        public TextureHandle PointLightShadowMap { set; get; }
+        public bool isPointLightShadowMapCreated;
+        
         public TextureHandle BloomTexture { set; get; }
         public TextureHandle ColorGradingLutTexture { set; get; }
         public TextureHandle CameraFinalTexture { set; get; }

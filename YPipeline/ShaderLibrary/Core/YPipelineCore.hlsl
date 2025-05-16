@@ -33,40 +33,73 @@ float3 CubeMapping(int faceID, float2 uv)
 
     switch (faceID)
     {
+    // case 0: //+X
+    //     dir.x = 1.0;
+    //     dir.y = uv.y * 2.0f - 1.0f;
+    //     dir.z = uv.x * -2.0f + 1.0f;
+    //     break;
+    //
+    // case 1: //-X
+    //     dir.x = -1.0;
+    //     dir.yz = uv.yx * 2.0f - 1.0f;
+    //     break;
+    //
+    // case 2: //+Y
+    //     dir.x = uv.x * 2.0f - 1.0f;
+    //     dir.z = uv.y * -2.0f + 1.0f;
+    //     dir.y = 1.0f;
+    //     break;
+    //     
+    // case 3: //-Y
+    //     dir.xz = uv * 2.0f - 1.0f;
+    //     dir.y = -1.0f;
+    //     break;
+    //
+    // case 4: //+Z
+    //     dir.xy = uv * 2.0f - 1.0f;
+    //     dir.z = 1;
+    //     break;
+    //
+    // case 5: //-Z
+    //     dir.x = uv.x * -2.0f + 1.0f;
+    //     dir.y = uv.y * 2.0f - 1.0f;
+    //     dir.z = -1;
+    //     break;
+        
     case 0: //+X
         dir.x = 1.0;
-        dir.y = uv.y * 2.0f - 1.0f;
-        dir.z = uv.x * -2.0f + 1.0f;
+        dir.yz = uv.yx * -2.0 + 1.0;
         break;
-
+    
     case 1: //-X
         dir.x = -1.0;
-        dir.yz = uv.yx * 2.0f - 1.0f;
+        dir.y = uv.y * -2.0 + 1.0;
+        dir.z = uv.x * 2.0 - 1.0;
         break;
-
+    
     case 2: //+Y
-        dir.x = uv.x * 2.0f - 1.0f;
-        dir.z = uv.y * -2.0f + 1.0f;
-        dir.y = 1.0f;
+        dir.xz = uv * 2.0 - 1.0;
+        dir.y = 1.0;
         break;
         
     case 3: //-Y
-        dir.xz = uv * 2.0f - 1.0f;
-        dir.y = -1.0f;
+        dir.x = uv.x * 2.0 - 1.0;
+        dir.z = uv.y * -2.0 + 1.0;
+        dir.y = -1.0;
         break;
-
+    
     case 4: //+Z
-        dir.xy = uv * 2.0f - 1.0f;
-        dir.z = 1;
+        dir.x = uv.x * 2.0 - 1.0;
+        dir.y = uv.y * -2.0 + 1.0;
+        dir.z = 1.0;
         break;
-
+    
     case 5: //-Z
-        dir.x = uv.x * -2.0f + 1.0f;
-        dir.y = uv.y * 2.0f - 1.0f;
-        dir.z = -1;
+        dir.xy = uv * -2.0 + 1.0;
+        dir.z = -1.0;
         break;
     }
-    return normalize(dir);
+    return dir;
 }
 
 // ----------------------------------------------------------------------------------------------------

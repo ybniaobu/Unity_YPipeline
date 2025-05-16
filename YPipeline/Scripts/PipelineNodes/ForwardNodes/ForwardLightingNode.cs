@@ -2,6 +2,7 @@
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 using Unity.Collections;
+using UnityEngine.Experimental.Rendering;
 
 namespace YPipeline
 {
@@ -15,6 +16,10 @@ namespace YPipeline
             public Vector4 shadowBias;
             public Vector4 sunLightShadowSettings;
             public Vector4 punctualLightShadowSettings;
+
+            public TextureHandle sunLightShadowMap;
+            public TextureHandle spotLightShadowMap;
+            public TextureHandle pointLightShadowMap;
             
             public bool useShadowMask;
             
@@ -110,6 +115,7 @@ namespace YPipeline
                 
                 builder.SetRenderFunc((ForwardLightingNodeData data, RenderGraphContext context) =>
                 {
+                    // TODO: constant buffer 设置一次就行
                     context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_EnvBRDFLutID, data.envBRDFLut);
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_CascadeSettingsID, data.cascadeSettings);
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_ShadowBiasID, data.shadowBias);
@@ -151,11 +157,12 @@ namespace YPipeline
                         for (int i = 0; i < data.cascadeCount; i++)
                         { 
                             context.cmd.SetViewProjectionMatrices(data.sunLightViewMatrices[i], data.sunLightProjectionMatrices[i]);
-                            context.cmd.SetRenderTarget(new RenderTargetIdentifier(YPipelineShaderIDs.k_SunLightShadowMapID, 0, CubemapFace.Unknown, i), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                            context.cmd.SetRenderTarget(new RenderTargetIdentifier(data.sunLightShadowMap, 0, CubemapFace.Unknown, i), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
                             context.cmd.ClearRenderTarget(true, false, Color.clear);
                             context.cmd.DrawRendererList(data.sunLightShadowRendererList[i]);
                         }
                         
+                        context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_SunLightShadowMapID, data.sunLightShadowMap);
                         context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_CascadeCullingSpheresID, data.cascadeCullingSpheres);
                         context.cmd.SetGlobalMatrixArray(YPipelineShaderIDs.k_SunLightShadowMatricesID, data.sunLightShadowMatrices);
                         context.cmd.SetGlobalVector(YPipelineShaderIDs.k_SunLightShadowBiasID, data.sunLightShadowBias);
@@ -171,11 +178,12 @@ namespace YPipeline
                         for (int i = 0; i < data.shadowingSpotLightCount; i++)
                         {
                             context.cmd.SetViewProjectionMatrices(data.spotLightViewMatrices[i], data.spotLightProjectionMatrices[i]);
-                            context.cmd.SetRenderTarget(new RenderTargetIdentifier(YPipelineShaderIDs.k_SpotLightShadowMapID, 0, CubemapFace.Unknown, i), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                            context.cmd.SetRenderTarget(new RenderTargetIdentifier(data.spotLightShadowMap, 0, CubemapFace.Unknown, i), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
                             context.cmd.ClearRenderTarget(true, false, Color.clear);
                             context.cmd.DrawRendererList(data.spotLightShadowRendererList[i]);
                         }
                         
+                        context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_SpotLightShadowMapID, data.spotLightShadowMap);
                         context.cmd.SetGlobalMatrixArray(YPipelineShaderIDs.k_SpotLightShadowMatricesID, data.spotLightShadowMatrices);
                         context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_SpotLightShadowBiasID, data.spotLightShadowBias);
                         context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_SpotLightShadowParamsID, data.spotLightShadowParams);
@@ -192,12 +200,13 @@ namespace YPipeline
                             for (int j = 0; j < 6; j++)
                             {
                                 context.cmd.SetViewProjectionMatrices(data.pointLightViewMatrices[i * 6 + j], data.pointLightProjectionMatrices[i * 6 + j]);
-                                context.cmd.SetRenderTarget(new RenderTargetIdentifier(YPipelineShaderIDs.k_PointLightShadowMapID, 0, CubemapFace.Unknown, i * 6 + j), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                                context.cmd.SetRenderTarget(new RenderTargetIdentifier(data.pointLightShadowMap, 0, CubemapFace.Unknown, i * 6 + j), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
                                 context.cmd.ClearRenderTarget(true, false, Color.clear);
                                 context.cmd.DrawRendererList(data.pointLightShadowRendererList[i * 6 + j]);
                             }
                         }
                         
+                        context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_PointLightShadowMapID, data.pointLightShadowMap);
                         context.cmd.SetGlobalMatrixArray(YPipelineShaderIDs.k_PointLightShadowMatricesID, data.pointLightShadowMatrices);
                         context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_PointLightShadowBiasID, data.pointLightShadowBias);
                         context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_PointLightShadowParamsID, data.pointLightShadowParams);
@@ -372,10 +381,27 @@ namespace YPipeline
 
         private void CreateSunLightShadowMap(ref YPipelineData data, RenderGraphBuilder builder, ForwardLightingNodeData nodeData)
         {
+            data.isSunLightShadowMapCreated = false;
             if (nodeData.shadowingSunLightCount > 0)
             {
-                data.cmd.GetTemporaryRTArray(YPipelineShaderIDs.k_SunLightShadowMapID, data.asset.sunLightShadowArraySize, data.asset.sunLightShadowArraySize
-                    ,nodeData.shadowingSunLightCount * data.asset.cascadeCount, 32, FilterMode.Bilinear, RenderTextureFormat.Shadowmap);
+                int size = data.asset.sunLightShadowArraySize;
+
+                TextureDesc desc = new TextureDesc(size,size)
+                {
+                    colorFormat = SystemInfo.GetGraphicsFormat(DefaultFormat.Shadow),
+                    depthBufferBits = DepthBits.Depth32,
+                    dimension = TextureDimension.Tex2DArray,
+                    slices = nodeData.shadowingSunLightCount * data.asset.cascadeCount,
+                    filterMode = FilterMode.Bilinear,
+                    isShadowMap = true,
+                    clearBuffer = false,
+                    msaaSamples = MSAASamples.None,
+                    name = "Sun Light Shadow Map"
+                };
+
+                data.SunLightShadowMap = data.renderGraph.CreateTexture(desc);
+                nodeData.sunLightShadowMap = builder.WriteTexture(data.SunLightShadowMap);
+                data.isSunLightShadowMapCreated = true;
                 
                 ShadowDrawingSettings shadowDrawingSettings = new ShadowDrawingSettings(data.cullingResults, nodeData.sunLightIndex);
             
@@ -400,10 +426,27 @@ namespace YPipeline
 
         private void CreateSpotLightShadowMap(ref YPipelineData data, RenderGraphBuilder builder, ForwardLightingNodeData nodeData)
         {
+            data.isSpotLightShadowMapCreated = false;
             if (nodeData.shadowingSpotLightCount > 0)
             {
-                data.cmd.GetTemporaryRTArray(YPipelineShaderIDs.k_SpotLightShadowMapID, data.asset.punctualLightShadowArraySize, data.asset.punctualLightShadowArraySize
-                    ,nodeData.shadowingSpotLightCount, 32, FilterMode.Bilinear, RenderTextureFormat.Shadowmap);
+                int size = data.asset.punctualLightShadowArraySize;
+
+                TextureDesc desc = new TextureDesc(size,size)
+                {
+                    colorFormat = SystemInfo.GetGraphicsFormat(DefaultFormat.Shadow),
+                    depthBufferBits = DepthBits.Depth32,
+                    dimension = TextureDimension.Tex2DArray,
+                    slices = nodeData.shadowingSpotLightCount,
+                    filterMode = FilterMode.Bilinear,
+                    isShadowMap = true,
+                    clearBuffer = false,
+                    msaaSamples = MSAASamples.None,
+                    name = "Spot Light Shadow Map"
+                };
+                
+                data.SpotLightShadowMap = data.renderGraph.CreateTexture(desc);
+                nodeData.spotLightShadowMap = builder.WriteTexture(data.SpotLightShadowMap);
+                data.isSpotLightShadowMapCreated = true;
                 
                 for (int i = 0; i < nodeData.shadowingSpotLightCount; i++)
                 {
@@ -423,18 +466,27 @@ namespace YPipeline
 
         private void CreatePointLightShadowMap(ref YPipelineData data, RenderGraphBuilder builder, ForwardLightingNodeData nodeData)
         {
+            data.isPointLightShadowMapCreated = false;
             if (nodeData.shadowingPointLightCount > 0)
             {
-                data.cmd.GetTemporaryRT(YPipelineShaderIDs.k_PointLightShadowMapID, new RenderTextureDescriptor()
+                int size = data.asset.punctualLightShadowArraySize;
+
+                TextureDesc desc = new TextureDesc(size,size)
                 {
-                    colorFormat = RenderTextureFormat.Shadowmap,
-                    depthBufferBits = 32,
+                    colorFormat = SystemInfo.GetGraphicsFormat(DefaultFormat.Shadow),
+                    depthBufferBits = DepthBits.Depth32,
                     dimension = TextureDimension.CubeArray,
-                    width = data.asset.punctualLightShadowArraySize,
-                    height = data.asset.punctualLightShadowArraySize,
-                    volumeDepth = nodeData.shadowingPointLightCount * 6,
-                    msaaSamples = 1
-                });
+                    slices = nodeData.shadowingPointLightCount * 6,
+                    filterMode = FilterMode.Bilinear,
+                    isShadowMap = true,
+                    clearBuffer = false,
+                    msaaSamples = MSAASamples.None,
+                    name = "Point Light Shadow Map"
+                };
+                
+                data.PointLightShadowMap = data.renderGraph.CreateTexture(desc);
+                nodeData.pointLightShadowMap = builder.WriteTexture(data.PointLightShadowMap);
+                data.isPointLightShadowMapCreated = true;
                 
                 for (int i = 0; i < nodeData.shadowingPointLightCount; i++)
                 {
@@ -444,9 +496,13 @@ namespace YPipeline
                     {
                         data.cullingResults.ComputePointShadowMatricesAndCullingPrimitives(nodeData.shadowingPointLightIndices[i], (CubemapFace) j, 0.0f, out Matrix4x4 viewMatrix, out Matrix4x4 projectionMatrix, out ShadowSplitData splitData);
                         shadowDrawingSettings.splitData = splitData;
-                        viewMatrix.m11 = -viewMatrix.m11;
-                        viewMatrix.m12 = -viewMatrix.m12;
-                        viewMatrix.m13 = -viewMatrix.m13;
+                        
+                        // TODO: 解决正面剔除的问题
+                        // viewMatrix.m11 = -viewMatrix.m11;
+                        // viewMatrix.m12 = -viewMatrix.m12;
+                        // viewMatrix.m13 = -viewMatrix.m13;
+                        
+                        // projectionMatrix.m11 = -projectionMatrix.m11;
                         
                         nodeData.pointLightViewMatrices[i * 6 + j] = viewMatrix;
                         nodeData.pointLightProjectionMatrices[i * 6 + j] = projectionMatrix;

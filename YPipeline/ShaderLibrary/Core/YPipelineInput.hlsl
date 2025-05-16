@@ -113,7 +113,7 @@ float3 GetPointLightPosition(int lightIndex)                { return _PointLight
 float GetPointLightShadowMaskChannel(int lightIndex)        { return _PointLightPositions[lightIndex].w; }
 float GetPointLightInverseRangeSquare(int lightIndex)       { return _PointLightParams[lightIndex].x; }
 float GetShadowingPointLightIndex(int lightIndex)           { return _PointLightParams[lightIndex].w; }
-float4x4 GetPointLightShadowMatrix(int faceIndex)         { return _PointLightShadowMatrices[faceIndex]; }
+float4x4 GetPointLightShadowMatrix(int faceIndex)           { return _PointLightShadowMatrices[faceIndex]; }
 float4 GetPointLightShadowBias(int shadowIndex)             { return _PointLightShadowBias[shadowIndex]; }
 float GetPointLightSize(int shadowIndex)                    { return _PointLightShadowParams[shadowIndex].x; }
 float GetPointLightPenumbraScale(int shadowIndex)           { return _PointLightShadowParams[shadowIndex].y; }

@@ -48,6 +48,9 @@ namespace YPipeline
 
                 nodeData.colorAttachment = builder.UseColorBuffer(data.CameraColorAttachment, 0);
                 nodeData.depthAttachment = builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.Read);
+                if (data.isSunLightShadowMapCreated) builder.ReadTexture(data.SunLightShadowMap);
+                if (data.isSpotLightShadowMapCreated) builder.ReadTexture(data.SpotLightShadowMap);
+                if (data.isPointLightShadowMapCreated) builder.ReadTexture(data.PointLightShadowMap);
                
                 builder.AllowPassCulling(false);
                 builder.AllowRendererListCulling(false);
