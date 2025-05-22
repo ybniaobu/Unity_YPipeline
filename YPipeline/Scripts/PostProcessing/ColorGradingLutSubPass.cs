@@ -5,9 +5,9 @@ using UnityEngine.Experimental.Rendering;
 
 namespace YPipeline
 {
-    public class ColorGradingLutRenderer : PostProcessingRenderer
+    public class ColorGradingLutSubPass : PostProcessingSubPass
     {
-        private class ColorGradingLutData
+        private class ColorGradingLutPassData
         {
             public Material material;
 
@@ -74,9 +74,9 @@ namespace YPipeline
             m_LiftGammaGain = stack.GetComponent<LiftGammaGain>();
             m_ToneMapping = stack.GetComponent<ToneMapping>();
 
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<ColorGradingLutData>("Color Grading Lut", out var nodeData))
+            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<ColorGradingLutPassData>("Color Grading Lut", out var passData))
             {
-                nodeData.material = ColorGradingLutMaterial;
+                passData.material = ColorGradingLutMaterial;
                 
                 builder.AllowPassCulling(false);
                 
@@ -90,43 +90,43 @@ namespace YPipeline
                     name = "Color Grading Baked Lut"
                 };
                 data.ColorGradingLutTexture = data.renderGraph.CreateTexture(desc);
-                nodeData.colorGradingLut = builder.WriteTexture(data.ColorGradingLutTexture);
+                passData.colorGradingLut = builder.WriteTexture(data.ColorGradingLutTexture);
                 
-                nodeData.colorGradingLUTParams = new Vector4(lutHeight, 0.5f / lutWidth, 0.5f / lutHeight, lutHeight / (lutHeight - 1.0f));
+                passData.colorGradingLUTParams = new Vector4(lutHeight, 0.5f / lutWidth, 0.5f / lutHeight, lutHeight / (lutHeight - 1.0f));
                 
                 // Global Color Corrections
-                nodeData.whiteBalance = ColorUtils.ColorBalanceToLMSCoeffs(m_GlobalColorCorrections.temperature.value, m_GlobalColorCorrections.tint.value);
+                passData.whiteBalance = ColorUtils.ColorBalanceToLMSCoeffs(m_GlobalColorCorrections.temperature.value, m_GlobalColorCorrections.tint.value);
                 float hue = m_GlobalColorCorrections.hue.value - 0.5f;
                 float exposure = Mathf.Pow(2.0f, m_GlobalColorCorrections.exposure.value);
                 float contrast = m_GlobalColorCorrections.contrast.value;
                 float saturation = m_GlobalColorCorrections.saturation.value;
-                nodeData.colorAdjustmentsParams = new Vector4(hue, exposure, contrast, saturation);
-                nodeData.colorFilter = m_GlobalColorCorrections.colorFilter.value.linear;
+                passData.colorAdjustmentsParams = new Vector4(hue, exposure, contrast, saturation);
+                passData.colorFilter = m_GlobalColorCorrections.colorFilter.value.linear;
                 
-                nodeData.curveMaster = m_GlobalColorCorrections.master.value.GetTexture();
-                nodeData.curveRed = m_GlobalColorCorrections.red.value.GetTexture();
-                nodeData.curveGreen = m_GlobalColorCorrections.green.value.GetTexture();
-                nodeData.curveBlue = m_GlobalColorCorrections.blue.value.GetTexture();
+                passData.curveMaster = m_GlobalColorCorrections.master.value.GetTexture();
+                passData.curveRed = m_GlobalColorCorrections.red.value.GetTexture();
+                passData.curveGreen = m_GlobalColorCorrections.green.value.GetTexture();
+                passData.curveBlue = m_GlobalColorCorrections.blue.value.GetTexture();
             
-                nodeData.curveHueVsHue = m_GlobalColorCorrections.hueVsHue.value.GetTexture();
-                nodeData.curveHueVsSat = m_GlobalColorCorrections.hueVsSat.value.GetTexture();
-                nodeData.curveLumVsSat = m_GlobalColorCorrections.lumVsSat.value.GetTexture();
-                nodeData.curveSatVsSat = m_GlobalColorCorrections.satVsSat.value.GetTexture();
+                passData.curveHueVsHue = m_GlobalColorCorrections.hueVsHue.value.GetTexture();
+                passData.curveHueVsSat = m_GlobalColorCorrections.hueVsSat.value.GetTexture();
+                passData.curveLumVsSat = m_GlobalColorCorrections.lumVsSat.value.GetTexture();
+                passData.curveSatVsSat = m_GlobalColorCorrections.satVsSat.value.GetTexture();
                 
                 // Shadows Midtones Highlights
                 var (shadows, midtones, highlights) = ColorUtils.PrepareShadowsMidtonesHighlights(m_ShadowsMidtonesHighlights.shadows.value, 
                     m_ShadowsMidtonesHighlights.midtones.value, m_ShadowsMidtonesHighlights.highlights.value);
-                nodeData.smhShadows = shadows;
-                nodeData.smhMidtones = midtones;
-                nodeData.smhHighlights = highlights;
-                nodeData.smhRange = new Vector4(m_ShadowsMidtonesHighlights.shadowsStart.value, m_ShadowsMidtonesHighlights.shadowsEnd.value, 
+                passData.smhShadows = shadows;
+                passData.smhMidtones = midtones;
+                passData.smhHighlights = highlights;
+                passData.smhRange = new Vector4(m_ShadowsMidtonesHighlights.shadowsStart.value, m_ShadowsMidtonesHighlights.shadowsEnd.value, 
                     m_ShadowsMidtonesHighlights.highlightsStart.value, m_ShadowsMidtonesHighlights.highlightsEnd.value);
                 
                 // Lift Gamma Gain
                 var (lift, gamma, gain) = ColorUtils.PrepareLiftGammaGain(m_LiftGammaGain.lift.value, m_LiftGammaGain.gamma.value, m_LiftGammaGain.gain.value);
-                nodeData.lggLift = lift;
-                nodeData.lggGamma = gamma;
-                nodeData.lggGain = gain;
+                passData.lggLift = lift;
+                passData.lggGamma = gamma;
+                passData.lggGain = gain;
                 
                 // Tone Mapping
                 TonemappingMode mode = m_ToneMapping.mode.value;
@@ -139,11 +139,11 @@ namespace YPipeline
                         if (reinhardMode == ReinhardMode.Simple) toneMappingPass = 1;
                         else if (reinhardMode == ReinhardMode.Extended) toneMappingPass = 2;
                         else toneMappingPass = 3;
-                        nodeData.toneMappingParams = new Vector4(m_ToneMapping.minWhite.value, 0.0f);
+                        passData.toneMappingParams = new Vector4(m_ToneMapping.minWhite.value, 0.0f);
                         break;
                     case TonemappingMode.Uncharted2Filmic:
                         toneMappingPass = 4;
-                        nodeData.toneMappingParams = new Vector4(m_ToneMapping.exposureBias.value, 0.0f);
+                        passData.toneMappingParams = new Vector4(m_ToneMapping.exposureBias.value, 0.0f);
                         break;
                     case TonemappingMode.KhronosPBRNeutral:
                         toneMappingPass = 5;
@@ -164,9 +164,9 @@ namespace YPipeline
                         toneMappingPass = 0;
                         break;
                 }
-                nodeData.toneMappingPass = toneMappingPass;
+                passData.toneMappingPass = toneMappingPass;
 
-                builder.SetRenderFunc((ColorGradingLutData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((ColorGradingLutPassData data, RenderGraphContext context) =>
                 {
                     // Lut
                     data.material.SetVector(YPipelineShaderIDs.k_ColorGradingLUTParamsID, data.colorGradingLUTParams);

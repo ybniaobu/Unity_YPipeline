@@ -8,10 +8,10 @@ using UnityEditor;
 
 namespace YPipeline
 {
-    public class GizmosNode : PipelineNode
+    public class GizmosPass : PipelinePass
     {
 #if UNITY_EDITOR
-        private class GizmosNodeData
+        private class GizmosPassData
         {
             public TextureHandle depthAttachment;
             public TextureHandle cameraDepthTarget;
@@ -31,19 +31,19 @@ namespace YPipeline
 #if UNITY_EDITOR
             if (Handles.ShouldRenderGizmos())
             {
-                using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<GizmosNodeData>("Gizmos (Editor)", out var nodeData))
+                using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<GizmosPassData>("Gizmos (Editor)", out var passData))
                 {
-                    nodeData.depthAttachment = data.CameraDepthAttachment;
-                    nodeData.cameraDepthTarget = data.CameraDepthTarget;
-                    builder.ReadTexture(nodeData.depthAttachment);
-                    builder.WriteTexture(nodeData.cameraDepthTarget);
+                    passData.depthAttachment = data.CameraDepthAttachment;
+                    passData.cameraDepthTarget = data.CameraDepthTarget;
+                    builder.ReadTexture(passData.depthAttachment);
+                    builder.WriteTexture(passData.cameraDepthTarget);
                     
-                    nodeData.preGizmosRendererList = data.renderGraph.CreateGizmoRendererList(data.camera, GizmoSubset.PreImageEffects);
-                    builder.UseRendererList(nodeData.preGizmosRendererList);
-                    nodeData.postGizmosRendererList = data.renderGraph.CreateGizmoRendererList(data.camera, GizmoSubset.PostImageEffects);
-                    builder.UseRendererList(nodeData.postGizmosRendererList);
+                    passData.preGizmosRendererList = data.renderGraph.CreateGizmoRendererList(data.camera, GizmoSubset.PreImageEffects);
+                    builder.UseRendererList(passData.preGizmosRendererList);
+                    passData.postGizmosRendererList = data.renderGraph.CreateGizmoRendererList(data.camera, GizmoSubset.PostImageEffects);
+                    builder.UseRendererList(passData.postGizmosRendererList);
                     
-                    builder.SetRenderFunc((GizmosNodeData data, RenderGraphContext context) =>
+                    builder.SetRenderFunc((GizmosPassData data, RenderGraphContext context) =>
                     {
                         BlitUtility.CopyDepth(context.cmd, data.depthAttachment, data.cameraDepthTarget);
                         context.cmd.DrawRendererList(data.preGizmosRendererList);

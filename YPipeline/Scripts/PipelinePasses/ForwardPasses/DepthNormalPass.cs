@@ -5,9 +5,9 @@ using UnityEngine.Rendering.RenderGraphModule;
 
 namespace YPipeline
 {
-    public class DepthNormalNode : PipelineNode
+    public class DepthNormalPass : PipelinePass
     {
-        private class DepthNormalNodeData
+        private class DepthNormalPassData
         {
             public Camera camera;
             
@@ -21,9 +21,9 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<DepthNormalNodeData>("Depth Normal PrePass", out var nodeData))
+            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<DepthNormalPassData>("Depth Normal PrePass", out var passData))
             {
-                nodeData.camera = data.camera;
+                passData.camera = data.camera;
                 
                 RendererListDesc opaqueRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_DepthShaderTagId, data.cullingResults, data.camera)
                 {
@@ -39,17 +39,17 @@ namespace YPipeline
                     sortingCriteria = SortingCriteria.OptimizeStateChanges
                 };
                 
-                nodeData.opaqueRendererList = data.renderGraph.CreateRendererList(opaqueRendererListDesc);
-                nodeData.alphaTestRendererList = data.renderGraph.CreateRendererList(alphaTestRendererListDesc);
-                builder.UseRendererList(nodeData.opaqueRendererList);
-                builder.UseRendererList(nodeData.alphaTestRendererList);
+                passData.opaqueRendererList = data.renderGraph.CreateRendererList(opaqueRendererListDesc);
+                passData.alphaTestRendererList = data.renderGraph.CreateRendererList(alphaTestRendererListDesc);
+                builder.UseRendererList(passData.opaqueRendererList);
+                builder.UseRendererList(passData.alphaTestRendererList);
 
-                nodeData.depthAttachment = builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.Write);
+                passData.depthAttachment = builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.Write);
                 
                 builder.AllowPassCulling(false);
                 builder.AllowRendererListCulling(false);
 
-                builder.SetRenderFunc((DepthNormalNodeData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((DepthNormalPassData data, RenderGraphContext context) =>
                 {
                     // 暂时先放这里
                     context.cmd.SetupCameraProperties(data.camera);

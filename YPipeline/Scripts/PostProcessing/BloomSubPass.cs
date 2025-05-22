@@ -5,9 +5,9 @@ using UnityEngine.Experimental.Rendering;
 
 namespace YPipeline
 {
-    public class BloomRenderer : PostProcessingRenderer
+    public class BloomSubPass : PostProcessingSubPass
     {
-        private class BloomData
+        private class BloomPassData
         {
             public Material material;
 
@@ -55,10 +55,10 @@ namespace YPipeline
             var stack = VolumeManager.instance.stack;
             m_Bloom = stack.GetComponent<Bloom>();
 
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<BloomData>("Bloom", out var nodeData, ProfilingSampler.Get(YPipelineProfileIDs.Bloom)))
+            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<BloomPassData>("Bloom", out var passData, ProfilingSampler.Get(YPipelineProfileIDs.Bloom)))
             {
-                nodeData.material = BloomMaterial;
-                nodeData.isBloomEnabled = m_Bloom.IsActive();
+                passData.material = BloomMaterial;
+                passData.isBloomEnabled = m_Bloom.IsActive();
                 
                 builder.AllowPassCulling(false);
                 
@@ -82,10 +82,10 @@ namespace YPipeline
                     int minSize = Mathf.Min(width, height);
                     int iterationCount = Mathf.FloorToInt(Mathf.Log(minSize, 2.0f) - 1);
                     iterationCount = Mathf.Clamp(iterationCount, 1, m_Bloom.maxIterations.value);
-                    nodeData.iterationCount = iterationCount;
+                    passData.iterationCount = iterationCount;
 
                     // Texture Recording
-                    nodeData.colorAttachment = builder.ReadTexture(data.CameraColorAttachment);
+                    passData.colorAttachment = builder.ReadTexture(data.CameraColorAttachment);
                     
                     DefaultFormat format = data.asset.enableHDRFrameBufferFormat ? DefaultFormat.HDR : DefaultFormat.LDR;
                     TextureDesc bloomTextureDesc = new TextureDesc(width >> 1, height >> 1)
@@ -95,7 +95,7 @@ namespace YPipeline
                         name = "Bloom Texture"
                     };
                     data.BloomTexture = data.renderGraph.CreateTexture(bloomTextureDesc);
-                    nodeData.bloomTexture = builder.WriteTexture(data.BloomTexture);
+                    passData.bloomTexture = builder.WriteTexture(data.BloomTexture);
 
                     TextureDesc bloomPrefilteredTextureDesc = new TextureDesc(width, height)
                     {
@@ -103,7 +103,7 @@ namespace YPipeline
                         filterMode = FilterMode.Bilinear,
                         name = "Bloom Prefiltered Texture"
                     };
-                    nodeData.bloomPrefilteredTexture = builder.CreateTransientTexture(bloomPrefilteredTextureDesc);
+                    passData.bloomPrefilteredTexture = builder.CreateTransientTexture(bloomPrefilteredTextureDesc);
                     
                     for (int i = 0; i < iterationCount; i++)
                     {
@@ -116,7 +116,7 @@ namespace YPipeline
                             name = "Bloom Pyramid Up"
                             //name = "Bloom Pyramid Up" + i
                         };
-                        nodeData.bloomPyramidUpTextures[i] = builder.CreateTransientTexture(bloomPyramidUpDesc);
+                        passData.bloomPyramidUpTextures[i] = builder.CreateTransientTexture(bloomPyramidUpDesc);
                         
                         TextureDesc bloomPyramidDownDesc = new TextureDesc(width, height)
                         {
@@ -125,20 +125,20 @@ namespace YPipeline
                             name = "Bloom Pyramid Down"
                             //name = "Bloom Pyramid Down" + i
                         };
-                        nodeData.bloomPyramidDownTextures[i] = builder.CreateTransientTexture(bloomPyramidDownDesc);
+                        passData.bloomPyramidDownTextures[i] = builder.CreateTransientTexture(bloomPyramidDownDesc);
                     }
 
                     // Data Recording
                     Vector4 bloomParams = m_Bloom.mode.value == BloomMode.Additive ? new Vector4(m_Bloom.additiveStrength.value, 0.0f) : new Vector4(m_Bloom.scatter.value, 0.0f);
-                    nodeData.bloomParams = bloomParams;
+                    passData.bloomParams = bloomParams;
                     float threshold = Mathf.GammaToLinearSpace(m_Bloom.threshold.value);
                     float knee = threshold * m_Bloom.thresholdKnee.value;
-                    nodeData.bloomThreshold = new Vector4(threshold, knee - threshold, 2.0f * knee, 0.25f / (knee + 1e-6f));
-                    nodeData.isBloomBicubicUpsampling = m_Bloom.bicubicUpsampling.value;
-                    nodeData.bloomMode = m_Bloom.mode.value;
+                    passData.bloomThreshold = new Vector4(threshold, knee - threshold, 2.0f * knee, 0.25f / (knee + 1e-6f));
+                    passData.isBloomBicubicUpsampling = m_Bloom.bicubicUpsampling.value;
+                    passData.bloomMode = m_Bloom.mode.value;
                 }
 
-                builder.SetRenderFunc((BloomData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((BloomPassData data, RenderGraphContext context) =>
                 {
                     if (data.isBloomEnabled)
                     {

@@ -4,9 +4,9 @@ using UnityEngine.Rendering.RenderGraphModule;
 
 namespace YPipeline
 {
-    public class SkyboxNode : PipelineNode
+    public class SkyboxPass : PipelinePass
     {
-        private class SkyboxNodeData
+        private class SkyboxPassData
         {
             public RendererListHandle skyboxRendererList;
         }
@@ -23,10 +23,10 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<SkyboxNodeData>("Draw Skybox", out var nodeData))
+            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<SkyboxPassData>("Draw Skybox", out var passData))
             {
-                nodeData.skyboxRendererList = data.renderGraph.CreateSkyboxRendererList(data.camera);
-                builder.UseRendererList(nodeData.skyboxRendererList);
+                passData.skyboxRendererList = data.renderGraph.CreateSkyboxRendererList(data.camera);
+                builder.UseRendererList(passData.skyboxRendererList);
                 
                 builder.UseColorBuffer(data.CameraColorAttachment, 0);
                 builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.Read);
@@ -34,7 +34,7 @@ namespace YPipeline
                 builder.AllowPassCulling(false);
                 builder.AllowRendererListCulling(false);
 
-                builder.SetRenderFunc((SkyboxNodeData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((SkyboxPassData data, RenderGraphContext context) =>
                 {
                     context.cmd.DrawRendererList(data.skyboxRendererList);
                 });

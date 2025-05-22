@@ -5,9 +5,9 @@ using UnityEngine.Rendering.RenderGraphModule;
 
 namespace YPipeline
 {
-    public class ForwardGeometryNode : PipelineNode
+    public class ForwardGeometryPass : PipelinePass
     {
-        private class ForwardGeometryNodeData
+        private class ForwardGeometryPassData
         {
             public TextureHandle colorAttachment;
             public TextureHandle depthAttachment;
@@ -25,7 +25,7 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<ForwardGeometryNodeData>("Draw Opaque & AlphaTest", out var nodeData))
+            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<ForwardGeometryPassData>("Draw Opaque & AlphaTest", out var passData))
             {
                 RendererListDesc opaqueRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_OpaqueShaderTagIds, data.cullingResults, data.camera)
                 {
@@ -41,13 +41,13 @@ namespace YPipeline
                     sortingCriteria = SortingCriteria.OptimizeStateChanges
                 };
                 
-                nodeData.opaqueRendererList = data.renderGraph.CreateRendererList(opaqueRendererListDesc);
-                nodeData.alphaTestRendererList = data.renderGraph.CreateRendererList(alphaTestRendererListDesc);
-                builder.UseRendererList(nodeData.opaqueRendererList);
-                builder.UseRendererList(nodeData.alphaTestRendererList);
+                passData.opaqueRendererList = data.renderGraph.CreateRendererList(opaqueRendererListDesc);
+                passData.alphaTestRendererList = data.renderGraph.CreateRendererList(alphaTestRendererListDesc);
+                builder.UseRendererList(passData.opaqueRendererList);
+                builder.UseRendererList(passData.alphaTestRendererList);
 
-                nodeData.colorAttachment = builder.UseColorBuffer(data.CameraColorAttachment, 0);
-                nodeData.depthAttachment = builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.Read);
+                passData.colorAttachment = builder.UseColorBuffer(data.CameraColorAttachment, 0);
+                passData.depthAttachment = builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.Read);
                 if (data.isSunLightShadowMapCreated) builder.ReadTexture(data.SunLightShadowMap);
                 if (data.isSpotLightShadowMapCreated) builder.ReadTexture(data.SpotLightShadowMap);
                 if (data.isPointLightShadowMapCreated) builder.ReadTexture(data.PointLightShadowMap);
@@ -55,7 +55,7 @@ namespace YPipeline
                 builder.AllowPassCulling(false);
                 builder.AllowRendererListCulling(false);
 
-                builder.SetRenderFunc((ForwardGeometryNodeData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((ForwardGeometryPassData data, RenderGraphContext context) =>
                 {
                     context.cmd.SetRenderTarget(data.colorAttachment, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
                         data.depthAttachment, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);

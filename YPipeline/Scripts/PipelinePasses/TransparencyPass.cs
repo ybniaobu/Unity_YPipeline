@@ -5,9 +5,9 @@ using UnityEngine.Rendering.RenderGraphModule;
 
 namespace YPipeline
 {
-    public class TransparencyNode : PipelineNode
+    public class TransparencyPass : PipelinePass
     {
-        private class TransparencyNodeData
+        private class TransparencyPassData
         {
             public TextureHandle colorAttachment;
             public TextureHandle depthAttachment;
@@ -27,7 +27,7 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<TransparencyNodeData>("Draw Transparency", out var nodeData))
+            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<TransparencyPassData>("Draw Transparency", out var passData))
             {
                 RendererListDesc transparencyRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_TransparencyShaderTagIds, data.cullingResults, data.camera)
                 {
@@ -36,17 +36,17 @@ namespace YPipeline
                     sortingCriteria = SortingCriteria.CommonTransparent
                 };
                 
-                nodeData.transparencyRendererList = data.renderGraph.CreateRendererList(transparencyRendererListDesc);
-                builder.UseRendererList(nodeData.transparencyRendererList);
+                passData.transparencyRendererList = data.renderGraph.CreateRendererList(transparencyRendererListDesc);
+                builder.UseRendererList(passData.transparencyRendererList);
                 
                 builder.ReadTexture(data.CameraColorTexture);
                 builder.ReadTexture(data.CameraDepthTexture);
-                nodeData.colorAttachment = builder.UseColorBuffer(data.CameraColorAttachment, 0);
-                nodeData.depthAttachment = builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.Read);
+                passData.colorAttachment = builder.UseColorBuffer(data.CameraColorAttachment, 0);
+                passData.depthAttachment = builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.Read);
                 builder.AllowPassCulling(false);
                 builder.AllowRendererListCulling(false);
 
-                builder.SetRenderFunc((TransparencyNodeData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((TransparencyPassData data, RenderGraphContext context) =>
                 {
                     // context.cmd.SetRenderTarget(data.colorAttachment, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store,
                     //     data.depthAttachment, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);

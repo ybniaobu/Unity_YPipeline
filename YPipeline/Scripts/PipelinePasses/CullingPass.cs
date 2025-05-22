@@ -4,9 +4,9 @@ using UnityEngine.Rendering.RenderGraphModule;
 
 namespace YPipeline
 {
-    public class CullingNode : PipelineNode
+    public class CullingPass : PipelinePass
     {
-        private class CullingNodeData
+        private class CullingPassData
         {
             
         }
@@ -15,14 +15,14 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<CullingNodeData>("Culling", out var nodeData))
+            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<CullingPassData>("Culling", out var passData))
             {
                 data.camera.TryGetCullingParameters(out ScriptableCullingParameters cullingParameters);
                 cullingParameters.shadowDistance = Mathf.Min(data.asset.maxShadowDistance, data.camera.farClipPlane);
                 data.cullingResults = data.context.Cull(ref cullingParameters);
                 
                 builder.AllowPassCulling(false);
-                builder.SetRenderFunc((CullingNodeData data, RenderGraphContext context) => { });
+                builder.SetRenderFunc((CullingPassData data, RenderGraphContext context) => { });
             }
         }
     }

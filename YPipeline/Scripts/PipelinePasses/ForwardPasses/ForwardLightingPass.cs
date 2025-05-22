@@ -6,9 +6,9 @@ using UnityEngine.Experimental.Rendering;
 
 namespace YPipeline
 {
-    public class ForwardLightingNode : PipelineNode
+    public class ForwardLightingPass : PipelinePass
     {
-        private class ForwardLightingNodeData
+        private class ForwardLightingPassData
         {
             public TextureHandle envBRDFLut;
             // PCSS 和 PCF 整合后待修改
@@ -103,17 +103,17 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<ForwardLightingNodeData>("Lighting & Shadows", out var nodeData))
+            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<ForwardLightingPassData>("Lighting & Shadows", out var passData))
             {
-                RecordLightingNodeData(ref data, builder, nodeData);
-                CreateSunLightShadowMap(ref data, builder, nodeData);
-                CreateSpotLightShadowMap(ref data, builder, nodeData);
-                CreatePointLightShadowMap(ref data, builder, nodeData);
+                RecordLightingNodeData(ref data, builder, passData);
+                CreateSunLightShadowMap(ref data, builder, passData);
+                CreateSpotLightShadowMap(ref data, builder, passData);
+                CreatePointLightShadowMap(ref data, builder, passData);
                 
                 builder.AllowPassCulling(false);
                 builder.AllowRendererListCulling(false);
                 
-                builder.SetRenderFunc((ForwardLightingNodeData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((ForwardLightingPassData data, RenderGraphContext context) =>
                 {
                     // TODO: constant buffer 设置一次就行
                     context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_EnvBRDFLutID, data.envBRDFLut);
@@ -231,7 +231,7 @@ namespace YPipeline
             }
         }
         
-        private void RecordLightingNodeData(ref YPipelineData data, RenderGraphBuilder builder, ForwardLightingNodeData nodeData)
+        private void RecordLightingNodeData(ref YPipelineData data, RenderGraphBuilder builder, ForwardLightingPassData passData)
         {
             NativeArray<VisibleLight> visibleLights = data.cullingResults.visibleLights;
             int sunLightCount = 0;
@@ -253,22 +253,22 @@ namespace YPipeline
                 {
                     if (sunLightCount >= k_MaxDirectionalLightCount) continue;
                     
-                    nodeData.sunLightIndex = i;
-                    nodeData.sunLightNearPlaneOffset = light.shadowNearPlane;
+                    passData.sunLightIndex = i;
+                    passData.sunLightNearPlaneOffset = light.shadowNearPlane;
 
-                    nodeData.sunLightColor = visibleLight.finalColor;
-                    nodeData.sunLightColor.w = 0; // Used to determine whether sun light is shadowing (should calculate shadow attenuation)
-                    nodeData.sunLightDirection = -visibleLight.localToWorldMatrix.GetColumn(2);
+                    passData.sunLightColor = visibleLight.finalColor;
+                    passData.sunLightColor.w = 0; // Used to determine whether sun light is shadowing (should calculate shadow attenuation)
+                    passData.sunLightDirection = -visibleLight.localToWorldMatrix.GetColumn(2);
                     
                     if (light.shadows != LightShadows.None && light.shadowStrength > 0f)
                     {
                         if (data.cullingResults.GetShadowCasterBounds(i, out Bounds outBounds))
                         {
-                            nodeData.sunLightShadowBias = new Vector4(yPipelineLight.depthBias, yPipelineLight.slopeScaledDepthBias, yPipelineLight.normalBias, yPipelineLight.slopeScaledNormalBias);
-                            nodeData.sunLightShadowParams = new Vector4(yPipelineLight.lightSize, yPipelineLight.penumbraScale, yPipelineLight.blockerSearchSampleNumber, yPipelineLight.filterSampleNumber);
+                            passData.sunLightShadowBias = new Vector4(yPipelineLight.depthBias, yPipelineLight.slopeScaledDepthBias, yPipelineLight.normalBias, yPipelineLight.slopeScaledNormalBias);
+                            passData.sunLightShadowParams = new Vector4(yPipelineLight.lightSize, yPipelineLight.penumbraScale, yPipelineLight.blockerSearchSampleNumber, yPipelineLight.filterSampleNumber);
                             shadowingSunLightCount++;
                         }
-                        nodeData.sunLightColor.w = light.shadowStrength;
+                        passData.sunLightColor.w = light.shadowStrength;
 
                         LightBakingOutput lightBaking = light.bakingOutput;
                         if (lightBaking.lightmapBakeType == LightmapBakeType.Mixed && lightBaking.mixedLightingMode == MixedLightingMode.Shadowmask)
@@ -278,36 +278,36 @@ namespace YPipeline
                         }
                     }
 
-                    nodeData.sunLightDirection.w = shadowMaskChannel;
+                    passData.sunLightDirection.w = shadowMaskChannel;
                     sunLightCount++;
                 }
                 else if (visibleLight.lightType == LightType.Spot)
                 {
                     if (spotLightCount >= k_MaxSpotLightCount) continue;
 
-                    nodeData.spotLightColors[spotLightCount] = visibleLight.finalColor;
-                    nodeData.spotLightColors[spotLightCount].w = 0;
-                    nodeData.spotLightPositions[spotLightCount] = visibleLight.localToWorldMatrix.GetColumn(3);
-                    nodeData.spotLightDirections[spotLightCount] = -visibleLight.localToWorldMatrix.GetColumn(2);
+                    passData.spotLightColors[spotLightCount] = visibleLight.finalColor;
+                    passData.spotLightColors[spotLightCount].w = 0;
+                    passData.spotLightPositions[spotLightCount] = visibleLight.localToWorldMatrix.GetColumn(3);
+                    passData.spotLightDirections[spotLightCount] = -visibleLight.localToWorldMatrix.GetColumn(2);
                     
                     float invRadiusSquare = 1.0f / Mathf.Max(visibleLight.range * visibleLight.range, 0.0001f);
                     float cosInnerAngle = Mathf.Cos(Mathf.Deg2Rad * 0.5f * light.innerSpotAngle);
                     float cosOuterAngle = Mathf.Cos(Mathf.Deg2Rad * 0.5f * visibleLight.spotAngle);
                     float invAngleRange = 1.0f / Mathf.Max(cosInnerAngle - cosOuterAngle, 0.0001f);
-                    nodeData.spotLightParams[spotLightCount] = new Vector4(invRadiusSquare, invAngleRange, cosOuterAngle, -1.0f); // when w is -1, light should skip shadow calculation
+                    passData.spotLightParams[spotLightCount] = new Vector4(invRadiusSquare, invAngleRange, cosOuterAngle, -1.0f); // when w is -1, light should skip shadow calculation
                     
                     if (light.shadows != LightShadows.None && light.shadowStrength > 0f)
                     {
                         if (data.cullingResults.GetShadowCasterBounds(i, out Bounds outBounds) && shadowingSpotLightCount <= k_MaxShadowingSpotLightCount)
                         {
-                            nodeData.spotLightParams[spotLightCount].w = shadowingSpotLightCount;
-                            nodeData.shadowingSpotLightIndices[shadowingSpotLightCount] = i;
-                            nodeData.spotLightShadowBias[shadowingSpotLightCount] = new Vector4(yPipelineLight.depthBias, yPipelineLight.slopeScaledDepthBias, yPipelineLight.normalBias, yPipelineLight.slopeScaledNormalBias);
-                            nodeData.spotLightShadowParams[shadowingSpotLightCount] = new Vector4(yPipelineLight.lightSize, yPipelineLight.penumbraScale, yPipelineLight.blockerSearchSampleNumber, yPipelineLight.filterSampleNumber);
+                            passData.spotLightParams[spotLightCount].w = shadowingSpotLightCount;
+                            passData.shadowingSpotLightIndices[shadowingSpotLightCount] = i;
+                            passData.spotLightShadowBias[shadowingSpotLightCount] = new Vector4(yPipelineLight.depthBias, yPipelineLight.slopeScaledDepthBias, yPipelineLight.normalBias, yPipelineLight.slopeScaledNormalBias);
+                            passData.spotLightShadowParams[shadowingSpotLightCount] = new Vector4(yPipelineLight.lightSize, yPipelineLight.penumbraScale, yPipelineLight.blockerSearchSampleNumber, yPipelineLight.filterSampleNumber);
                             shadowingSpotLightCount++;
                         }
                         
-                        nodeData.spotLightColors[spotLightCount].w = light.shadowStrength;
+                        passData.spotLightColors[spotLightCount].w = light.shadowStrength;
                         
                         LightBakingOutput lightBaking = light.bakingOutput;
                         if (lightBaking.lightmapBakeType == LightmapBakeType.Mixed && lightBaking.mixedLightingMode == MixedLightingMode.Shadowmask)
@@ -317,32 +317,32 @@ namespace YPipeline
                         }
                     }
                     
-                    nodeData.spotLightPositions[spotLightCount].w = shadowMaskChannel;
+                    passData.spotLightPositions[spotLightCount].w = shadowMaskChannel;
                     spotLightCount++;
                 }
                 else if (visibleLight.lightType == LightType.Point)
                 {
                     if (pointLightCount >= k_MaxPointLightCount) continue;
 
-                    nodeData.pointLightColors[pointLightCount] = visibleLight.finalColor;
-                    nodeData.pointLightColors[pointLightCount].w = 0;
-                    nodeData.pointLightPositions[pointLightCount] = visibleLight.localToWorldMatrix.GetColumn(3);
+                    passData.pointLightColors[pointLightCount] = visibleLight.finalColor;
+                    passData.pointLightColors[pointLightCount].w = 0;
+                    passData.pointLightPositions[pointLightCount] = visibleLight.localToWorldMatrix.GetColumn(3);
                     
                     float invRadiusSquare = 1.0f / Mathf.Max(visibleLight.range * visibleLight.range, 0.0001f);
-                    nodeData.pointLightParams[pointLightCount] = new Vector4(invRadiusSquare, 0.0f, 0.0f, -1.0f); // when w is -1, light should skip shadow calculation
+                    passData.pointLightParams[pointLightCount] = new Vector4(invRadiusSquare, 0.0f, 0.0f, -1.0f); // when w is -1, light should skip shadow calculation
 
                     if (light.shadows != LightShadows.None && light.shadowStrength > 0f)
                     {
                         if (data.cullingResults.GetShadowCasterBounds(i, out Bounds outBounds) && shadowingPointLightCount <= k_MaxShadowingPointLightCount)
                         {
-                            nodeData.pointLightParams[pointLightCount].w = shadowingPointLightCount;
-                            nodeData.shadowingPointLightIndices[shadowingPointLightCount] = i;
-                            nodeData.pointLightShadowBias[shadowingPointLightCount] = new Vector4(yPipelineLight.depthBias, yPipelineLight.slopeScaledDepthBias, yPipelineLight.normalBias, yPipelineLight.slopeScaledNormalBias);
-                            nodeData.pointLightShadowParams[shadowingPointLightCount] = new Vector4(yPipelineLight.lightSize, yPipelineLight.penumbraScale, yPipelineLight.blockerSearchSampleNumber, yPipelineLight.filterSampleNumber);
+                            passData.pointLightParams[pointLightCount].w = shadowingPointLightCount;
+                            passData.shadowingPointLightIndices[shadowingPointLightCount] = i;
+                            passData.pointLightShadowBias[shadowingPointLightCount] = new Vector4(yPipelineLight.depthBias, yPipelineLight.slopeScaledDepthBias, yPipelineLight.normalBias, yPipelineLight.slopeScaledNormalBias);
+                            passData.pointLightShadowParams[shadowingPointLightCount] = new Vector4(yPipelineLight.lightSize, yPipelineLight.penumbraScale, yPipelineLight.blockerSearchSampleNumber, yPipelineLight.filterSampleNumber);
                             shadowingPointLightCount++;
                         }
                             
-                        nodeData.pointLightColors[pointLightCount].w = light.shadowStrength;
+                        passData.pointLightColors[pointLightCount].w = light.shadowStrength;
                         
                         LightBakingOutput lightBaking = light.bakingOutput;
                         if (lightBaking.lightmapBakeType == LightmapBakeType.Mixed && lightBaking.mixedLightingMode == MixedLightingMode.Shadowmask)
@@ -352,37 +352,37 @@ namespace YPipeline
                         }
                     }
 
-                    nodeData.pointLightPositions[pointLightCount].w = shadowMaskChannel;
+                    passData.pointLightPositions[pointLightCount].w = shadowMaskChannel;
                     pointLightCount++;
                 }
             }
             
-            nodeData.cascadeCount = data.asset.cascadeCount;
-            nodeData.sunLightCount = sunLightCount;
-            nodeData.shadowingSunLightCount = shadowingSunLightCount;
-            nodeData.spotLightCount = spotLightCount;
-            nodeData.shadowingSpotLightCount = shadowingSpotLightCount;
-            nodeData.pointLightCount = pointLightCount;
-            nodeData.shadowingPointLightCount = shadowingPointLightCount;
-            nodeData.useShadowMask = useShadowMask;
+            passData.cascadeCount = data.asset.cascadeCount;
+            passData.sunLightCount = sunLightCount;
+            passData.shadowingSunLightCount = shadowingSunLightCount;
+            passData.spotLightCount = spotLightCount;
+            passData.shadowingSpotLightCount = shadowingSpotLightCount;
+            passData.pointLightCount = pointLightCount;
+            passData.shadowingPointLightCount = shadowingPointLightCount;
+            passData.useShadowMask = useShadowMask;
             
             if (m_EnvBRDFLut == null || m_EnvBRDFLut.externalTexture != data.asset.pipelineResources.textures.environmentBRDFLut)
             {
                 m_EnvBRDFLut = RTHandles.Alloc(data.asset.pipelineResources.textures.environmentBRDFLut);
             }
-            nodeData.envBRDFLut = data.renderGraph.ImportTexture(m_EnvBRDFLut);
-            builder.ReadTexture(nodeData.envBRDFLut);
+            passData.envBRDFLut = data.renderGraph.ImportTexture(m_EnvBRDFLut);
+            builder.ReadTexture(passData.envBRDFLut);
                 
-            nodeData.cascadeSettings = new Vector4(data.asset.maxShadowDistance, data.asset.distanceFade, data.asset.cascadeCount, data.asset.cascadeEdgeFade);
-            nodeData.shadowBias = new Vector4(data.asset.depthBias, data.asset.slopeScaledDepthBias, data.asset.normalBias, data.asset.slopeScaledNormalBias);
-            nodeData.sunLightShadowSettings = new Vector4(data.asset.sunLightShadowArraySize, data.asset.sunLightShadowSampleNumber, data.asset.sunLightPenumbraWidth, 0.0f);
-            nodeData.punctualLightShadowSettings = new Vector4(data.asset.punctualLightShadowArraySize, data.asset.punctualLightShadowSampleNumber, data.asset.punctualLightPenumbra, 0.0f);
+            passData.cascadeSettings = new Vector4(data.asset.maxShadowDistance, data.asset.distanceFade, data.asset.cascadeCount, data.asset.cascadeEdgeFade);
+            passData.shadowBias = new Vector4(data.asset.depthBias, data.asset.slopeScaledDepthBias, data.asset.normalBias, data.asset.slopeScaledNormalBias);
+            passData.sunLightShadowSettings = new Vector4(data.asset.sunLightShadowArraySize, data.asset.sunLightShadowSampleNumber, data.asset.sunLightPenumbraWidth, 0.0f);
+            passData.punctualLightShadowSettings = new Vector4(data.asset.punctualLightShadowArraySize, data.asset.punctualLightShadowSampleNumber, data.asset.punctualLightPenumbra, 0.0f);
         }
 
-        private void CreateSunLightShadowMap(ref YPipelineData data, RenderGraphBuilder builder, ForwardLightingNodeData nodeData)
+        private void CreateSunLightShadowMap(ref YPipelineData data, RenderGraphBuilder builder, ForwardLightingPassData passData)
         {
             data.isSunLightShadowMapCreated = false;
-            if (nodeData.shadowingSunLightCount > 0)
+            if (passData.shadowingSunLightCount > 0)
             {
                 int size = data.asset.sunLightShadowArraySize;
 
@@ -391,7 +391,7 @@ namespace YPipeline
                     colorFormat = SystemInfo.GetGraphicsFormat(DefaultFormat.Shadow),
                     depthBufferBits = DepthBits.Depth32,
                     dimension = TextureDimension.Tex2DArray,
-                    slices = nodeData.shadowingSunLightCount * data.asset.cascadeCount,
+                    slices = passData.shadowingSunLightCount * data.asset.cascadeCount,
                     filterMode = FilterMode.Bilinear,
                     isShadowMap = true,
                     clearBuffer = false,
@@ -400,34 +400,34 @@ namespace YPipeline
                 };
 
                 data.SunLightShadowMap = data.renderGraph.CreateTexture(desc);
-                nodeData.sunLightShadowMap = builder.WriteTexture(data.SunLightShadowMap);
+                passData.sunLightShadowMap = builder.WriteTexture(data.SunLightShadowMap);
                 data.isSunLightShadowMapCreated = true;
                 
-                ShadowDrawingSettings shadowDrawingSettings = new ShadowDrawingSettings(data.cullingResults, nodeData.sunLightIndex);
+                ShadowDrawingSettings shadowDrawingSettings = new ShadowDrawingSettings(data.cullingResults, passData.sunLightIndex);
             
                 for (int i = 0; i < data.asset.cascadeCount; i++)
                 {
-                    data.cullingResults.ComputeDirectionalShadowMatricesAndCullingPrimitives(nodeData.sunLightIndex, i, data.asset.cascadeCount, data.asset.SpiltRatios
-                        , data.asset.sunLightShadowArraySize, nodeData.sunLightNearPlaneOffset, out Matrix4x4 viewMatrix, out Matrix4x4 projectionMatrix, out ShadowSplitData splitData);
+                    data.cullingResults.ComputeDirectionalShadowMatricesAndCullingPrimitives(passData.sunLightIndex, i, data.asset.cascadeCount, data.asset.SpiltRatios
+                        , data.asset.sunLightShadowArraySize, passData.sunLightNearPlaneOffset, out Matrix4x4 viewMatrix, out Matrix4x4 projectionMatrix, out ShadowSplitData splitData);
 
                     splitData.shadowCascadeBlendCullingFactor = 1f;
                     shadowDrawingSettings.splitData = splitData;
                 
-                    nodeData.cascadeCullingSpheres[i] = splitData.cullingSphere;
-                    nodeData.sunLightViewMatrices[i] = viewMatrix;
-                    nodeData.sunLightProjectionMatrices[i] = projectionMatrix;
-                    nodeData.sunLightShadowMatrices[i] = ShadowUtility.GetWorldToLightScreenMatrix(projectionMatrix * viewMatrix);
-                    nodeData.sunLightDepthParams[i] = SystemInfo.usesReversedZBuffer ? new Vector4(-projectionMatrix.m22, -projectionMatrix.m23) : new Vector4(projectionMatrix.m22, projectionMatrix.m23);
-                    nodeData.sunLightShadowRendererList[i] = data.renderGraph.CreateShadowRendererList(ref shadowDrawingSettings);
-                    builder.UseRendererList(nodeData.sunLightShadowRendererList[i]);
+                    passData.cascadeCullingSpheres[i] = splitData.cullingSphere;
+                    passData.sunLightViewMatrices[i] = viewMatrix;
+                    passData.sunLightProjectionMatrices[i] = projectionMatrix;
+                    passData.sunLightShadowMatrices[i] = ShadowUtility.GetWorldToLightScreenMatrix(projectionMatrix * viewMatrix);
+                    passData.sunLightDepthParams[i] = SystemInfo.usesReversedZBuffer ? new Vector4(-projectionMatrix.m22, -projectionMatrix.m23) : new Vector4(projectionMatrix.m22, projectionMatrix.m23);
+                    passData.sunLightShadowRendererList[i] = data.renderGraph.CreateShadowRendererList(ref shadowDrawingSettings);
+                    builder.UseRendererList(passData.sunLightShadowRendererList[i]);
                 }
             }
         }
 
-        private void CreateSpotLightShadowMap(ref YPipelineData data, RenderGraphBuilder builder, ForwardLightingNodeData nodeData)
+        private void CreateSpotLightShadowMap(ref YPipelineData data, RenderGraphBuilder builder, ForwardLightingPassData passData)
         {
             data.isSpotLightShadowMapCreated = false;
-            if (nodeData.shadowingSpotLightCount > 0)
+            if (passData.shadowingSpotLightCount > 0)
             {
                 int size = data.asset.punctualLightShadowArraySize;
 
@@ -436,7 +436,7 @@ namespace YPipeline
                     colorFormat = SystemInfo.GetGraphicsFormat(DefaultFormat.Shadow),
                     depthBufferBits = DepthBits.Depth32,
                     dimension = TextureDimension.Tex2DArray,
-                    slices = nodeData.shadowingSpotLightCount,
+                    slices = passData.shadowingSpotLightCount,
                     filterMode = FilterMode.Bilinear,
                     isShadowMap = true,
                     clearBuffer = false,
@@ -445,29 +445,29 @@ namespace YPipeline
                 };
                 
                 data.SpotLightShadowMap = data.renderGraph.CreateTexture(desc);
-                nodeData.spotLightShadowMap = builder.WriteTexture(data.SpotLightShadowMap);
+                passData.spotLightShadowMap = builder.WriteTexture(data.SpotLightShadowMap);
                 data.isSpotLightShadowMapCreated = true;
                 
-                for (int i = 0; i < nodeData.shadowingSpotLightCount; i++)
+                for (int i = 0; i < passData.shadowingSpotLightCount; i++)
                 {
-                    ShadowDrawingSettings shadowDrawingSettings = new ShadowDrawingSettings(data.cullingResults, nodeData.shadowingSpotLightIndices[i]);
-                    data.cullingResults.ComputeSpotShadowMatricesAndCullingPrimitives(nodeData.shadowingSpotLightIndices[i], out Matrix4x4 viewMatrix, out Matrix4x4 projectionMatrix, out ShadowSplitData splitData);
+                    ShadowDrawingSettings shadowDrawingSettings = new ShadowDrawingSettings(data.cullingResults, passData.shadowingSpotLightIndices[i]);
+                    data.cullingResults.ComputeSpotShadowMatricesAndCullingPrimitives(passData.shadowingSpotLightIndices[i], out Matrix4x4 viewMatrix, out Matrix4x4 projectionMatrix, out ShadowSplitData splitData);
                     shadowDrawingSettings.splitData = splitData;
                 
-                    nodeData.spotLightViewMatrices[i] = viewMatrix;
-                    nodeData.spotLightProjectionMatrices[i] = projectionMatrix;
-                    nodeData.spotLightShadowMatrices[i] = ShadowUtility.GetWorldToLightScreenMatrix(projectionMatrix * viewMatrix);
-                    nodeData.spotLightDepthParams[i] = SystemInfo.usesReversedZBuffer ? new Vector4(-projectionMatrix.m22, -projectionMatrix.m23) : new Vector4(projectionMatrix.m22, projectionMatrix.m23);
-                    nodeData.spotLightShadowRendererList[i] = data.renderGraph.CreateShadowRendererList(ref shadowDrawingSettings);
-                    builder.UseRendererList(nodeData.spotLightShadowRendererList[i]);
+                    passData.spotLightViewMatrices[i] = viewMatrix;
+                    passData.spotLightProjectionMatrices[i] = projectionMatrix;
+                    passData.spotLightShadowMatrices[i] = ShadowUtility.GetWorldToLightScreenMatrix(projectionMatrix * viewMatrix);
+                    passData.spotLightDepthParams[i] = SystemInfo.usesReversedZBuffer ? new Vector4(-projectionMatrix.m22, -projectionMatrix.m23) : new Vector4(projectionMatrix.m22, projectionMatrix.m23);
+                    passData.spotLightShadowRendererList[i] = data.renderGraph.CreateShadowRendererList(ref shadowDrawingSettings);
+                    builder.UseRendererList(passData.spotLightShadowRendererList[i]);
                 }
             }
         }
 
-        private void CreatePointLightShadowMap(ref YPipelineData data, RenderGraphBuilder builder, ForwardLightingNodeData nodeData)
+        private void CreatePointLightShadowMap(ref YPipelineData data, RenderGraphBuilder builder, ForwardLightingPassData passData)
         {
             data.isPointLightShadowMapCreated = false;
-            if (nodeData.shadowingPointLightCount > 0)
+            if (passData.shadowingPointLightCount > 0)
             {
                 int size = data.asset.punctualLightShadowArraySize;
 
@@ -476,7 +476,7 @@ namespace YPipeline
                     colorFormat = SystemInfo.GetGraphicsFormat(DefaultFormat.Shadow),
                     depthBufferBits = DepthBits.Depth32,
                     dimension = TextureDimension.CubeArray,
-                    slices = nodeData.shadowingPointLightCount * 6,
+                    slices = passData.shadowingPointLightCount * 6,
                     filterMode = FilterMode.Bilinear,
                     isShadowMap = true,
                     clearBuffer = false,
@@ -485,16 +485,16 @@ namespace YPipeline
                 };
                 
                 data.PointLightShadowMap = data.renderGraph.CreateTexture(desc);
-                nodeData.pointLightShadowMap = builder.WriteTexture(data.PointLightShadowMap);
+                passData.pointLightShadowMap = builder.WriteTexture(data.PointLightShadowMap);
                 data.isPointLightShadowMapCreated = true;
                 
-                for (int i = 0; i < nodeData.shadowingPointLightCount; i++)
+                for (int i = 0; i < passData.shadowingPointLightCount; i++)
                 {
-                    ShadowDrawingSettings shadowDrawingSettings = new ShadowDrawingSettings(data.cullingResults, nodeData.shadowingPointLightIndices[i]);
+                    ShadowDrawingSettings shadowDrawingSettings = new ShadowDrawingSettings(data.cullingResults, passData.shadowingPointLightIndices[i]);
 
                     for (int j = 0; j < 6; j++)
                     {
-                        data.cullingResults.ComputePointShadowMatricesAndCullingPrimitives(nodeData.shadowingPointLightIndices[i], (CubemapFace) j, 0.0f, out Matrix4x4 viewMatrix, out Matrix4x4 projectionMatrix, out ShadowSplitData splitData);
+                        data.cullingResults.ComputePointShadowMatricesAndCullingPrimitives(passData.shadowingPointLightIndices[i], (CubemapFace) j, 0.0f, out Matrix4x4 viewMatrix, out Matrix4x4 projectionMatrix, out ShadowSplitData splitData);
                         shadowDrawingSettings.splitData = splitData;
                         
                         // TODO: 解决正面剔除的问题
@@ -504,12 +504,12 @@ namespace YPipeline
                         
                         // projectionMatrix.m11 = -projectionMatrix.m11;
                         
-                        nodeData.pointLightViewMatrices[i * 6 + j] = viewMatrix;
-                        nodeData.pointLightProjectionMatrices[i * 6 + j] = projectionMatrix;
-                        nodeData.pointLightShadowMatrices[i * 6 + j] = ShadowUtility.GetWorldToLightScreenMatrix(projectionMatrix * viewMatrix);
-                        nodeData.pointLightDepthParams[i] = SystemInfo.usesReversedZBuffer ? new Vector4(-projectionMatrix.m22, -projectionMatrix.m23) : new Vector4(projectionMatrix.m22, projectionMatrix.m23);
-                        nodeData.pointLightShadowRendererList[i * 6 + j] = data.renderGraph.CreateShadowRendererList(ref shadowDrawingSettings);
-                        builder.UseRendererList(nodeData.pointLightShadowRendererList[i * 6 + j]);
+                        passData.pointLightViewMatrices[i * 6 + j] = viewMatrix;
+                        passData.pointLightProjectionMatrices[i * 6 + j] = projectionMatrix;
+                        passData.pointLightShadowMatrices[i * 6 + j] = ShadowUtility.GetWorldToLightScreenMatrix(projectionMatrix * viewMatrix);
+                        passData.pointLightDepthParams[i] = SystemInfo.usesReversedZBuffer ? new Vector4(-projectionMatrix.m22, -projectionMatrix.m23) : new Vector4(projectionMatrix.m22, projectionMatrix.m23);
+                        passData.pointLightShadowRendererList[i * 6 + j] = data.renderGraph.CreateShadowRendererList(ref shadowDrawingSettings);
+                        builder.UseRendererList(passData.pointLightShadowRendererList[i * 6 + j]);
                     }
                 }
             }

@@ -5,10 +5,10 @@ using UnityEngine.Rendering.RenderGraphModule;
 
 namespace YPipeline
 {
-    public class ErrorMaterialNode : PipelineNode
+    public class ErrorMaterialPass : PipelinePass
     {
 #if UNITY_EDITOR
-        private class ErrorMaterialNodeData
+        private class ErrorMaterialPassData
         {
             public TextureHandle colorAttachment;
             public TextureHandle depthAttachment;
@@ -22,7 +22,7 @@ namespace YPipeline
         public override void OnRecord(ref YPipelineData data)
         {
 #if UNITY_EDITOR
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<ErrorMaterialNodeData>("Draw Error Material", out var nodeData))
+            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<ErrorMaterialPassData>("Draw Error Material", out var passData))
             {
                 if (m_ErrorMaterial == null)
                 {
@@ -36,13 +36,13 @@ namespace YPipeline
                     renderQueueRange = RenderQueueRange.all,
                 };
 
-                nodeData.rendererList = data.renderGraph.CreateRendererList(rendererListDesc);
-                builder.UseRendererList(nodeData.rendererList);
+                passData.rendererList = data.renderGraph.CreateRendererList(rendererListDesc);
+                builder.UseRendererList(passData.rendererList);
                 
-                nodeData.colorAttachment = builder.UseColorBuffer(data.CameraColorAttachment, 0);
-                nodeData.depthAttachment = builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.Read);
+                passData.colorAttachment = builder.UseColorBuffer(data.CameraColorAttachment, 0);
+                passData.depthAttachment = builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.Read);
                 
-                builder.SetRenderFunc((ErrorMaterialNodeData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((ErrorMaterialPassData data, RenderGraphContext context) =>
                 {
                     context.cmd.DrawRendererList(data.rendererList);
                     context.renderContext.ExecuteCommandBuffer(context.cmd);

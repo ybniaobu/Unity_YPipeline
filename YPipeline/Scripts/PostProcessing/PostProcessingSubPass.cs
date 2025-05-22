@@ -3,15 +3,15 @@ using UnityEngine.Rendering;
 
 namespace YPipeline
 {
-    public abstract class PostProcessingRenderer
+    public abstract class PostProcessingSubPass
     {
         public bool isActivated = true;
         
-        public static T Create<T>() where T : PostProcessingRenderer, new()
+        public static T Create<T>() where T : PostProcessingSubPass, new()
         {
-            T renderer = new T();
-            renderer.Initialize();
-            return renderer;
+            T subPass = new T();
+            subPass.Initialize();
+            return subPass;
         }
 
         protected abstract void Initialize();

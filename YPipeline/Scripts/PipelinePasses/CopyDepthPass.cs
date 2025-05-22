@@ -4,9 +4,9 @@ using UnityEngine.Rendering.RenderGraphModule;
 
 namespace YPipeline
 {
-    public class CopyDepthNode : PipelineNode
+    public class CopyDepthPass : PipelinePass
     {
-        private class CopyDepthNodeData
+        private class CopyDepthPassData
         {
             public TextureHandle depthAttachment;
             public TextureHandle depthTexture;
@@ -16,15 +16,15 @@ namespace YPipeline
         
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<CopyDepthNodeData>("Copy Depth", out var nodeData))
+            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<CopyDepthPassData>("Copy Depth", out var passData))
             {
-                nodeData.depthAttachment = builder.ReadTexture(data.CameraDepthAttachment);
-                nodeData.depthTexture = builder.WriteTexture(data.CameraDepthTexture);
+                passData.depthAttachment = builder.ReadTexture(data.CameraDepthAttachment);
+                passData.depthTexture = builder.WriteTexture(data.CameraDepthTexture);
                 
                 builder.AllowPassCulling(false);
                 builder.AllowRendererListCulling(false);
                 
-                builder.SetRenderFunc((CopyDepthNodeData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((CopyDepthPassData data, RenderGraphContext context) =>
                 {
                     bool copyTextureSupported = SystemInfo.copyTextureSupport > CopyTextureSupport.None;
                     if (copyTextureSupported) context.cmd.CopyTexture(data.depthAttachment, data.depthTexture);

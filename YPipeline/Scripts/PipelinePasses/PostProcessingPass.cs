@@ -8,9 +8,9 @@ using UnityEditor;
 
 namespace YPipeline
 {
-    public class PostProcessingNode : PipelineNode
+    public class PostProcessingPass : PipelinePass
     {
-        private class PostProcessingNodeData
+        private class PostProcessingPassData
         {
             // TODO: 更改到 SceneCameraRenderer 内后删除
             public CameraType cameraType;
@@ -19,17 +19,17 @@ namespace YPipeline
             public TextureHandle cameraColorTarget;
         }
         
-        private BloomRenderer m_BloomRenderer;
-        private ColorGradingLutRenderer m_ColorGradingLutRenderer;
-        private UberPostProcessingRenderer m_UberPostProcessingRenderer;
-        private FinalPostProcessingRenderer m_FinalPostProcessingRenderer;
+        private BloomSubPass m_BloomSubPass;
+        private ColorGradingLutSubPass m_ColorGradingLutSubPass;
+        private UberPostProcessingSubPass m_UberPostProcessingSubPass;
+        private FinalPostProcessingSubPass m_FinalPostProcessingSubPass;
         
         protected override void Initialize()
         {
-            m_BloomRenderer = PostProcessingRenderer.Create<BloomRenderer>();
-            m_ColorGradingLutRenderer = PostProcessingRenderer.Create<ColorGradingLutRenderer>();
-            m_UberPostProcessingRenderer = PostProcessingRenderer.Create<UberPostProcessingRenderer>();
-            m_FinalPostProcessingRenderer = PostProcessingRenderer.Create<FinalPostProcessingRenderer>();
+            m_BloomSubPass = PostProcessingSubPass.Create<BloomSubPass>();
+            m_ColorGradingLutSubPass = PostProcessingSubPass.Create<ColorGradingLutSubPass>();
+            m_UberPostProcessingSubPass = PostProcessingSubPass.Create<UberPostProcessingSubPass>();
+            m_FinalPostProcessingSubPass = PostProcessingSubPass.Create<FinalPostProcessingSubPass>();
         }
         
         protected override void OnDispose()
@@ -39,13 +39,13 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<PostProcessingNodeData>("Post Processing", out var nodeData))
+            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<PostProcessingPassData>("Post Processing", out var passData))
             {
-                nodeData.cameraType = data.camera.cameraType;
-                nodeData.colorAttachment = builder.ReadTexture(data.CameraColorAttachment);
-                nodeData.cameraColorTarget = builder.WriteTexture(data.CameraColorTarget);
+                passData.cameraType = data.camera.cameraType;
+                passData.colorAttachment = builder.ReadTexture(data.CameraColorAttachment);
+                passData.cameraColorTarget = builder.WriteTexture(data.CameraColorTarget);
                 
-                builder.SetRenderFunc((PostProcessingNodeData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((PostProcessingPassData data, RenderGraphContext context) =>
                 {
 #if UNITY_EDITOR
                     // disable post-processing in material preview and reflection probe preview
@@ -74,10 +74,10 @@ namespace YPipeline
             }
 #endif
                 
-            m_BloomRenderer.OnRecord(ref data);
-            m_ColorGradingLutRenderer.OnRecord(ref data);
-            m_UberPostProcessingRenderer.OnRecord(ref data);
-            m_FinalPostProcessingRenderer.OnRecord(ref data);
+            m_BloomSubPass.OnRecord(ref data);
+            m_ColorGradingLutSubPass.OnRecord(ref data);
+            m_UberPostProcessingSubPass.OnRecord(ref data);
+            m_FinalPostProcessingSubPass.OnRecord(ref data);
         }
     }
 }

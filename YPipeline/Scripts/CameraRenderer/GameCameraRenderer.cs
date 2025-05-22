@@ -29,7 +29,7 @@ namespace YPipeline
             {
                 data.renderGraph.BeginRecording(renderGraphParams);
 
-                PipelineNode.Record(m_CameraPipelineNodes, ref data);
+                PipelinePass.Record(m_CameraPipelineNodes, ref data);
 
                 data.renderGraph.EndRecordingAndExecute();
             }

@@ -4,9 +4,9 @@ using UnityEngine.Rendering.RenderGraphModule;
 
 namespace YPipeline
 {
-    public class FinalPostProcessingRenderer : PostProcessingRenderer
+    public class FinalPostProcessingSubPass : PostProcessingSubPass
     {
-        private class FinalPostProcessingData
+        private class FinalPostPassData
         {
             public Material material;
             
@@ -55,16 +55,16 @@ namespace YPipeline
             var stack = VolumeManager.instance.stack;
             m_FilmGrain = stack.GetComponent<FilmGrain>();
             
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<FinalPostProcessingData>("Final Post Processing", out var nodeData))
+            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<FinalPostPassData>("Final Post Processing", out var passData))
             {
-                nodeData.material = FinalPostProcessingMaterial;
-                nodeData.finalTexture = builder.ReadTexture(data.CameraFinalTexture);
-                nodeData.cameraColorTarget = builder.WriteTexture(data.CameraColorTarget);
+                passData.material = FinalPostProcessingMaterial;
+                passData.finalTexture = builder.ReadTexture(data.CameraFinalTexture);
+                passData.cameraColorTarget = builder.WriteTexture(data.CameraColorTarget);
                 
-                nodeData.isFXAAEnabled = data.asset.antiAliasingMode == AntiAliasingMode.FXAA;
-                nodeData.isFXAAQualityEnabled = data.asset.fxaaMode == FXAAMode.Quality;
-                nodeData.isFilmGrainEnabled = m_FilmGrain.IsActive();
-                nodeData.cameraPixelRect = data.camera.pixelRect;
+                passData.isFXAAEnabled = data.asset.antiAliasingMode == AntiAliasingMode.FXAA;
+                passData.isFXAAQualityEnabled = data.asset.fxaaMode == FXAAMode.Quality;
+                passData.isFilmGrainEnabled = m_FilmGrain.IsActive();
+                passData.cameraPixelRect = data.camera.pixelRect;
                 
                 builder.AllowPassCulling(false);
                 
@@ -87,23 +87,23 @@ namespace YPipeline
                         }
                     }
                     
-                    nodeData.filmGrainTexture = data.renderGraph.ImportTexture(m_FilmGrainTexture);
-                    builder.ReadTexture(nodeData.filmGrainTexture);
+                    passData.filmGrainTexture = data.renderGraph.ImportTexture(m_FilmGrainTexture);
+                    builder.ReadTexture(passData.filmGrainTexture);
                     
                     float uvScaleX = data.camera.pixelWidth / (float) m_FilmGrainTexture.externalTexture.width;
                     float uvScaleY = data.camera.pixelHeight / (float) m_FilmGrainTexture.externalTexture.height;
                     float offsetX = (float) m_Random.NextDouble();
                     float offsetY = (float) m_Random.NextDouble();
                     
-                    nodeData.filmGrainParams = new Vector4(m_FilmGrain.intensity.value * 4f, m_FilmGrain.response.value);
-                    nodeData.filmGrainTexParams = new Vector4(uvScaleX, uvScaleY, offsetX, offsetY);
+                    passData.filmGrainParams = new Vector4(m_FilmGrain.intensity.value * 4f, m_FilmGrain.response.value);
+                    passData.filmGrainTexParams = new Vector4(uvScaleX, uvScaleY, offsetX, offsetY);
                 }
                 else
                 {
                     m_FilmGrainTexture?.Release();
                 }
                 
-                builder.SetRenderFunc((FinalPostProcessingData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((FinalPostPassData data, RenderGraphContext context) =>
                 {
                     CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_FXAAQuality, data.isFXAAEnabled && data.isFXAAQualityEnabled);
                     CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_FXAAConsole, data.isFXAAEnabled && !data.isFXAAQualityEnabled);

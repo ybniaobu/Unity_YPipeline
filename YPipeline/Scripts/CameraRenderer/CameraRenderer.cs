@@ -7,7 +7,7 @@ namespace YPipeline
 {
     public abstract class CameraRenderer
     {
-        protected List<PipelineNode> m_CameraPipelineNodes = new List<PipelineNode>();
+        protected List<PipelinePass> m_CameraPipelineNodes = new List<PipelinePass>();
         
         public static T Create<T>(ref YPipelineData data) where T : CameraRenderer, new()
         {
@@ -28,18 +28,18 @@ namespace YPipeline
             switch (renderPath)
             {
                 case RenderPath.Forward: 
-                    m_CameraPipelineNodes.Add(PipelineNode.Create<CullingNode>());
-                    m_CameraPipelineNodes.Add(PipelineNode.Create<ForwardLightingNode>());
-                    m_CameraPipelineNodes.Add(PipelineNode.Create<ForwardBuffersNode>());
-                    m_CameraPipelineNodes.Add(PipelineNode.Create<DepthNormalNode>());
-                    m_CameraPipelineNodes.Add(PipelineNode.Create<CopyDepthNode>());
-                    m_CameraPipelineNodes.Add(PipelineNode.Create<ForwardGeometryNode>());
-                    m_CameraPipelineNodes.Add(PipelineNode.Create<ErrorMaterialNode>());
-                    m_CameraPipelineNodes.Add(PipelineNode.Create<SkyboxNode>());
-                    m_CameraPipelineNodes.Add(PipelineNode.Create<CopyColorNode>());
-                    m_CameraPipelineNodes.Add(PipelineNode.Create<TransparencyNode>());
-                    m_CameraPipelineNodes.Add(PipelineNode.Create<PostProcessingNode>());
-                    m_CameraPipelineNodes.Add(PipelineNode.Create<GizmosNode>());
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<CullingPass>());
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardLightingPass>());
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardBuffersPass>());
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<DepthNormalPass>());
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<CopyDepthPass>());
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardGeometryPass>());
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<ErrorMaterialPass>());
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<SkyboxPass>());
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<CopyColorPass>());
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<TransparencyPass>());
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<PostProcessingPass>());
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<GizmosPass>());
                     break;
                 case RenderPath.Deferred:
                     

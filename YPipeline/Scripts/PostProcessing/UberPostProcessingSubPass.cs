@@ -5,9 +5,9 @@ using UnityEngine.Experimental.Rendering;
 
 namespace YPipeline
 {
-    public class UberPostProcessingRenderer : PostProcessingRenderer
+    public class UberPostProcessingSubPass : PostProcessingSubPass
     {
-        private class UberPostProcessingData
+        private class UberPostPassData
         {
             public Material material;
             
@@ -105,10 +105,10 @@ namespace YPipeline
             m_Vignette = stack.GetComponent<Vignette>();
             m_LookupTable = stack.GetComponent<LookupTable>();
 
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<UberPostProcessingData>("Uber Post Processing", out var nodeData))
+            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<UberPostPassData>("Uber Post Processing", out var passData))
             {
-                nodeData.material = UberPostProcessingMaterial;
-                nodeData.colorAttachment = builder.ReadTexture(data.CameraColorAttachment);
+                passData.material = UberPostProcessingMaterial;
+                passData.colorAttachment = builder.ReadTexture(data.CameraColorAttachment);
                 
                 builder.AllowPassCulling(false);
                 
@@ -121,10 +121,10 @@ namespace YPipeline
                 };
                 
                 data.CameraFinalTexture = data.renderGraph.CreateTexture(finalTextureDesc);
-                nodeData.finalTexture = builder.WriteTexture(data.CameraFinalTexture);
+                passData.finalTexture = builder.WriteTexture(data.CameraFinalTexture);
                 
                 // Chromatic Aberration
-                nodeData.isChromaticAberrationEnabled = m_ChromaticAberration.IsActive();
+                passData.isChromaticAberrationEnabled = m_ChromaticAberration.IsActive();
                 if (m_ChromaticAberration.IsActive())
                 {
                     if (m_SpectralLut == null || m_SpectralLut.externalTexture != InternalSpectralLut)
@@ -133,10 +133,10 @@ namespace YPipeline
                         m_SpectralLut = RTHandles.Alloc(InternalSpectralLut);
                     }
                     
-                    nodeData.spectralLut = data.renderGraph.ImportTexture(m_SpectralLut);
-                    builder.ReadTexture(nodeData.spectralLut);
+                    passData.spectralLut = data.renderGraph.ImportTexture(m_SpectralLut);
+                    builder.ReadTexture(passData.spectralLut);
                     
-                    nodeData.chromaticAberrationParams = new Vector4(m_ChromaticAberration.intensity.value * 0.05f, m_ChromaticAberration.maxSamples.value);
+                    passData.chromaticAberrationParams = new Vector4(m_ChromaticAberration.intensity.value * 0.05f, m_ChromaticAberration.maxSamples.value);
                 }
                 else
                 {
@@ -144,40 +144,40 @@ namespace YPipeline
                 }
                 
                 // Bloom
-                nodeData.isBloomEnabled = m_Bloom.IsActive();
+                passData.isBloomEnabled = m_Bloom.IsActive();
                 if (m_Bloom.IsActive())
                 {
-                    nodeData.bloomTexture = builder.ReadTexture(data.BloomTexture);
-                    nodeData.isBloomBicubicUpsampling = m_Bloom.bicubicUpsampling.value;
+                    passData.bloomTexture = builder.ReadTexture(data.BloomTexture);
+                    passData.isBloomBicubicUpsampling = m_Bloom.bicubicUpsampling.value;
                     
                     Vector4 bloomParams = m_Bloom.mode.value == BloomMode.Additive ? new Vector4(m_Bloom.intensity.value, 0.0f) : new Vector4(m_Bloom.finalIntensity.value, 1.0f);
                     float threshold = Mathf.GammaToLinearSpace(m_Bloom.threshold.value);
                     float knee = threshold * m_Bloom.thresholdKnee.value;
-                    nodeData.bloomParams = bloomParams;
-                    nodeData.bloomThreshold = new Vector4(threshold, knee - threshold, 2.0f * knee, 0.25f / (knee + 1e-6f));
+                    passData.bloomParams = bloomParams;
+                    passData.bloomThreshold = new Vector4(threshold, knee - threshold, 2.0f * knee, 0.25f / (knee + 1e-6f));
                 }
                 
                 // Vignette
-                nodeData.isVignetteEnabled = m_Vignette.IsActive();
+                passData.isVignetteEnabled = m_Vignette.IsActive();
                 if (m_Vignette.IsActive())
                 {
                     float roundness = (1f - m_Vignette.roundness.value) * 6f + m_Vignette.roundness.value;
                     float aspectRatio = data.camera.aspect;
                     Vector4 vignetteParams1 = new Vector4(m_Vignette.center.value.x, m_Vignette.center.value.y, 0f, 0f);
                     Vector4 vignetteParams2 = new Vector4(m_Vignette.intensity.value * 3f, m_Vignette.smoothness.value * 5f, roundness, m_Vignette.rounded.value ? aspectRatio : 1f);
-                    nodeData.vignetteColor = m_Vignette.color.value;
-                    nodeData.vignetteParams1 = vignetteParams1;
-                    nodeData.vignetteParams2 = vignetteParams2;
+                    passData.vignetteColor = m_Vignette.color.value;
+                    passData.vignetteParams1 = vignetteParams1;
+                    passData.vignetteParams2 = vignetteParams2;
                 }
                 
                 // Baked Color Grading Lut
                 int lutHeight = data.asset.bakedLUTResolution;
                 int lutWidth = lutHeight * lutHeight;
-                nodeData.colorGradingLutParams = new Vector4(1.0f / lutWidth, 1.0f / lutHeight, lutHeight - 1.0f);
-                nodeData.colorGradingLut = builder.ReadTexture(data.ColorGradingLutTexture);
+                passData.colorGradingLutParams = new Vector4(1.0f / lutWidth, 1.0f / lutHeight, lutHeight - 1.0f);
+                passData.colorGradingLut = builder.ReadTexture(data.ColorGradingLutTexture);
                 
                 // Extra Lut
-                nodeData.isExtraLutEnabled = m_LookupTable.IsActive();
+                passData.isExtraLutEnabled = m_LookupTable.IsActive();
                 if (m_LookupTable.IsActive())
                 {
                     if (m_ExtraLut == null || m_ExtraLut.externalTexture != m_LookupTable.texture.value)
@@ -187,18 +187,18 @@ namespace YPipeline
                     }
                     
                     TextureHandle extraLut = data.renderGraph.ImportTexture(m_ExtraLut);
-                    nodeData.extraLut = extraLut;
+                    passData.extraLut = extraLut;
                     builder.ReadTexture(extraLut);
                     
                     Vector4 extraLutParams = new Vector4(1.0f / m_LookupTable.texture.value.width, 1.0f / m_LookupTable.texture.value.height, m_LookupTable.texture.value.height - 1.0f, m_LookupTable.contribution.value);
-                    nodeData.extraLutParams = extraLutParams;
+                    passData.extraLutParams = extraLutParams;
                 }
                 else
                 {
                     m_ExtraLut?.Release();
                 }
                 
-                builder.SetRenderFunc((UberPostProcessingData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((UberPostPassData data, RenderGraphContext context) =>
                 {
                     // Chromatic Aberration
                     CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_ChromaticAberration, data.isChromaticAberrationEnabled);

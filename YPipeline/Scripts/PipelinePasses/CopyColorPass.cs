@@ -4,9 +4,9 @@ using UnityEngine.Rendering.RenderGraphModule;
 
 namespace YPipeline
 {
-    public class CopyColorNode : PipelineNode
+    public class CopyColorPass : PipelinePass
     {
-        private class CopyColorNodeData
+        private class CopyColorPassData
         {
             public TextureHandle colorAttachment;
             public TextureHandle colorTexture;
@@ -19,15 +19,15 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<CopyColorNodeData>("Copy Color", out var nodeData))
+            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<CopyColorPassData>("Copy Color", out var passData))
             {
-                nodeData.colorAttachment = builder.ReadTexture(data.CameraColorAttachment);
-                nodeData.colorTexture = builder.WriteTexture(data.CameraColorTexture);
+                passData.colorAttachment = builder.ReadTexture(data.CameraColorAttachment);
+                passData.colorTexture = builder.WriteTexture(data.CameraColorTexture);
                 
                 builder.AllowPassCulling(false);
                 builder.AllowRendererListCulling(false);
                 
-                builder.SetRenderFunc((CopyColorNodeData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((CopyColorPassData data, RenderGraphContext context) =>
                 {
                     bool copyTextureSupported = SystemInfo.copyTextureSupport > CopyTextureSupport.None;
                     if (copyTextureSupported) context.cmd.CopyTexture(data.colorAttachment, data.colorTexture);

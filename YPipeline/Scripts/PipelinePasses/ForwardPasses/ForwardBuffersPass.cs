@@ -5,9 +5,9 @@ using UnityEngine.Experimental.Rendering;
 
 namespace YPipeline
 {
-    public class ForwardBuffersNode : PipelineNode
+    public class ForwardBuffersPass : PipelinePass
     {
-        private class ForwardBuffersNodeData
+        private class ForwardBuffersPassData
         {
             public Vector2Int bufferSize;
         }
@@ -19,10 +19,10 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<ForwardBuffersNodeData>("Forward Buffers Preparation", out var nodeData))
+            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<ForwardBuffersPassData>("Forward Buffers Preparation", out var passData))
             {
                 Vector2Int bufferSize = data.BufferSize;
-                nodeData.bufferSize = bufferSize;
+                passData.bufferSize = bufferSize;
                 
                 TextureDesc colorAttachmentDesc = new TextureDesc(bufferSize.x,bufferSize.y)
                 {
@@ -66,7 +66,7 @@ namespace YPipeline
                 
                 builder.AllowPassCulling(false);
                 
-                builder.SetRenderFunc((ForwardBuffersNodeData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((ForwardBuffersPassData data, RenderGraphContext context) =>
                 {
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_BufferSizeID, new Vector4(1f / data.bufferSize.x, 1f / data.bufferSize.y, data.bufferSize.x, data.bufferSize.y));
                     context.renderContext.ExecuteCommandBuffer(context.cmd);
