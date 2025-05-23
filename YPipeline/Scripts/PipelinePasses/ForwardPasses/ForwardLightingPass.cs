@@ -13,15 +13,13 @@ namespace YPipeline
             public TextureHandle envBRDFLut;
             // PCSS 和 PCF 整合后待修改
             public Vector4 cascadeSettings;
-            public Vector4 shadowBias;
-            public Vector4 sunLightShadowSettings;
-            public Vector4 punctualLightShadowSettings;
+            public Vector4 shadowMapSizes;
+            
+            public bool isPCSSEnabled;
 
             public TextureHandle sunLightShadowMap;
             public TextureHandle spotLightShadowMap;
             public TextureHandle pointLightShadowMap;
-            
-            public bool useShadowMask;
             
             public int sunLightCount;
             public int cascadeCount;
@@ -35,6 +33,7 @@ namespace YPipeline
             public Matrix4x4[] sunLightProjectionMatrices = new Matrix4x4[k_MaxCascadeCount];
             public Matrix4x4[] sunLightShadowMatrices = new Matrix4x4[k_MaxCascadeCount];
             public Vector4 sunLightShadowBias;
+            public Vector4 sunLightPCFParams;
             public Vector4 sunLightShadowParams;
             public Vector4[] sunLightDepthParams = new Vector4[k_MaxCascadeCount];
             public RendererListHandle[] sunLightShadowRendererList = new RendererListHandle[k_MaxCascadeCount];
@@ -50,6 +49,7 @@ namespace YPipeline
             public Matrix4x4[] spotLightShadowMatrices = new Matrix4x4[k_MaxShadowingSpotLightCount];
             public int[] shadowingSpotLightIndices = new int[k_MaxShadowingSpotLightCount]; // store shadowing spot light visible light index
             public Vector4[] spotLightShadowBias = new Vector4[k_MaxShadowingSpotLightCount];
+            public Vector4[] spotLightPCFParams = new Vector4[k_MaxShadowingSpotLightCount];
             public Vector4[] spotLightShadowParams = new Vector4[k_MaxShadowingSpotLightCount];
             public Vector4[] spotLightDepthParams = new Vector4[k_MaxShadowingSpotLightCount];
             public RendererListHandle[] spotLightShadowRendererList = new RendererListHandle[k_MaxShadowingSpotLightCount];
@@ -64,6 +64,7 @@ namespace YPipeline
             public Matrix4x4[] pointLightShadowMatrices = new Matrix4x4[k_MaxShadowingPointLightCount * 6];
             public int[] shadowingPointLightIndices = new int[k_MaxShadowingPointLightCount]; // store shadowing point light visible light index
             public Vector4[] pointLightShadowBias = new Vector4[k_MaxShadowingPointLightCount];
+            public Vector4[] pointLightPCFParams = new Vector4[k_MaxShadowingPointLightCount];
             public Vector4[] pointLightShadowParams = new Vector4[k_MaxShadowingPointLightCount];
             public Vector4[] pointLightDepthParams = new Vector4[k_MaxShadowingPointLightCount];
             public RendererListHandle[] pointLightShadowRendererList = new RendererListHandle[k_MaxShadowingPointLightCount * 6];
@@ -105,6 +106,17 @@ namespace YPipeline
         {
             using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<ForwardLightingPassData>("Lighting & Shadows", out var passData))
             {
+                if (m_EnvBRDFLut == null || m_EnvBRDFLut.externalTexture != data.asset.pipelineResources.textures.environmentBRDFLut)
+                {
+                    m_EnvBRDFLut = RTHandles.Alloc(data.asset.pipelineResources.textures.environmentBRDFLut);
+                }
+                passData.envBRDFLut = data.renderGraph.ImportTexture(m_EnvBRDFLut);
+                builder.ReadTexture(passData.envBRDFLut);
+                
+                passData.cascadeSettings = new Vector4(data.asset.maxShadowDistance, data.asset.distanceFade, data.asset.cascadeCount, data.asset.cascadeEdgeFade);
+                passData.shadowMapSizes = new Vector4(data.asset.sunLightShadowMapSize, data.asset.spotLightShadowMapSize, data.asset.pointLightShadowMapSize);
+                passData.isPCSSEnabled = data.asset.shadowMode == ShadowMode.PCSS;
+                
                 RecordLightingNodeData(ref data, builder, passData);
                 CreateSunLightShadowMap(ref data, builder, passData);
                 CreateSpotLightShadowMap(ref data, builder, passData);
@@ -118,9 +130,18 @@ namespace YPipeline
                     // TODO: constant buffer 设置一次就行
                     context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_EnvBRDFLutID, data.envBRDFLut);
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_CascadeSettingsID, data.cascadeSettings);
-                    context.cmd.SetGlobalVector(YPipelineShaderIDs.k_ShadowBiasID, data.shadowBias);
-                    context.cmd.SetGlobalVector(YPipelineShaderIDs.k_SunLightShadowSettingsID, data.sunLightShadowSettings);
-                    context.cmd.SetGlobalVector(YPipelineShaderIDs.k_PunctualLightShadowSettingsID, data.punctualLightShadowSettings);
+                    context.cmd.SetGlobalVector(YPipelineShaderIDs.k_ShadowMapSizesID, data.shadowMapSizes);
+
+                    if (data.isPCSSEnabled)
+                    {
+                        CoreUtils.SetKeyword(context.cmd, YPipelineKeywords.k_PCSS, true);
+                        CoreUtils.SetKeyword(context.cmd, YPipelineKeywords.k_PCF, false);
+                    }
+                    else
+                    {
+                        CoreUtils.SetKeyword(context.cmd, YPipelineKeywords.k_PCSS, false);
+                        CoreUtils.SetKeyword(context.cmd, YPipelineKeywords.k_PCF, true);
+                    }
                     
                     if (data.sunLightCount > 0)
                     {
@@ -166,8 +187,15 @@ namespace YPipeline
                         context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_CascadeCullingSpheresID, data.cascadeCullingSpheres);
                         context.cmd.SetGlobalMatrixArray(YPipelineShaderIDs.k_SunLightShadowMatricesID, data.sunLightShadowMatrices);
                         context.cmd.SetGlobalVector(YPipelineShaderIDs.k_SunLightShadowBiasID, data.sunLightShadowBias);
-                        context.cmd.SetGlobalVector(YPipelineShaderIDs.k_SunLightShadowParamsID, data.sunLightShadowParams);
-                        context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_SunLightDepthParamsID, data.sunLightDepthParams);
+                        if (data.isPCSSEnabled)
+                        {
+                            context.cmd.SetGlobalVector(YPipelineShaderIDs.k_SunLightShadowParamsID, data.sunLightShadowParams);
+                            context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_SunLightDepthParamsID, data.sunLightDepthParams);
+                        }
+                        else
+                        {
+                            context.cmd.SetGlobalVector(YPipelineShaderIDs.k_SunLightPCFParamsID, data.sunLightPCFParams);
+                        }
                     }
                     context.cmd.EndSample("Sun Light Shadows");
                     
@@ -186,8 +214,15 @@ namespace YPipeline
                         context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_SpotLightShadowMapID, data.spotLightShadowMap);
                         context.cmd.SetGlobalMatrixArray(YPipelineShaderIDs.k_SpotLightShadowMatricesID, data.spotLightShadowMatrices);
                         context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_SpotLightShadowBiasID, data.spotLightShadowBias);
-                        context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_SpotLightShadowParamsID, data.spotLightShadowParams);
-                        context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_SpotLightDepthParamsID, data.spotLightDepthParams);
+                        if (data.isPCSSEnabled)
+                        {
+                            context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_SpotLightShadowParamsID, data.spotLightShadowParams);
+                            context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_SpotLightDepthParamsID, data.spotLightDepthParams);
+                        }
+                        else
+                        {
+                            context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_SpotLightPCFParamsID, data.spotLightPCFParams);
+                        }
                     }
                     context.cmd.EndSample("Spot Light Shadows");
 
@@ -209,21 +244,17 @@ namespace YPipeline
                         context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_PointLightShadowMapID, data.pointLightShadowMap);
                         context.cmd.SetGlobalMatrixArray(YPipelineShaderIDs.k_PointLightShadowMatricesID, data.pointLightShadowMatrices);
                         context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_PointLightShadowBiasID, data.pointLightShadowBias);
-                        context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_PointLightShadowParamsID, data.pointLightShadowParams);
-                        context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_PointLightDepthParamsID, data.pointLightDepthParams);
+                        if (data.isPCSSEnabled)
+                        {
+                            context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_PointLightShadowParamsID, data.pointLightShadowParams);
+                            context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_PointLightDepthParamsID, data.pointLightDepthParams);
+                        }
+                        else
+                        {
+                            context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_PointLightPCFParamsID, data.pointLightPCFParams);
+                        }
                     }
                     context.cmd.EndSample("Point Light Shadows");
-                    
-                    if (QualitySettings.shadowmaskMode == ShadowmaskMode.DistanceShadowmask)
-                    {
-                        CoreUtils.SetKeyword(context.cmd, YPipelineKeywords.k_ShadowMaskDistance, data.useShadowMask);
-                        CoreUtils.SetKeyword(context.cmd, YPipelineKeywords.k_ShadowMaskNormal, false);
-                    }
-                    else
-                    {
-                        CoreUtils.SetKeyword(context.cmd, YPipelineKeywords.k_ShadowMaskNormal, data.useShadowMask);
-                        CoreUtils.SetKeyword(context.cmd, YPipelineKeywords.k_ShadowMaskDistance, false);
-                    }
                     
                     context.renderContext.ExecuteCommandBuffer(context.cmd);
                     context.cmd.Clear();
@@ -240,14 +271,12 @@ namespace YPipeline
             int shadowingSpotLightCount = 0;
             int pointLightCount = 0;
             int shadowingPointLightCount = 0;
-            bool useShadowMask = false;
             
             for (int i = 0; i < visibleLights.Length; i++)
             {
                 VisibleLight visibleLight = visibleLights[i];
                 Light light = visibleLight.light;
                 YPipelineLight yPipelineLight = light.GetComponent<YPipelineLight>();
-                float shadowMaskChannel = -1.0f;
                 
                 if (visibleLight.lightType == LightType.Directional)
                 {
@@ -265,20 +294,12 @@ namespace YPipeline
                         if (data.cullingResults.GetShadowCasterBounds(i, out Bounds outBounds))
                         {
                             passData.sunLightShadowBias = new Vector4(yPipelineLight.depthBias, yPipelineLight.slopeScaledDepthBias, yPipelineLight.normalBias, yPipelineLight.slopeScaledNormalBias);
+                            passData.sunLightPCFParams = new Vector4(yPipelineLight.penumbraWidth, yPipelineLight.sampleNumber);
                             passData.sunLightShadowParams = new Vector4(yPipelineLight.lightSize, yPipelineLight.penumbraScale, yPipelineLight.blockerSearchSampleNumber, yPipelineLight.filterSampleNumber);
                             shadowingSunLightCount++;
                         }
                         passData.sunLightColor.w = light.shadowStrength;
-
-                        LightBakingOutput lightBaking = light.bakingOutput;
-                        if (lightBaking.lightmapBakeType == LightmapBakeType.Mixed && lightBaking.mixedLightingMode == MixedLightingMode.Shadowmask)
-                        {
-                            useShadowMask = true;
-                            shadowMaskChannel = lightBaking.occlusionMaskChannel;
-                        }
                     }
-
-                    passData.sunLightDirection.w = shadowMaskChannel;
                     sunLightCount++;
                 }
                 else if (visibleLight.lightType == LightType.Spot)
@@ -303,21 +324,12 @@ namespace YPipeline
                             passData.spotLightParams[spotLightCount].w = shadowingSpotLightCount;
                             passData.shadowingSpotLightIndices[shadowingSpotLightCount] = i;
                             passData.spotLightShadowBias[shadowingSpotLightCount] = new Vector4(yPipelineLight.depthBias, yPipelineLight.slopeScaledDepthBias, yPipelineLight.normalBias, yPipelineLight.slopeScaledNormalBias);
+                            passData.spotLightPCFParams[shadowingSpotLightCount] = new Vector4(yPipelineLight.penumbraWidth, yPipelineLight.sampleNumber);
                             passData.spotLightShadowParams[shadowingSpotLightCount] = new Vector4(yPipelineLight.lightSize, yPipelineLight.penumbraScale, yPipelineLight.blockerSearchSampleNumber, yPipelineLight.filterSampleNumber);
                             shadowingSpotLightCount++;
                         }
-                        
                         passData.spotLightColors[spotLightCount].w = light.shadowStrength;
-                        
-                        LightBakingOutput lightBaking = light.bakingOutput;
-                        if (lightBaking.lightmapBakeType == LightmapBakeType.Mixed && lightBaking.mixedLightingMode == MixedLightingMode.Shadowmask)
-                        {
-                            useShadowMask = true;
-                            shadowMaskChannel = lightBaking.occlusionMaskChannel;
-                        }
                     }
-                    
-                    passData.spotLightPositions[spotLightCount].w = shadowMaskChannel;
                     spotLightCount++;
                 }
                 else if (visibleLight.lightType == LightType.Point)
@@ -338,21 +350,12 @@ namespace YPipeline
                             passData.pointLightParams[pointLightCount].w = shadowingPointLightCount;
                             passData.shadowingPointLightIndices[shadowingPointLightCount] = i;
                             passData.pointLightShadowBias[shadowingPointLightCount] = new Vector4(yPipelineLight.depthBias, yPipelineLight.slopeScaledDepthBias, yPipelineLight.normalBias, yPipelineLight.slopeScaledNormalBias);
+                            passData.pointLightPCFParams[shadowingPointLightCount] = new Vector4(yPipelineLight.penumbraWidth, yPipelineLight.sampleNumber);
                             passData.pointLightShadowParams[shadowingPointLightCount] = new Vector4(yPipelineLight.lightSize, yPipelineLight.penumbraScale, yPipelineLight.blockerSearchSampleNumber, yPipelineLight.filterSampleNumber);
                             shadowingPointLightCount++;
                         }
-                            
                         passData.pointLightColors[pointLightCount].w = light.shadowStrength;
-                        
-                        LightBakingOutput lightBaking = light.bakingOutput;
-                        if (lightBaking.lightmapBakeType == LightmapBakeType.Mixed && lightBaking.mixedLightingMode == MixedLightingMode.Shadowmask)
-                        {
-                            useShadowMask = true;
-                            shadowMaskChannel = lightBaking.occlusionMaskChannel;
-                        }
                     }
-
-                    passData.pointLightPositions[pointLightCount].w = shadowMaskChannel;
                     pointLightCount++;
                 }
             }
@@ -364,19 +367,6 @@ namespace YPipeline
             passData.shadowingSpotLightCount = shadowingSpotLightCount;
             passData.pointLightCount = pointLightCount;
             passData.shadowingPointLightCount = shadowingPointLightCount;
-            passData.useShadowMask = useShadowMask;
-            
-            if (m_EnvBRDFLut == null || m_EnvBRDFLut.externalTexture != data.asset.pipelineResources.textures.environmentBRDFLut)
-            {
-                m_EnvBRDFLut = RTHandles.Alloc(data.asset.pipelineResources.textures.environmentBRDFLut);
-            }
-            passData.envBRDFLut = data.renderGraph.ImportTexture(m_EnvBRDFLut);
-            builder.ReadTexture(passData.envBRDFLut);
-                
-            passData.cascadeSettings = new Vector4(data.asset.maxShadowDistance, data.asset.distanceFade, data.asset.cascadeCount, data.asset.cascadeEdgeFade);
-            passData.shadowBias = new Vector4(data.asset.depthBias, data.asset.slopeScaledDepthBias, data.asset.normalBias, data.asset.slopeScaledNormalBias);
-            passData.sunLightShadowSettings = new Vector4(data.asset.sunLightShadowArraySize, data.asset.sunLightShadowSampleNumber, data.asset.sunLightPenumbraWidth, 0.0f);
-            passData.punctualLightShadowSettings = new Vector4(data.asset.punctualLightShadowArraySize, data.asset.punctualLightShadowSampleNumber, data.asset.punctualLightPenumbra, 0.0f);
         }
 
         private void CreateSunLightShadowMap(ref YPipelineData data, RenderGraphBuilder builder, ForwardLightingPassData passData)
@@ -384,7 +374,7 @@ namespace YPipeline
             data.isSunLightShadowMapCreated = false;
             if (passData.shadowingSunLightCount > 0)
             {
-                int size = data.asset.sunLightShadowArraySize;
+                int size = data.asset.sunLightShadowMapSize;
 
                 TextureDesc desc = new TextureDesc(size,size)
                 {
@@ -408,7 +398,7 @@ namespace YPipeline
                 for (int i = 0; i < data.asset.cascadeCount; i++)
                 {
                     data.cullingResults.ComputeDirectionalShadowMatricesAndCullingPrimitives(passData.sunLightIndex, i, data.asset.cascadeCount, data.asset.SpiltRatios
-                        , data.asset.sunLightShadowArraySize, passData.sunLightNearPlaneOffset, out Matrix4x4 viewMatrix, out Matrix4x4 projectionMatrix, out ShadowSplitData splitData);
+                        , data.asset.sunLightShadowMapSize, passData.sunLightNearPlaneOffset, out Matrix4x4 viewMatrix, out Matrix4x4 projectionMatrix, out ShadowSplitData splitData);
 
                     splitData.shadowCascadeBlendCullingFactor = 1f;
                     shadowDrawingSettings.splitData = splitData;
@@ -429,7 +419,7 @@ namespace YPipeline
             data.isSpotLightShadowMapCreated = false;
             if (passData.shadowingSpotLightCount > 0)
             {
-                int size = data.asset.punctualLightShadowArraySize;
+                int size = data.asset.spotLightShadowMapSize;
 
                 TextureDesc desc = new TextureDesc(size,size)
                 {
@@ -469,7 +459,7 @@ namespace YPipeline
             data.isPointLightShadowMapCreated = false;
             if (passData.shadowingPointLightCount > 0)
             {
-                int size = data.asset.punctualLightShadowArraySize;
+                int size = data.asset.pointLightShadowMapSize;
 
                 TextureDesc desc = new TextureDesc(size,size)
                 {

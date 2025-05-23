@@ -22,20 +22,14 @@ MonoBehaviour:
     type: 2}
   bakedLUTResolution: 32
   enableSRPBatcher: 1
-  depthBias: 0.1
-  slopeScaledDepthBias: 0.5
-  normalBias: 0.1
-  slopeScaledNormalBias: 0.5
-  maxShadowDistance: 120
+  shadowMode: 1
+  maxShadowDistance: 80
   distanceFade: 0.05
-  sunLightShadowArraySize: 4096
-  sunLightShadowSampleNumber: 16
-  sunLightPenumbraWidth: 0.25
   cascadeCount: 4
   spiltRatio1: 0.05
   spiltRatio2: 0.15
   spiltRatio3: 0.5
   cascadeEdgeFade: 0.05
-  punctualLightShadowArraySize: 1024
-  punctualLightShadowSampleNumber: 8
-  punctualLightPenumbra: 0.1
+  sunLightShadowMapSize: 2048
+  spotLightShadowMapSize: 1024
+  pointLightShadowMapSize: 1024

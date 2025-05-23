@@ -71,7 +71,7 @@ Shader "YPipeline/PBR/Standard Forward (Separated Texture)"
             #pragma shader_feature_local_fragment _CLIPPING
             
             #pragma multi_compile _ LIGHTMAP_ON
-            #pragma multi_compile _ _SHADOW_MASK_DISTANCE _SHADOW_MASK_NORMAL
+            #pragma multi_compile _PCF _PCSS
 
             #pragma multi_compile _ LOD_FADE_CROSSFADE
             

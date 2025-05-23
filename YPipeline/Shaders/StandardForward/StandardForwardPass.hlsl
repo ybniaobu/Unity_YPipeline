@@ -116,7 +116,7 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     // Direct Lighting - Sun Light
     // ----------------------------------------------------------------------------------------------------
     LightParams sunLightParams = (LightParams) 0;
-    InitializeSunLightParams(sunLightParams, LIGHTMAP_UV_FRAGMENT(IN), standardPBRParams.V, normalize(IN.normalWS), IN.positionWS);
+    InitializeSunLightParams(sunLightParams, standardPBRParams.V, normalize(IN.normalWS), IN.positionWS, IN.positionHCS.xyz);
 
     BRDFParams sunBRDFParams = (BRDFParams) 0;
     InitializeBRDFParams(sunBRDFParams, standardPBRParams.N, sunLightParams.L, standardPBRParams.V, sunLightParams.H);
@@ -131,7 +131,7 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     for (int i = 0; i < spotLightCount; i++)
     {
         LightParams spotLightParams = (LightParams) 0;
-        InitializeSpotLightParams(spotLightParams, i, standardPBRParams.V, normalize(IN.normalWS), IN.positionWS);
+        InitializeSpotLightParams(spotLightParams, i, standardPBRParams.V, normalize(IN.normalWS), IN.positionWS, IN.positionHCS.xyz);
         
         BRDFParams spotBRDFParams = (BRDFParams) 0;
         InitializeBRDFParams(spotBRDFParams, standardPBRParams.N, spotLightParams.L, standardPBRParams.V, spotLightParams.H);
@@ -144,7 +144,7 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     for (int j = 0; j < pointLightCount; j++)
     {
         LightParams pointLightParams = (LightParams) 0;
-        InitializePointLightParams(pointLightParams, j, standardPBRParams.V, normalize(IN.normalWS), IN.positionWS);
+        InitializePointLightParams(pointLightParams, j, standardPBRParams.V, normalize(IN.normalWS), IN.positionWS, IN.positionHCS.xyz);
 
         BRDFParams pointBRDFParams = (BRDFParams) 0;
         InitializeBRDFParams(pointBRDFParams, standardPBRParams.N, pointLightParams.L, standardPBRParams.V, pointLightParams.H);

@@ -48,7 +48,7 @@ float3 CalculateLightIrradiance(LightParams lightParams)
 // Initialize Directional Light Parameters
 // ----------------------------------------------------------------------------------------------------
 
-void InitializeSunLightParams(out LightParams sunLightParams, float2 lightMapUV, float3 V, float3 normalWS, float3 positionWS)
+void InitializeSunLightParams(out LightParams sunLightParams, float3 V, float3 normalWS, float3 positionWS, float3 positionHCS)
 {
     sunLightParams.color = GetSunLightColor();
     sunLightParams.positionWS = float4(GetSunLightDirection(), 0.0); //Directional Light has no position
@@ -56,14 +56,19 @@ void InitializeSunLightParams(out LightParams sunLightParams, float2 lightMapUV,
     sunLightParams.H = normalize(sunLightParams.L + V);
     sunLightParams.distanceAttenuation = 1.0;
     sunLightParams.angleAttenuation = 1.0;
-    sunLightParams.shadowAttenuation = GetSunLightShadowAttenuation_PCSS(positionWS, normalWS, sunLightParams.L);
+    
+    #if defined(_PCSS)
+        sunLightParams.shadowAttenuation = GetSunLightShadowAttenuation_PCSS(positionWS, normalWS, sunLightParams.L, positionHCS);
+    #elif defined(_PCF)
+        sunLightParams.shadowAttenuation = GetSunLightShadowAttenuation_PCF(positionWS, normalWS, sunLightParams.L, positionHCS);
+    #endif
 }
 
 // ----------------------------------------------------------------------------------------------------
 // Initialize Punctual Lights Parameters
 // ----------------------------------------------------------------------------------------------------
 
-void InitializeSpotLightParams(out LightParams spotLightParams, int lightIndex, float3 V, float3 normalWS, float3 positionWS)
+void InitializeSpotLightParams(out LightParams spotLightParams, int lightIndex, float3 V, float3 normalWS, float3 positionWS, float3 positionHCS)
 {
     spotLightParams.color = GetSpotLightColor(lightIndex);
     spotLightParams.positionWS = float4(GetSpotLightPosition(lightIndex), 1.0);
@@ -85,11 +90,15 @@ void InitializeSpotLightParams(out LightParams spotLightParams, int lightIndex, 
     else
     {
         float linearDepth = abs(dot(lightVector, spotDirection));
-        spotLightParams.shadowAttenuation = GetSpotLightShadowAttenuation_PCSS(lightIndex, positionWS, normalWS, spotLightParams.L, linearDepth);
+        #if defined(_PCSS)
+            spotLightParams.shadowAttenuation = GetSpotLightShadowAttenuation_PCSS(lightIndex, positionWS, normalWS, spotLightParams.L, linearDepth, positionHCS);
+        #elif defined(_PCF)
+            spotLightParams.shadowAttenuation = GetSpotLightShadowAttenuation_PCF(lightIndex, positionWS, normalWS, spotLightParams.L, linearDepth, positionHCS);
+        #endif
     }
 }
 
-void InitializePointLightParams(out LightParams pointLightParams, int lightIndex, float3 V, float3 normalWS, float3 positionWS)
+void InitializePointLightParams(out LightParams pointLightParams, int lightIndex, float3 V, float3 normalWS, float3 positionWS, float3 positionHCS)
 {
     pointLightParams.color = GetPointLightColor(lightIndex);
     pointLightParams.positionWS = float4(GetPointLightPosition(lightIndex), 1.0);
@@ -110,7 +119,11 @@ void InitializePointLightParams(out LightParams pointLightParams, int lightIndex
     {
         float faceIndex = CubeMapFaceID(-pointLightParams.L);
         float linearDepth = abs(dot(lightVector, k_CubeMapFaceDir[faceIndex]));
-        pointLightParams.shadowAttenuation = GetPointLightShadowAttenuation_PCSS(lightIndex, faceIndex, positionWS, normalWS, pointLightParams.L, linearDepth);
+        #if defined(_PCSS)
+            pointLightParams.shadowAttenuation = GetPointLightShadowAttenuation_PCSS(lightIndex, faceIndex, positionWS, normalWS, pointLightParams.L, linearDepth, positionHCS);
+        #elif defined(_PCF)
+            pointLightParams.shadowAttenuation = GetPointLightShadowAttenuation_PCF(lightIndex, faceIndex, positionWS, normalWS, pointLightParams.L, linearDepth, positionHCS);
+        #endif
     }
 }
 

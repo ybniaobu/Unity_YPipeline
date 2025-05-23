@@ -83,9 +83,7 @@ namespace YPipeline
         
         // Light Global Params Per Setting
         public static readonly int k_CascadeSettingsID = Shader.PropertyToID("_CascadeSettings");
-        public static readonly int k_ShadowBiasID = Shader.PropertyToID("_ShadowBias");
-        public static readonly int k_SunLightShadowSettingsID = Shader.PropertyToID("_SunLightShadowSettings");
-        public static readonly int k_PunctualLightShadowSettingsID = Shader.PropertyToID("_PunctualLightShadowSettings");
+        public static readonly int k_ShadowMapSizesID = Shader.PropertyToID("_ShadowMapSizes");
         
         // Sun Light Params Per Frame
         public static readonly int k_SunLightColorID = Shader.PropertyToID("_SunLightColor");
@@ -93,6 +91,7 @@ namespace YPipeline
         public static readonly int k_CascadeCullingSpheresID = Shader.PropertyToID("_CascadeCullingSpheres");
         public static readonly int k_SunLightShadowMatricesID = Shader.PropertyToID("_SunLightShadowMatrices");
         public static readonly int k_SunLightShadowBiasID = Shader.PropertyToID("_SunLightShadowBias");
+        public static readonly int k_SunLightPCFParamsID = Shader.PropertyToID("_SunLightPCFParams");
         public static readonly int k_SunLightShadowParamsID = Shader.PropertyToID("_SunLightShadowParams");
         public static readonly int k_SunLightDepthParamsID = Shader.PropertyToID("_SunLightDepthParams");
         
@@ -105,6 +104,7 @@ namespace YPipeline
         public static readonly int k_SpotLightParamsID = Shader.PropertyToID("_SpotLightParams");
         public static readonly int k_SpotLightShadowMatricesID = Shader.PropertyToID("_SpotLightShadowMatrices");
         public static readonly int k_SpotLightShadowBiasID = Shader.PropertyToID("_SpotLightShadowBias");
+        public static readonly int k_SpotLightPCFParamsID = Shader.PropertyToID("_SpotLightPCFParams");
         public static readonly int k_SpotLightShadowParamsID = Shader.PropertyToID("_SpotLightShadowParams");
         public static readonly int k_SpotLightDepthParamsID = Shader.PropertyToID("_SpotLightDepthParams");
         
@@ -113,6 +113,7 @@ namespace YPipeline
         public static readonly int k_PointLightParamsID = Shader.PropertyToID("_PointLightParams");
         public static readonly int k_PointLightShadowMatricesID = Shader.PropertyToID("_PointLightShadowMatrices");
         public static readonly int k_PointLightShadowBiasID = Shader.PropertyToID("_PointLightShadowBias");
+        public static readonly int k_PointLightPCFParamsID = Shader.PropertyToID("_PointLightPCFParams");
         public static readonly int k_PointLightShadowParamsID = Shader.PropertyToID("_PointLightShadowParams");
         public static readonly int k_PointLightDepthParamsID = Shader.PropertyToID("_PointLightDepthParams");
         
@@ -189,8 +190,11 @@ namespace YPipeline
         // Lighting Related Keywords
         // ----------------------------------------------------------------------------------------------------
         
-        public const string k_ShadowMaskDistance = "_SHADOW_MASK_DISTANCE";
-        public const string k_ShadowMaskNormal = "_SHADOW_MASK_NORMAL";
+        // public const string k_ShadowMaskDistance = "_SHADOW_MASK_DISTANCE";
+        // public const string k_ShadowMaskNormal = "_SHADOW_MASK_NORMAL";
+        
+        public const string k_PCF = "_PCF";
+        public const string k_PCSS = "_PCSS";
         
         // ----------------------------------------------------------------------------------------------------
         // Post Processing Related Keywords

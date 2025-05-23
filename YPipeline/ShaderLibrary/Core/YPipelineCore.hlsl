@@ -7,10 +7,6 @@
 #include "UnityInput.hlsl"
 #include "YPipelineInput.hlsl"
 
-#if defined(_SHADOW_MASK_DISTANCE) || defined(_SHADOW_MASK_NORMAL)
-    #define SHADOWS_SHADOWMASK
-#endif
-
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/UnityInstancing.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
 
