@@ -255,7 +255,7 @@ float ApplyPCF_2DArray(float index, TEXTURE2D_ARRAY_SHADOW(shadowMap), float sam
     {
         //float2 offset = mul(rotation, InverseSampleCircle(Sobol_Scrambled(i+1, hash1, hash2))) * 0.5;
         //float2 offset = InverseSampleCircle(Sobol_Scrambled(i, hash1, hash2)) * 0.5;
-        float2 offset = mul(rotation, InverseSampleCircle(Hammersley_Bits(i + 1, sampleNumber + 1))) * 0.5;
+        float2 offset = mul(rotation, InverseSampleCircle(Sobol_Bits(i + 1))) * 0.5;
         //float2 offset = mul(rotation, poissonDisk[i]) * 0.5;
         //float2 offset = mul(rotation, InverseSampleCircle(Halton_Float(i))) * 0.5;
         //float2 offset = mul(rotation, InverseSampleCircle(Sobol_Bits(i))) * 0.5;
@@ -273,7 +273,9 @@ float ApplyPCF_2DArray(float index, TEXTURE2D_ARRAY_SHADOW(shadowMap), float sam
     for (float i = 0; i < sampleNumber; i++)
     {
         //float2 offset = mul(rotation, InverseSampleCircle(Sobol_Scrambled(i, hash1, hash2))) * 0.5;
-        float2 offset = mul(rotation, InverseSampleCircle(Hammersley_Bits(i + 1, sampleNumber + 1))) * 0.5;
+        float2 offset = mul(rotation, InverseSampleCircle(Sobol_Bits(i + 1))) * 0.5;
+        //float2 offset = mul(rotation, InverseSampleCircle(Hammersley_Bits(i + 1, sampleNumber + 1))) * 0.5;
+        //float2 offset = mul(rotation, fibonacciSpiralDirection[i]) * 0.5 * (i * rcp(sampleNumber) + rcp(sampleNumber)*0.5);
         offset = offset * penumbraPercent;
         float2 uv = positionSS.xy + offset;
         shadowAttenuation += SampleShadowArray_Compare(float3(uv, positionSS.z), index, shadowMap, SHADOW_SAMPLER_COMPARE);
@@ -309,7 +311,8 @@ float ApplyPCF_CubeArray(float index, float faceIndex, TEXTURECUBE_ARRAY_SHADOW(
     for (float i = 0; i < sampleNumber; i++)
     {
         //float2 offset = mul(rotation, InverseSampleCircle(Sobol_Scrambled(i, hash1, hash2))) * 0.5;
-        float2 offset = mul(rotation, InverseSampleCircle(Hammersley_Bits(i + 1, sampleNumber + 1))) * 0.5;
+        //float2 offset = mul(rotation, InverseSampleCircle(Hammersley_Bits(i + 1, sampleNumber + 1))) * 0.5;
+        float2 offset = mul(rotation, InverseSampleCircle(Sobol_Bits(i + 2))) * 0.5;
         offset = offset * penumbraPercent;
         float2 uv_Offset = positionSS.xy + offset;
         float3 sampleDir = CubeMapping(faceIndex, uv_Offset);
@@ -495,10 +498,11 @@ float GetSunLightShadowAttenuation_PCSS(float3 positionWS, float3 normalWS, floa
     float3 positionWS_SearchBias = ApplyShadowBias(positionWS, GetSunLightShadowBias(), texelSize, searchWidthWS, normalWS, L);
     float3 positionSS_Search = TransformWorldToSunLightShadowCoord(positionWS_SearchBias, cascadeIndex);
     
-    uint hash1 = Hash_Jenkins(asuint(positionWS));
+    uint hash1 = Hash_Jenkins(asuint(positionHCS));
     uint hash2 = Hash_Jenkins(asuint(positionSS_Search));
-    float random = floatConstruct(hash1);
+    //float random = floatConstruct(hash1);
     float randomRadian = InterleavedGradientNoise(positionHCS, 0) * TWO_PI;
+    //float randomRadian = SAMPLE_TEXTURE2D(_BlueNoise64, sampler_PointRepeat, positionHCS.xy * _CameraBufferSize.xy * 100).r * TWO_PI;
     //float randomRadian = random * TWO_PI;
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
 
@@ -576,8 +580,9 @@ float GetPointLightShadowAttenuation_PCSS(int lightIndex, float faceIndex, float
     
     uint hash1 = Hash_Jenkins(asuint(positionWS));
     uint hash2 = Hash_Jenkins(asuint(positionSS_Search));
-    float random = floatConstruct(hash1);
+    //float random = floatConstruct(hash1);
     float randomRadian = InterleavedGradientNoise(positionHCS, 0) * TWO_PI;
+    //float randomRadian = SAMPLE_TEXTURE2D(_BlueNoise64, sampler_PointRepeat, positionHCS.xy * _CameraBufferSize.xy * 100).r * TWO_PI;
     //float randomRadian = random * TWO_PI;
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
     

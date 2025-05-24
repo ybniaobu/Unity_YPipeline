@@ -18,7 +18,10 @@ namespace YPipeline
         {
             public Texture environmentBRDFLut;
             public Texture[] filmGrainTex;
-            public Texture[] blueNoise64;
+            public Texture blueNoise16;
+            public Texture blueNoise64;
+            public Texture blueNoise128;
+            public Texture blueNoise256;
         }
         
         public Textures textures;

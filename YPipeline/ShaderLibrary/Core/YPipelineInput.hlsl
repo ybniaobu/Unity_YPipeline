@@ -127,7 +127,7 @@ float4 GetPointLightDepthParams(int shadowIndex)            { return _PointLight
 #define SUN_LIGHT_SHADOW_MAP            _SunLightShadowMap
 #define SPOT_LIGHT_SHADOW_MAP           _SpotLightShadowMap
 #define POINT_LIGHT_SHADOW_MAP          _PointLightShadowMap
-#define SHADOW_SAMPLER_COMPARE          sampler_PointClampCompare
+#define SHADOW_SAMPLER_COMPARE          sampler_LinearClampCompare
 #define SHADOW_SAMPLER                  sampler_PointClamp
 
 TEXTURE2D_ARRAY_SHADOW(SUN_LIGHT_SHADOW_MAP);
@@ -146,6 +146,9 @@ SAMPLER(LUT_SAMPLER);
 // Depth & Normal & Opaque Texture
 TEXTURE2D(_CameraDepthTexture);
 TEXTURE2D(_CameraColorTexture);
+
+// Blue Noise
+TEXTURE2D(_BlueNoise64);
 
 // General Samplers
 SAMPLER(sampler_PointRepeat);

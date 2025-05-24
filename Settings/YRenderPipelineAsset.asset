@@ -30,6 +30,6 @@ MonoBehaviour:
   spiltRatio2: 0.15
   spiltRatio3: 0.5
   cascadeEdgeFade: 0.05
-  sunLightShadowMapSize: 2048
+  sunLightShadowMapSize: 4096
   spotLightShadowMapSize: 1024
   pointLightShadowMapSize: 1024

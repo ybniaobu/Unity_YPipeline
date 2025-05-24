@@ -9,11 +9,17 @@ namespace YPipeline
     {
         private class ForwardBuffersPassData
         {
+            public TextureHandle envBRDFLut;
+            public TextureHandle blueNoise64;
+            
             public Vector2Int bufferSize;
         }
         
         private RTHandle m_CameraColorTarget;
         private RTHandle m_CameraDepthTarget;
+        
+        private RTHandle m_EnvBRDFLut;
+        private RTHandle m_BlueNoise64;
             
         protected override void Initialize() { }
 
@@ -21,6 +27,24 @@ namespace YPipeline
         {
             using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<ForwardBuffersPassData>("Forward Buffers Preparation", out var passData))
             {
+                ImportBackBuffers(ref data);
+                
+                // Imported texture resources
+                if (m_EnvBRDFLut == null || m_EnvBRDFLut.externalTexture != data.asset.pipelineResources.textures.environmentBRDFLut)
+                {
+                    m_EnvBRDFLut = RTHandles.Alloc(data.asset.pipelineResources.textures.environmentBRDFLut);
+                }
+                passData.envBRDFLut = data.renderGraph.ImportTexture(m_EnvBRDFLut);
+                builder.ReadTexture(passData.envBRDFLut);
+
+                if (m_BlueNoise64 == null || m_BlueNoise64.externalTexture != data.asset.pipelineResources.textures.blueNoise64)
+                {
+                    m_BlueNoise64 = RTHandles.Alloc(data.asset.pipelineResources.textures.blueNoise64);
+                }
+                passData.blueNoise64 = data.renderGraph.ImportTexture(m_BlueNoise64);
+                builder.ReadTexture(passData.blueNoise64);
+                
+                // Buffers
                 Vector2Int bufferSize = data.BufferSize;
                 passData.bufferSize = bufferSize;
                 
@@ -58,7 +82,6 @@ namespace YPipeline
                     name = "Depth Texture"
                 };
                 
-                ImportBackBuffers(ref data);
                 data.CameraColorAttachment = data.renderGraph.CreateTexture(colorAttachmentDesc);
                 data.CameraDepthAttachment = data.renderGraph.CreateTexture(depthAttachmentDesc);
                 data.CameraColorTexture = data.renderGraph.CreateTexture(colorTextureDesc);
@@ -68,6 +91,8 @@ namespace YPipeline
                 
                 builder.SetRenderFunc((ForwardBuffersPassData data, RenderGraphContext context) =>
                 {
+                    context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_EnvBRDFLutID, data.envBRDFLut);
+                    context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_BlueNoise64ID, data.blueNoise64);
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_BufferSizeID, new Vector4(1f / data.bufferSize.x, 1f / data.bufferSize.y, data.bufferSize.x, data.bufferSize.y));
                     context.renderContext.ExecuteCommandBuffer(context.cmd);
                     context.cmd.Clear();

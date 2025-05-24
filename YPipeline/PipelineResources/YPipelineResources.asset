@@ -26,4 +26,7 @@ MonoBehaviour:
     - {fileID: 2800000, guid: 03a97e4597ec6ca4eb26ae0a00c8a6bb, type: 3}
     - {fileID: 2800000, guid: 1aeeea0f5749f8d4db9eee0f9ef0efd6, type: 3}
     - {fileID: 2800000, guid: 3e25f95154fc98a429f5e2ffb05134a8, type: 3}
-    blueNoise64: []
+    blueNoise16: {fileID: 2800000, guid: e95f12ac13c411d4f8cfbbfec19856a4, type: 3}
+    blueNoise64: {fileID: 2800000, guid: f20af32bca62bab448e8b4454ad1c3b8, type: 3}
+    blueNoise128: {fileID: 0}
+    blueNoise256: {fileID: 0}

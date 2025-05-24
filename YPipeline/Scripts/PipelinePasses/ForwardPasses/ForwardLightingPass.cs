@@ -4,14 +4,14 @@ using UnityEngine.Rendering.RenderGraphModule;
 using Unity.Collections;
 using UnityEngine.Experimental.Rendering;
 
+using System.Runtime.InteropServices;
+
 namespace YPipeline
 {
     public class ForwardLightingPass : PipelinePass
     {
         private class ForwardLightingPassData
         {
-            public TextureHandle envBRDFLut;
-            // PCSS 和 PCF 整合后待修改
             public Vector4 cascadeSettings;
             public Vector4 shadowMapSizes;
             
@@ -82,10 +82,16 @@ namespace YPipeline
         private const int k_MaxShadowingPointLightCount = 8;
         
         // ----------------------------------------------------------------------------------------------------
-        // 
+        // Buffers
         // ----------------------------------------------------------------------------------------------------
+        [StructLayout(LayoutKind.Sequential)]
+        struct LightParamsPerFrame
+        {
+            public const int stride = 4 * 4 * 5;
+
+            public Vector4 color, position, directionAndMask, spotAngle, shadowData;
+        }
         
-        private RTHandle m_EnvBRDFLut;
         
         // ----------------------------------------------------------------------------------------------------
         // 
@@ -106,13 +112,6 @@ namespace YPipeline
         {
             using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<ForwardLightingPassData>("Lighting & Shadows", out var passData))
             {
-                if (m_EnvBRDFLut == null || m_EnvBRDFLut.externalTexture != data.asset.pipelineResources.textures.environmentBRDFLut)
-                {
-                    m_EnvBRDFLut = RTHandles.Alloc(data.asset.pipelineResources.textures.environmentBRDFLut);
-                }
-                passData.envBRDFLut = data.renderGraph.ImportTexture(m_EnvBRDFLut);
-                builder.ReadTexture(passData.envBRDFLut);
-                
                 passData.cascadeSettings = new Vector4(data.asset.maxShadowDistance, data.asset.distanceFade, data.asset.cascadeCount, data.asset.cascadeEdgeFade);
                 passData.shadowMapSizes = new Vector4(data.asset.sunLightShadowMapSize, data.asset.spotLightShadowMapSize, data.asset.pointLightShadowMapSize);
                 passData.isPCSSEnabled = data.asset.shadowMode == ShadowMode.PCSS;
@@ -128,7 +127,6 @@ namespace YPipeline
                 builder.SetRenderFunc((ForwardLightingPassData data, RenderGraphContext context) =>
                 {
                     // TODO: constant buffer 设置一次就行
-                    context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_EnvBRDFLutID, data.envBRDFLut);
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_CascadeSettingsID, data.cascadeSettings);
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_ShadowMapSizesID, data.shadowMapSizes);
 
