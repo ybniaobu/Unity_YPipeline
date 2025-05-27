@@ -75,7 +75,7 @@ void InitializeStandardPBRParams(Varyings IN, out StandardPBRParams standardPBRP
     standardPBRParams.ao = SAMPLE_TEXTURE2D(_AOTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).r;
     standardPBRParams.F0 = lerp(_Specular * _Specular * float3(0.16, 0.16, 0.16), standardPBRParams.albedo, standardPBRParams.metallic);
     standardPBRParams.F90 = saturate(dot(standardPBRParams.F0, 50.0 * 0.3333));
-    standardPBRParams.V = GetWorldSpaceNormalizeViewDir(IN.positionWS);
+    standardPBRParams.V = GetWorldSpaceNormalizedViewDir(IN.positionWS);
     standardPBRParams.R = reflect(-standardPBRParams.V, standardPBRParams.N);
     standardPBRParams.NoV = saturate(dot(standardPBRParams.N, standardPBRParams.V)) + 1e-3; //防止小黑点
 }

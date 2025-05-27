@@ -57,9 +57,9 @@ void InitializeSunLightParams(out LightParams sunLightParams, float3 V, float3 n
     sunLightParams.distanceAttenuation = 1.0;
     sunLightParams.angleAttenuation = 1.0;
     
-    #if defined(_PCSS)
+    #if defined(_SHADOW_PCSS)
         sunLightParams.shadowAttenuation = GetSunLightShadowAttenuation_PCSS(positionWS, normalWS, sunLightParams.L, positionHCS);
-    #elif defined(_PCF)
+    #elif defined(_SHADOW_PCF)
         sunLightParams.shadowAttenuation = GetSunLightShadowAttenuation_PCF(positionWS, normalWS, sunLightParams.L, positionHCS);
     #endif
 }
@@ -90,9 +90,9 @@ void InitializeSpotLightParams(out LightParams spotLightParams, int lightIndex, 
     else
     {
         float linearDepth = abs(dot(lightVector, spotDirection));
-        #if defined(_PCSS)
+        #if defined(_SHADOW_PCSS)
             spotLightParams.shadowAttenuation = GetSpotLightShadowAttenuation_PCSS(lightIndex, positionWS, normalWS, spotLightParams.L, linearDepth, positionHCS);
-        #elif defined(_PCF)
+        #elif defined(_SHADOW_PCF)
             spotLightParams.shadowAttenuation = GetSpotLightShadowAttenuation_PCF(lightIndex, positionWS, normalWS, spotLightParams.L, linearDepth, positionHCS);
         #endif
     }
@@ -119,9 +119,9 @@ void InitializePointLightParams(out LightParams pointLightParams, int lightIndex
     {
         float faceIndex = CubeMapFaceID(-pointLightParams.L);
         float linearDepth = abs(dot(lightVector, k_CubeMapFaceDir[faceIndex]));
-        #if defined(_PCSS)
+        #if defined(_SHADOW_PCSS)
             pointLightParams.shadowAttenuation = GetPointLightShadowAttenuation_PCSS(lightIndex, faceIndex, positionWS, normalWS, pointLightParams.L, linearDepth, positionHCS);
-        #elif defined(_PCF)
+        #elif defined(_SHADOW_PCF)
             pointLightParams.shadowAttenuation = GetPointLightShadowAttenuation_PCF(lightIndex, faceIndex, positionWS, normalWS, pointLightParams.L, linearDepth, positionHCS);
         #endif
     }

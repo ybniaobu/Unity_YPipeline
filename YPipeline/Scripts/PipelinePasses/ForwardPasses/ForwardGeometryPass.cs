@@ -51,6 +51,8 @@ namespace YPipeline
                 if (data.isSunLightShadowMapCreated) builder.ReadTexture(data.SunLightShadowMap);
                 if (data.isSpotLightShadowMapCreated) builder.ReadTexture(data.SpotLightShadowMap);
                 if (data.isPointLightShadowMapCreated) builder.ReadTexture(data.PointLightShadowMap);
+                
+                if (data.tilesBuffer.IsValid()) builder.ReadBuffer(data.tilesBuffer);
                
                 builder.AllowPassCulling(false);
                 builder.AllowRendererListCulling(false);

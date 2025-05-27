@@ -194,8 +194,8 @@ namespace YPipeline
         // public const string k_ShadowMaskDistance = "_SHADOW_MASK_DISTANCE";
         // public const string k_ShadowMaskNormal = "_SHADOW_MASK_NORMAL";
         
-        public const string k_PCF = "_PCF";
-        public const string k_PCSS = "_PCSS";
+        public const string k_ShadowPCF = "_SHADOW_PCF";
+        public const string k_ShadowPCSS = "_SHADOW_PCSS";
         
         // ----------------------------------------------------------------------------------------------------
         // Post Processing Related Keywords

@@ -12,6 +12,7 @@ namespace YPipeline
         public Camera camera;
         public CommandBuffer cmd;
         public CullingResults cullingResults;
+        public YPipelineLightsData lights;
         
         public Vector2Int BufferSize => new Vector2Int((int) (camera.pixelWidth * asset.renderScale), (int) (camera.pixelHeight * asset.renderScale));
         
@@ -39,5 +40,8 @@ namespace YPipeline
         // Imported texture resources
         public TextureHandle envBRDFLut;
         public TextureHandle blueNoise256;
+        
+        // Tiled Light Culling
+        public BufferHandle tilesBuffer;
     }
 }

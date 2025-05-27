@@ -26,9 +26,9 @@ MonoBehaviour:
   maxShadowDistance: 80
   distanceFade: 0.05
   cascadeCount: 4
-  spiltRatio1: 0.05
-  spiltRatio2: 0.15
-  spiltRatio3: 0.5
+  spiltRatio1: 0.1
+  spiltRatio2: 0.2
+  spiltRatio3: 0.6
   cascadeEdgeFade: 0.05
   sunLightShadowMapSize: 4096
   spotLightShadowMapSize: 1024

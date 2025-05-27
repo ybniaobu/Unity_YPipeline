@@ -29,4 +29,4 @@ MonoBehaviour:
     blueNoise16: {fileID: 2800000, guid: e95f12ac13c411d4f8cfbbfec19856a4, type: 3}
     blueNoise64: {fileID: 2800000, guid: f20af32bca62bab448e8b4454ad1c3b8, type: 3}
     blueNoise128: {fileID: 0}
-    blueNoise256: {fileID: 0}
+    blueNoise256: {fileID: 2800000, guid: 327ad2c817f5c5646a409ef7764d931d, type: 3}

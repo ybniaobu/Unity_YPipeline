@@ -31,10 +31,7 @@ float GetSunLightShadowMapSize()                    { return _ShadowMapSizes.x; 
 float GetSpotLightShadowMapSize()                   { return _ShadowMapSizes.y; }
 float GetPointLightShadowMapSize()                  { return _ShadowMapSizes.z; }
 
-CBUFFER_START(LightParamsPerFrame)
-    float4 _PunctualLightCount; // x: spot light count, y: point light count, z: 0, w: 0
-
-    // Sun Light
+CBUFFER_START(SunLight)
     float4 _SunLightColor; // xyz: color * intensity, w: shadow strength
     float4 _SunLightDirection; // xyz: sun light direction
     float4 _CascadeCullingSpheres[MAX_CASCADE_COUNT]; // xyz: culling sphere center, w: culling sphere radius
@@ -43,6 +40,11 @@ CBUFFER_START(LightParamsPerFrame)
     float4 _SunLightPCFParams; // x: penumbra width, y: sample number
     float4 _SunLightShadowParams; // x: light size, y: penumbra scale, z: blocker search sample number, w: filter sample number
     float4 _SunLightDepthParams[MAX_CASCADE_COUNT]; // x: (f + n) / (f - n), y: -2 * f * n / (f - n); [if UNITY_REVERSED_Z] x: (f + n) / (n - f), y: -2 * f * n / (n - f)
+CBUFFER_END
+
+
+CBUFFER_START(LightParamsPerFrame)
+    float4 _PunctualLightCount; // x: spot light count, y: point light count, z: 0, w: 0
 
     // Spot Light
     float4 _SpotLightColors[MAX_SPOT_LIGHT_COUNT]; // xyz: color * intensity, w: shadow strength
@@ -51,7 +53,7 @@ CBUFFER_START(LightParamsPerFrame)
     float4 _SpotLightParams[MAX_SPOT_LIGHT_COUNT]; // x: 1.0 / spot light range square, y: invAngleRange, z: cosOuterAngle, w: shadowing spot light index
     float4x4 _SpotLightShadowMatrices[MAX_SHADOWING_SPOT_LIGHT_COUNT];
     float4 _SpotLightShadowBias[MAX_SHADOWING_SPOT_LIGHT_COUNT]; // x: depth bias, y: slope scaled depth bias, z: normal bias, w: slope scaled normal bias
-    float4 _SpotLightPCFParams[MAX_POINT_LIGHT_COUNT]; // x: penumbra width, y: sample number
+    float4 _SpotLightPCFParams[MAX_SHADOWING_SPOT_LIGHT_COUNT]; // x: penumbra width, y: sample number
     float4 _SpotLightShadowParams[MAX_SHADOWING_SPOT_LIGHT_COUNT]; // x: light size, y: penumbra scale, z: blocker search sample number, w: filter sample number
     float4 _SpotLightDepthParams[MAX_SHADOWING_SPOT_LIGHT_COUNT]; // x: (f + n) / (f - n), y: -2 * f * n / (f - n); [if UNITY_REVERSED_Z] x: (f + n) / (n - f), y: -2 * f * n / (n - f)
     
@@ -127,7 +129,7 @@ float4 GetPointLightDepthParams(int shadowIndex)            { return _PointLight
 #define SUN_LIGHT_SHADOW_MAP            _SunLightShadowMap
 #define SPOT_LIGHT_SHADOW_MAP           _SpotLightShadowMap
 #define POINT_LIGHT_SHADOW_MAP          _PointLightShadowMap
-#define SHADOW_SAMPLER_COMPARE          sampler_LinearClampCompare
+#define SHADOW_SAMPLER_COMPARE          sampler_PointClampCompare
 #define SHADOW_SAMPLER                  sampler_PointClamp
 
 TEXTURE2D_ARRAY_SHADOW(SUN_LIGHT_SHADOW_MAP);
