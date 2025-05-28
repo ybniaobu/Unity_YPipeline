@@ -34,8 +34,9 @@ struct LightParams
     float3 H;
     float distanceAttenuation;
     float angleAttenuation;
-    float shadowAttenuation;
-    //uint layerMask;
+    bool isShadowing;
+    float3 shadowAttenuation;
+    // uint layerMask;
 };
 
 float3 CalculateLightIrradiance(LightParams lightParams)
@@ -56,12 +57,21 @@ void InitializeSunLightParams(out LightParams sunLightParams, float3 V, float3 n
     sunLightParams.H = normalize(sunLightParams.L + V);
     sunLightParams.distanceAttenuation = 1.0;
     sunLightParams.angleAttenuation = 1.0;
-    
-    #if defined(_SHADOW_PCSS)
+    sunLightParams.isShadowing = IsSunLightShadowing();
+
+    UNITY_BRANCH
+    if (sunLightParams.isShadowing)
+    {
+        #if defined(_SHADOW_PCSS)
         sunLightParams.shadowAttenuation = GetSunLightShadowAttenuation_PCSS(positionWS, normalWS, sunLightParams.L, positionHCS);
-    #elif defined(_SHADOW_PCF)
+        #elif defined(_SHADOW_PCF)
         sunLightParams.shadowAttenuation = GetSunLightShadowAttenuation_PCF(positionWS, normalWS, sunLightParams.L, positionHCS);
-    #endif
+        #endif
+    }
+    else
+    {
+        sunLightParams.shadowAttenuation = float3(1, 1, 1);
+    }
 }
 
 // ----------------------------------------------------------------------------------------------------
@@ -82,8 +92,10 @@ void InitializeSpotLightParams(out LightParams spotLightParams, int lightIndex, 
     float2 spotAngleParams = GetSpotLightAngleParams(lightIndex);
     spotLightParams.angleAttenuation = GetAngleAttenuation(spotLightParams.L, spotDirection, spotAngleParams);
     
-    [branch]
-    if (spotLightParams.distanceAttenuation * spotLightParams.angleAttenuation <= 0.0 || GetShadowingSpotLightIndex(lightIndex) < 0.0)
+    spotLightParams.isShadowing = spotLightParams.distanceAttenuation * spotLightParams.angleAttenuation <= 0.0 || GetShadowingSpotLightIndex(lightIndex) < 0.0;
+    
+    UNITY_BRANCH
+    if (spotLightParams.isShadowing) // 反了，待更改
     {
         spotLightParams.shadowAttenuation = 1.0;
     }
@@ -109,9 +121,11 @@ void InitializePointLightParams(out LightParams pointLightParams, int lightIndex
     
     pointLightParams.distanceAttenuation = GetDistanceAttenuation(lightVector, GetPointLightInverseRangeSquare(lightIndex));
     pointLightParams.angleAttenuation = 1.0;
+
+    pointLightParams.isShadowing = pointLightParams.distanceAttenuation <= 0.0 || GetShadowingPointLightIndex(lightIndex) < 0.0;
     
-    [branch]
-    if (pointLightParams.distanceAttenuation <= 0.0 || GetShadowingPointLightIndex(lightIndex) < 0.0)
+    UNITY_BRANCH
+    if (pointLightParams.isShadowing) // 反了，待更改
     {
         pointLightParams.shadowAttenuation = 1.0;
     }

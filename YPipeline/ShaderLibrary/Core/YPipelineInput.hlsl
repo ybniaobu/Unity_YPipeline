@@ -18,6 +18,7 @@
 
 float4 _CameraBufferSize; // x: 1.0 / bufferSize.x, y: 1.0 / bufferSize.y, z: bufferSize.x, w: bufferSize.y
 
+// TODO: Global Constant buffer 存放一些全局的只需设置一次的 constant buffer
 CBUFFER_START(LightParamsPerSetting)
     float4 _CascadeSettings; // x: max shadow distance, y: shadow distance fade, z: sun light cascade count, w: cascade edge fade
     float4 _ShadowMapSizes; // x: sun light shadow map size, y: spot light shadow map size, z: point light shadow map size
@@ -31,16 +32,41 @@ float GetSunLightShadowMapSize()                    { return _ShadowMapSizes.x; 
 float GetSpotLightShadowMapSize()                   { return _ShadowMapSizes.y; }
 float GetPointLightShadowMapSize()                  { return _ShadowMapSizes.z; }
 
-CBUFFER_START(SunLight)
-    float4 _SunLightColor; // xyz: color * intensity, w: shadow strength
-    float4 _SunLightDirection; // xyz: sun light direction
+CBUFFER_START(SunLightParams)
+    float4 _SunLightColor; // xyz: color * intensity
+    float4 _SunLightDirection; // xyz: sun light direction, w: whether is shadowing (1 for shadowing)
+    float4 _SunLightShadowColor; // xyz: shadow color, w: shadow strengths
+    float4 _SunLightPenumbraColor; // xyz: penumbra color
+    float4 _SunLightShadowBias; // x: depth bias, y: slope scaled depth bias, z: normal bias, w: slope scaled normal bias
+    float4 _SunLightShadowParams; // x: penumbra(filter) width or scale, y: filter sample number
+    float4 _SunLightShadowParams2; // x: light diameter, y: blocker search area size z: blocker search sample number, w: min penumbra(filter) width
+
     float4 _CascadeCullingSpheres[MAX_CASCADE_COUNT]; // xyz: culling sphere center, w: culling sphere radius
     float4x4 _SunLightShadowMatrices[MAX_CASCADE_COUNT];
-    float4 _SunLightShadowBias; // x: depth bias, y: slope scaled depth bias, z: normal bias, w: slope scaled normal bias
-    float4 _SunLightPCFParams; // x: penumbra width, y: sample number
-    float4 _SunLightShadowParams; // x: light size, y: penumbra scale, z: blocker search sample number, w: filter sample number
     float4 _SunLightDepthParams[MAX_CASCADE_COUNT]; // x: (f + n) / (f - n), y: -2 * f * n / (f - n); [if UNITY_REVERSED_Z] x: (f + n) / (n - f), y: -2 * f * n / (n - f)
 CBUFFER_END
+
+float3 GetSunLightColor()                                   { return _SunLightColor.xyz; }
+float3 GetSunLightDirection()                               { return _SunLightDirection.xyz; }
+bool IsSunLightShadowing()                                  { return _SunLightDirection.w > 0.5f; }
+float3 GetSunLightShadowColor()                             { return _SunLightShadowColor.xyz; }
+float GetSunLightShadowStrength()                           { return _SunLightShadowColor.w; }
+float3 GetSunLightPenumbraColor()                           { return _SunLightPenumbraColor.xyz; }
+float4 GetSunLightShadowBias()                              { return _SunLightShadowBias; }
+float GetSunLightPCFPenumbraWidth()                         { return _SunLightShadowParams.x; }
+float GetSunLightPCFSampleNumber()                          { return _SunLightShadowParams.y; }
+float GetSunLightPCSSPenumbraScale()                        { return _SunLightShadowParams.x; }
+float GetSunLightPCSSFilterSampleNumber()                   { return _SunLightShadowParams.y; }
+float GetSunLightSize()                                     { return _SunLightShadowParams2.x; }
+float GetSunLightBlockerSearchAreaSize()                    { return _SunLightShadowParams2.y; }
+float GetSunLightBlockerSampleNumber()                      { return _SunLightShadowParams2.z; }
+float GetSunLightMinFilterWidth()                           { return _SunLightShadowParams2.w; }
+
+float4 GetCascadeCullingSphere(int cascadeIndex)            { return _CascadeCullingSpheres[cascadeIndex]; }
+float3 GetCascadeCullingSphereCenter(int cascadeIndex)      { return _CascadeCullingSpheres[cascadeIndex].xyz; }
+float GetCascadeCullingSphereRadius(int cascadeIndex)       { return _CascadeCullingSpheres[cascadeIndex].w; }
+float4x4 GetSunLightShadowMatrix(int cascadeIndex)          { return _SunLightShadowMatrices[cascadeIndex]; }
+float4 GetSunLightDepthParams(int cascadeIndex)             { return _SunLightDepthParams[cascadeIndex]; }
 
 
 CBUFFER_START(LightParamsPerFrame)
@@ -67,22 +93,6 @@ CBUFFER_START(LightParamsPerFrame)
     float4 _PointLightShadowParams[MAX_SHADOWING_POINT_LIGHT_COUNT]; // x: light size, y: penumbra scale, z: blocker search sample number, w: filter sample number
     float4 _PointLightDepthParams[MAX_SHADOWING_POINT_LIGHT_COUNT]; // x: (f + n) / (f - n), y: -2 * f * n / (f - n); [if UNITY_REVERSED_Z] x: (f + n) / (n - f), y: -2 * f * n / (n - f)
 CBUFFER_END
-
-float3 GetSunLightColor()                                   { return _SunLightColor.xyz; }
-float GetSunLightShadowStrength()                           { return _SunLightColor.w; }
-float3 GetSunLightDirection()                               { return _SunLightDirection.xyz; }
-float4 GetCascadeCullingSphere(int cascadeIndex)            { return _CascadeCullingSpheres[cascadeIndex]; }
-float3 GetCascadeCullingSphereCenter(int cascadeIndex)      { return _CascadeCullingSpheres[cascadeIndex].xyz; }
-float GetCascadeCullingSphereRadius(int cascadeIndex)       { return _CascadeCullingSpheres[cascadeIndex].w; }
-float4x4 GetSunLightShadowMatrix(int cascadeIndex)          { return _SunLightShadowMatrices[cascadeIndex]; }
-float4 GetSunLightShadowBias()                              { return _SunLightShadowBias; }
-float GetSunLightPCFPenumbraWidth()                         { return _SunLightPCFParams.x; }
-float GetSunLightPCFSampleNumber()                          { return _SunLightPCFParams.y; }
-float GetSunLightSize()                                     { return _SunLightShadowParams.x; }
-float GetSunLightPenumbraScale()                            { return _SunLightShadowParams.y; }
-float GetSunLightBlockerSampleNumber()                      { return _SunLightShadowParams.z; }
-float GetSunLightFilterSampleNumber()                       { return _SunLightShadowParams.w; }
-float4 GetSunLightDepthParams(int cascadeIndex)             { return _SunLightDepthParams[cascadeIndex]; }
 
 float GetSpotLightCount()                                   { return _PunctualLightCount.x; }
 float GetPointLightCount()                                  { return _PunctualLightCount.y; }

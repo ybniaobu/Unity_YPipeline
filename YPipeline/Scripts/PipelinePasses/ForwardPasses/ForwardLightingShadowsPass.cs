@@ -165,16 +165,16 @@ namespace YPipeline
                         CoreUtils.SetKeyword(context.cmd, YPipelineKeywords.k_ShadowPCF, true);
                     }
                     
-                    if (data.sunLightCount > 0)
-                    {
-                        context.cmd.SetGlobalVector(YPipelineShaderIDs.k_SunLightColorID, data.sunLightColor);
-                        context.cmd.SetGlobalVector(YPipelineShaderIDs.k_SunLightDirectionID, data.sunLightDirection);
-                    }
-                    else
-                    {
-                        context.cmd.SetGlobalVector(YPipelineShaderIDs.k_SunLightColorID, Vector4.zero);
-                        context.cmd.SetGlobalVector(YPipelineShaderIDs.k_SunLightDirectionID, Vector4.zero);
-                    }
+                    // if (data.sunLightCount > 0)
+                    // {
+                    //     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_SunLightColorID, data.sunLightColor);
+                    //     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_SunLightDirectionID, data.sunLightDirection);
+                    // }
+                    // else
+                    // {
+                    //     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_SunLightColorID, Vector4.zero);
+                    //     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_SunLightDirectionID, Vector4.zero);
+                    // }
             
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_PunctualLightCountID, new Vector4(data.spotLightCount, data.pointLightCount, 0.0f, 0.0f));
             
@@ -208,16 +208,7 @@ namespace YPipeline
                         context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_SunLightShadowMapID, data.sunLightShadowMap);
                         context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_CascadeCullingSpheresID, data.cascadeCullingSpheres);
                         context.cmd.SetGlobalMatrixArray(YPipelineShaderIDs.k_SunLightShadowMatricesID, data.sunLightShadowMatrices);
-                        context.cmd.SetGlobalVector(YPipelineShaderIDs.k_SunLightShadowBiasID, data.sunLightShadowBias);
-                        if (data.isPCSSEnabled)
-                        {
-                            context.cmd.SetGlobalVector(YPipelineShaderIDs.k_SunLightShadowParamsID, data.sunLightShadowParams);
-                            context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_SunLightDepthParamsID, data.sunLightDepthParams);
-                        }
-                        else
-                        {
-                            context.cmd.SetGlobalVector(YPipelineShaderIDs.k_SunLightPCFParamsID, data.sunLightPCFParams);
-                        }
+                        context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_SunLightDepthParamsID, data.sunLightDepthParams);
                     }
                     context.cmd.EndSample("Sun Light Shadows");
                     
@@ -420,7 +411,7 @@ namespace YPipeline
                 for (int i = 0; i < data.asset.cascadeCount; i++)
                 {
                     data.cullingResults.ComputeDirectionalShadowMatricesAndCullingPrimitives(shadowsPassData.sunLightIndex, i, data.asset.cascadeCount, data.asset.SpiltRatios
-                        , data.asset.sunLightShadowMapSize, shadowsPassData.sunLightNearPlaneOffset, out Matrix4x4 viewMatrix, out Matrix4x4 projectionMatrix, out ShadowSplitData splitData);
+                        , data.asset.sunLightShadowMapSize, shadowsPassData.sunLightNearPlaneOffset * 5, out Matrix4x4 viewMatrix, out Matrix4x4 projectionMatrix, out ShadowSplitData splitData);
 
                     //splitData.shadowCascadeBlendCullingFactor = 1f;
                     shadowDrawingSettings.splitData = splitData;

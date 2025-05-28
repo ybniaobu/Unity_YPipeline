@@ -89,11 +89,14 @@ namespace YPipeline
         // Sun Light Params Per Frame
         public static readonly int k_SunLightColorID = Shader.PropertyToID("_SunLightColor");
         public static readonly int k_SunLightDirectionID = Shader.PropertyToID("_SunLightDirection");
+        public static readonly int k_SunLightShadowColorID = Shader.PropertyToID("_SunLightShadowColor");
+        public static readonly int k_SunLightPenumbraColorID = Shader.PropertyToID("_SunLightPenumbraColor");
+        public static readonly int k_SunLightShadowBiasID = Shader.PropertyToID("_SunLightShadowBias");
+        public static readonly int k_SunLightShadowParamsID = Shader.PropertyToID("_SunLightShadowParams");
+        public static readonly int k_SunLightShadowParams2ID = Shader.PropertyToID("_SunLightShadowParams2");
+        
         public static readonly int k_CascadeCullingSpheresID = Shader.PropertyToID("_CascadeCullingSpheres");
         public static readonly int k_SunLightShadowMatricesID = Shader.PropertyToID("_SunLightShadowMatrices");
-        public static readonly int k_SunLightShadowBiasID = Shader.PropertyToID("_SunLightShadowBias");
-        public static readonly int k_SunLightPCFParamsID = Shader.PropertyToID("_SunLightPCFParams");
-        public static readonly int k_SunLightShadowParamsID = Shader.PropertyToID("_SunLightShadowParams");
         public static readonly int k_SunLightDepthParamsID = Shader.PropertyToID("_SunLightDepthParams");
         
         // Spot and Point Light Params Per Frame

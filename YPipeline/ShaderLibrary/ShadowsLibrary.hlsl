@@ -268,7 +268,7 @@ float ApplyPCF_2DArray(float index, TEXTURE2D_ARRAY_SHADOW(shadowMap), float sam
     return shadowAttenuation / sampleNumber;
 }
 
-float ApplyPCF_2DArray(float index, TEXTURE2D_ARRAY_SHADOW(shadowMap), float sampleNumber, float penumbraPercent, float3 positionSS, uint hash1, uint hash2, float2x2 rotation)
+float ApplyPCF_2DArray(float index, TEXTURE2D_ARRAY_SHADOW(shadowMap), float sampleNumber, float penumbraPercent, float3 positionSS, float2x2 rotation)
 {
     float shadowAttenuation = 0.0;
     for (float i = 0; i < sampleNumber; i++)
@@ -277,7 +277,7 @@ float ApplyPCF_2DArray(float index, TEXTURE2D_ARRAY_SHADOW(shadowMap), float sam
         float2 offset = mul(rotation, InverseSampleCircle(Sobol_Bits(i + 1))) * 0.5;
         //float2 offset = (float2(rotation[1]) + InverseSampleCircle(Sobol_Bits(i + 1))) * 0.5;
         //float2 offset = mul(rotation, InverseSampleCircle(Hammersley_Bits(i + 1, sampleNumber + 1))) * 0.5;
-        //float2 offset = mul(rotation, fibonacciSpiralDirection[i]) * 0.5 * (i * rcp(sampleNumber) + rcp(sampleNumber)*0.5);
+        //float2 offset = mul(rotation, fibonacciSpiralDirection[i]) * 0.5;
         offset = offset * penumbraPercent;
         float2 uv = positionSS.xy + offset;
         shadowAttenuation += SampleShadowArray_Compare(float3(uv, positionSS.z), index, shadowMap, SHADOW_SAMPLER_COMPARE);
@@ -398,7 +398,7 @@ float NonLinearToLinearDepth_Persp(float4 depthParams, float nonLinearDepth)
 }
 
 float3 ComputeAverageBlockerDepth_2DArray_Ortho(float index, TEXTURE2D_ARRAY(shadowMap), float sampleNumber,
-    float searchWidthPercent, float3 positionSS, float4 depthParams, uint hash1, uint hash2, float2x2 rotation)
+    float searchWidthPercent, float3 positionSS, float4 depthParams, float2x2 rotation)
 {
     float d_Shading = positionSS.z;
     float ld_Shading = NonLinearToLinearDepth_Ortho(depthParams, d_Shading);
@@ -408,7 +408,8 @@ float3 ComputeAverageBlockerDepth_2DArray_Ortho(float index, TEXTURE2D_ARRAY(sha
     for (int i = 0; i < sampleNumber; i++)
     {
         //float2 offset = mul(rotation, InverseSampleCircle(Sobol_Scrambled(i, hash1, hash2))) * 0.5;
-        float2 offset = mul(rotation, InverseSampleCircle(Hammersley_Bits(i + 1, sampleNumber + 1))) * 0.5;
+        //float2 offset = mul(rotation, InverseSampleCircle(Hammersley_Bits(i + 1, sampleNumber + 1))) * 0.5;
+        float2 offset = mul(rotation, InverseSampleCircle(Sobol_Bits(i + 1))) * 0.5;
         offset = offset * searchWidthPercent;
         float2 uv = positionSS.xy + offset;
         float d_Blocker = SampleShadowArray_Depth(uv, index, shadowMap, SHADOW_SAMPLER);
@@ -483,7 +484,7 @@ float3 ComputeAverageBlockerDepth_CubeArray(float index, float faceIndex, TEXTUR
 // Shadow Attenuation Functions -- PCSS
 // ----------------------------------------------------------------------------------------------------
 
-float GetSunLightShadowAttenuation_PCSS(float3 positionWS, float3 normalWS, float3 L, float3 positionHCS)
+float3 GetSunLightShadowAttenuation_PCSS(float3 positionWS, float3 normalWS, float3 L, float3 positionHCS)
 {
     float cascadeIndex = ComputeCascadeIndex(positionWS);
     if (cascadeIndex >= GetSunLightCascadeCount()) return 1.0;
@@ -493,39 +494,34 @@ float GetSunLightShadowAttenuation_PCSS(float3 positionWS, float3 normalWS, floa
     shadowFade *= ComputeCascadeEdgeFade(cascadeIndex, GetSunLightCascadeCount(), positionWS, GetCascadeEdgeFade(), GetCascadeCullingSphere(GetSunLightCascadeCount() - 1));
 
     float texelSize = GetCascadeCullingSphereRadius(cascadeIndex) * 2.0 / GetSunLightShadowMapSize();
-    // float searchWidthWS = GetSunLightSize();
-    float searchWidthWS = GetSunLightSize();
+    float searchWidthWS = GetSunLightBlockerSearchAreaSize();
     float searchWidthPercent = searchWidthWS / GetCascadeCullingSphereRadius(cascadeIndex) * 0.5;
 
     float3 positionWS_SearchBias = ApplyShadowBias(positionWS, GetSunLightShadowBias(), texelSize, searchWidthWS, normalWS, L);
     float3 positionSS_Search = TransformWorldToSunLightShadowCoord(positionWS_SearchBias, cascadeIndex);
     
-    uint hash1 = Hash_Jenkins(asuint(positionHCS));
-    uint hash2 = Hash_Jenkins(asuint(positionSS_Search));
-    //float random = floatConstruct(hash1);
     //float randomRadian = InterleavedGradientNoise(positionHCS * 1, 0) * TWO_PI;
-    float randomRadian = SAMPLE_TEXTURE2D(_BlueNoise64, sampler_PointRepeat, positionHCS.xy * _CameraBufferSize.xy * 100).r * TWO_PI;
-    //float randomRadian = random * TWO_PI;
+    float randomRadian = SAMPLE_TEXTURE2D(_BlueNoise64, sampler_PointRepeat, positionHCS.xy / 64).r * TWO_PI;
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
 
     float4 depthParams = GetSunLightDepthParams(cascadeIndex);
     float blockerSampleNumber = GetSunLightBlockerSampleNumber();
     
-    float3 blocker = ComputeAverageBlockerDepth_2DArray_Ortho(cascadeIndex, SUN_LIGHT_SHADOW_MAP, blockerSampleNumber, searchWidthPercent, positionSS_Search, depthParams, hash1, hash2, rotation);
+    float3 blocker = ComputeAverageBlockerDepth_2DArray_Ortho(cascadeIndex, SUN_LIGHT_SHADOW_MAP, blockerSampleNumber, searchWidthPercent, positionSS_Search, depthParams, rotation);
     float ald_Blocker = blocker.x;
     float blockerCount = blocker.y;
     
     if (blockerCount < 1.0) return 1.0;
-
-    //float penumbraWS = GetSunLightPenumbraScale() * (blocker.z - ald_Blocker) * 0.01;
-    float penumbraWS = GetSunLightPenumbraScale() * GetSunLightSize() * (blocker.z - ald_Blocker) * 0.1;
+    
+    float penumbraWS = GetSunLightPCSSPenumbraScale() * (blocker.z - ald_Blocker) * 0.01;
     float penumbraPercent = penumbraWS / GetCascadeCullingSphereRadius(cascadeIndex) * 0.5;
     
     float3 positionWS_FilterBias = ApplyShadowBias(positionWS, GetSunLightShadowBias(), texelSize, penumbraWS, normalWS, L);
     float3 positionSS_Filter = TransformWorldToSunLightShadowCoord(positionWS_FilterBias, cascadeIndex);
-    float filterSampleNumber = GetSunLightFilterSampleNumber();
-    float shadowAttenuation = ApplyPCF_2DArray(cascadeIndex, SUN_LIGHT_SHADOW_MAP, filterSampleNumber, penumbraPercent, positionSS_Filter, hash1, hash2, rotation);
-    return lerp(1.0, shadowAttenuation, shadowStrength * shadowFade);
+    float filterSampleNumber = GetSunLightPCSSFilterSampleNumber();
+    float shadowAttenuation = ApplyPCF_2DArray(cascadeIndex, SUN_LIGHT_SHADOW_MAP, filterSampleNumber, penumbraPercent, positionSS_Filter, rotation);
+    float3 shadowColor = lerp(GetSunLightShadowColor(), smoothstep(0, 1 - GetSunLightPenumbraColor(), shadowAttenuation), shadowAttenuation);
+    return lerp(1.0, shadowColor, shadowStrength * shadowFade);
 }
 
 float GetSpotLightShadowAttenuation_PCSS(int lightIndex, float3 positionWS, float3 normalWS, float3 L, float linearDepth, float3 positionHCS)
@@ -561,7 +557,7 @@ float GetSpotLightShadowAttenuation_PCSS(int lightIndex, float3 positionWS, floa
     float3 positionWS_FilterBias = ApplyShadowBias(positionWS, GetSpotLightShadowBias(shadowingSpotLightIndex), texelSize, penumbraWS, normalWS, L);
     float3 positionSS_Filter = TransformWorldToSpotLightShadowCoord(positionWS_FilterBias, shadowingSpotLightIndex);
     float filterSampleNumber = GetSpotLightFilterSampleNumber(shadowingSpotLightIndex);
-    float shadowAttenuation = ApplyPCF_2DArray(shadowingSpotLightIndex, SPOT_LIGHT_SHADOW_MAP, filterSampleNumber, penumbraPercent, positionSS_Filter, hash1, hash2, rotation);
+    float shadowAttenuation = ApplyPCF_2DArray(shadowingSpotLightIndex, SPOT_LIGHT_SHADOW_MAP, filterSampleNumber, penumbraPercent, positionSS_Filter, rotation);
     
     return lerp(1.0, shadowAttenuation, shadowStrength * distanceFade);
 }

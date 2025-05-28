@@ -22,9 +22,10 @@ namespace YPipeline
             m_Data = new YPipelineData();
             m_Data.asset = asset;
             m_Data.renderGraph = new RenderGraph("YPipeline Render Graph");
+            m_Data.lightsData = new YPipelineLightsData();
             
             GraphicsSettings.useScriptableRenderPipelineBatching = asset.enableSRPBatcher;
-            GraphicsSettings.lightsUseLinearIntensity = true;
+            // GraphicsSettings.lightsUseLinearIntensity = true;
             
             VolumeManager.instance.Initialize(null, asset.globalVolumeProfile);
 

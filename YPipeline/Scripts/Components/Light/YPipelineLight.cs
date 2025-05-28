@@ -20,9 +20,12 @@ namespace YPipeline
     [RequireComponent(typeof(Light))]
     public class YPipelineLight : MonoBehaviour, ISerializationCallbackReceiver
     {
+        [Space(5f)] 
+        [Range(-1f, 1f)] public float rangeAttenuationScale = 0.0f;
+        
         [Space(5f)]
         public Color shadowTint = new Color(0f, 0f, 0f, 1f);
-        public Color penumbraTint = new Color(0f, 0f, 0f, 1f);
+        public Color penumbraTint = new Color(1f, 1f, 1f, 1f);
         
         [Space(5f)]
         [Header("Shadow Bias Settings")]
@@ -39,8 +42,8 @@ namespace YPipeline
         [Space(5f)]
         [Header("PCSS Settings")]
         [Range(0f, 2f)] public float lightSize = 0.1f;
-        [Range(0f, 10f)] public float blockerSearchScale = 1.0f;
-        [Range(0f, 10f)] public float penumbraScale = 1.0f;
+        [Range(-2f, 2f)] public float blockerSearchAreaSizeScale = -1.0f;
+        [Range(-1f, 1f)] public float penumbraScale = 0.0f;
         [Range(0f, 1f)] public float minPenumbraWidth = 0.1f;
 
         [Range(1, 64)] public int blockerSearchSampleNumber = 8;
