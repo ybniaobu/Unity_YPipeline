@@ -99,27 +99,33 @@ namespace YPipeline
         public static readonly int k_SunLightShadowMatricesID = Shader.PropertyToID("_SunLightShadowMatrices");
         public static readonly int k_SunLightDepthParamsID = Shader.PropertyToID("_SunLightDepthParams");
         
-        // Spot and Point Light Params Per Frame
+        // Spot and Point Light Structured Buffer
+        public static readonly int k_PunctualLightDataID = Shader.PropertyToID("_PunctualLightData");
+        public static readonly int k_PointLightShadowDataID = Shader.PropertyToID("_PointLightShadowData");
+        public static readonly int k_PointLightShadowMatricesID = Shader.PropertyToID("_PointLightShadowMatrices");
+        public static readonly int k_SpotLightShadowDataID = Shader.PropertyToID("_SpotLightShadowData");
+        public static readonly int k_SpotLightShadowMatricesID = Shader.PropertyToID("_SpotLightShadowMatrices");
+        
         public static readonly int k_PunctualLightCountID = Shader.PropertyToID("_PunctualLightCount");
         
-        public static readonly int k_SpotLightColorsID = Shader.PropertyToID("_SpotLightColors");
-        public static readonly int k_SpotLightPositionsID = Shader.PropertyToID("_SpotLightPositions");
-        public static readonly int k_SpotLightDirectionsID = Shader.PropertyToID("_SpotLightDirections");
-        public static readonly int k_SpotLightParamsID = Shader.PropertyToID("_SpotLightParams");
-        public static readonly int k_SpotLightShadowMatricesID = Shader.PropertyToID("_SpotLightShadowMatrices");
-        public static readonly int k_SpotLightShadowBiasID = Shader.PropertyToID("_SpotLightShadowBias");
-        public static readonly int k_SpotLightPCFParamsID = Shader.PropertyToID("_SpotLightPCFParams");
-        public static readonly int k_SpotLightShadowParamsID = Shader.PropertyToID("_SpotLightShadowParams");
-        public static readonly int k_SpotLightDepthParamsID = Shader.PropertyToID("_SpotLightDepthParams");
-        
-        public static readonly int k_PointLightColorsID = Shader.PropertyToID("_PointLightColors");
-        public static readonly int k_PointLightPositionsID = Shader.PropertyToID("_PointLightPositions");
-        public static readonly int k_PointLightParamsID = Shader.PropertyToID("_PointLightParams");
-        public static readonly int k_PointLightShadowMatricesID = Shader.PropertyToID("_PointLightShadowMatrices");
-        public static readonly int k_PointLightShadowBiasID = Shader.PropertyToID("_PointLightShadowBias");
-        public static readonly int k_PointLightPCFParamsID = Shader.PropertyToID("_PointLightPCFParams");
-        public static readonly int k_PointLightShadowParamsID = Shader.PropertyToID("_PointLightShadowParams");
-        public static readonly int k_PointLightDepthParamsID = Shader.PropertyToID("_PointLightDepthParams");
+        // public static readonly int k_SpotLightColorsID = Shader.PropertyToID("_SpotLightColors");
+        // public static readonly int k_SpotLightPositionsID = Shader.PropertyToID("_SpotLightPositions");
+        // public static readonly int k_SpotLightDirectionsID = Shader.PropertyToID("_SpotLightDirections");
+        // public static readonly int k_SpotLightParamsID = Shader.PropertyToID("_SpotLightParams");
+        // public static readonly int k_SpotLightShadowMatricesID = Shader.PropertyToID("_SpotLightShadowMatrices");
+        // public static readonly int k_SpotLightShadowBiasID = Shader.PropertyToID("_SpotLightShadowBias");
+        // public static readonly int k_SpotLightPCFParamsID = Shader.PropertyToID("_SpotLightPCFParams");
+        // public static readonly int k_SpotLightShadowParamsID = Shader.PropertyToID("_SpotLightShadowParams");
+        // public static readonly int k_SpotLightDepthParamsID = Shader.PropertyToID("_SpotLightDepthParams");
+        //
+        // public static readonly int k_PointLightColorsID = Shader.PropertyToID("_PointLightColors");
+        // public static readonly int k_PointLightPositionsID = Shader.PropertyToID("_PointLightPositions");
+        // public static readonly int k_PointLightParamsID = Shader.PropertyToID("_PointLightParams");
+        // public static readonly int k_PointLightShadowMatricesID = Shader.PropertyToID("_PointLightShadowMatrices");
+        // public static readonly int k_PointLightShadowBiasID = Shader.PropertyToID("_PointLightShadowBias");
+        // public static readonly int k_PointLightPCFParamsID = Shader.PropertyToID("_PointLightPCFParams");
+        // public static readonly int k_PointLightShadowParamsID = Shader.PropertyToID("_PointLightShadowParams");
+        // public static readonly int k_PointLightDepthParamsID = Shader.PropertyToID("_PointLightDepthParams");
         
         // Params Per Shadow Caster
         public static readonly int k_ShadowPancakingID = Shader.PropertyToID("_ShadowPancaking");

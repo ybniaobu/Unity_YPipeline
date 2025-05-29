@@ -30,8 +30,8 @@ namespace YPipeline
                 case RenderPath.Forward: 
                     m_CameraPipelineNodes.Add(PipelinePass.Create<CullingPass>());
                     m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardLightsPass>());
-                    m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardLightingShadowsPass>());
-                    m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardBuffersPass>());
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardShadowsPass>());
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardResourcesPass>());
                     m_CameraPipelineNodes.Add(PipelinePass.Create<DepthNormalPass>());
                     m_CameraPipelineNodes.Add(PipelinePass.Create<CopyDepthPass>());
                     //m_CameraPipelineNodes.Add(PipelinePass.Create<TiledLightCullingPass>());

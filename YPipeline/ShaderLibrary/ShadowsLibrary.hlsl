@@ -291,7 +291,7 @@ float ApplyPCF_CubeArray(float index, float faceIndex, TEXTURECUBE_ARRAY_SHADOW(
     uint hash2 = Hash_Jenkins(asuint(positionSS));
     float random = floatConstruct(hash1);
     //float randomRadian = random * TWO_PI;
-    float randomRadian = InterleavedGradientNoise(positionHCS, 0) * TWO_PI;
+    float randomRadian = InterleavedGradientNoise(positionHCS.xy, 0) * TWO_PI;
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
     
     float shadowAttenuation = 0.0;
@@ -350,10 +350,11 @@ float GetSunLightShadowAttenuation_PCF(float3 positionWS, float3 normalWS, float
 
 float GetSpotLightShadowAttenuation_PCF(int lightIndex, float3 positionWS, float3 normalWS, float3 L, float linearDepth, float3 positionHCS)
 {
-    float shadowStrength = GetSpotLightShadowStrength(lightIndex);
+    float shadowStrength = 1;
+    //float shadowStrength = GetSpotLightShadowStrength(lightIndex); !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     float distanceFade = ComputeDistanceFade(positionWS, GetMaxShadowDistance(), GetShadowDistanceFade());
     
-    float shadowingSpotLightIndex = GetShadowingSpotLightIndex(lightIndex);
+    float shadowingSpotLightIndex = GetShadowingLightIndex(lightIndex);
     //float linearDepth = mul(GetSpotLightShadowMatrix(shadowingSpotLightIndex), float4(positionWS, 1.0)).w;
     float texelSize = 2.0 * ComputeTanHalfFOV(lightIndex) * linearDepth / GetSpotLightShadowMapSize();
     float penumbraPercent = GetSpotLightPCFPenumbraWidth(shadowingSpotLightIndex) / 4.0;
@@ -367,10 +368,11 @@ float GetSpotLightShadowAttenuation_PCF(int lightIndex, float3 positionWS, float
 
 float GetPointLightShadowAttenuation_PCF(int lightIndex, float faceIndex, float3 positionWS, float3 normalWS, float3 L, float linearDepth, float3 positionHCS)
 {
-    float shadowStrength = GetPointLightShadowStrength(lightIndex);
+    float shadowStrength = 1;
+    //float shadowStrength = GetPointLightShadowStrength(lightIndex); !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     float distanceFade = ComputeDistanceFade(positionWS, GetMaxShadowDistance(), GetShadowDistanceFade());
     
-    float shadowingPointLightIndex = GetShadowingPointLightIndex(lightIndex);
+    float shadowingPointLightIndex = GetShadowingLightIndex(lightIndex);
     //float linearDepth = mul(GetPointLightShadowMatrix(shadowingPointLightIndex * 6 + faceIndex), float4(positionWS, 1.0)).w;
     float texelSize = 2.0 * linearDepth / GetPointLightShadowMapSize();
     float penumbraPercent = GetPointLightPCFPenumbraWidth(shadowingPointLightIndex) / 4.0;
@@ -518,7 +520,7 @@ float3 GetSunLightShadowAttenuation_PCSS(float3 positionWS, float3 normalWS, flo
     
     float3 positionWS_FilterBias = ApplyShadowBias(positionWS, GetSunLightShadowBias(), texelSize, penumbraWS, normalWS, L);
     float3 positionSS_Filter = TransformWorldToSunLightShadowCoord(positionWS_FilterBias, cascadeIndex);
-    float filterSampleNumber = GetSunLightPCSSFilterSampleNumber();
+    float filterSampleNumber = GetSunLightPCSSSampleNumber();
     float shadowAttenuation = ApplyPCF_2DArray(cascadeIndex, SUN_LIGHT_SHADOW_MAP, filterSampleNumber, penumbraPercent, positionSS_Filter, rotation);
     float3 shadowColor = lerp(GetSunLightShadowColor(), smoothstep(0, 1 - GetSunLightPenumbraColor(), shadowAttenuation), shadowAttenuation);
     return lerp(1.0, shadowColor, shadowStrength * shadowFade);
@@ -526,10 +528,11 @@ float3 GetSunLightShadowAttenuation_PCSS(float3 positionWS, float3 normalWS, flo
 
 float GetSpotLightShadowAttenuation_PCSS(int lightIndex, float3 positionWS, float3 normalWS, float3 L, float linearDepth, float3 positionHCS)
 {
-    float shadowStrength = GetSpotLightShadowStrength(lightIndex);
+    float shadowStrength = 1.0;
+    //float shadowStrength = GetSpotLightShadowStrength(lightIndex); !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     float distanceFade = ComputeDistanceFade(positionWS, GetMaxShadowDistance(), GetShadowDistanceFade());
     
-    float shadowingSpotLightIndex = GetShadowingSpotLightIndex(lightIndex);
+    float shadowingSpotLightIndex = GetShadowingLightIndex(lightIndex);
     float texelSize = 2.0 * ComputeTanHalfFOV(lightIndex) * linearDepth / GetSpotLightShadowMapSize();
     float searchWidthWS = GetSpotLightSize(shadowingSpotLightIndex);
     float searchWidthPercent = searchWidthWS / (2.0 * ComputeTanHalfFOV(lightIndex) * linearDepth);
@@ -552,11 +555,11 @@ float GetSpotLightShadowAttenuation_PCSS(int lightIndex, float3 positionWS, floa
     
     if (blockerCount < 1.0) return 1.0;
 
-    float penumbraWS = GetSpotLightPenumbraScale(shadowingSpotLightIndex) * GetSpotLightSize(shadowingSpotLightIndex) * (linearDepth - ald_Blocker) / ald_Blocker;
+    float penumbraWS = GetSpotLightPCSSPenumbraScale(shadowingSpotLightIndex) * GetSpotLightSize(shadowingSpotLightIndex) * (linearDepth - ald_Blocker) / ald_Blocker;
     float penumbraPercent = penumbraWS / (2.0 * ComputeTanHalfFOV(lightIndex) * linearDepth);
     float3 positionWS_FilterBias = ApplyShadowBias(positionWS, GetSpotLightShadowBias(shadowingSpotLightIndex), texelSize, penumbraWS, normalWS, L);
     float3 positionSS_Filter = TransformWorldToSpotLightShadowCoord(positionWS_FilterBias, shadowingSpotLightIndex);
-    float filterSampleNumber = GetSpotLightFilterSampleNumber(shadowingSpotLightIndex);
+    float filterSampleNumber = GetSpotLightPCSSSampleNumber(shadowingSpotLightIndex);
     float shadowAttenuation = ApplyPCF_2DArray(shadowingSpotLightIndex, SPOT_LIGHT_SHADOW_MAP, filterSampleNumber, penumbraPercent, positionSS_Filter, rotation);
     
     return lerp(1.0, shadowAttenuation, shadowStrength * distanceFade);
@@ -564,10 +567,11 @@ float GetSpotLightShadowAttenuation_PCSS(int lightIndex, float3 positionWS, floa
 
 float GetPointLightShadowAttenuation_PCSS(int lightIndex, float faceIndex, float3 positionWS, float3 normalWS, float3 L, float linearDepth, float3 positionHCS)
 {
-    float shadowStrength = GetPointLightShadowStrength(lightIndex);
+    float shadowStrength = 1.0;
+    //float shadowStrength = GetPointLightShadowStrength(lightIndex); !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     float distanceFade = ComputeDistanceFade(positionWS, GetMaxShadowDistance(), GetShadowDistanceFade());
     
-    float shadowingPointLightIndex = GetShadowingPointLightIndex(lightIndex);
+    float shadowingPointLightIndex = GetShadowingLightIndex(lightIndex);
     float texelSize = 2.0 * linearDepth / GetPointLightShadowMapSize();
     float searchWidthWS = GetPointLightSize(shadowingPointLightIndex);
     float searchWidthPercent = searchWidthWS / (2.0 * linearDepth);
@@ -593,12 +597,12 @@ float GetPointLightShadowAttenuation_PCSS(int lightIndex, float faceIndex, float
     
     if (blockerCount < 1.0) return 1.0;
     
-    float penumbraWS = GetPointLightPenumbraScale(shadowingPointLightIndex) * GetPointLightSize(shadowingPointLightIndex) * (linearDepth - ald_Blocker) / ald_Blocker;
+    float penumbraWS = GetPointLightPCSSPenumbraScale(shadowingPointLightIndex) * GetPointLightSize(shadowingPointLightIndex) * (linearDepth - ald_Blocker) / ald_Blocker;
     float penumbraPercent = penumbraWS / (2.0 * linearDepth);
     float3 positionWS_FilterBias = ApplyShadowBias(positionWS, GetPointLightShadowBias(shadowingPointLightIndex), texelSize, penumbraWS, normalWS, L);
     //float3 sampleDir_Filter = normalize(positionWS_FilterBias - GetPointLightPosition(lightIndex));
     float3 positionSS_Filter = TransformWorldToPointLightShadowCoord(positionWS_FilterBias, shadowingPointLightIndex, faceIndex);
-    float filterSampleNumber = GetPointLightFilterSampleNumber(shadowingPointLightIndex);
+    float filterSampleNumber = GetPointLightPCSSSampleNumber(shadowingPointLightIndex);
     float shadowAttenuation = ApplyPCF_CubeArray(shadowingPointLightIndex, faceIndex, POINT_LIGHT_SHADOW_MAP, filterSampleNumber,
         penumbraPercent, positionSS_Filter, hash1, hash2, rotation);
     

@@ -21,7 +21,7 @@ namespace YPipeline
     public class YPipelineLight : MonoBehaviour, ISerializationCallbackReceiver
     {
         [Space(5f)] 
-        [Range(-1f, 1f)] public float rangeAttenuationScale = 0.0f;
+        [Range(0f, 1f)] public float rangeAttenuationScale = 0.0f;
         
         [Space(5f)]
         public Color shadowTint = new Color(0f, 0f, 0f, 1f);

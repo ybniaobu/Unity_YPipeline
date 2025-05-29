@@ -49,10 +49,14 @@ namespace YPipeline
                 passData.colorAttachment = builder.UseColorBuffer(data.CameraColorAttachment, 0);
                 passData.depthAttachment = builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.Read);
                 if (data.isSunLightShadowMapCreated) builder.ReadTexture(data.SunLightShadowMap);
-                if (data.isSpotLightShadowMapCreated) builder.ReadTexture(data.SpotLightShadowMap);
                 if (data.isPointLightShadowMapCreated) builder.ReadTexture(data.PointLightShadowMap);
+                if (data.isSpotLightShadowMapCreated) builder.ReadTexture(data.SpotLightShadowMap);
 
-                //builder.ReadBuffer(data.SunLightConstantBufferHandle);
+                builder.ReadBuffer(data.PunctualLightBufferHandle);
+                builder.ReadBuffer(data.PointLightShadowBufferHandle);
+                builder.ReadBuffer(data.PointLightShadowMatricesBufferHandle);
+                builder.ReadBuffer(data.SpotLightShadowBufferHandle);
+                builder.ReadBuffer(data.SpotLightShadowMatricesBufferHandle);
                 //if (data.tilesBuffer.IsValid()) builder.ReadBuffer(data.tilesBuffer);
                
                 builder.AllowPassCulling(false);

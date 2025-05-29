@@ -6,6 +6,10 @@ namespace YPipeline
 {
     public struct YPipelineData
     {
+        // ----------------------------------------------------------------------------------------------------
+        // References
+        // ----------------------------------------------------------------------------------------------------
+        
         public YRenderPipelineAsset asset;
         public RenderGraph renderGraph;
         public ScriptableRenderContext context;
@@ -14,9 +18,16 @@ namespace YPipeline
         public CullingResults cullingResults;
         public YPipelineLightsData lightsData;
         
+        // ----------------------------------------------------------------------------------------------------
+        // Properties
+        // ----------------------------------------------------------------------------------------------------
+        
         public Vector2Int BufferSize => new Vector2Int((int) (camera.pixelWidth * asset.renderScale), (int) (camera.pixelHeight * asset.renderScale));
         
+        // ----------------------------------------------------------------------------------------------------
         // Buffers and Textures
+        // ----------------------------------------------------------------------------------------------------
+        
         public TextureHandle CameraColorTarget { set; get; }
         public TextureHandle CameraDepthTarget { set; get; }
         public TextureHandle CameraColorAttachment { set; get; }
@@ -41,8 +52,14 @@ namespace YPipeline
         public TextureHandle EnvBRDFLut { set; get; }
         public TextureHandle BlueNoise256 { set; get; }
         
+        // ----------------------------------------------------------------------------------------------------
         // Structured Buffers
-        //public BufferHandle SunLightConstantBufferHandle { set; get; }
+        // ----------------------------------------------------------------------------------------------------
+        public BufferHandle PunctualLightBufferHandle { set; get; }
+        public BufferHandle PointLightShadowBufferHandle { set; get; }
+        public BufferHandle PointLightShadowMatricesBufferHandle { set; get; }
+        public BufferHandle SpotLightShadowBufferHandle { set; get; }
+        public BufferHandle SpotLightShadowMatricesBufferHandle { set; get; }
         
         public BufferHandle TilesBuffer { set; get; }
     }

@@ -7,11 +7,16 @@
 // Light Falloff / Attenuation functions
 // ----------------------------------------------------------------------------------------------------
 
-float GetDistanceAttenuation(float3 lightVector, float invLightRangeSqr) // lightVector is unnormalized light direction(L).
+float GetDistanceAttenuation(float3 lightVector, float invLightRangeSqr, float attenuationScale) // lightVector is unnormalized light direction(L).
 {
     float distanceSquare = dot(lightVector, lightVector);
     float factor = distanceSquare * invLightRangeSqr;
     float smoothFactor = saturate(1.0 - factor * factor);
+
+    float isOutRange = step(smoothFactor, 1e-4);
+    smoothFactor = lerp(smoothFactor, 1, attenuationScale);
+    smoothFactor = lerp(smoothFactor, 0, isOutRange);
+    
     return (smoothFactor * smoothFactor) / max(distanceSquare, 1e-4);
 }
 
@@ -80,19 +85,19 @@ void InitializeSunLightParams(out LightParams sunLightParams, float3 V, float3 n
 
 void InitializeSpotLightParams(out LightParams spotLightParams, int lightIndex, float3 V, float3 normalWS, float3 positionWS, float3 positionHCS)
 {
-    spotLightParams.color = GetSpotLightColor(lightIndex);
-    spotLightParams.positionWS = float4(GetSpotLightPosition(lightIndex), 1.0);
+    spotLightParams.color = GetPunctualLightColor(lightIndex);
+    spotLightParams.positionWS = float4(GetPunctualLightPosition(lightIndex), 1.0);
     
     float3 lightVector = spotLightParams.positionWS.xyz - positionWS;
     spotLightParams.L = normalize(lightVector);
     spotLightParams.H = normalize(spotLightParams.L + V);
     
-    spotLightParams.distanceAttenuation = GetDistanceAttenuation(lightVector, GetSpotLightInverseRangeSquare(lightIndex));
+    spotLightParams.distanceAttenuation = GetDistanceAttenuation(lightVector, GetPunctualLightInverseRangeSquare(lightIndex), GetPunctualLightRangeAttenuationScale(lightIndex));
     float3 spotDirection = GetSpotLightDirection(lightIndex);
     float2 spotAngleParams = GetSpotLightAngleParams(lightIndex);
     spotLightParams.angleAttenuation = GetAngleAttenuation(spotLightParams.L, spotDirection, spotAngleParams);
     
-    spotLightParams.isShadowing = spotLightParams.distanceAttenuation * spotLightParams.angleAttenuation <= 0.0 || GetShadowingSpotLightIndex(lightIndex) < 0.0;
+    spotLightParams.isShadowing = spotLightParams.distanceAttenuation * spotLightParams.angleAttenuation <= 0.0 || GetShadowingLightIndex(lightIndex) < 0.0;
     
     UNITY_BRANCH
     if (spotLightParams.isShadowing) // 反了，待更改
@@ -112,17 +117,17 @@ void InitializeSpotLightParams(out LightParams spotLightParams, int lightIndex, 
 
 void InitializePointLightParams(out LightParams pointLightParams, int lightIndex, float3 V, float3 normalWS, float3 positionWS, float3 positionHCS)
 {
-    pointLightParams.color = GetPointLightColor(lightIndex);
-    pointLightParams.positionWS = float4(GetPointLightPosition(lightIndex), 1.0);
+    pointLightParams.color = GetPunctualLightColor(lightIndex);
+    pointLightParams.positionWS = float4(GetPunctualLightPosition(lightIndex), 1.0);
     
     float3 lightVector = pointLightParams.positionWS.xyz - positionWS;
     pointLightParams.L = normalize(lightVector);
     pointLightParams.H = normalize(pointLightParams.L + V);
     
-    pointLightParams.distanceAttenuation = GetDistanceAttenuation(lightVector, GetPointLightInverseRangeSquare(lightIndex));
+    pointLightParams.distanceAttenuation = GetDistanceAttenuation(lightVector, GetPunctualLightInverseRangeSquare(lightIndex), GetPunctualLightRangeAttenuationScale(lightIndex));
     pointLightParams.angleAttenuation = 1.0;
 
-    pointLightParams.isShadowing = pointLightParams.distanceAttenuation <= 0.0 || GetShadowingPointLightIndex(lightIndex) < 0.0;
+    pointLightParams.isShadowing = pointLightParams.distanceAttenuation <= 0.0 || GetShadowingLightIndex(lightIndex) < 0.0;
     
     UNITY_BRANCH
     if (pointLightParams.isShadowing) // 反了，待更改

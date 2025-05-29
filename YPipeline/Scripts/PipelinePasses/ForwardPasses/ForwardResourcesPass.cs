@@ -5,14 +5,17 @@ using UnityEngine.Experimental.Rendering;
 
 namespace YPipeline
 {
-    public class ForwardBuffersPass : PipelinePass
+    public class ForwardResourcesPass : PipelinePass
     {
         private class ForwardBuffersPassData
         {
             public TextureHandle envBRDFLut;
             public TextureHandle blueNoise64;
             
+            // Global Constant Buffer Variables
             public Vector2Int bufferSize;
+            public Vector4 cascadeSettings;
+            public Vector4 shadowMapSizes;
         }
         
         private RTHandle m_CameraColorTarget;
@@ -25,11 +28,14 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<ForwardBuffersPassData>("Forward Buffers Preparation", out var passData))
+            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<ForwardBuffersPassData>("Set Global Resources", out var passData))
             {
                 ImportBackBuffers(ref data);
                 
+                // ----------------------------------------------------------------------------------------------------
                 // Imported texture resources
+                // ----------------------------------------------------------------------------------------------------
+                
                 if (m_EnvBRDFLut == null || m_EnvBRDFLut.externalTexture != data.asset.pipelineResources.textures.environmentBRDFLut)
                 {
                     m_EnvBRDFLut = RTHandles.Alloc(data.asset.pipelineResources.textures.environmentBRDFLut);
@@ -44,7 +50,10 @@ namespace YPipeline
                 passData.blueNoise64 = data.renderGraph.ImportTexture(m_BlueNoise64);
                 builder.ReadTexture(passData.blueNoise64);
                 
+                // ----------------------------------------------------------------------------------------------------
                 // Buffers
+                // ----------------------------------------------------------------------------------------------------
+                
                 Vector2Int bufferSize = data.BufferSize;
                 passData.bufferSize = bufferSize;
                 
@@ -87,6 +96,14 @@ namespace YPipeline
                 data.CameraColorTexture = data.renderGraph.CreateTexture(colorTextureDesc);
                 data.CameraDepthTexture = data.renderGraph.CreateTexture(depthTextureDesc);
                 
+                // ----------------------------------------------------------------------------------------------------
+                // Global Constant Buffer Variables
+                // ----------------------------------------------------------------------------------------------------
+                
+                // TODO: constant buffer 设置一次就行!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                passData.cascadeSettings = new Vector4(data.asset.maxShadowDistance, data.asset.distanceFade, data.asset.cascadeCount, data.asset.cascadeEdgeFade);
+                passData.shadowMapSizes = new Vector4(data.asset.sunLightShadowMapSize, data.asset.spotLightShadowMapSize, data.asset.pointLightShadowMapSize);
+                
                 builder.AllowPassCulling(false);
                 
                 builder.SetRenderFunc((ForwardBuffersPassData data, RenderGraphContext context) =>
@@ -94,6 +111,9 @@ namespace YPipeline
                     context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_EnvBRDFLutID, data.envBRDFLut);
                     context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_BlueNoise64ID, data.blueNoise64);
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_BufferSizeID, new Vector4(1f / data.bufferSize.x, 1f / data.bufferSize.y, data.bufferSize.x, data.bufferSize.y));
+                    context.cmd.SetGlobalVector(YPipelineShaderIDs.k_CascadeSettingsID, data.cascadeSettings);
+                    context.cmd.SetGlobalVector(YPipelineShaderIDs.k_ShadowMapSizesID, data.shadowMapSizes);
+                    
                     context.renderContext.ExecuteCommandBuffer(context.cmd);
                     context.cmd.Clear();
                 });

@@ -126,30 +126,20 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     // ----------------------------------------------------------------------------------------------------
     // Direct Lighting - Punctual Light
     // ----------------------------------------------------------------------------------------------------
-    int spotLightCount = GetSpotLightCount();
+    int punctualLightCount = GetPunctualLightCount();
     
-    for (int i = 0; i < spotLightCount; i++)
+    for (int i = 0; i < punctualLightCount; i++)
     {
-        LightParams spotLightParams = (LightParams) 0;
-        InitializeSpotLightParams(spotLightParams, i, standardPBRParams.V, normalize(IN.normalWS), IN.positionWS, IN.positionHCS.xyz);
+        LightParams punctualLightParams = (LightParams) 0;
         
-        BRDFParams spotBRDFParams = (BRDFParams) 0;
-        InitializeBRDFParams(spotBRDFParams, standardPBRParams.N, spotLightParams.L, standardPBRParams.V, spotLightParams.H);
+        UNITY_BRANCH
+        if (GetPunctualLightType(i) == SPOT_LIGHT) InitializeSpotLightParams(punctualLightParams, i, standardPBRParams.V, normalize(IN.normalWS), IN.positionWS, IN.positionHCS.xyz);
+        else if (GetPunctualLightType(i) == POINT_LIGHT) InitializePointLightParams(punctualLightParams, i, standardPBRParams.V, normalize(IN.normalWS), IN.positionWS, IN.positionHCS.xyz);
         
-        renderingEquationContent.directPunctualLights += CalculateLightIrradiance(spotLightParams) * StandardPBR_EnergyCompensation(spotBRDFParams, standardPBRParams, energyCompensation);
-    }
-
-    int pointLightCount = GetPointLightCount();
-
-    for (int j = 0; j < pointLightCount; j++)
-    {
-        LightParams pointLightParams = (LightParams) 0;
-        InitializePointLightParams(pointLightParams, j, standardPBRParams.V, normalize(IN.normalWS), IN.positionWS, IN.positionHCS.xyz);
-
-        BRDFParams pointBRDFParams = (BRDFParams) 0;
-        InitializeBRDFParams(pointBRDFParams, standardPBRParams.N, pointLightParams.L, standardPBRParams.V, pointLightParams.H);
-
-        renderingEquationContent.directPunctualLights += CalculateLightIrradiance(pointLightParams) * StandardPBR_EnergyCompensation(pointBRDFParams, standardPBRParams, energyCompensation);
+        BRDFParams punctualBRDFParams = (BRDFParams) 0;
+        InitializeBRDFParams(punctualBRDFParams, standardPBRParams.N, punctualLightParams.L, standardPBRParams.V, punctualLightParams.H);
+        
+        renderingEquationContent.directPunctualLights += CalculateLightIrradiance(punctualLightParams) * StandardPBR_EnergyCompensation(punctualBRDFParams, standardPBRParams, energyCompensation);
     }
 
     // ----------------------------------------------------------------------------------------------------
