@@ -5,6 +5,8 @@
 #include "../ShaderLibrary/RandomLibrary.hlsl"
 #include "../ShaderLibrary/SamplingLibrary.hlsl"
 
+#define SHADOW_SAMPLE_SEQUENCE k_HaltonDisk
+
 // ----------------------------------------------------------------------------------------------------
 // Sample Shadow Map or Array
 // ----------------------------------------------------------------------------------------------------
@@ -163,6 +165,7 @@ float3 ApplyShadowBias(float3 positionWS, float4 shadowBias, float texelSize, fl
 // ----------------------------------------------------------------------------------------------------
 // Shadow and Penumbra Color Function
 // ----------------------------------------------------------------------------------------------------
+
 float3 ApplyShadowAndPenumbraColor(float shadowAttenuation, float3 shadowColor, float3 penumbraColor)
 {
     penumbraColor = lerp(shadowColor, penumbraColor, shadowAttenuation);
@@ -180,7 +183,8 @@ float ApplyPCF_2DArray(float index, TEXTURE2D_ARRAY_SHADOW(shadowMap), float sam
     float shadowAttenuation = 0.0;
     for (float i = 0; i < sampleNumber; i++)
     {
-        float2 offset = mul(rotation, InverseSampleCircle(Sobol_Bits(i + 1))) * 0.5;
+        float2 offset = mul(rotation, SHADOW_SAMPLE_SEQUENCE[i + 1]) * 0.5;
+        // float2 offset = mul(rotation, InverseSampleCircle(Sobol_Bits(i + 1))) * 0.5;
         // float2 offset = mul(rotation, InverseSampleCircle(Hammersley_Bits(i + 1, sampleNumber + 1))) * 0.5;
         offset = offset * penumbraPercent;
         float2 uv = positionSS.xy + offset;
@@ -194,8 +198,9 @@ float ApplyPCF_CubeArray(float index, float faceIndex, TEXTURECUBE_ARRAY_SHADOW(
     float shadowAttenuation = 0.0;
     for (float i = 0; i < sampleNumber; i++)
     {
-        //float2 offset = mul(rotation, InverseSampleCircle(Hammersley_Bits(i + 1, sampleNumber + 1))) * 0.5;
-        float2 offset = mul(rotation, InverseSampleCircle(Sobol_Bits(i + 1))) * 0.5;
+        float2 offset = mul(rotation, SHADOW_SAMPLE_SEQUENCE[i + 1]) * 0.5;
+        // float2 offset = mul(rotation, InverseSampleCircle(Hammersley_Bits(i + 1, sampleNumber + 1))) * 0.5;
+        // float2 offset = mul(rotation, InverseSampleCircle(Sobol_Bits(i + 1))) * 0.5;
         offset = offset * penumbraPercent;
         float2 uv_Offset = positionSS.xy + offset;
         float3 sampleDir = CubeMapping(faceIndex, uv_Offset);
@@ -304,8 +309,9 @@ float3 ComputeAverageBlockerDepth_2DArray_Ortho(float index, TEXTURE2D_ARRAY(sha
 
     for (int i = 0; i < sampleNumber; i++)
     {
-        //float2 offset = mul(rotation, InverseSampleCircle(Hammersley_Bits(i + 1, sampleNumber + 1))) * 0.5;
-        float2 offset = mul(rotation, InverseSampleCircle(Sobol_Bits(i + 1))) * 0.5;
+        float2 offset = mul(rotation, SHADOW_SAMPLE_SEQUENCE[i + 1]) * 0.5;
+        // float2 offset = mul(rotation, InverseSampleCircle(Hammersley_Bits(i + 1, sampleNumber + 1))) * 0.5;
+        // float2 offset = mul(rotation, InverseSampleCircle(Sobol_Bits(i + 1))) * 0.5;
         offset = offset * searchWidthPercent;
         float2 uv = positionSS.xy + offset;
         float d_Blocker = SampleShadowArray_Depth(uv, index, shadowMap, SHADOW_SAMPLER);
@@ -331,8 +337,9 @@ float3 ComputeAverageBlockerDepth_2DArray_Persp(float index, TEXTURE2D_ARRAY(sha
 
     for (int i = 0; i < sampleNumber; i++)
     {
-        //float2 offset = mul(rotation, InverseSampleCircle(Hammersley_Bits(i + 1, sampleNumber + 1))) * 0.5;
-        float2 offset = mul(rotation, InverseSampleCircle(Sobol_Bits(i + 1))) * 0.5;
+        float2 offset = mul(rotation, SHADOW_SAMPLE_SEQUENCE[i + 1]) * 0.5;
+        // float2 offset = mul(rotation, InverseSampleCircle(Hammersley_Bits(i + 1, sampleNumber + 1))) * 0.5;
+        // float2 offset = mul(rotation, InverseSampleCircle(Sobol_Bits(i + 1))) * 0.5;
         offset = offset * searchWidthPercent;
         float2 uv = positionSS.xy + offset;
         float d_Blocker = SampleShadowArray_Depth(uv, index, shadowMap, SHADOW_SAMPLER);
@@ -358,8 +365,9 @@ float3 ComputeAverageBlockerDepth_CubeArray(float index, float faceIndex, TEXTUR
 
     for (int i = 0; i < sampleNumber; i++)
     {
-        //float2 offset = mul(rotation, InverseSampleCircle(Hammersley_Bits(i + 1, sampleNumber + 1))) * 0.5;
-        float2 offset = mul(rotation, InverseSampleCircle(Sobol_Bits(i + 1))) * 0.5;
+        float2 offset = mul(rotation, SHADOW_SAMPLE_SEQUENCE[i + 1]) * 0.5;
+        // float2 offset = mul(rotation, InverseSampleCircle(Hammersley_Bits(i + 1, sampleNumber + 1))) * 0.5;
+        // float2 offset = mul(rotation, InverseSampleCircle(Sobol_Bits(i + 1))) * 0.5;
         offset = offset * searchWidthPercent;
         float2 uv_Offset = positionSS.xy + offset;
         float3 sampleDir = CubeMapping(faceIndex, uv_Offset);
