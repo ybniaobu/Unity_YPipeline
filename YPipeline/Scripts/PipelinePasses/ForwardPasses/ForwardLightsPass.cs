@@ -181,7 +181,7 @@ namespace YPipeline
                     float invRadiusSquare = 1.0f / Mathf.Max(visibleLight.range * visibleLight.range, 0.0001f);
                     data.lightsData.punctualLightParams[punctualLightCount] = new Vector4(invRadiusSquare, yLight.rangeAttenuationScale, 0.0f, 0.0f); 
                     
-                    bool isPointLightShadowing = light.shadows != LightShadows.None && light.shadowStrength > 0f && shadowingPointLightCount <= YPipelineLightsData.k_MaxShadowingPointLightCount;
+                    bool isPointLightShadowing = light.shadows != LightShadows.None && light.shadowStrength > 0f && shadowingPointLightCount < YPipelineLightsData.k_MaxShadowingPointLightCount;
                 
                     if (isPointLightShadowing && data.cullingResults.GetShadowCasterBounds(i, out Bounds outBounds))
                     {
@@ -214,7 +214,7 @@ namespace YPipeline
                     float invAngleRange = 1.0f / Mathf.Max(cosInnerAngle - cosOuterAngle, 0.0001f);
                     data.lightsData.punctualLightParams[punctualLightCount] = new Vector4(invRadiusSquare, yLight.rangeAttenuationScale, invAngleRange, cosOuterAngle);
 
-                    bool isSpotLightShadowing = light.shadows != LightShadows.None && light.shadowStrength > 0f && shadowingSpotLightCount <= YPipelineLightsData.k_MaxShadowingSpotLightCount;
+                    bool isSpotLightShadowing = light.shadows != LightShadows.None && light.shadowStrength > 0f && shadowingSpotLightCount < YPipelineLightsData.k_MaxShadowingSpotLightCount;
                 
                     if (isSpotLightShadowing && data.cullingResults.GetShadowCasterBounds(i, out Bounds outBounds))
                     {

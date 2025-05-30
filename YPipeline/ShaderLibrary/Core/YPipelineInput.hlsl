@@ -8,9 +8,7 @@
 #define MAX_DIRECTIONAL_LIGHT_COUNT         1 // Only Support One Directional Light - Sunlight
 #define MAX_CASCADE_COUNT                   4
 #define MAX_PUNCTUAL_LIGHT_COUNT            256
-#define MAX_SPOT_LIGHT_COUNT                64
 #define MAX_SHADOWING_SPOT_LIGHT_COUNT      64
-#define MAX_POINT_LIGHT_COUNT               32
 #define MAX_SHADOWING_POINT_LIGHT_COUNT     12
 
 // ----------------------------------------------------------------------------------------------------
@@ -59,9 +57,9 @@ float GetSunLightPCFSampleNumber()                          { return _SunLightSh
 float GetSunLightPCSSPenumbraScale()                        { return _SunLightShadowParams.x; }
 float GetSunLightPCSSSampleNumber()                         { return _SunLightShadowParams.y; }
 float GetSunLightSize()                                     { return _SunLightShadowParams2.x; }
-float GetSunLightBlockerSearchAreaSize()                    { return _SunLightShadowParams2.y; }
+float GetSunLightBlockerSearchScale()                       { return _SunLightShadowParams2.y; }
 float GetSunLightBlockerSampleNumber()                      { return _SunLightShadowParams2.z; }
-float GetSunLightMinFilterWidth()                           { return _SunLightShadowParams2.w; }
+float GetSunLightMinPenumbraWidth()                         { return _SunLightShadowParams2.w; }
 
 float4 GetCascadeCullingSphere(int cascadeIndex)            { return _CascadeCullingSpheres[cascadeIndex]; }
 float3 GetCascadeCullingSphereCenter(int cascadeIndex)      { return _CascadeCullingSpheres[cascadeIndex].xyz; }
@@ -122,11 +120,11 @@ float GetPointLightPCFSampleNumber(int shadowIndex)                  { return _P
 float GetPointLightPCSSPenumbraScale(int shadowIndex)                { return _PointLightShadowData[shadowIndex].pointLightShadowParams.x; }
 float GetPointLightPCSSSampleNumber(int shadowIndex)                 { return _PointLightShadowData[shadowIndex].pointLightShadowParams.y; }
 float GetPointLightSize(int shadowIndex)                             { return _PointLightShadowData[shadowIndex].pointLightShadowParams2.x; }
-float GetPointLightBlockerSearchAreaSize(int shadowIndex)            { return _PointLightShadowData[shadowIndex].pointLightShadowParams2.y; }
+float GetPointLightBlockerSearchScale(int shadowIndex)               { return _PointLightShadowData[shadowIndex].pointLightShadowParams2.y; }
 float GetPointLightBlockerSampleNumber(int shadowIndex)              { return _PointLightShadowData[shadowIndex].pointLightShadowParams2.z; }
-float GetPointLightMinFilterWidth(int shadowIndex)                   { return _PointLightShadowData[shadowIndex].pointLightShadowParams2.w; }
+float GetPointLightMinPenumbraWidth(int shadowIndex)                 { return _PointLightShadowData[shadowIndex].pointLightShadowParams2.w; }
 float4 GetPointLightDepthParams(int shadowIndex)                     { return _PointLightShadowData[shadowIndex].pointLightDepthParams; }
-float4x4 GetPointLightShadowMatrix(int faceIndex)                    { return _PointLightShadowMatrices[faceIndex]; }
+float4x4 GetPointLightShadowMatrix(int shadowFaceIndex)              { return _PointLightShadowMatrices[shadowFaceIndex]; }
 
 struct SpotLightShadowData
 {
@@ -135,7 +133,6 @@ struct SpotLightShadowData
     float4 spotLightShadowBias; // x: depth bias, y: slope scaled depth bias, z: normal bias, w: slope scaled normal bias
     float4 spotLightShadowParams; // x: penumbra(filter) width or scale, y: filter sample number
     float4 spotLightShadowParams2; // x: light diameter, y: blocker search scale z: blocker search sample number, w: min penumbra(filter) width
-    float4x4 spotLightShadowMatrices;
     float4 spotLightDepthParams; // x: (f + n) / (f - n), y: -2 * f * n / (f - n); [if UNITY_REVERSED_Z] x: (f + n) / (n - f), y: -2 * f * n / (n - f)
 };
 
@@ -151,9 +148,9 @@ float GetSpotLightPCFSampleNumber(int shadowIndex)                  { return _Sp
 float GetSpotLightPCSSPenumbraScale(int shadowIndex)                { return _SpotLightShadowData[shadowIndex].spotLightShadowParams.x; }
 float GetSpotLightPCSSSampleNumber(int shadowIndex)                 { return _SpotLightShadowData[shadowIndex].spotLightShadowParams.y; }
 float GetSpotLightSize(int shadowIndex)                             { return _SpotLightShadowData[shadowIndex].spotLightShadowParams2.x; }
-float GetSpotLightBlockerSearchAreaSize(int shadowIndex)            { return _SpotLightShadowData[shadowIndex].spotLightShadowParams2.y; }
+float GetSpotLightBlockerSearchScale(int shadowIndex)               { return _SpotLightShadowData[shadowIndex].spotLightShadowParams2.y; }
 float GetSpotLightBlockerSampleNumber(int shadowIndex)              { return _SpotLightShadowData[shadowIndex].spotLightShadowParams2.z; }
-float GetSpotLightMinFilterWidth(int shadowIndex)                   { return _SpotLightShadowData[shadowIndex].spotLightShadowParams2.w; }
+float GetSpotLightMinPenumbraWidth(int shadowIndex)                 { return _SpotLightShadowData[shadowIndex].spotLightShadowParams2.w; }
 float4 GetSpotLightDepthParams(int shadowIndex)                     { return _SpotLightShadowData[shadowIndex].spotLightDepthParams; }
 float4x4 GetSpotLightShadowMatrix(int shadowIndex)                  { return _SpotLightShadowMatrices[shadowIndex]; }
 

@@ -106,7 +106,7 @@ namespace YPipeline
 
             public void Setup(YPipelineLightsData lightsData, int index)
             {
-                if (lightsData.shadowingPointLightCount > 0)
+                if (lightsData.shadowingSpotLightCount > 0)
                 {
                     spotLightShadowColors = lightsData.spotLightShadowColors[index];
                     spotLightPenumbraColors = lightsData.spotLightPenumbraColors[index];
