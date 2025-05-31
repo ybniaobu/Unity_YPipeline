@@ -25,5 +25,14 @@ namespace YPipeline
         }
         
         public Textures textures;
+
+        [System.Serializable]
+        public struct ComputeShaders
+        {
+            public ComputeShader tiledLightCullingCs;
+            
+        }
+        
+        public ComputeShaders computeShaders;
     }
 }

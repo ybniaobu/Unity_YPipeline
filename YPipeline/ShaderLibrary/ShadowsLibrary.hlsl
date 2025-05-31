@@ -229,7 +229,7 @@ float3 GetSunLightShadowAttenuation_PCF(float3 positionWS, float3 normalWS, floa
     float3 positionWS_Bias = ApplyShadowBias(positionWS, GetSunLightShadowBias(), texelSize, GetSunLightPCFPenumbraWidth(), normalWS, L);
     float3 positionSS = TransformWorldToSunLightShadowCoord(positionWS_Bias, cascadeIndex);
 
-    float randomRadian = SAMPLE_TEXTURE2D(_BlueNoise64, sampler_PointRepeat, positionHCS.xy / 64).r * TWO_PI;
+    float randomRadian = SAMPLE_TEXTURE2D_LOD(_BlueNoise64, sampler_PointRepeat, positionHCS.xy / 64, 0).r * TWO_PI;
     // float randomRadian = InterleavedGradientNoise(positionHCS, 0) * TWO_PI;
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
     
@@ -252,7 +252,7 @@ float3 GetSpotLightShadowAttenuation_PCF(int lightIndex, float3 positionWS, floa
     float3 positionWS_Bias = ApplyShadowBias(positionWS, GetSpotLightShadowBias(shadowingSpotLightIndex), texelSize, penumbraWS, normalWS, L);
     float3 positionSS = TransformWorldToSpotLightShadowCoord(positionWS_Bias, shadowingSpotLightIndex);
 
-    float randomRadian = SAMPLE_TEXTURE2D(_BlueNoise64, sampler_PointRepeat, positionHCS.xy / 64).r * TWO_PI;
+    float randomRadian = SAMPLE_TEXTURE2D_LOD(_BlueNoise64, sampler_PointRepeat, positionHCS.xy / 64, 0).r * TWO_PI;
     // float randomRadian = InterleavedGradientNoise(positionHCS, 0) * TWO_PI;
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
     
@@ -276,7 +276,7 @@ float3 GetPointLightShadowAttenuation_PCF(int lightIndex, float faceIndex, float
     //float3 sampleDir = normalize(positionWS_Bias - GetPointLightPosition(lightIndex));
     float3 positionSS = TransformWorldToPointLightShadowCoord(positionWS_Bias, shadowingPointLightIndex, faceIndex);
 
-    float randomRadian = SAMPLE_TEXTURE2D(_BlueNoise64, sampler_PointRepeat, positionHCS.xy / 64).r * TWO_PI;
+    float randomRadian = SAMPLE_TEXTURE2D_LOD(_BlueNoise64, sampler_PointRepeat, positionHCS.xy / 64, 0).r * TWO_PI;
     // float randomRadian = InterleavedGradientNoise(positionHCS, 0) * TWO_PI;
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
     
@@ -405,7 +405,7 @@ float3 GetSunLightShadowAttenuation_PCSS(float3 positionWS, float3 normalWS, flo
     float3 positionSS_Search = TransformWorldToSunLightShadowCoord(positionWS_SearchBias, cascadeIndex);
     
     //float randomRadian = InterleavedGradientNoise(positionHCS, 0) * TWO_PI;
-    float randomRadian = SAMPLE_TEXTURE2D(_BlueNoise64, sampler_PointRepeat, positionHCS.xy / 64).r * TWO_PI;
+    float randomRadian = SAMPLE_TEXTURE2D_LOD(_BlueNoise64, sampler_PointRepeat, positionHCS.xy / 64, 0).r * TWO_PI;
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
 
     float4 depthParams = GetSunLightDepthParams(cascadeIndex);
@@ -443,7 +443,7 @@ float3 GetSpotLightShadowAttenuation_PCSS(int lightIndex, float3 positionWS, flo
     float3 positionSS_Search = TransformWorldToSpotLightShadowCoord(positionWS_SearchBias, shadowingSpotLightIndex);
     
     //float randomRadian = InterleavedGradientNoise(positionHCS, 0) * TWO_PI;
-    float randomRadian = SAMPLE_TEXTURE2D(_BlueNoise64, sampler_PointRepeat, positionHCS.xy / 64).r * TWO_PI;
+    float randomRadian = SAMPLE_TEXTURE2D_LOD(_BlueNoise64, sampler_PointRepeat, positionHCS.xy / 64, 0).r * TWO_PI;
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
     
     float4 depthParams = GetSpotLightDepthParams(shadowingSpotLightIndex);
@@ -481,7 +481,7 @@ float3 GetPointLightShadowAttenuation_PCSS(int lightIndex, float faceIndex, floa
     float3 positionSS_Search = TransformWorldToPointLightShadowCoord(positionWS_SearchBias, shadowingPointLightIndex, faceIndex);
 
     //float randomRadian = InterleavedGradientNoise(positionHCS, 0) * TWO_PI;
-    float randomRadian = SAMPLE_TEXTURE2D(_BlueNoise64, sampler_PointRepeat, positionHCS.xy / 64).r * TWO_PI;
+    float randomRadian = SAMPLE_TEXTURE2D_LOD(_BlueNoise64, sampler_PointRepeat, positionHCS.xy / 64, 0).r * TWO_PI;
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
     
     float4 depthParams = GetPointLightDepthParams(shadowingPointLightIndex);

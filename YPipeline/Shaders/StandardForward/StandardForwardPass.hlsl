@@ -126,25 +126,45 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     // ----------------------------------------------------------------------------------------------------
     // Direct Lighting - Punctual Light
     // ----------------------------------------------------------------------------------------------------
-    int punctualLightCount = GetPunctualLightCount();
+
+    TileParams tileParams = InitializeTileParams(IN.uv);
     
-    for (int i = 0; i < punctualLightCount; i++)
+    for (int i = tileParams.headerIndex + 1; i <= tileParams.lastLightIndex; i++)
     {
+        int lightIndex = _TilesLightIndicesBuffer[i];
+        
         LightParams punctualLightParams = (LightParams) 0;
         
         UNITY_BRANCH
-        if (GetPunctualLightType(i) == SPOT_LIGHT) InitializeSpotLightParams(punctualLightParams, i, standardPBRParams.V, normalize(IN.normalWS), IN.positionWS, IN.positionHCS.xyz);
-        else if (GetPunctualLightType(i) == POINT_LIGHT) InitializePointLightParams(punctualLightParams, i, standardPBRParams.V, normalize(IN.normalWS), IN.positionWS, IN.positionHCS.xyz);
-        
+        if (GetPunctualLightType(lightIndex) == SPOT_LIGHT) InitializeSpotLightParams(punctualLightParams, lightIndex, standardPBRParams.V, normalize(IN.normalWS), IN.positionWS, IN.positionHCS.xyz);
+        else if (GetPunctualLightType(lightIndex) == POINT_LIGHT) InitializePointLightParams(punctualLightParams, lightIndex, standardPBRParams.V, normalize(IN.normalWS), IN.positionWS, IN.positionHCS.xyz);
+    
         BRDFParams punctualBRDFParams = (BRDFParams) 0;
         InitializeBRDFParams(punctualBRDFParams, standardPBRParams.N, punctualLightParams.L, standardPBRParams.V, punctualLightParams.H);
-        
+    
         renderingEquationContent.directPunctualLights += CalculateLightIrradiance(punctualLightParams) * StandardPBR_EnergyCompensation(punctualBRDFParams, standardPBRParams, energyCompensation);
     }
+    
+    // int punctualLightCount = GetPunctualLightCount();
+    //
+    // for (int i = 0; i < punctualLightCount; i++)
+    // {
+    //     LightParams punctualLightParams = (LightParams) 0;
+    //     
+    //     UNITY_BRANCH
+    //     if (GetPunctualLightType(i) == SPOT_LIGHT) InitializeSpotLightParams(punctualLightParams, i, standardPBRParams.V, normalize(IN.normalWS), IN.positionWS, IN.positionHCS.xyz);
+    //     else if (GetPunctualLightType(i) == POINT_LIGHT) InitializePointLightParams(punctualLightParams, i, standardPBRParams.V, normalize(IN.normalWS), IN.positionWS, IN.positionHCS.xyz);
+    //     
+    //     BRDFParams punctualBRDFParams = (BRDFParams) 0;
+    //     InitializeBRDFParams(punctualBRDFParams, standardPBRParams.N, punctualLightParams.L, standardPBRParams.V, punctualLightParams.H);
+    //     
+    //     renderingEquationContent.directPunctualLights += CalculateLightIrradiance(punctualLightParams) * StandardPBR_EnergyCompensation(punctualBRDFParams, standardPBRParams, energyCompensation);
+    // }
 
     // ----------------------------------------------------------------------------------------------------
     // Clipping
     // ----------------------------------------------------------------------------------------------------
+    
     // TODO：去除 _OpacityTex，因为和烘焙系统不太兼容
     float alpha = SAMPLE_TEXTURE2D(_OpacityTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).r * _BaseColor.a;
     #if defined(_CLIPPING)

@@ -30,3 +30,6 @@ MonoBehaviour:
     blueNoise64: {fileID: 2800000, guid: f20af32bca62bab448e8b4454ad1c3b8, type: 3}
     blueNoise128: {fileID: 0}
     blueNoise256: {fileID: 2800000, guid: 327ad2c817f5c5646a409ef7764d931d, type: 3}
+  computeShaders:
+    tiledLightCullingCs: {fileID: 7200000, guid: f0b81bd803cf09b48a241b0856dbef54,
+      type: 3}

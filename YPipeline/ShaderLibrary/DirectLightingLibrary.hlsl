@@ -4,6 +4,31 @@
 #include "../ShaderLibrary/ShadowsLibrary.hlsl"
 
 // ----------------------------------------------------------------------------------------------------
+// Tiled Light Culling
+// ----------------------------------------------------------------------------------------------------
+
+StructuredBuffer<uint> _TilesLightIndicesBuffer;
+
+struct TileParams
+{
+    int tileIndex;
+    int headerIndex;
+    int lightCount;
+    int lastLightIndex;
+};
+
+TileParams InitializeTileParams(float2 uv)
+{
+    TileParams tileParams;
+    int2 coord = ceil(uv / _TileParams.zw);
+    tileParams.tileIndex = coord.y * _TileParams.x + coord.x;
+    tileParams.headerIndex = tileParams.tileIndex * (MAX_LIGHT_COUNT_PER_TILE + 1);
+    tileParams.lightCount = _TilesLightIndicesBuffer[tileParams.headerIndex];
+    tileParams.lastLightIndex = tileParams.headerIndex + tileParams.lightCount;
+    return tileParams;
+}
+
+// ----------------------------------------------------------------------------------------------------
 // Light Falloff / Attenuation functions
 // ----------------------------------------------------------------------------------------------------
 

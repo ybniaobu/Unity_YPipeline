@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 using Unity.Collections;
@@ -139,6 +140,8 @@ namespace YPipeline
             int shadowingSpotLightCount = 0;
             int shadowingPointLightCount = 0;
 
+            Array.Clear(data.lightsData.lightsBound, 0, data.lightsData.lightsBound.Length);
+
             for (int i = 0; i < visibleLights.Length; i++)
             {
                 VisibleLight visibleLight = visibleLights[i];
@@ -179,7 +182,10 @@ namespace YPipeline
                     data.lightsData.punctualLightDirections[punctualLightCount] = Vector4.zero;
                 
                     float invRadiusSquare = 1.0f / Mathf.Max(visibleLight.range * visibleLight.range, 0.0001f);
-                    data.lightsData.punctualLightParams[punctualLightCount] = new Vector4(invRadiusSquare, yLight.rangeAttenuationScale, 0.0f, 0.0f); 
+                    data.lightsData.punctualLightParams[punctualLightCount] = new Vector4(invRadiusSquare, yLight.rangeAttenuationScale, 0.0f, 0.0f);
+
+                    Rect bound = visibleLight.screenRect;
+                    data.lightsData.lightsBound[punctualLightCount] = new Vector4(bound.xMin, bound.yMin, bound.xMax, bound.yMax);
                     
                     bool isPointLightShadowing = light.shadows != LightShadows.None && light.shadowStrength > 0f && shadowingPointLightCount < YPipelineLightsData.k_MaxShadowingPointLightCount;
                 
@@ -213,6 +219,9 @@ namespace YPipeline
                     float cosOuterAngle = Mathf.Cos(Mathf.Deg2Rad * 0.5f * visibleLight.spotAngle);
                     float invAngleRange = 1.0f / Mathf.Max(cosInnerAngle - cosOuterAngle, 0.0001f);
                     data.lightsData.punctualLightParams[punctualLightCount] = new Vector4(invRadiusSquare, yLight.rangeAttenuationScale, invAngleRange, cosOuterAngle);
+                    
+                    Rect bound = visibleLight.screenRect;
+                    data.lightsData.lightsBound[punctualLightCount] = new Vector4(bound.xMin, bound.yMin, bound.xMax, bound.yMax);
 
                     bool isSpotLightShadowing = light.shadows != LightShadows.None && light.shadowStrength > 0f && shadowingSpotLightCount < YPipelineLightsData.k_MaxShadowingSpotLightCount;
                 

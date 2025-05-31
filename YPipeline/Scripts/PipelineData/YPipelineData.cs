@@ -61,6 +61,6 @@ namespace YPipeline
         public BufferHandle SpotLightShadowBufferHandle { set; get; }
         public BufferHandle SpotLightShadowMatricesBufferHandle { set; get; }
         
-        public BufferHandle TilesBuffer { set; get; }
+        public BufferHandle TilesLightIndicesBufferHandle { set; get; }
     }
 }

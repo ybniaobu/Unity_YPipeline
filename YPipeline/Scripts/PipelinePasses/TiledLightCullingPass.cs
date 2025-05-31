@@ -2,8 +2,6 @@
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
-using System.Runtime.InteropServices;
-using Unity.Collections;
 
 namespace YPipeline
 {
@@ -11,18 +9,16 @@ namespace YPipeline
     {
         private class TiledLightCullingPassData
         {
+            public ComputeShader cs;
             // Input Buffer
-            public BufferHandle lightsInputDataBuffer;
-            public Vector4[] lightsBound = new Vector4[k_MaxPunctualLightCount];
-            public BufferHandle lightTypeBuffer;
+            public BufferHandle lightsCullingInputBuffer;
+            public Vector4[] lightsBound;
             
             // Output Buffer
-            public BufferHandle tilesLightsIndicesBuffer; // 包括每个 tile 里每个 light 的 index，根据 index 判断灯光类型
-            public BufferHandle tilesLightsCountBuffer; // 包括每个 tile 的 light 数量
+            public BufferHandle tilesLightIndicesBuffer; // 每个 tile 都包含一个 header（light 的数量）和每个 light 的 index
             
-            // 
+            // Params
             public Vector2Int tileCountXY;
-            public int tileCount;
             public Vector2 tileUVSize;
         }
 
@@ -32,16 +28,6 @@ namespace YPipeline
             public int lightType;
         }
         
-        // ----------------------------------------------------------------------------------------------------
-        // Constants
-        // ----------------------------------------------------------------------------------------------------
-        
-        public static readonly int k_TilesBufferID = Shader.PropertyToID("_tilesBuffer");
-        public static readonly int k_TilesSettingsID = Shader.PropertyToID("_tilesSettings");
-
-        private const int k_MaxPunctualLightCount = 16 * 16;
-        // private const int k_MaxLightsPerTile = 32;
-        private const int k_TileSize = 16;
         
         protected override void Initialize() { }
 
@@ -49,31 +35,50 @@ namespace YPipeline
         {
             using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<TiledLightCullingPassData>("Tiled Based Light Culling", out var passData))
             {
-                NativeArray<VisibleLight> visibleLights = data.cullingResults.visibleLights;
+                passData.cs = data.asset.pipelineResources.computeShaders.tiledLightCullingCs;
                 
-                // int otherLightCount = 0;
-                // for (int i = 0; i < visibleLights.Length; i++)
-                // {
-                //     VisibleLight visibleLight = visibleLights[i];
-                //     if (visibleLight.lightType != LightType.Directional)
-                //     {
-                //         Rect r = visibleLight.screenRect;
-                //         passData.lightsBound[i] = new Vector4(r.xMin, r.yMin, r.xMax, r.yMax);
-                //         passData.lightType[i] = (int) visibleLight.lightType;
-                //     }
-                // }
-                //
-                // passData.lightaBoundBuffer = builder.CreateTransientBuffer(new BufferDesc()
-                // {
-                //
-                // });
+                // Input
+                passData.lightsBound = data.lightsData.lightsBound;
+
+                passData.lightsCullingInputBuffer = builder.CreateTransientBuffer(new BufferDesc()
+                {
+                    count = YPipelineLightsData.k_MaxPunctualLightCount,
+                    stride = 4 * sizeof(float),
+                    target = GraphicsBuffer.Target.Structured,
+                    name = "Lights Culling Input Buffer"
+                });
                 
+                float pixelToTileX = data.BufferSize.x / (float) YPipelineLightsData.k_TileSize;
+                float pixelToTileY = data.BufferSize.y / (float) YPipelineLightsData.k_TileSize;
+                passData.tileCountXY = new Vector2Int(Mathf.CeilToInt(pixelToTileX), Mathf.CeilToInt(pixelToTileY));
+                int tileCount = passData.tileCountXY.x * passData.tileCountXY.y;
+                passData.tileUVSize = new Vector2(1.0f / pixelToTileX, 1.0f / pixelToTileY);
+                
+                // Output
+                data.TilesLightIndicesBufferHandle = data.renderGraph.CreateBuffer(new BufferDesc()
+                {
+                    count = tileCount * YPipelineLightsData.k_PerTileDataSize,
+                    stride = 4,
+                    target = GraphicsBuffer.Target.Structured,
+                    name = "Tiled Light Indices Buffer"
+                });
+                
+                passData.tilesLightIndicesBuffer = builder.WriteBuffer(data.TilesLightIndicesBufferHandle);
+                
+                builder.AllowPassCulling(false);
                 
                 builder.SetRenderFunc((TiledLightCullingPassData data, RenderGraphContext context) =>
                 {
+                    int kernel = data.cs.FindKernel("TiledLightCulling");
+                    context.cmd.SetBufferData(data.lightsCullingInputBuffer, data.lightsBound);
+                    context.cmd.SetComputeBufferParam(data.cs, kernel, YPipelineShaderIDs.k_LightsCullingInputBufferID, data.lightsCullingInputBuffer);
+                    
+                    context.cmd.SetGlobalVector(YPipelineShaderIDs.k_TileParamsID, new Vector4(data.tileCountXY.x, data.tileCountXY.y, data.tileUVSize.x, data.tileUVSize.y));
+                    context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_TilesLightIndicesBufferID, data.tilesLightIndicesBuffer);
+                    context.cmd.DispatchCompute(data.cs, kernel, data.tileCountXY.x, data.tileCountXY.y, 1);
+                    
                     context.renderContext.ExecuteCommandBuffer(context.cmd);
                     context.cmd.Clear();
-                    
                 });
             }
         }

@@ -57,7 +57,7 @@ namespace YPipeline
                 builder.ReadBuffer(data.PointLightShadowMatricesBufferHandle);
                 builder.ReadBuffer(data.SpotLightShadowBufferHandle);
                 builder.ReadBuffer(data.SpotLightShadowMatricesBufferHandle);
-                //if (data.tilesBuffer.IsValid()) builder.ReadBuffer(data.tilesBuffer);
+                builder.ReadBuffer(data.TilesLightIndicesBufferHandle);
                
                 builder.AllowPassCulling(false);
                 builder.AllowRendererListCulling(false);

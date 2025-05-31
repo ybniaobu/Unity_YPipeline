@@ -11,6 +11,8 @@
 #define MAX_SHADOWING_SPOT_LIGHT_COUNT      64
 #define MAX_SHADOWING_POINT_LIGHT_COUNT     12
 
+#define MAX_LIGHT_COUNT_PER_TILE            32
+
 // ----------------------------------------------------------------------------------------------------
 // Constant Buffers
 // ----------------------------------------------------------------------------------------------------
@@ -70,6 +72,8 @@ float4 GetSunLightDepthParams(int cascadeIndex)             { return _SunLightDe
 // ----------------------------------------------------------------------------------------------------
 // Structured Buffers
 // ----------------------------------------------------------------------------------------------------
+
+float4 _TileParams; // xy: tileCountXY, zw: tileUVSizeXY
 
 float4 _PunctualLightCount; // x: punctual light count 暂时使用，待 tile based 后删除
 float GetPunctualLightCount() { return _PunctualLightCount.x; }

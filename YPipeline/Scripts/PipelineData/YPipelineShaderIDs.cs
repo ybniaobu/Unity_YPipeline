@@ -79,7 +79,13 @@ namespace YPipeline
         public static readonly int k_BloomPrefilterTextureID = Shader.PropertyToID("_BloomPrefilterTexture");
         
         // ----------------------------------------------------------------------------------------------------
-        // Lighting Related Param IDs
+        // Common Param IDs
+        // ----------------------------------------------------------------------------------------------------
+        
+        public static readonly int k_BufferSizeID = Shader.PropertyToID("_CameraBufferSize");
+        
+        // ----------------------------------------------------------------------------------------------------
+        // Lights And Shadows Related Param IDs
         // ----------------------------------------------------------------------------------------------------
         
         // Light Global Params Per Setting
@@ -106,35 +112,18 @@ namespace YPipeline
         public static readonly int k_SpotLightShadowDataID = Shader.PropertyToID("_SpotLightShadowData");
         public static readonly int k_SpotLightShadowMatricesID = Shader.PropertyToID("_SpotLightShadowMatrices");
         
-        public static readonly int k_PunctualLightCountID = Shader.PropertyToID("_PunctualLightCount");
-        
-        // public static readonly int k_SpotLightColorsID = Shader.PropertyToID("_SpotLightColors");
-        // public static readonly int k_SpotLightPositionsID = Shader.PropertyToID("_SpotLightPositions");
-        // public static readonly int k_SpotLightDirectionsID = Shader.PropertyToID("_SpotLightDirections");
-        // public static readonly int k_SpotLightParamsID = Shader.PropertyToID("_SpotLightParams");
-        // public static readonly int k_SpotLightShadowMatricesID = Shader.PropertyToID("_SpotLightShadowMatrices");
-        // public static readonly int k_SpotLightShadowBiasID = Shader.PropertyToID("_SpotLightShadowBias");
-        // public static readonly int k_SpotLightPCFParamsID = Shader.PropertyToID("_SpotLightPCFParams");
-        // public static readonly int k_SpotLightShadowParamsID = Shader.PropertyToID("_SpotLightShadowParams");
-        // public static readonly int k_SpotLightDepthParamsID = Shader.PropertyToID("_SpotLightDepthParams");
-        //
-        // public static readonly int k_PointLightColorsID = Shader.PropertyToID("_PointLightColors");
-        // public static readonly int k_PointLightPositionsID = Shader.PropertyToID("_PointLightPositions");
-        // public static readonly int k_PointLightParamsID = Shader.PropertyToID("_PointLightParams");
-        // public static readonly int k_PointLightShadowMatricesID = Shader.PropertyToID("_PointLightShadowMatrices");
-        // public static readonly int k_PointLightShadowBiasID = Shader.PropertyToID("_PointLightShadowBias");
-        // public static readonly int k_PointLightPCFParamsID = Shader.PropertyToID("_PointLightPCFParams");
-        // public static readonly int k_PointLightShadowParamsID = Shader.PropertyToID("_PointLightShadowParams");
-        // public static readonly int k_PointLightDepthParamsID = Shader.PropertyToID("_PointLightDepthParams");
+        public static readonly int k_PunctualLightCountID = Shader.PropertyToID("_PunctualLightCount"); //待删除
         
         // Params Per Shadow Caster
         public static readonly int k_ShadowPancakingID = Shader.PropertyToID("_ShadowPancaking");
         
         // ----------------------------------------------------------------------------------------------------
-        // Common Param IDs
+        // Light Culling Related Param IDs
         // ----------------------------------------------------------------------------------------------------
         
-        public static readonly int k_BufferSizeID = Shader.PropertyToID("_CameraBufferSize");
+        public static readonly int k_LightsCullingInputBufferID = Shader.PropertyToID("_LightsCullingInputBuffer");
+        public static readonly int k_TileParamsID = Shader.PropertyToID("_TileParams");
+        public static readonly int k_TilesLightIndicesBufferID = Shader.PropertyToID("_TilesLightIndicesBuffer");
         
         // ----------------------------------------------------------------------------------------------------
         // Post Processing Related Param IDs
