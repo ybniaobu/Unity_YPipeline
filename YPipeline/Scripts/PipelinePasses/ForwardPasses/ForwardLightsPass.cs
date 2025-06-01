@@ -117,8 +117,6 @@ namespace YPipeline
                     }
                     
                     // Punctual Light Data
-                    context.cmd.SetGlobalVector(YPipelineShaderIDs.k_PunctualLightCountID, new Vector4(data.punctualLightsCount, 0)); //待删除
-
                     if (data.punctualLightsCount > 0)
                     {
                         context.cmd.SetBufferData(data.punctualLightsBuffer, data.punctualLightsData, 0, 0, data.punctualLightsCount);

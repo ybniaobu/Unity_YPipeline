@@ -112,8 +112,6 @@ namespace YPipeline
         public static readonly int k_SpotLightShadowDataID = Shader.PropertyToID("_SpotLightShadowData");
         public static readonly int k_SpotLightShadowMatricesID = Shader.PropertyToID("_SpotLightShadowMatrices");
         
-        public static readonly int k_PunctualLightCountID = Shader.PropertyToID("_PunctualLightCount"); //待删除
-        
         // Params Per Shadow Caster
         public static readonly int k_ShadowPancakingID = Shader.PropertyToID("_ShadowPancaking");
         

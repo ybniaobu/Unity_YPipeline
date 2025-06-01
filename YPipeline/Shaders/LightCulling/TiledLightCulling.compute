@@ -1,18 +1,15 @@
 #pragma kernel TiledLightCulling
 
-#define THREAD_NUM_X 16
+#define THREAD_NUM_X 16 // equal to per tile size
 #define THREAD_NUM_Y 16
 
 #include "../../ShaderLibrary/Core/YPipelineCSCore.hlsl"
-
-#define MAX_PUNCTUAL_LIGHT_COUNT 256
-#define MAX_LIGHT_COUNT_PER_TILE 32
 
 StructuredBuffer<float4> _LightsCullingInputBuffer;
 RWStructuredBuffer<uint> _TilesLightIndicesBuffer;
 float4 _TileParams; // xy: tileCountXY, zw: tileUVSizeXY
 
-groupshared uint lightCountInTile = 0;
+groupshared uint lightCountInTile;
 groupshared uint lightIndicesInTile[MAX_PUNCTUAL_LIGHT_COUNT];
 // groupshared uint tileMinDepthInt = 0xFFFFFFFF;
 // groupshared uint tileMaxDepthInt = 0;
@@ -45,7 +42,8 @@ void TiledLightCulling(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_
 
     uint headerIndex = (groupId.y * _TileParams.x + groupId.x) * (MAX_LIGHT_COUNT_PER_TILE + 1);
     uint minLightCount = min(lightCountInTile, MAX_LIGHT_COUNT_PER_TILE);
-    
+
+    UNITY_BRANCH
     if (groupIndex == 0)
     {
         _TilesLightIndicesBuffer[headerIndex] = lightCountInTile;

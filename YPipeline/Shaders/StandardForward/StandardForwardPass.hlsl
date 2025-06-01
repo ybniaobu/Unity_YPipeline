@@ -103,6 +103,7 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     // ----------------------------------------------------------------------------------------------------
     // Indirect Lighting
     // ----------------------------------------------------------------------------------------------------
+    
     float3 envBRDF = SampleEnvLut(ENVIRONMENT_BRDF_LUT, LUT_SAMPLER, standardPBRParams.NoV, standardPBRParams.roughness);
     float3 energyCompensation = 1.0 + standardPBRParams.F0 * (1.0 / envBRDF.x - 1) * 0.5; // 0.5 is a magic number
     
@@ -115,6 +116,7 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     // ----------------------------------------------------------------------------------------------------
     // Direct Lighting - Sun Light
     // ----------------------------------------------------------------------------------------------------
+    
     LightParams sunLightParams = (LightParams) 0;
     InitializeSunLightParams(sunLightParams, standardPBRParams.V, normalize(IN.normalWS), IN.positionWS, IN.positionHCS.xyz);
 
@@ -127,11 +129,12 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     // Direct Lighting - Punctual Light
     // ----------------------------------------------------------------------------------------------------
 
-    TileParams tileParams = InitializeTileParams(IN.uv);
+    TileParams tileParams = (TileParams) 0;
+    InitializeTileParams(tileParams, IN.positionHCS.xy);
     
     for (int i = tileParams.headerIndex + 1; i <= tileParams.lastLightIndex; i++)
     {
-        int lightIndex = _TilesLightIndicesBuffer[i];
+        uint lightIndex = _TilesLightIndicesBuffer[i];
         
         LightParams punctualLightParams = (LightParams) 0;
         
@@ -174,6 +177,7 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     // ----------------------------------------------------------------------------------------------------
     // LOD Fade
     // ----------------------------------------------------------------------------------------------------
+    
     #if defined(LOD_FADE_CROSSFADE)
         float dither = InterleavedGradientNoise(IN.positionHCS.xy, 0);
         float isNextLodLevel = step(unity_LODFade.x, 0);
