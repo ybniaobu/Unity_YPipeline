@@ -13,9 +13,11 @@ namespace YPipeline
     public partial class YRenderPipeline : RenderPipeline
     {
         private YPipelineData m_Data;
-        
         private GameCameraRenderer m_GameCameraRenderer;
+        
+#if UNITY_EDITOR
         private SceneCameraRenderer m_SceneCameraRenderer;
+#endif
         
         public YRenderPipeline(YRenderPipelineAsset asset)
         {
@@ -34,6 +36,10 @@ namespace YPipeline
 #if UNITY_EDITOR
             m_SceneCameraRenderer = CameraRenderer.Create<SceneCameraRenderer>(ref m_Data);
             InitializeLightmapper();
+#endif
+            
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            m_Data.debugSettings = new DebugSettings();
 #endif
         }
 
@@ -54,11 +60,11 @@ namespace YPipeline
                 m_Data.camera = camera;
                 m_Data.cmd = CommandBufferPool.Get();
                 
-                
+#if UNITY_EDITOR
                 // 待修改
                 if (camera.cameraType == CameraType.Reflection || camera.cameraType == CameraType.Preview)
                     ScriptableRenderContext.EmitGeometryForCamera(camera);
-#if UNITY_EDITOR
+
                 if (m_Data.camera.cameraType == CameraType.SceneView) 
                 {
                     ScriptableRenderContext.EmitWorldGeometryForSceneView(m_Data.camera);
@@ -89,6 +95,10 @@ namespace YPipeline
             
 #if UNITY_EDITOR
             UnityEngine.Experimental.GlobalIllumination.Lightmapping.ResetDelegate();
+#endif
+            
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            m_Data.debugSettings.Dispose();
 #endif
         }
     }

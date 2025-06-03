@@ -18,6 +18,10 @@ namespace YPipeline
         public CullingResults cullingResults;
         public YPipelineLightsData lightsData;
         
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        public DebugSettings debugSettings;
+#endif
+        
         // ----------------------------------------------------------------------------------------------------
         // Properties
         // ----------------------------------------------------------------------------------------------------

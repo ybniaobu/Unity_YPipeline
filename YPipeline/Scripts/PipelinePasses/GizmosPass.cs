@@ -8,9 +8,9 @@ using UnityEditor;
 
 namespace YPipeline
 {
+#if UNITY_EDITOR
     public class GizmosPass : PipelinePass
     {
-#if UNITY_EDITOR
         private class GizmosPassData
         {
             public TextureHandle depthAttachment;
@@ -19,7 +19,6 @@ namespace YPipeline
             public RendererListHandle preGizmosRendererList;
             public RendererListHandle postGizmosRendererList;
         }
-#endif
         
         protected override void Initialize()
         {
@@ -28,7 +27,6 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-#if UNITY_EDITOR
             if (Handles.ShouldRenderGizmos())
             {
                 using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<GizmosPassData>("Gizmos (Editor)", out var passData))
@@ -53,7 +51,7 @@ namespace YPipeline
                     });
                 }
             }
-#endif
         }
     }
+#endif
 }

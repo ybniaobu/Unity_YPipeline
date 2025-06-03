@@ -41,7 +41,13 @@ namespace YPipeline
                     m_CameraPipelineNodes.Add(PipelinePass.Create<CopyColorPass>());
                     m_CameraPipelineNodes.Add(PipelinePass.Create<TransparencyPass>());
                     m_CameraPipelineNodes.Add(PipelinePass.Create<PostProcessingPass>());
+                    
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<DebugPass>());
+#endif
+#if UNITY_EDITOR
                     m_CameraPipelineNodes.Add(PipelinePass.Create<GizmosPass>());
+#endif
                     break;
                 case RenderPath.Deferred:
                     

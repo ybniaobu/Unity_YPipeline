@@ -129,10 +129,10 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     // Direct Lighting - Punctual Light
     // ----------------------------------------------------------------------------------------------------
 
-    TileParams tileParams = (TileParams) 0;
-    InitializeTileParams(tileParams, IN.positionHCS.xy);
+    LightsTileParams lightsTileParams = (LightsTileParams) 0;
+    InitializeLightsTileParams(lightsTileParams, IN.positionHCS.xy);
     
-    for (int i = tileParams.headerIndex + 1; i <= tileParams.lastLightIndex; i++)
+    for (int i = lightsTileParams.headerIndex + 1; i <= lightsTileParams.lastLightIndex; i++)
     {
         uint lightIndex = _TilesLightIndicesBuffer[i];
         
