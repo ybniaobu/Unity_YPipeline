@@ -48,7 +48,7 @@ float4 Frag(Varyings IN) : SV_TARGET
     
     float3 color;
     if (IsMinimumEdgePixel) color = 1.0;
-    else color = OverlayHeatMap(IN.uv * _CameraBufferSize.zw, (_CameraBufferSize.zw * _TileParams.zw), lightCount, MAX_LIGHT_COUNT_PER_TILE, 1.0).rgb;
+    else color = OverlayHeatMap(IN.uv * _CameraBufferSize.zw, _CameraBufferSize.zw * _TileParams.zw, lightCount, MAX_LIGHT_COUNT_PER_TILE, 1.0).rgb;
     
     return float4(color, _TilesDebugOpacity);
 }

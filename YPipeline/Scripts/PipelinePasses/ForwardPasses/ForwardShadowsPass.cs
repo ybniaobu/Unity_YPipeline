@@ -1,10 +1,9 @@
-﻿using UnityEngine;
+﻿using System.Runtime.InteropServices;
+using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 using Unity.Collections;
 using UnityEngine.Experimental.Rendering;
-
-using System.Runtime.InteropServices;
 
 namespace YPipeline
 {
@@ -72,6 +71,7 @@ namespace YPipeline
             }
         }
         
+        [StructLayout(LayoutKind.Sequential)]
         struct PointLightShadowStructuredBuffer
         {
             public Vector4 pointLightShadowColors;
@@ -95,6 +95,7 @@ namespace YPipeline
             }
         }
         
+        [StructLayout(LayoutKind.Sequential)]
         struct SpotLightShadowStructuredBuffer
         {
             public Vector4 spotLightShadowColors;

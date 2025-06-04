@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
@@ -55,6 +56,7 @@ namespace YPipeline
             }
         }
 
+        [StructLayout(LayoutKind.Sequential)]
         private struct PunctualLightStructuredBuffer
         {
             public Vector4 punctualLightColors;

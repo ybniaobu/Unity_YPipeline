@@ -16,7 +16,7 @@ namespace YPipeline
         public const int k_MaxShadowingSpotLightCount = 64;
         public const int k_MaxShadowingPointLightCount = 12;
 
-        public const int k_MaxLightCountPerTile = 32; // 理论上 16 * 16 的 tile 最多能与 (256 - 1) 个灯做相交测试
+        public const int k_MaxLightCountPerTile = 32;
         public const int k_PerTileDataSize = k_MaxLightCountPerTile + 1; // 1 for the header (light count)
         public const int k_TileSize = 16;
         
