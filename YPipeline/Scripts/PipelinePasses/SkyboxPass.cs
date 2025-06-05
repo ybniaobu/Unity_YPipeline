@@ -37,6 +37,8 @@ namespace YPipeline
                 builder.SetRenderFunc((SkyboxPassData data, RenderGraphContext context) =>
                 {
                     context.cmd.DrawRendererList(data.skyboxRendererList);
+                    context.renderContext.ExecuteCommandBuffer(context.cmd);
+                    context.cmd.Clear();
                 });
             }
         }
