@@ -28,8 +28,9 @@ void InitializeLightsTileParams(out LightsTileParams lightsTileParams, float2 pi
 // Light Falloff / Attenuation functions
 // ----------------------------------------------------------------------------------------------------
 
-float GetDistanceAttenuation(float3 lightVector, float invLightRangeSqr, float attenuationScale) // lightVector is unnormalized light direction(L).
+float GetDistanceAttenuation(float3 lightVector, float lightRange, float attenuationScale) // lightVector is unnormalized light direction(L).
 {
+    float invLightRangeSqr = rcp(lightRange * lightRange);
     float distanceSquare = dot(lightVector, lightVector);
     float factor = distanceSquare * invLightRangeSqr;
     float smoothFactor = saturate(1.0 - factor * factor);
@@ -113,7 +114,7 @@ void InitializeSpotLightParams(out LightParams spotLightParams, int lightIndex, 
     spotLightParams.L = normalize(lightVector);
     spotLightParams.H = normalize(spotLightParams.L + V);
     
-    spotLightParams.distanceAttenuation = GetDistanceAttenuation(lightVector, GetPunctualLightInverseRangeSquare(lightIndex), GetPunctualLightRangeAttenuationScale(lightIndex));
+    spotLightParams.distanceAttenuation = GetDistanceAttenuation(lightVector, GetPunctualLightRange(lightIndex), GetPunctualLightRangeAttenuationScale(lightIndex));
     float3 spotDirection = GetSpotLightDirection(lightIndex);
     float2 spotAngleParams = GetSpotLightAngleParams(lightIndex);
     spotLightParams.angleAttenuation = GetAngleAttenuation(spotLightParams.L, spotDirection, spotAngleParams);
@@ -145,7 +146,7 @@ void InitializePointLightParams(out LightParams pointLightParams, int lightIndex
     pointLightParams.L = normalize(lightVector);
     pointLightParams.H = normalize(pointLightParams.L + V);
     
-    pointLightParams.distanceAttenuation = GetDistanceAttenuation(lightVector, GetPunctualLightInverseRangeSquare(lightIndex), GetPunctualLightRangeAttenuationScale(lightIndex));
+    pointLightParams.distanceAttenuation = GetDistanceAttenuation(lightVector, GetPunctualLightRange(lightIndex), GetPunctualLightRangeAttenuationScale(lightIndex));
     pointLightParams.angleAttenuation = 1.0;
 
     pointLightParams.isShadowing = pointLightParams.distanceAttenuation <= 0.0 || GetShadowingLightIndex(lightIndex) < 0.0;

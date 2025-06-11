@@ -60,7 +60,7 @@ namespace YPipeline
         public Vector4[] punctualLightColors = new Vector4[k_MaxPunctualLightCount]; // xyz: light color * intensity, w: light type (point 1, spot 2)
         public Vector4[] punctualLightPositions = new Vector4[k_MaxPunctualLightCount]; // xyz: light position, w: shadowing spot/point light index (non-shadowing is -1)
         public Vector4[] punctualLightDirections = new Vector4[k_MaxPunctualLightCount]; // xyz: spot light direction
-        public Vector4[] punctualLightParams = new Vector4[k_MaxPunctualLightCount]; // x: 1.0 / light range square, y: range attenuation scale, z: invAngleRange, w: cosOuterAngle
+        public Vector4[] punctualLightParams = new Vector4[k_MaxPunctualLightCount]; // x: light range, y: range attenuation scale, z: invAngleRange, w: cosOuterAngle
         
         public Vector4[] pointLightShadowColors = new Vector4[k_MaxShadowingPointLightCount]; // xyz: shadow color, w: shadow strengths
         public Vector4[] pointLightPenumbraColors = new Vector4[k_MaxShadowingPointLightCount]; // xyz: penumbra color

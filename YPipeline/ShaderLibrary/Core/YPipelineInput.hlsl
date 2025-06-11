@@ -72,7 +72,7 @@ struct PunctualLightData
     float4 punctualLightColors; // xyz: light color * intensity, w: light type (point 1, spot 2)
     float4 punctualLightPositions; // xyz: light position, w: shadowing spot/point light index (non-shadowing is -1)
     float4 punctualLightDirections; // xyz: spot light direction
-    float4 punctualLightParams; // x: 1.0 / light range square, y: range attenuation scale, z: invAngleRange, w: cosOuterAngle
+    float4 punctualLightParams; // x: light range, y: range attenuation scale, z: invAngleRange, w: cosOuterAngle
 };
 
 StructuredBuffer<PunctualLightData> _PunctualLightData;
@@ -82,7 +82,7 @@ float GetPunctualLightType(int lightIndex)                  { return _PunctualLi
 float3 GetPunctualLightPosition(int lightIndex)             { return _PunctualLightData[lightIndex].punctualLightPositions.xyz; }
 float GetShadowingLightIndex(int lightIndex)                { return _PunctualLightData[lightIndex].punctualLightPositions.w; }
 float3 GetSpotLightDirection(int lightIndex)                { return _PunctualLightData[lightIndex].punctualLightDirections.xyz; }
-float GetPunctualLightInverseRangeSquare(int lightIndex)    { return _PunctualLightData[lightIndex].punctualLightParams.x; }
+float GetPunctualLightRange(int lightIndex)                 { return _PunctualLightData[lightIndex].punctualLightParams.x; }
 float GetPunctualLightRangeAttenuationScale(int lightIndex) { return _PunctualLightData[lightIndex].punctualLightParams.y; }
 float2 GetSpotLightAngleParams(int lightIndex)              { return _PunctualLightData[lightIndex].punctualLightParams.zw; }
 float GetSpotLightInverseAngleRange(int lightIndex)         { return _PunctualLightData[lightIndex].punctualLightParams.z; }

@@ -5,38 +5,134 @@
 
 #include "../../ShaderLibrary/Core/YPipelineCSCore.hlsl"
 
-StructuredBuffer<float4> _LightsCullingInputBuffer;
+TEXTURE2D(_CameraDepthTexture);
+SAMPLER(sampler_PointClamp);
+
+StructuredBuffer<float4> _LightsCullingInputBuffer; // xyz: light position, w: light range
+
+// struct PunctualLightData
+// {
+//     float4 punctualLightColors; // xyz: light color * intensity, w: light type (point 1, spot 2)
+//     float4 punctualLightPositions; // xyz: light position, w: shadowing spot/point light index (non-shadowing is -1)
+//     float4 punctualLightDirections; // xyz: spot light direction
+//     float4 punctualLightParams; // x: light range, y: range attenuation scale, z: invAngleRange, w: cosOuterAngle
+// };
+//
+// StructuredBuffer<PunctualLightData> _PunctualLightData;
+
 RWStructuredBuffer<uint> _TilesLightIndicesBuffer;
 float4 _TileParams; // xy: tileCountXY, zw: tileUVSizeXY
+float4 _CameraBufferSize; // x: 1.0 / bufferSize.x, y: 1.0 / bufferSize.y, z: bufferSize.x, w: bufferSize.y
+float4 _CameraNearPlaneLB; // xyz: near plane left bottom point position in view space
+float4 _TileNearPlaneSize; // xy: tile near plane size in view/world space
 
+groupshared uint tileMinDepthInt;
+groupshared uint tileMaxDepthInt;
 groupshared uint lightCountInTile;
 groupshared uint lightIndicesInTile[MAX_PUNCTUAL_LIGHT_COUNT];
-// groupshared uint tileMinDepthInt = 0xFFFFFFFF;
-// groupshared uint tileMaxDepthInt = 0;
+
+// ----------------------------------------------------------------------------------------------------
+// Input
+// ----------------------------------------------------------------------------------------------------
+
+float3 GetPunctualLightPosition(uint lightIndex) { return _LightsCullingInputBuffer[lightIndex].xyz; }
+float GetPunctualLightRange(uint lightIndex)     { return _LightsCullingInputBuffer[lightIndex].w; }
+
+// ----------------------------------------------------------------------------------------------------
+// Depth Intersect Test
+// ----------------------------------------------------------------------------------------------------
+
+bool DepthIntersectTest(float3 lightPositionVS, float lightRange)
+{
+    float tileDepthMin = asfloat(tileMinDepthInt);
+    float tileDepthMax = asfloat(tileMaxDepthInt);
+
+    float lightDepthMin = -lightPositionVS.z - lightRange;
+    float lightDepthMax = -lightPositionVS.z + lightRange;
+    
+    return lightDepthMin <= tileDepthMax && lightDepthMax >= tileDepthMin;
+}
+
+// ----------------------------------------------------------------------------------------------------
+// Sphere-Frustum Intersect Test Related Functions
+// ----------------------------------------------------------------------------------------------------
+
+bool SidePlanesIntersect(float3 p1, float3 p2, float3 lightPositionVS, float lightRange)
+{
+    float3 N = -normalize(cross(p1, p2));
+    float distance = dot(N, lightPositionVS);
+    return distance < lightRange;
+}
+
+bool SphereFrustumIntersectTest(uint lightIndex, uint2 tileIndex)
+{
+    float3 lightPositionVS = TransformWorldToView(GetPunctualLightPosition(lightIndex));
+    float lightRange = GetPunctualLightRange(lightIndex);
+
+    // if (!DepthIntersectTest(lightPositionVS, lightRange)) return false;
+    // return true;
+
+    float3 tileCorners[4];
+    tileCorners[0] = _CameraNearPlaneLB.xyz + tileIndex.x * float3(_TileNearPlaneSize.x, 0, 0) + tileIndex.y * float3(0, _TileNearPlaneSize.y, 0);
+    tileCorners[1] = tileCorners[0] + float3(0, _TileNearPlaneSize.y, 0);
+    tileCorners[2] = tileCorners[1] + float3(_TileNearPlaneSize.x, 0, 0);
+    tileCorners[3] = tileCorners[0] + float3(_TileNearPlaneSize.x, 0, 0);
+
+    bool sideIntersected0 = SidePlanesIntersect(tileCorners[0], tileCorners[1], lightPositionVS, lightRange);
+    bool sideIntersected1 = SidePlanesIntersect(tileCorners[1], tileCorners[2], lightPositionVS, lightRange);
+    bool sideIntersected2 = SidePlanesIntersect(tileCorners[2], tileCorners[3], lightPositionVS, lightRange);
+    bool sideIntersected4 = SidePlanesIntersect(tileCorners[3], tileCorners[0], lightPositionVS, lightRange);
+    return sideIntersected0 && sideIntersected1 && sideIntersected2 && sideIntersected4;
+}
+
+// ----------------------------------------------------------------------------------------------------
+// Kernel
+// ----------------------------------------------------------------------------------------------------
 
 [numthreads(THREAD_NUM_X, THREAD_NUM_Y, 1)]
 void TiledLightCulling(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_GroupThreadID, uint3 groupId : SV_GroupID, uint groupIndex : SV_GroupIndex)
 {
+    // initialize shared memory
     if (groupIndex == 0)
     {
+        tileMinDepthInt = 0x7f7fffff;
+        tileMaxDepthInt = 0;
         lightCountInTile = 0;
     }
 
     GroupMemoryBarrierWithGroupSync();
-    
-    // bool inScreen = (float)id.x < _CameraBufferSize.x && (float)id.y < _CameraBufferSize.y;
-    // if (!inScreen) return;
-    
-    float4 tileBound = float4(groupId.x, groupId.y, groupId.x + 1, groupId.y + 1) * _TileParams.zwzw;
-    float4 lightBound = _LightsCullingInputBuffer[groupIndex];
 
-    // Intersect
-    if ((lightBound.x < tileBound.z) && (lightBound.y < tileBound.w) && (tileBound.x < lightBound.z) && (tileBound.y < lightBound.w))
+    // get the minimum and maximum depth of the tile
+    bool inScreen = (int) id.x < _CameraBufferSize.z && (int) id.y < _CameraBufferSize.w;
+
+    if (inScreen)
+    {
+        float depth = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, id.xy, 0).r;
+        float linearDepth = GetViewDepthFromDepthTexture(depth);
+        uint z = asuint(linearDepth);
+        InterlockedMin(tileMinDepthInt, z);
+        InterlockedMax(tileMaxDepthInt, z);
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+    
+    // intersect test
+    if (SphereFrustumIntersectTest(groupIndex, groupId.xy))
     {
         uint offset;
         InterlockedAdd(lightCountInTile, 1, offset);
         lightIndicesInTile[offset] = groupIndex;
     }
+    
+    // float4 tileBound = float4(groupId.x, groupId.y, groupId.x + 1, groupId.y + 1) * _TileParams.zwzw;
+    // float4 lightBound = _LightsCullingInputBuffer[groupIndex];
+    //
+    // if ((lightBound.x < tileBound.z) && (lightBound.y < tileBound.w) && (tileBound.x < lightBound.z) && (tileBound.y < lightBound.w))
+    // {
+    //     uint offset;
+    //     InterlockedAdd(lightCountInTile, 1, offset);
+    //     lightIndicesInTile[offset] = groupIndex;
+    // }
     
     GroupMemoryBarrierWithGroupSync();
 

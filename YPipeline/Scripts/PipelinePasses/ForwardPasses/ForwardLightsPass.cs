@@ -180,12 +180,12 @@ namespace YPipeline
                     data.lightsData.punctualLightPositions[punctualLightCount] = visibleLight.localToWorldMatrix.GetColumn(3);
                     data.lightsData.punctualLightPositions[punctualLightCount].w = -1; // when w is -1, light should skip shadow calculation
                     data.lightsData.punctualLightDirections[punctualLightCount] = Vector4.zero;
-                
-                    float invRadiusSquare = 1.0f / Mathf.Max(visibleLight.range * visibleLight.range, 0.0001f);
-                    data.lightsData.punctualLightParams[punctualLightCount] = new Vector4(invRadiusSquare, yLight.rangeAttenuationScale, 0.0f, 0.0f);
+                    data.lightsData.punctualLightParams[punctualLightCount] = new Vector4(visibleLight.range, yLight.rangeAttenuationScale, 0.0f, 0.0f);
 
-                    Rect bound = visibleLight.screenRect;
-                    data.lightsData.lightsBound[punctualLightCount] = new Vector4(bound.xMin, bound.yMin, bound.xMax, bound.yMax);
+                    // Rect bound = visibleLight.screenRect;
+                    // data.lightsData.lightsBound[punctualLightCount] = new Vector4(bound.xMin, bound.yMin, bound.xMax, bound.yMax);
+                    data.lightsData.lightsBound[punctualLightCount] = visibleLight.localToWorldMatrix.GetColumn(3);
+                    data.lightsData.lightsBound[punctualLightCount].w = visibleLight.range;
                     
                     bool isPointLightShadowing = light.shadows != LightShadows.None && light.shadowStrength > 0f && shadowingPointLightCount < YPipelineLightsData.k_MaxShadowingPointLightCount;
                 
@@ -213,15 +213,16 @@ namespace YPipeline
                     data.lightsData.punctualLightPositions[punctualLightCount] = visibleLight.localToWorldMatrix.GetColumn(3);
                     data.lightsData.punctualLightPositions[punctualLightCount].w = -1; // when w is -1, light should skip shadow calculation
                     data.lightsData.punctualLightDirections[punctualLightCount] = -visibleLight.localToWorldMatrix.GetColumn(2);
-                
-                    float invRadiusSquare = 1.0f / Mathf.Max(visibleLight.range * visibleLight.range, 0.0001f);
+                    
                     float cosInnerAngle = Mathf.Cos(Mathf.Deg2Rad * 0.5f * light.innerSpotAngle);
                     float cosOuterAngle = Mathf.Cos(Mathf.Deg2Rad * 0.5f * visibleLight.spotAngle);
                     float invAngleRange = 1.0f / Mathf.Max(cosInnerAngle - cosOuterAngle, 0.0001f);
-                    data.lightsData.punctualLightParams[punctualLightCount] = new Vector4(invRadiusSquare, yLight.rangeAttenuationScale, invAngleRange, cosOuterAngle);
+                    data.lightsData.punctualLightParams[punctualLightCount] = new Vector4(visibleLight.range, yLight.rangeAttenuationScale, invAngleRange, cosOuterAngle);
                     
-                    Rect bound = visibleLight.screenRect;
-                    data.lightsData.lightsBound[punctualLightCount] = new Vector4(bound.xMin, bound.yMin, bound.xMax, bound.yMax);
+                    // Rect bound = visibleLight.screenRect;
+                    // data.lightsData.lightsBound[punctualLightCount] = new Vector4(bound.xMin, bound.yMin, bound.xMax, bound.yMax);
+                    data.lightsData.lightsBound[punctualLightCount] = visibleLight.localToWorldMatrix.GetColumn(3);
+                    data.lightsData.lightsBound[punctualLightCount].w = visibleLight.range;
 
                     bool isSpotLightShadowing = light.shadows != LightShadows.None && light.shadowStrength > 0f && shadowingSpotLightCount < YPipelineLightsData.k_MaxShadowingSpotLightCount;
                 

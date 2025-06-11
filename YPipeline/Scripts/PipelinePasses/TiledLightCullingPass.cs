@@ -10,6 +10,7 @@ namespace YPipeline
         private class TiledLightCullingPassData
         {
             public ComputeShader cs;
+            
             // Input Buffer
             public BufferHandle lightsCullingInputBuffer;
             public Vector4[] lightsBound;
@@ -17,9 +18,13 @@ namespace YPipeline
             // Output Buffer
             public BufferHandle tilesLightIndicesBuffer; // 每个 tile 都包含一个 header（light 的数量）和每个 light 的 index
             
-            // Params
+            // Tile Params
             public Vector2Int tileCountXY;
             public Vector2 tileUVSize;
+            
+            // Intersect Params
+            public Vector3 cameraNearPlaneLB;
+            public Vector2 tileNearPlaneSize;
         }
 
         struct LightsInputData
@@ -48,11 +53,22 @@ namespace YPipeline
                     name = "Lights Culling Input Buffer"
                 });
                 
+                builder.ReadTexture(data.CameraDepthTexture);
+                builder.ReadBuffer(data.PunctualLightBufferHandle);
+                
+                // Tile Params
                 float pixelToTileX = data.BufferSize.x / (float) YPipelineLightsData.k_TileSize;
                 float pixelToTileY = data.BufferSize.y / (float) YPipelineLightsData.k_TileSize;
                 passData.tileCountXY = new Vector2Int(Mathf.CeilToInt(pixelToTileX), Mathf.CeilToInt(pixelToTileY));
                 int tileCount = passData.tileCountXY.x * passData.tileCountXY.y;
                 passData.tileUVSize = new Vector2(1.0f / pixelToTileX, 1.0f / pixelToTileY);
+                
+                // Intersect Params
+                float nearPlaneZ = data.camera.nearClipPlane;
+                float nearPlaneHeight = Mathf.Tan(Mathf.Deg2Rad * data.camera.fieldOfView * 0.5f) * 2 * nearPlaneZ;
+                float nearPlaneWidth = data.camera.aspect * nearPlaneHeight;
+                passData.cameraNearPlaneLB = new Vector3(-nearPlaneWidth / 2, -nearPlaneHeight / 2, -nearPlaneZ);
+                passData.tileNearPlaneSize = new Vector2(YPipelineLightsData.k_TileSize * nearPlaneWidth / data.BufferSize.x, YPipelineLightsData.k_TileSize * nearPlaneHeight / data.BufferSize.y);
                 
                 // Output
                 data.TilesLightIndicesBufferHandle = data.renderGraph.CreateBuffer(new BufferDesc()
@@ -74,6 +90,9 @@ namespace YPipeline
                     context.cmd.SetComputeBufferParam(data.cs, kernel, YPipelineShaderIDs.k_LightsCullingInputBufferID, data.lightsCullingInputBuffer);
                     
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_TileParamsID, new Vector4(data.tileCountXY.x, data.tileCountXY.y, data.tileUVSize.x, data.tileUVSize.y));
+                    context.cmd.SetComputeVectorParam(data.cs, YPipelineShaderIDs.k_CameraNearPlaneLBID, data.cameraNearPlaneLB);
+                    context.cmd.SetComputeVectorParam(data.cs, YPipelineShaderIDs.k_TileNearPlaneSizeID, data.tileNearPlaneSize);
+                    
                     context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_TilesLightIndicesBufferID, data.tilesLightIndicesBuffer);
                     context.cmd.DispatchCompute(data.cs, kernel, data.tileCountXY.x, data.tileCountXY.y, 1);
                     
