@@ -16,7 +16,7 @@ namespace YPipeline
             public SunLightConstantBuffer sunLightData = new SunLightConstantBuffer();
 
             public BufferHandle punctualLightsBuffer;
-            public int punctualLightsCount;
+            public int punctualLightCount;
             public PunctualLightStructuredBuffer[] punctualLightsData = new PunctualLightStructuredBuffer[YPipelineLightsData.k_MaxPunctualLightCount];
         }
         
@@ -89,7 +89,7 @@ namespace YPipeline
                 }
                 
                 passData.isSunLightShadowing = data.lightsData.shadowingSunLightCount > 0;
-                passData.punctualLightsCount = data.lightsData.punctualLightCount;
+                passData.punctualLightCount = data.lightsData.punctualLightCount;
                 
                 data.PunctualLightBufferHandle = data.renderGraph.CreateBuffer(new BufferDesc()
                 {
@@ -119,9 +119,10 @@ namespace YPipeline
                     }
                     
                     // Punctual Light Data
-                    if (data.punctualLightsCount > 0)
+                    context.cmd.SetGlobalVector(YPipelineShaderIDs.k_PunctualLightCountID, new Vector4(data.punctualLightCount, 0));
+                    if (data.punctualLightCount > 0)
                     {
-                        context.cmd.SetBufferData(data.punctualLightsBuffer, data.punctualLightsData, 0, 0, data.punctualLightsCount);
+                        context.cmd.SetBufferData(data.punctualLightsBuffer, data.punctualLightsData, 0, 0, data.punctualLightCount);
                         context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_PunctualLightDataID, data.punctualLightsBuffer);
                     }
                     
@@ -140,7 +141,7 @@ namespace YPipeline
             int shadowingSpotLightCount = 0;
             int shadowingPointLightCount = 0;
 
-            Array.Clear(data.lightsData.lightsBound, 0, data.lightsData.lightsBound.Length);
+            Array.Clear(data.lightsData.lightsCullingInputInfos, 0, data.lightsData.lightsCullingInputInfos.Length);
 
             for (int i = 0; i < visibleLights.Length; i++)
             {
@@ -184,8 +185,8 @@ namespace YPipeline
 
                     // Rect bound = visibleLight.screenRect;
                     // data.lightsData.lightsBound[punctualLightCount] = new Vector4(bound.xMin, bound.yMin, bound.xMax, bound.yMax);
-                    data.lightsData.lightsBound[punctualLightCount] = visibleLight.localToWorldMatrix.GetColumn(3);
-                    data.lightsData.lightsBound[punctualLightCount].w = visibleLight.range;
+                    data.lightsData.lightsCullingInputInfos[punctualLightCount] = visibleLight.localToWorldMatrix.GetColumn(3);
+                    data.lightsData.lightsCullingInputInfos[punctualLightCount].w = visibleLight.range;
                     
                     bool isPointLightShadowing = light.shadows != LightShadows.None && light.shadowStrength > 0f && shadowingPointLightCount < YPipelineLightsData.k_MaxShadowingPointLightCount;
                 
@@ -221,8 +222,8 @@ namespace YPipeline
                     
                     // Rect bound = visibleLight.screenRect;
                     // data.lightsData.lightsBound[punctualLightCount] = new Vector4(bound.xMin, bound.yMin, bound.xMax, bound.yMax);
-                    data.lightsData.lightsBound[punctualLightCount] = visibleLight.localToWorldMatrix.GetColumn(3);
-                    data.lightsData.lightsBound[punctualLightCount].w = visibleLight.range;
+                    data.lightsData.lightsCullingInputInfos[punctualLightCount] = visibleLight.localToWorldMatrix.GetColumn(3);
+                    data.lightsData.lightsCullingInputInfos[punctualLightCount].w = visibleLight.range;
 
                     bool isSpotLightShadowing = light.shadows != LightShadows.None && light.shadowStrength > 0f && shadowingSpotLightCount < YPipelineLightsData.k_MaxShadowingSpotLightCount;
                 

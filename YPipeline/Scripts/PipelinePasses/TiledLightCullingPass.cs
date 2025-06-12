@@ -13,7 +13,7 @@ namespace YPipeline
             
             // Input Buffer
             public BufferHandle lightsCullingInputBuffer;
-            public Vector4[] lightsBound;
+            public Vector4[] lightsCullingInputInfos;
             
             // Output Buffer
             public BufferHandle tilesLightIndicesBuffer; // 每个 tile 都包含一个 header（light 的数量）和每个 light 的 index
@@ -43,7 +43,7 @@ namespace YPipeline
                 passData.cs = data.asset.pipelineResources.computeShaders.tiledLightCullingCs;
                 
                 // Input
-                passData.lightsBound = data.lightsData.lightsBound;
+                passData.lightsCullingInputInfos = data.lightsData.lightsCullingInputInfos;
 
                 passData.lightsCullingInputBuffer = builder.CreateTransientBuffer(new BufferDesc()
                 {
@@ -86,7 +86,7 @@ namespace YPipeline
                 builder.SetRenderFunc((TiledLightCullingPassData data, RenderGraphContext context) =>
                 {
                     int kernel = data.cs.FindKernel("TiledLightCulling");
-                    context.cmd.SetBufferData(data.lightsCullingInputBuffer, data.lightsBound);
+                    context.cmd.SetBufferData(data.lightsCullingInputBuffer, data.lightsCullingInputInfos);
                     context.cmd.SetComputeBufferParam(data.cs, kernel, YPipelineShaderIDs.k_LightsCullingInputBufferID, data.lightsCullingInputBuffer);
                     
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_TileParamsID, new Vector4(data.tileCountXY.x, data.tileCountXY.y, data.tileUVSize.x, data.tileUVSize.y));

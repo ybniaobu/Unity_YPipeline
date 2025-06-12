@@ -8,7 +8,7 @@
 float4 _CameraBufferSize; // x: 1.0 / bufferSize.x, y: 1.0 / bufferSize.y, z: bufferSize.x, w: bufferSize.y
 
 // TODO: Global Constant buffer 存放一些全局的只需设置一次的 constant buffer
-CBUFFER_START(LightParamsPerSetting)
+CBUFFER_START(ParamsPerSetting)
     float4 _CascadeSettings; // x: max shadow distance, y: shadow distance fade, z: sun light cascade count, w: cascade edge fade
     float4 _ShadowMapSizes; // x: sun light shadow map size, y: spot light shadow map size, z: point light shadow map size
 CBUFFER_END
@@ -20,6 +20,10 @@ float GetCascadeEdgeFade()                          { return _CascadeSettings.w;
 float GetSunLightShadowMapSize()                    { return _ShadowMapSizes.x; }
 float GetSpotLightShadowMapSize()                   { return _ShadowMapSizes.y; }
 float GetPointLightShadowMapSize()                  { return _ShadowMapSizes.z; }
+
+// ----------------------------------------------------------------------------------------------------
+// Sun Light & Shadow Data
+// ----------------------------------------------------------------------------------------------------
 
 CBUFFER_START(SunLightParams)
     float4 _SunLightColor; // xyz: color * intensity
@@ -58,14 +62,18 @@ float4x4 GetSunLightShadowMatrix(int cascadeIndex)          { return _SunLightSh
 float4 GetSunLightDepthParams(int cascadeIndex)             { return _SunLightDepthParams[cascadeIndex]; }
 
 // ----------------------------------------------------------------------------------------------------
-// Structured Buffers
+// Tiled Based Light Indices
 // ----------------------------------------------------------------------------------------------------
-
-// float4 _PunctualLightCount; 
-// float GetPunctualLightCount() { return _PunctualLightCount.x; }
 
 float4 _TileParams; // xy: tileCountXY, zw: tileUVSizeXY
 StructuredBuffer<uint> _TilesLightIndicesBuffer;
+
+// ----------------------------------------------------------------------------------------------------
+// Punctual Light & Shadow Data
+// ----------------------------------------------------------------------------------------------------
+
+float4 _PunctualLightCount; // x: punctual light count, yzw: 暂无
+float GetPunctualLightCount()   { return _PunctualLightCount.x; }
 
 struct PunctualLightData
 {

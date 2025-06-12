@@ -92,7 +92,7 @@ namespace YPipeline
         public static readonly int k_CascadeSettingsID = Shader.PropertyToID("_CascadeSettings");
         public static readonly int k_ShadowMapSizesID = Shader.PropertyToID("_ShadowMapSizes");
         
-        // Sun Light Params Per Frame
+        // Sun Light & Shadow Data
         public static readonly int k_SunLightColorID = Shader.PropertyToID("_SunLightColor");
         public static readonly int k_SunLightDirectionID = Shader.PropertyToID("_SunLightDirection");
         public static readonly int k_SunLightShadowColorID = Shader.PropertyToID("_SunLightShadowColor");
@@ -105,7 +105,9 @@ namespace YPipeline
         public static readonly int k_SunLightShadowMatricesID = Shader.PropertyToID("_SunLightShadowMatrices");
         public static readonly int k_SunLightDepthParamsID = Shader.PropertyToID("_SunLightDepthParams");
         
-        // Spot and Point Light Structured Buffer
+        // Punctual Light & Shadow Data
+        public static readonly int k_PunctualLightCountID = Shader.PropertyToID("_PunctualLightCount");
+        
         public static readonly int k_PunctualLightDataID = Shader.PropertyToID("_PunctualLightData");
         public static readonly int k_PointLightShadowDataID = Shader.PropertyToID("_PointLightShadowData");
         public static readonly int k_PointLightShadowMatricesID = Shader.PropertyToID("_PointLightShadowMatrices");

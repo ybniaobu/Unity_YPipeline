@@ -48,7 +48,7 @@ namespace YPipeline
         // ----------------------------------------------------------------------------------------------------
         
         // Light Culling
-        public Vector4[] lightsBound = new Vector4[k_MaxPunctualLightCount];
+        public Vector4[] lightsCullingInputInfos = new Vector4[k_MaxPunctualLightCount];
         
         // Shadows
         public int punctualLightCount;
