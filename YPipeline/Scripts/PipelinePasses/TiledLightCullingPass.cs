@@ -12,7 +12,7 @@ namespace YPipeline
             public ComputeShader cs;
             
             // Input Buffer
-            public BufferHandle lightsCullingInputBuffer;
+            public BufferHandle lightsCullingInputInfosBuffer;
             public Vector4[] lightsCullingInputInfos;
             
             // Output Buffer
@@ -45,7 +45,7 @@ namespace YPipeline
                 // Input
                 passData.lightsCullingInputInfos = data.lightsData.lightsCullingInputInfos;
 
-                passData.lightsCullingInputBuffer = builder.CreateTransientBuffer(new BufferDesc()
+                passData.lightsCullingInputInfosBuffer = builder.CreateTransientBuffer(new BufferDesc()
                 {
                     count = YPipelineLightsData.k_MaxPunctualLightCount,
                     stride = 4 * sizeof(float),
@@ -86,8 +86,8 @@ namespace YPipeline
                 builder.SetRenderFunc((TiledLightCullingPassData data, RenderGraphContext context) =>
                 {
                     int kernel = data.cs.FindKernel("TiledLightCulling");
-                    context.cmd.SetBufferData(data.lightsCullingInputBuffer, data.lightsCullingInputInfos);
-                    context.cmd.SetComputeBufferParam(data.cs, kernel, YPipelineShaderIDs.k_LightsCullingInputBufferID, data.lightsCullingInputBuffer);
+                    context.cmd.SetBufferData(data.lightsCullingInputInfosBuffer, data.lightsCullingInputInfos);
+                    context.cmd.SetComputeBufferParam(data.cs, kernel, YPipelineShaderIDs.k_LightsCullingInputInfosID, data.lightsCullingInputInfosBuffer);
                     
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_TileParamsID, new Vector4(data.tileCountXY.x, data.tileCountXY.y, data.tileUVSize.x, data.tileUVSize.y));
                     context.cmd.SetComputeVectorParam(data.cs, YPipelineShaderIDs.k_CameraNearPlaneLBID, data.cameraNearPlaneLB);

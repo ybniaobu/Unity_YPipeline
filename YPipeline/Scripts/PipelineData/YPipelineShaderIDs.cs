@@ -121,7 +121,7 @@ namespace YPipeline
         // Light Culling Related Param IDs
         // ----------------------------------------------------------------------------------------------------
         
-        public static readonly int k_LightsCullingInputBufferID = Shader.PropertyToID("_LightsCullingInputBuffer");
+        public static readonly int k_LightsCullingInputInfosID = Shader.PropertyToID("_LightsCullingInputInfos");
         public static readonly int k_TileParamsID = Shader.PropertyToID("_TileParams");
         public static readonly int k_CameraNearPlaneLBID = Shader.PropertyToID("_CameraNearPlaneLB");
         public static readonly int k_TileNearPlaneSizeID = Shader.PropertyToID("_TileNearPlaneSize");
