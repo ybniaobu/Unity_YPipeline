@@ -8,7 +8,13 @@
 TEXTURE2D(_CameraDepthTexture);
 SAMPLER(sampler_PointClamp);
 
-StructuredBuffer<float4> _LightsCullingInputInfos; // xyz: light position, w: light range
+struct LightInputInfos
+{
+    float4 bound; // xyz: light position, w: light range
+    float4 spotLightInfos; // xyz: spot light direction, w: half outer angle (point light is -1)
+};
+
+StructuredBuffer<LightInputInfos> _LightInputInfos; // xyz: light position, w: light range
 
 float4 _CameraBufferSize; // x: 1.0 / bufferSize.x, y: 1.0 / bufferSize.y, z: bufferSize.x, w: bufferSize.y
 float4 _PunctualLightCount; // x: punctual light count, yzw: 暂无
@@ -28,8 +34,10 @@ groupshared uint lightIndicesInTile[MAX_PUNCTUAL_LIGHT_COUNT];
 // Input
 // ----------------------------------------------------------------------------------------------------
 
-float3 GetPunctualLightPosition(uint lightIndex)    { return _LightsCullingInputInfos[lightIndex].xyz; }
-float GetPunctualLightRange(uint lightIndex)        { return _LightsCullingInputInfos[lightIndex].w; }
+float3 GetPunctualLightPosition(uint lightIndex)    { return _LightInputInfos[lightIndex].bound.xyz; }
+float GetPunctualLightRange(uint lightIndex)        { return _LightInputInfos[lightIndex].bound.w; }
+float3 GetSpotLightDirection(uint lightIndex)       { return _LightInputInfos[lightIndex].spotLightInfos.xyz; }
+float GetSpotLightHalfOuterAngle(uint lightIndex)   { return _LightInputInfos[lightIndex].spotLightInfos.w; }
 float GetPunctualLightCount()                       { return _PunctualLightCount.x; }
 
 // ----------------------------------------------------------------------------------------------------
@@ -56,7 +64,7 @@ bool DepthIntersect(float3 lightPositionVS, float lightRange)
 }
 
 // ----------------------------------------------------------------------------------------------------
-// Sphere-Frustum Intersect Test
+// Sphere-Frustum Intersect Test -- Only Suitable For Light Bounding Sphere
 // ----------------------------------------------------------------------------------------------------
 
 bool SidePlanesIntersect(float3 p1, float3 p2, float3 lightPositionVS, float lightRange)
@@ -90,7 +98,7 @@ bool SphereFrustumIntersectTest(uint lightIndex, uint2 tileIndex)
 }
 
 // ----------------------------------------------------------------------------------------------------
-// Cone Intersect Test
+// Cone Intersect Test -- Only Suitable For Light Bounding Sphere
 // From https://lxjk.github.io/2018/03/25/Improve-Tile-based-Light-Culling-with-Spherical-sliced-Cone.html#_spherical_sliced_cone_test
 // ----------------------------------------------------------------------------------------------------
 
@@ -132,7 +140,7 @@ bool ConeIntersectTest(uint lightIndex, uint2 tileIndex)
 }
 
 // ----------------------------------------------------------------------------------------------------
-// Spherical-Sliced Cone Test
+// Spherical-Sliced Cone Test -- Only Suitable For Light Bounding Sphere
 // Also From https://lxjk.github.io/2018/03/25/Improve-Tile-based-Light-Culling-with-Spherical-sliced-Cone.html#_spherical_sliced_cone_test
 // ----------------------------------------------------------------------------------------------------
 
@@ -184,13 +192,39 @@ bool SphericalSlicedConeIntersectTest(uint lightIndex, uint2 tileIndex)
         float3 tileCorners[4];
         GetTileFrustumCorners(tileCorners, tileIndex, _CameraNearPlaneLB.xyz, _TileNearPlaneSize.xy);
 
-        return MinMaxDistanceIntersect(tileCorners,lightPositionVS, lightRange);
+        return MinMaxDistanceIntersect(tileCorners, lightPositionVS, lightRange);
     }
 }
 
 // ----------------------------------------------------------------------------------------------------
-// AABB Intersect Test
+// AABB Intersect Test -- Suitable For Point Light Sphere & Spot Light Cone
 // ----------------------------------------------------------------------------------------------------
+
+bool BoundingSphereIntersect(float3 tileMin, float3 tileMax, float3 lightPositionVS, float lightRange)
+{
+    float3 closestPoint = clamp(lightPositionVS, tileMin, tileMax);
+    float3 diff = closestPoint - lightPositionVS;
+    float sqrDiff = dot(diff, diff);
+    float sqrLightRange = lightRange * lightRange;
+    return sqrDiff <= sqrLightRange;
+}
+
+bool SpotConeIntersectTest(float3 tileMin, float3 tileMax, float3 lightPositionVS, float lightRange, float3 spotLightDir, float angle)
+{
+    float3 tileCenter = 0.5 * (tileMin + tileMax);
+    float3 extent = tileMax - tileCenter;
+    float tileRadius = sqrt(dot(extent, extent));
+    float3 V = tileCenter - lightPositionVS;
+    float VLenSqr = dot(V, V);
+    float V1Len = dot(V, spotLightDir);
+
+    float distanceClosestPoint = cos(angle) * sqrt(VLenSqr - V1Len * V1Len) - V1Len * sin(angle);
+
+    bool angleCull = distanceClosestPoint > tileRadius;
+    bool frontCull = V1Len > tileRadius + lightRange;
+    bool backCull = V1Len < -tileRadius;
+    return !(angleCull || frontCull || backCull);
+}
 
 bool AABBIntersectTest(uint lightIndex, uint2 tileIndex)
 {
@@ -204,7 +238,10 @@ bool AABBIntersectTest(uint lightIndex, uint2 tileIndex)
         float3 lightPositionVS = TransformWorldToView(GetPunctualLightPosition(lightIndex));
         lightPositionVS.z = -lightPositionVS.z;
         float lightRange = GetPunctualLightRange(lightIndex);
-        
+        float3 spotLightDir = TransformWorldToViewDir(GetSpotLightDirection(lightIndex));
+        spotLightDir.z = -spotLightDir.z;
+        float angle = GetSpotLightHalfOuterAngle(lightIndex);
+
         float tileDepthMin = asfloat(tileMinDepthInt);
         float tileDepthMax = asfloat(tileMaxDepthInt);
         float lightDepthMin = lightPositionVS.z - lightRange;
@@ -213,18 +250,18 @@ bool AABBIntersectTest(uint lightIndex, uint2 tileIndex)
         float maxZ = min(tileDepthMax, lightDepthMax);
         float nearPlaneScale = minZ / _ProjectionParams.y;
         float farPlaneScale = maxZ / _ProjectionParams.y;
-        
+
         float2 tileCorner0 = _CameraNearPlaneLB.xy + float2(tileIndex.x * _TileNearPlaneSize.x, tileIndex.y * _TileNearPlaneSize.y);
         float2 tileCorner2 = tileCorner0 + float2(_TileNearPlaneSize.x, _TileNearPlaneSize.y);
-        
+
         float3 tileMin = float3(min(tileCorner0 * nearPlaneScale, tileCorner0 * farPlaneScale), minZ);
         float3 tileMax = float3(max(tileCorner2 * nearPlaneScale, tileCorner2 * farPlaneScale), maxZ);
 
-        float3 closestPoint = clamp(lightPositionVS, tileMin, tileMax);
-        float3 diff = closestPoint - lightPositionVS;
-        float sqrDiff = dot(diff, diff);
-        float sqrLightRange = lightRange * lightRange;
-        return sqrDiff <= sqrLightRange && lightDepthMin <= tileDepthMax && lightDepthMax >= tileDepthMin;
+        bool depthTest = lightDepthMin <= tileDepthMax && lightDepthMax >= tileDepthMin;
+        bool boundingSphereTest = BoundingSphereIntersect(tileMin, tileMax, lightPositionVS, lightRange);
+        bool coneTest = angle > 0.0 ? SpotConeIntersectTest(tileMin, tileMax, lightPositionVS, lightRange, spotLightDir, angle) : true;
+
+        return depthTest && boundingSphereTest && coneTest;
     }
 }
 

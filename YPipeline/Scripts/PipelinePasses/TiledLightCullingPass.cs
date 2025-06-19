@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Runtime.InteropServices;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
@@ -12,8 +13,9 @@ namespace YPipeline
             public ComputeShader cs;
             
             // Input Buffer
-            public BufferHandle lightsCullingInputInfosBuffer;
-            public Vector4[] lightsCullingInputInfos;
+            public BufferHandle lightInputInfosBuffer;
+            public LightInputInfos[] lightInputInfos = new LightInputInfos[YPipelineLightsData.k_MaxPunctualLightCount];
+            public int punctualLightCount;
             
             // Output Buffer
             public BufferHandle tilesLightIndicesBuffer; // 每个 tile 都包含一个 header（light 的数量）和每个 light 的 index
@@ -27,10 +29,23 @@ namespace YPipeline
             public Vector2 tileNearPlaneSize;
         }
 
-        struct LightsInputData
+        [StructLayout(LayoutKind.Sequential)]
+        struct LightInputInfos
         {
-            public Vector4 bounds;
-            public int lightType;
+            public Vector4 bound;
+            public Vector4 spotLightInfos;
+
+            public void Setup(YPipelineLightsData lightsData, int index)
+            {
+                if (lightsData.punctualLightCount > 0)
+                {
+                    bound = lightsData.punctualLightPositions[index];
+                    bound.w = lightsData.punctualLightParams[index].x;
+                    spotLightInfos = -lightsData.punctualLightDirections[index];
+                    float angle = Mathf.Acos(lightsData.punctualLightParams[index].w);
+                    spotLightInfos.w = lightsData.punctualLightColors[index].w < 1.5f ? -1.0f : angle;
+                }
+            }
         }
         
         
@@ -41,16 +56,20 @@ namespace YPipeline
             using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<TiledLightCullingPassData>("Tiled Based Light Culling", out var passData))
             {
                 passData.cs = data.asset.pipelineResources.computeShaders.tiledLightCullingCs;
+                passData.punctualLightCount = data.lightsData.punctualLightCount;
                 
                 // Input
-                passData.lightsCullingInputInfos = data.lightsData.lightsCullingInputInfos;
+                for (int i = 0; i < data.lightsData.punctualLightCount; i++)
+                {
+                    passData.lightInputInfos[i].Setup(data.lightsData, i);
+                }
 
-                passData.lightsCullingInputInfosBuffer = builder.CreateTransientBuffer(new BufferDesc()
+                passData.lightInputInfosBuffer = builder.CreateTransientBuffer(new BufferDesc()
                 {
                     count = YPipelineLightsData.k_MaxPunctualLightCount,
-                    stride = 4 * sizeof(float),
+                    stride = 8 * sizeof(float),
                     target = GraphicsBuffer.Target.Structured,
-                    name = "Lights Culling Input Buffer"
+                    name = "Light Culling Input Buffer"
                 });
                 
                 builder.ReadTexture(data.CameraDepthTexture);
@@ -86,8 +105,8 @@ namespace YPipeline
                 builder.SetRenderFunc((TiledLightCullingPassData data, RenderGraphContext context) =>
                 {
                     int kernel = data.cs.FindKernel("TiledLightCulling");
-                    context.cmd.SetBufferData(data.lightsCullingInputInfosBuffer, data.lightsCullingInputInfos);
-                    context.cmd.SetComputeBufferParam(data.cs, kernel, YPipelineShaderIDs.k_LightsCullingInputInfosID, data.lightsCullingInputInfosBuffer);
+                    context.cmd.SetBufferData(data.lightInputInfosBuffer, data.lightInputInfos, 0, 0, data.punctualLightCount);
+                    context.cmd.SetComputeBufferParam(data.cs, kernel, YPipelineShaderIDs.k_LightInputInfosID, data.lightInputInfosBuffer);
                     
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_TileParamsID, new Vector4(data.tileCountXY.x, data.tileCountXY.y, data.tileUVSize.x, data.tileUVSize.y));
                     context.cmd.SetComputeVectorParam(data.cs, YPipelineShaderIDs.k_CameraNearPlaneLBID, data.cameraNearPlaneLB);
