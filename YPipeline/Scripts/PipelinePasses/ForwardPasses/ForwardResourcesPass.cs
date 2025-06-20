@@ -59,7 +59,7 @@ namespace YPipeline
                 
                 TextureDesc colorAttachmentDesc = new TextureDesc(bufferSize.x,bufferSize.y)
                 {
-                    colorFormat = SystemInfo.GetGraphicsFormat(data.asset.enableHDRFrameBufferFormat ? DefaultFormat.HDR : DefaultFormat.LDR),
+                    colorFormat = SystemInfo.GetGraphicsFormat(data.asset.enableHDRColorBuffer ? DefaultFormat.HDR : DefaultFormat.LDR),
                     filterMode = FilterMode.Bilinear,
                     clearBuffer = true,
                     clearColor = Color.clear,
@@ -68,7 +68,7 @@ namespace YPipeline
                 
                 TextureDesc colorTextureDesc = new TextureDesc(bufferSize.x,bufferSize.y)
                 {
-                    colorFormat = SystemInfo.GetGraphicsFormat(data.asset.enableHDRFrameBufferFormat ? DefaultFormat.HDR : DefaultFormat.LDR),
+                    colorFormat = SystemInfo.GetGraphicsFormat(data.asset.enableHDRColorBuffer ? DefaultFormat.HDR : DefaultFormat.LDR),
                     filterMode = FilterMode.Bilinear,
                     clearBuffer = true,
                     clearColor = Color.clear,
@@ -102,7 +102,7 @@ namespace YPipeline
                 
                 // TODO: constant buffer 设置一次就行!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 passData.cascadeSettings = new Vector4(data.asset.maxShadowDistance, data.asset.distanceFade, data.asset.cascadeCount, data.asset.cascadeEdgeFade);
-                passData.shadowMapSizes = new Vector4(data.asset.sunLightShadowMapSize, data.asset.spotLightShadowMapSize, data.asset.pointLightShadowMapSize);
+                passData.shadowMapSizes = new Vector4((int) data.asset.sunLightShadowMapSize, (int) data.asset.spotLightShadowMapSize, (int) data.asset.pointLightShadowMapSize);
                 
                 builder.AllowPassCulling(false);
                 

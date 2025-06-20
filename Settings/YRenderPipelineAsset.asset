@@ -12,16 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6d090269ab8a8eb40a3f24edb1024efa, type: 3}
   m_Name: YRenderPipelineAsset
   m_EditorClassIdentifier: 
-  enableHDRFrameBufferFormat: 1
+  pipelineResources: {fileID: 11400000, guid: 908eb47731a80fb45a32453593164179, type: 2}
+  renderPath: 0
+  enableHDRColorBuffer: 1
+  enableSRPBatcher: 1
   renderScale: 1
   antiAliasingMode: 1
   fxaaMode: 0
-  pipelineResources: {fileID: 11400000, guid: 908eb47731a80fb45a32453593164179, type: 2}
-  renderPath: 0
-  globalVolumeProfile: {fileID: 11400000, guid: eb8647ca7eb7e324fa7d7b19a82bc4f5,
-    type: 2}
-  bakedLUTResolution: 32
-  enableSRPBatcher: 1
+  enableSplitDepth: 1
   shadowMode: 1
   maxShadowDistance: 100
   distanceFade: 0.05
@@ -33,3 +31,6 @@ MonoBehaviour:
   sunLightShadowMapSize: 4096
   spotLightShadowMapSize: 1024
   pointLightShadowMapSize: 1024
+  globalVolumeProfile: {fileID: 11400000, guid: eb8647ca7eb7e324fa7d7b19a82bc4f5,
+    type: 2}
+  bakedLUTResolution: 32

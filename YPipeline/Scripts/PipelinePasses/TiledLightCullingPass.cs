@@ -11,11 +11,12 @@ namespace YPipeline
         private class TiledLightCullingPassData
         {
             public ComputeShader cs;
+            public int punctualLightCount;
+            public bool enableSplitDepth;
             
             // Input Buffer
             public BufferHandle lightInputInfosBuffer;
             public LightInputInfos[] lightInputInfos = new LightInputInfos[YPipelineLightsData.k_MaxPunctualLightCount];
-            public int punctualLightCount;
             
             // Output Buffer
             public BufferHandle tilesLightIndicesBuffer; // 每个 tile 都包含一个 header（light 的数量）和每个 light 的 index
@@ -57,6 +58,7 @@ namespace YPipeline
             {
                 passData.cs = data.asset.pipelineResources.computeShaders.tiledLightCullingCs;
                 passData.punctualLightCount = data.lightsData.punctualLightCount;
+                passData.enableSplitDepth = data.asset.enableSplitDepth;
                 
                 // Input
                 for (int i = 0; i < data.lightsData.punctualLightCount; i++)
@@ -104,6 +106,8 @@ namespace YPipeline
                 
                 builder.SetRenderFunc((TiledLightCullingPassData data, RenderGraphContext context) =>
                 {
+                    CoreUtils.SetKeyword(context.cmd, data.cs, YPipelineKeywords.k_TileCullingSplitDepth, passData.enableSplitDepth);
+                    
                     int kernel = data.cs.FindKernel("TiledLightCulling");
                     context.cmd.SetBufferData(data.lightInputInfosBuffer, data.lightInputInfos, 0, 0, data.punctualLightCount);
                     context.cmd.SetComputeBufferParam(data.cs, kernel, YPipelineShaderIDs.k_LightInputInfosID, data.lightInputInfosBuffer);

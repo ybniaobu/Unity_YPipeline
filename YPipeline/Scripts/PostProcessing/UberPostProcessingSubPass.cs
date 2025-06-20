@@ -115,7 +115,7 @@ namespace YPipeline
                 Vector2Int bufferSize = data.BufferSize;
                 TextureDesc finalTextureDesc = new TextureDesc(bufferSize.x,bufferSize.y)
                 {
-                    colorFormat = SystemInfo.GetGraphicsFormat(data.asset.enableHDRFrameBufferFormat ? DefaultFormat.HDR : DefaultFormat.LDR),
+                    colorFormat = SystemInfo.GetGraphicsFormat(data.asset.enableHDRColorBuffer ? DefaultFormat.HDR : DefaultFormat.LDR),
                     filterMode = FilterMode.Bilinear,
                     name = "Final Texture",
                 };

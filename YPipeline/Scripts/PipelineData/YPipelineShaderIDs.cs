@@ -188,14 +188,21 @@ namespace YPipeline
     public static class YPipelineKeywords
     {
         // ----------------------------------------------------------------------------------------------------
-        // Lighting Related Keywords
+        // Lighting And Shadows Related Keywords
         // ----------------------------------------------------------------------------------------------------
+        
         
         // public const string k_ShadowMaskDistance = "_SHADOW_MASK_DISTANCE";
         // public const string k_ShadowMaskNormal = "_SHADOW_MASK_NORMAL";
         
         public const string k_ShadowPCF = "_SHADOW_PCF";
         public const string k_ShadowPCSS = "_SHADOW_PCSS";
+        
+        // ----------------------------------------------------------------------------------------------------
+        // Light Culling Related Keywords
+        // ----------------------------------------------------------------------------------------------------
+        
+        public const string k_TileCullingSplitDepth = "_TILE_CULLING_SPLIT_DEPTH";
         
         // ----------------------------------------------------------------------------------------------------
         // Post Processing Related Keywords

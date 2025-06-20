@@ -87,7 +87,7 @@ namespace YPipeline
                     // Texture Recording
                     passData.colorAttachment = builder.ReadTexture(data.CameraColorAttachment);
                     
-                    DefaultFormat format = data.asset.enableHDRFrameBufferFormat ? DefaultFormat.HDR : DefaultFormat.LDR;
+                    DefaultFormat format = data.asset.enableHDRColorBuffer ? DefaultFormat.HDR : DefaultFormat.LDR;
                     TextureDesc bloomTextureDesc = new TextureDesc(width >> 1, height >> 1)
                     {
                         colorFormat = SystemInfo.GetGraphicsFormat(format),

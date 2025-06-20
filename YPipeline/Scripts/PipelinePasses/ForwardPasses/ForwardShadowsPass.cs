@@ -300,7 +300,7 @@ namespace YPipeline
             data.isSunLightShadowMapCreated = false;
             if (data.lightsData.shadowingSunLightCount > 0)
             {
-                int size = data.asset.sunLightShadowMapSize;
+                int size = (int) data.asset.sunLightShadowMapSize;
 
                 TextureDesc desc = new TextureDesc(size,size)
                 {
@@ -332,7 +332,7 @@ namespace YPipeline
                 for (int i = 0; i < cascadeCount; i++)
                 {
                     data.cullingResults.ComputeDirectionalShadowMatricesAndCullingPrimitives(visibleLightIndex, i, cascadeCount, data.asset.SpiltRatios
-                        , data.asset.sunLightShadowMapSize, data.lightsData.sunLightNearPlaneOffset + 0.8f, out Matrix4x4 viewMatrix, out Matrix4x4 projectionMatrix, out ShadowSplitData splitData);
+                        , size, data.lightsData.sunLightNearPlaneOffset + 0.8f, out Matrix4x4 viewMatrix, out Matrix4x4 projectionMatrix, out ShadowSplitData splitData);
 
                     //splitData.shadowCascadeBlendCullingFactor = 1f;
                     m_ShadowSplitDataPerLight[splitOffset + i] = splitData;
@@ -355,7 +355,7 @@ namespace YPipeline
             data.isSpotLightShadowMapCreated = false;
             if (data.lightsData.shadowingSpotLightCount > 0)
             {
-                int size = data.asset.spotLightShadowMapSize;
+                int size = (int) data.asset.spotLightShadowMapSize;
 
                 TextureDesc desc = new TextureDesc(size,size)
                 {
@@ -405,7 +405,7 @@ namespace YPipeline
             data.isPointLightShadowMapCreated = false;
             if (data.lightsData.shadowingPointLightCount > 0)
             {
-                int size = data.asset.pointLightShadowMapSize;
+                int size = (int) data.asset.pointLightShadowMapSize;
 
                 TextureDesc desc = new TextureDesc(size,size)
                 {

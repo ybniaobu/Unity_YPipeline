@@ -25,6 +25,14 @@ namespace YPipeline
     {
         PCF, PCSS
     }
+
+    public enum ResolutionSize
+    {
+        [InspectorName("512")] _512 = 512,
+        [InspectorName("1024")] _1024 = 1024,
+        [InspectorName("2048")] _2048 = 2048,
+        [InspectorName("4096")] _4096 = 4096,
+    }
     
     [CreateAssetMenu(menuName = "YPipeline/YRenderPipelineAsset")]
     public class YRenderPipelineAsset : RenderPipelineAsset<YRenderPipeline>
@@ -42,12 +50,18 @@ namespace YPipeline
         }
         
         // ----------------------------------------------------------------------------------------------------
-        // 渲染设置
+        // 渲染配置
         // ----------------------------------------------------------------------------------------------------
         
         // TODO：参考 HDRP 的 Asset
         [Header("Rendering Settings")]
-        public bool enableHDRFrameBufferFormat = true;
+        public YPipelineResources pipelineResources;
+        
+        public RenderPath renderPath = RenderPath.Forward;
+        
+        public bool enableHDRColorBuffer = true;
+        
+        public bool enableSRPBatcher = true;
         
         [Range(0.1f, 2f)] public float renderScale = 1.0f;
         
@@ -55,35 +69,21 @@ namespace YPipeline
         
         public FXAAMode fxaaMode = FXAAMode.Quality;
         
-        public YPipelineResources pipelineResources;
-        
         // ----------------------------------------------------------------------------------------------------
-        // 渲染路径配置
-        
-        [Header("Render Path Settings")]
-        public RenderPath renderPath = RenderPath.Forward;
-        
+        // 光照配置
         // ----------------------------------------------------------------------------------------------------
-        // 后处理配置
-        
-        [Header("Post Processing Settings")]
-        public VolumeProfile globalVolumeProfile;
-        
-        public int bakedLUTResolution = 32;
-        
-        // ----------------------------------------------------------------------------------------------------
-        // 合批配置
-        
-        [Header("Batching Settings")]
-        public bool enableSRPBatcher = true;
+        [Header("Lighting Settings")]
+        [Tooltip("Enable light 2.5D culling, which splits depth into cells to better handle depth discontinuities")]
+        public bool enableSplitDepth = true;
         
         // ----------------------------------------------------------------------------------------------------
         // 阴影配置
+        // ----------------------------------------------------------------------------------------------------
         
-        [Header("Shadows Settings")]
+        [Header("Shadow Settings")]
         public ShadowMode shadowMode = ShadowMode.PCSS;
         
-        public float maxShadowDistance = 80.0f;
+        public float maxShadowDistance = 100.0f;
         
         [Range(0f, 1f)] public float distanceFade = 0.1f;
         
@@ -95,8 +95,17 @@ namespace YPipeline
         
         [Range(0f, 1f)] public float cascadeEdgeFade = 0.05f;
         
-        public int sunLightShadowMapSize = 2048;
-        public int spotLightShadowMapSize = 1024;
-        public int pointLightShadowMapSize = 1024;
+        public ResolutionSize sunLightShadowMapSize = ResolutionSize._4096;
+        public ResolutionSize spotLightShadowMapSize = ResolutionSize._1024;
+        public ResolutionSize pointLightShadowMapSize = ResolutionSize._1024;
+        
+        // ----------------------------------------------------------------------------------------------------
+        // 后处理配置
+        // ----------------------------------------------------------------------------------------------------
+        
+        [Header("Post Processing Settings")]
+        public VolumeProfile globalVolumeProfile;
+        
+        public int bakedLUTResolution = 32;
     }
 }
