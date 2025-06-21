@@ -60,10 +60,10 @@ void GetTileFrustumCorners(out float3 tileCorners[4], uint2 tileIndex, float3 ca
 // https://www.slideshare.net/slideshow/a-25d-culling-for-forward-siggraph-asia-2012/34909590
 // ----------------------------------------------------------------------------------------------------
 
-uint GetLightBitMask(float tileDepthMin, float lightDepthMin, float lightDepthMax, float invDepthRange)
+uint GetLightBitMask(float2 tileDepthMinMax, float2 lightDepthMinMax, float invDepthRange)
 {
-    uint depthSlotMin = floor((lightDepthMin - tileDepthMin) * invDepthRange);
-    uint depthSlotMax = floor((lightDepthMax - tileDepthMin) * invDepthRange);
+    uint depthSlotMin = floor((lightDepthMinMax.x - tileDepthMinMax.x) * invDepthRange);
+    uint depthSlotMax = floor((lightDepthMinMax.y - tileDepthMinMax.x) * invDepthRange);
     depthSlotMin = clamp(depthSlotMin, 0, 31);
     depthSlotMax = clamp(depthSlotMax, 0, 31);
 
@@ -83,21 +83,39 @@ uint GetLightBitMask(float tileDepthMin, float lightDepthMin, float lightDepthMa
 // Depth Intersect Test
 // ----------------------------------------------------------------------------------------------------
 
-// Caution: input param lightPositionVS.z should be negative
-bool DepthIntersect(float3 lightPositionVS, float lightRange)
+// Caution: input param lightPositionVS.z should be positive(left-handed)
+float2 GetSpotLightMinMaxDepth(float3 lightPositionVS, float lightRange, float3 spotLightDirVS, float angle)
 {
-    float tileDepthMin = asfloat(tileMinDepthInt);
-    float tileDepthMax = asfloat(tileMaxDepthInt);
+    float cosAngle = cos(angle);
+    float coneHeight = lightRange * cosAngle;
+    float3 endPointVS = lightPositionVS + coneHeight * spotLightDirVS;
+    float coneRadius = coneHeight * tan(angle);
+    float3 endPointVec = endPointVS - lightPositionVS;
+    float sinAlpha = sqrt(1.0 - endPointVec.z * endPointVec.z / dot(endPointVec, endPointVec));
 
-    float lightDepthMin = -lightPositionVS.z - lightRange;
-    float lightDepthMax = -lightPositionVS.z + lightRange;
-    
-    return lightDepthMin <= tileDepthMax && lightDepthMax >= tileDepthMin;
+    float2 minMax = float2(lightPositionVS.z - lightRange, lightPositionVS.z + lightRange);
+    if (-endPointVec.z < coneHeight * cosAngle) minMax.x = min(lightPositionVS.z, endPointVS.z - sinAlpha * coneRadius);
+    if (endPointVec.z < coneHeight * cosAngle) minMax.y = max(lightPositionVS.z, endPointVS.z + sinAlpha * coneRadius);
+    return minMax;
 }
 
-bool DepthIntersect(float tileDepthMin, float tileDepthMax, float lightDepthMin, float lightDepthMax)
+float2 GetLightMinMaxDepth(float3 lightPositionVS, float lightRange, float3 spotLightDirVS, float angle)
 {
-    return lightDepthMin <= tileDepthMax && lightDepthMax >= tileDepthMin;
+    float2 minMax;
+    if (angle > 0.0)
+    {
+        minMax = GetSpotLightMinMaxDepth(lightPositionVS, lightRange, spotLightDirVS, angle);
+    }
+    else
+    {
+        minMax = float2(lightPositionVS.z - lightRange, lightPositionVS.z + lightRange);
+    }
+    return max(minMax, 0.0);
+}
+
+bool DepthIntersect(float2 tileDepthMinMax, float2 lightDepthMinMax)
+{
+    return lightDepthMinMax.x <= tileDepthMinMax.y && lightDepthMinMax.y >= tileDepthMinMax.x;
 }
 
 // ----------------------------------------------------------------------------------------------------
@@ -131,36 +149,24 @@ bool SpotConeIntersectTest(float3 tileMin, float3 tileMax, float3 lightPositionV
     return !(angleCull || frontCull || backCull);
 }
 
-bool AABBIntersectTest(uint lightIndex, uint2 tileIndex, float3 lightPositionVS, float lightRange, float tileDepthMin, float tileDepthMax, float lightDepthMin, float lightDepthMax)
+bool AABBIntersectTest(uint2 tileIndex, float3 lightPositionVS, float lightRange, float3 spotLightDirVS, float angle, float2 tileDepthMinMax, float2 lightDepthMinMax)
 {
-    UNITY_BRANCH
-    if ((float) lightIndex >= GetPunctualLightCount())
-    {
-        return false;
-    }
-    else
-    {
-        float3 spotLightDirVS = TransformWorldToViewDir(GetSpotLightDirection(lightIndex));
-        spotLightDirVS.z = -spotLightDirVS.z;
-        float angle = GetSpotLightHalfOuterAngle(lightIndex);
-        
-        float minZ = max(tileDepthMin, lightDepthMin);
-        float maxZ = min(tileDepthMax, lightDepthMax);
-        float nearPlaneScale = minZ / _ProjectionParams.y;
-        float farPlaneScale = maxZ / _ProjectionParams.y;
+    float minZ = max(tileDepthMinMax.x, lightDepthMinMax.x);
+    float maxZ = min(tileDepthMinMax.y, lightDepthMinMax.y);
+    float nearPlaneScale = minZ / _ProjectionParams.y;
+    float farPlaneScale = maxZ / _ProjectionParams.y;
 
-        float2 tileCorner0 = _CameraNearPlaneLB.xy + float2(tileIndex.x * _TileNearPlaneSize.x, tileIndex.y * _TileNearPlaneSize.y);
-        float2 tileCorner2 = tileCorner0 + float2(_TileNearPlaneSize.x, _TileNearPlaneSize.y);
+    float2 tileCorner0 = _CameraNearPlaneLB.xy + float2(tileIndex.x * _TileNearPlaneSize.x, tileIndex.y * _TileNearPlaneSize.y);
+    float2 tileCorner2 = tileCorner0 + float2(_TileNearPlaneSize.x, _TileNearPlaneSize.y);
 
-        float3 tileMin = float3(min(tileCorner0 * nearPlaneScale, tileCorner0 * farPlaneScale), minZ);
-        float3 tileMax = float3(max(tileCorner2 * nearPlaneScale, tileCorner2 * farPlaneScale), maxZ);
+    float3 tileMin = float3(min(tileCorner0 * nearPlaneScale, tileCorner0 * farPlaneScale), minZ);
+    float3 tileMax = float3(max(tileCorner2 * nearPlaneScale, tileCorner2 * farPlaneScale), maxZ);
 
-        bool depthTest = DepthIntersect(tileDepthMin, tileDepthMax, lightDepthMin, lightDepthMax);
-        bool boundingSphereTest = BoundingSphereIntersect(tileMin, tileMax, lightPositionVS, lightRange);
-        bool coneTest = angle > 0.0 ? SpotConeIntersectTest(tileMin, tileMax, lightPositionVS, lightRange, spotLightDirVS, angle) : true;
+    bool depthTest = DepthIntersect(tileDepthMinMax, lightDepthMinMax);
+    bool boundingSphereTest = BoundingSphereIntersect(tileMin, tileMax, lightPositionVS, lightRange);
+    bool coneTest = angle > 0.0 ? SpotConeIntersectTest(tileMin, tileMax, lightPositionVS, lightRange, spotLightDirVS, angle) : true;
 
-        return depthTest && boundingSphereTest && coneTest;
-    }
+    return depthTest && boundingSphereTest && coneTest;
 }
 
 // ----------------------------------------------------------------------------------------------------
@@ -205,16 +211,15 @@ void TiledLightCulling(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_
 
     GroupMemoryBarrierWithGroupSync();
 
-    float tileDepthMin = asfloat(tileMinDepthInt);
-    float tileDepthMax = asfloat(tileMaxDepthInt);
+    float2 tileDepthMinMax = float2(asfloat(tileMinDepthInt), asfloat(tileMaxDepthInt));
 
     // 2.5D Culling: Get the tile depth mask
     #if _TILE_CULLING_SPLIT_DEPTH
-    float invDepthRange = 32.0 / (tileDepthMax - tileDepthMin + 0.00001);
+    float invDepthRange = 32.0 / (tileDepthMinMax.y - tileDepthMinMax.x + 0.00001);
 
     if (inScreen && isNotSkybox)
     {
-        uint depthSlot = floor((linearDepth - tileDepthMin) * invDepthRange);
+        uint depthSlot = floor((linearDepth - tileDepthMinMax.x) * invDepthRange);
         InterlockedOr(tileDepthMask, 1 << depthSlot);
     }
     
@@ -224,20 +229,34 @@ void TiledLightCulling(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_
     // intersect test
     uint lightIndex = groupIndex;
     uint2 tileIndex = groupId.xy;
-    
-    float3 lightPositionVS = TransformWorldToView(GetPunctualLightPosition(lightIndex));
-    lightPositionVS.z = -lightPositionVS.z;
-    float lightRange = GetPunctualLightRange(lightIndex);
-    float lightDepthMin = lightPositionVS.z - lightRange;
-    float lightDepthMax = lightPositionVS.z + lightRange;
-    
-    bool intersect = AABBIntersectTest(lightIndex, tileIndex, lightPositionVS, lightRange, tileDepthMin, tileDepthMax, lightDepthMin, lightDepthMax);
 
-    #if _TILE_CULLING_SPLIT_DEPTH
-    uint lightMask = GetLightBitMask(tileDepthMin, lightDepthMin, lightDepthMax, invDepthRange);
-    bool intersect2_5D = lightMask & tileDepthMask;
-    intersect = intersect && intersect2_5D;
-    #endif
+    bool intersect;
+    UNITY_BRANCH
+    if ((float) lightIndex >= GetPunctualLightCount())
+    {
+        intersect = false;
+    }
+    else
+    {
+        float3 lightPositionVS = TransformWorldToView(GetPunctualLightPosition(lightIndex));
+        lightPositionVS.z = -lightPositionVS.z;
+        float lightRange = GetPunctualLightRange(lightIndex);
+        float3 spotLightDirVS = TransformWorldToViewDir(GetSpotLightDirection(lightIndex));
+        spotLightDirVS.z = -spotLightDirVS.z;
+        float angle = GetSpotLightHalfOuterAngle(lightIndex);
+
+        float2 lightDepthMinMax = GetLightMinMaxDepth(lightPositionVS, lightRange, spotLightDirVS, angle);
+        
+        bool AABBTest = AABBIntersectTest(tileIndex, lightPositionVS, lightRange, spotLightDirVS, angle, tileDepthMinMax, lightDepthMinMax);
+
+        #if _TILE_CULLING_SPLIT_DEPTH
+        uint lightMask = GetLightBitMask(tileDepthMinMax, lightDepthMinMax, invDepthRange);
+        bool intersect2_5D = lightMask & tileDepthMask;
+        AABBTest = AABBTest && intersect2_5D;
+        #endif
+
+        intersect = AABBTest;
+    }
     
     if (intersect)
     {
@@ -266,6 +285,18 @@ void TiledLightCulling(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_
 // ----------------------------------------------------------------------------------------------------
 // Deprecated Intersect Test -- Sphere-Frustum Intersect Test, Cone Intersect Test, Spherical-Sliced Cone Test
 // ----------------------------------------------------------------------------------------------------
+
+// Caution: input param lightPositionVS.z should be negative(right-handed)
+// bool DepthIntersect(float3 lightPositionVS, float lightRange)
+// {
+//     float tileDepthMin = asfloat(tileMinDepthInt);
+//     float tileDepthMax = asfloat(tileMaxDepthInt);
+//
+//     float lightDepthMin = -lightPositionVS.z - lightRange;
+//     float lightDepthMax = -lightPositionVS.z + lightRange;
+//     
+//     return lightDepthMin <= tileDepthMax && lightDepthMax >= tileDepthMin;
+// }
 
 // Sphere-Frustum Intersect Test -- Only Suitable For Light Bounding Sphere
 
