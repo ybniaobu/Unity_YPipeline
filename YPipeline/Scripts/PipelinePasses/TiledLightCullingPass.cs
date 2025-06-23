@@ -106,7 +106,7 @@ namespace YPipeline
                 
                 builder.SetRenderFunc((TiledLightCullingPassData data, RenderGraphContext context) =>
                 {
-                    CoreUtils.SetKeyword(context.cmd, data.cs, YPipelineKeywords.k_TileCullingSplitDepth, passData.enableSplitDepth);
+                    CoreUtils.SetKeyword(context.cmd, data.cs, YPipelineKeywords.k_TileCullingSplitDepth, data.enableSplitDepth);
                     
                     int kernel = data.cs.FindKernel("TiledLightCulling");
                     context.cmd.SetBufferData(data.lightInputInfosBuffer, data.lightInputInfos, 0, 0, data.punctualLightCount);

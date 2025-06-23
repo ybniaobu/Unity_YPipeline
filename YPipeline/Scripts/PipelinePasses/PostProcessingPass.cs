@@ -24,12 +24,16 @@ namespace YPipeline
         private UberPostProcessingSubPass m_UberPostProcessingSubPass;
         private FinalPostProcessingSubPass m_FinalPostProcessingSubPass;
         
+        private ProfilingSampler m_Sampler;
+        
         protected override void Initialize()
         {
             m_BloomSubPass = PostProcessingSubPass.Create<BloomSubPass>();
             m_ColorGradingLutSubPass = PostProcessingSubPass.Create<ColorGradingLutSubPass>();
             m_UberPostProcessingSubPass = PostProcessingSubPass.Create<UberPostProcessingSubPass>();
             m_FinalPostProcessingSubPass = PostProcessingSubPass.Create<FinalPostProcessingSubPass>();
+            
+            m_Sampler = new ProfilingSampler("Post Processing");
         }
         
         protected override void OnDispose()
@@ -39,7 +43,7 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<PostProcessingPassData>("Post Processing", out var passData))
+            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<PostProcessingPassData>("Disable Post Processing (Editor Preview)", out var passData))
             {
                 passData.cameraType = data.camera.cameraType;
                 passData.colorAttachment = builder.ReadTexture(data.CameraColorAttachment);
@@ -73,11 +77,15 @@ namespace YPipeline
                 return;
             }
 #endif
-                
+            
+            data.renderGraph.BeginProfilingSampler(m_Sampler);
+            
             m_BloomSubPass.OnRecord(ref data);
             m_ColorGradingLutSubPass.OnRecord(ref data);
             m_UberPostProcessingSubPass.OnRecord(ref data);
             m_FinalPostProcessingSubPass.OnRecord(ref data);
+            
+            data.renderGraph.EndProfilingSampler(m_Sampler);
         }
     }
 }
