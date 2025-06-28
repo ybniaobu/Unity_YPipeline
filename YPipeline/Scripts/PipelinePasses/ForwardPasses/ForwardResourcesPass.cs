@@ -38,6 +38,7 @@ namespace YPipeline
                 
                 if (m_EnvBRDFLut == null || m_EnvBRDFLut.externalTexture != data.asset.pipelineResources.textures.environmentBRDFLut)
                 {
+                    m_EnvBRDFLut?.Release();
                     m_EnvBRDFLut = RTHandles.Alloc(data.asset.pipelineResources.textures.environmentBRDFLut);
                 }
                 passData.envBRDFLut = data.renderGraph.ImportTexture(m_EnvBRDFLut);
@@ -45,6 +46,7 @@ namespace YPipeline
 
                 if (m_BlueNoise64 == null || m_BlueNoise64.externalTexture != data.asset.pipelineResources.textures.blueNoise64)
                 {
+                    m_BlueNoise64?.Release();
                     m_BlueNoise64 = RTHandles.Alloc(data.asset.pipelineResources.textures.blueNoise64);
                 }
                 passData.blueNoise64 = data.renderGraph.ImportTexture(m_BlueNoise64);

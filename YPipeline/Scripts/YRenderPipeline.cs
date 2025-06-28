@@ -27,8 +27,9 @@ namespace YPipeline
             m_Data.lightsData = new YPipelineLightsData();
             
             GraphicsSettings.useScriptableRenderPipelineBatching = asset.enableSRPBatcher;
-            // GraphicsSettings.lightsUseLinearIntensity = true;
+            GraphicsSettings.lightsUseLinearIntensity = true;
             
+            RTHandles.Initialize(Screen.width, Screen.height);
             VolumeManager.instance.Initialize(null, asset.globalVolumeProfile);
 
             m_GameCameraRenderer = CameraRenderer.Create<GameCameraRenderer>(ref m_Data);
@@ -89,7 +90,7 @@ namespace YPipeline
         {
             base.Dispose(disposing);
             VolumeManager.instance.Deinitialize();
-            m_Data.renderGraph.Cleanup();
+            m_Data.renderGraph?.Cleanup();
             m_Data.renderGraph = null;
             
             

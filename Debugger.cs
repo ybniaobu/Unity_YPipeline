@@ -8,7 +8,7 @@ public class Debugger : MonoBehaviour
     {
         for (uint i = 0; i < 10; i++)
         {
-            Debug.Log(Hammersley_Inverse(i, 10));
+            Debug.Log(Halton_Inverse(i));
         }
     }
 

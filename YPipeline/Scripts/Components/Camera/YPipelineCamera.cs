@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace YPipeline
@@ -22,8 +23,12 @@ namespace YPipeline
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(Camera))]
+    [ExecuteAlways]
     public class YPipelineCamera : MonoBehaviour, ISerializationCallbackReceiver
     {
+        public Camera Camera => GetComponent<Camera>();
+        [NonSerialized] public YPipelinePerCameraData perCameraData = new YPipelinePerCameraData();
+        
         public void OnBeforeSerialize()
         {
             
@@ -32,6 +37,12 @@ namespace YPipeline
         public void OnAfterDeserialize()
         {
             
+        }
+
+        public void OnDestroy()
+        {
+            perCameraData?.Dispose();
+            perCameraData = null;
         }
     }
 }

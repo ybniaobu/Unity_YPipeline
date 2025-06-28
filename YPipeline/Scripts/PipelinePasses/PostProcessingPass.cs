@@ -19,6 +19,7 @@ namespace YPipeline
             public TextureHandle cameraColorTarget;
         }
         
+        private TAASubPass m_TAASubPass;
         private BloomSubPass m_BloomSubPass;
         private ColorGradingLutSubPass m_ColorGradingLutSubPass;
         private UberPostProcessingSubPass m_UberPostProcessingSubPass;
@@ -28,6 +29,7 @@ namespace YPipeline
         
         protected override void Initialize()
         {
+            m_TAASubPass = PostProcessingSubPass.Create<TAASubPass>();
             m_BloomSubPass = PostProcessingSubPass.Create<BloomSubPass>();
             m_ColorGradingLutSubPass = PostProcessingSubPass.Create<ColorGradingLutSubPass>();
             m_UberPostProcessingSubPass = PostProcessingSubPass.Create<UberPostProcessingSubPass>();
@@ -80,6 +82,7 @@ namespace YPipeline
             
             data.renderGraph.BeginProfilingSampler(m_Sampler);
             
+            m_TAASubPass.OnRecord(ref data);
             m_BloomSubPass.OnRecord(ref data);
             m_ColorGradingLutSubPass.OnRecord(ref data);
             m_UberPostProcessingSubPass.OnRecord(ref data);

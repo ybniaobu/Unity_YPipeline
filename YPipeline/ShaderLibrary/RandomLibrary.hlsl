@@ -90,17 +90,17 @@ static const float2 k_SobolDisk[65] = {
 // ----------------------------------------------------------------------------------------------------
 
 // From https://www.pbr-book.org/3ed-2018/Sampling_and_Reconstruction/The_Halton_Sampler or https://pbr-book.org/4ed/Sampling_and_Reconstruction/Halton_Sampler
-uint RadicalInverseVdC_Bits(uint bits) // Base-2 radical inverse
+uint RadicalInverseVdC_Bits(uint a) // Base-2 radical inverse; a = 0, 1, 2...
 {
-    bits = (bits << 16u) | (bits >> 16u);
-    bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
-    bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
-    bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
-    bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
-    return bits;
+    a = (a << 16u) | (a >> 16u);
+    a = ((a & 0x55555555u) << 1u) | ((a & 0xAAAAAAAAu) >> 1u);
+    a = ((a & 0x33333333u) << 2u) | ((a & 0xCCCCCCCCu) >> 2u);
+    a = ((a & 0x0F0F0F0Fu) << 4u) | ((a & 0xF0F0F0F0u) >> 4u);
+    a = ((a & 0x00FF00FFu) << 8u) | ((a & 0xFF00FF00u) >> 8u);
+    return a;
 }
 
-float RadicalInverseVdc_Float(uint base, uint a) // Use prime number as base; a = 0, 1, ...
+float RadicalInverseVdc_Specialized(uint base, uint a) // Use prime number as base; a = 0, 1, 2...
 {
     float invBase = 1.0 / (float) base;
     float invBaseM = 1.0;
@@ -128,7 +128,7 @@ float2 Hammersley_Bits(uint index, uint sampleNumber)
 
 float2 Hammersley_Float(uint index, uint sampleNumber, uint primeBase = 2)
 {
-    return float2(float(index) / float(sampleNumber), RadicalInverseVdc_Float(primeBase,index));
+    return float2(float(index) / float(sampleNumber), RadicalInverseVdc_Specialized(primeBase,index));
 }
 
 // ----------------------------------------------------------------------------------------------------
@@ -137,7 +137,7 @@ float2 Hammersley_Float(uint index, uint sampleNumber, uint primeBase = 2)
 
 float2 Halton_Float(uint index, uint primeBase1 = 2, uint primeBase2 = 3)
 {
-    return float2(RadicalInverseVdc_Float(primeBase1,index), RadicalInverseVdc_Float(primeBase2,index));
+    return float2(RadicalInverseVdc_Specialized(primeBase1,index), RadicalInverseVdc_Specialized(primeBase2,index));
 }
 
 // ----------------------------------------------------------------------------------------------------

@@ -73,7 +73,7 @@ MonoBehaviour:
     m_Value: 0.5
   exposure:
     m_OverrideState: 1
-    m_Value: 1.35
+    m_Value: 1.2
   saturation:
     m_OverrideState: 1
     m_Value: 1
@@ -692,6 +692,9 @@ MonoBehaviour:
   m_Name: TAA
   m_EditorClassIdentifier: 
   active: 1
+  jitterScale:
+    m_OverrideState: 0
+    m_Value: 1
 --- !u!114 &8792400353565013660
 MonoBehaviour:
   m_ObjectHideFlags: 3

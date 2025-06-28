@@ -5,39 +5,18 @@ namespace YPipeline
 {
     public static class CameraUtility
     {
-        public static Matrix4x4 GetJitteredPerspectiveProjectionMatrix(Camera camera, Vector2 offset)
+        // ----------------------------------------------------------------------------------------------------
+        // TAA
+        // ----------------------------------------------------------------------------------------------------
+        
+        /// <param name="jitter">(-1, 1)</param>
+        public static Matrix4x4 GetJitteredProjectionMatrix(Vector2Int bufferSize, Matrix4x4 projectionMatrix, Vector2 jitter)
         {
-            float near = camera.nearClipPlane;
-            float far = camera.farClipPlane;
-
-            float vertical = Mathf.Tan(0.5f * Mathf.Deg2Rad * camera.fieldOfView) * near;
-            float horizontal = vertical * camera.aspect;
-
-            offset.x *= horizontal / (0.5f * camera.pixelWidth);
-            offset.y *= vertical / (0.5f * camera.pixelHeight);
-
-            var matrix = camera.projectionMatrix;
-
-            matrix[0, 2] += offset.x / horizontal;
-            matrix[1, 2] += offset.y / vertical;
-
-            return matrix;
+            projectionMatrix[0, 2] += jitter.x / bufferSize.x;
+            projectionMatrix[1, 2] += jitter.y / bufferSize.y;
+            return projectionMatrix;
         }
         
-        public static Matrix4x4 GetJitteredOrthographicProjectionMatrix(Camera camera, Vector2 offset)
-        {
-            float vertical = camera.orthographicSize;
-            float horizontal = vertical * camera.aspect;
-
-            offset.x *= horizontal / (0.5f * camera.pixelWidth);
-            offset.y *= vertical / (0.5f * camera.pixelHeight);
-
-            float left = offset.x - horizontal;
-            float right = offset.x + horizontal;
-            float top = offset.y + vertical;
-            float bottom = offset.y - vertical;
-
-            return Matrix4x4.Ortho(left, right, bottom, top, camera.nearClipPlane, camera.farClipPlane);
-        }
+        
     }
 }

@@ -145,7 +145,7 @@ namespace YPipeline
             {
                 VisibleLight visibleLight = visibleLights[i];
                 Light light = visibleLight.light;
-                YPipelineLight yLight = light.GetComponent<YPipelineLight>();
+                YPipelineLight yLight = light.GetYPipelineLight();
 
                 if (visibleLight.lightType == LightType.Directional)
                 {
