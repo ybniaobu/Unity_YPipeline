@@ -32,6 +32,7 @@ namespace YPipeline
                     m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardLightsPass>());
                     m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardShadowsPass>());
                     m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardResourcesPass>());
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<CameraSetupPass>());
                     m_CameraPipelineNodes.Add(PipelinePass.Create<DepthNormalPass>());
                     m_CameraPipelineNodes.Add(PipelinePass.Create<CopyDepthPass>());
                     m_CameraPipelineNodes.Add(PipelinePass.Create<TiledLightCullingPass>());

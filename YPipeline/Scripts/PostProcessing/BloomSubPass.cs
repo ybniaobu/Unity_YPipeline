@@ -11,7 +11,8 @@ namespace YPipeline
         {
             public Material material;
 
-            public TextureHandle colorAttachment;
+            public TextureHandle inputTexture;
+            
             public TextureHandle bloomTexture;
             public TextureHandle bloomPrefilteredTexture;
             public TextureHandle[] bloomPyramidUpTextures = new TextureHandle[k_MaxBloomPyramidLevels];
@@ -85,7 +86,14 @@ namespace YPipeline
                     passData.iterationCount = iterationCount;
 
                     // Texture Recording
-                    passData.colorAttachment = builder.ReadTexture(data.CameraColorAttachment);
+                    if (data.asset.antiAliasingMode == AntiAliasingMode.TAA)
+                    {
+                        passData.inputTexture = builder.ReadTexture(data.TAATarget);
+                    }
+                    else
+                    {
+                        passData.inputTexture = builder.ReadTexture(data.CameraColorAttachment);
+                    }
                     
                     DefaultFormat format = data.asset.enableHDRColorBuffer ? DefaultFormat.HDR : DefaultFormat.LDR;
                     TextureDesc bloomTextureDesc = new TextureDesc(width >> 1, height >> 1)
@@ -149,7 +157,7 @@ namespace YPipeline
                         
                         // Prefilter
                         context.cmd.BeginSample("Prefilter");
-                        BlitUtility.BlitGlobalTexture(context.cmd, data.colorAttachment, data.bloomPrefilteredTexture, data.material, 0);
+                        BlitUtility.BlitGlobalTexture(context.cmd, data.inputTexture, data.bloomPrefilteredTexture, data.material, 0);
                         context.cmd.EndSample("Prefilter");
                         
                         // Downsample - gaussian pyramid

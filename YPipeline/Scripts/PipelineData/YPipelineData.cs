@@ -29,7 +29,7 @@ namespace YPipeline
         public Vector2Int BufferSize => new Vector2Int((int) (camera.pixelWidth * asset.renderScale), (int) (camera.pixelHeight * asset.renderScale));
         
         // ----------------------------------------------------------------------------------------------------
-        // Buffers and Textures
+        // Buffer and Texture Handles
         // ----------------------------------------------------------------------------------------------------
         
         public TextureHandle CameraColorTarget { set; get; }
@@ -47,6 +47,8 @@ namespace YPipeline
         
         public TextureHandle PointLightShadowMap { set; get; }
         public bool isPointLightShadowMapCreated;
+        
+        public TextureHandle TAATarget { set; get; }
         
         public TextureHandle BloomTexture { set; get; }
         public TextureHandle ColorGradingLutTexture { set; get; }

@@ -9,8 +9,6 @@ namespace YPipeline
     {
         private class DepthNormalPassData
         {
-            public Camera camera;
-            
             public TextureHandle depthAttachment;
             
             public RendererListHandle opaqueRendererList;
@@ -23,8 +21,6 @@ namespace YPipeline
         {
             using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<DepthNormalPassData>("Depth Normal PrePass", out var passData))
             {
-                passData.camera = data.camera;
-                
                 RendererListDesc opaqueRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_DepthShaderTagId, data.cullingResults, data.camera)
                 {
                     rendererConfiguration = PerObjectData.None,
@@ -51,9 +47,6 @@ namespace YPipeline
 
                 builder.SetRenderFunc((DepthNormalPassData data, RenderGraphContext context) =>
                 {
-                    // 暂时先放这里
-                    context.cmd.SetupCameraProperties(data.camera);
-                    
                     context.cmd.SetRenderTarget(data.depthAttachment, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
                     
                     context.cmd.DrawRendererList(data.opaqueRendererList);

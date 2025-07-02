@@ -17,7 +17,7 @@ MonoBehaviour:
   enableHDRColorBuffer: 1
   enableSRPBatcher: 1
   renderScale: 1
-  antiAliasingMode: 1
+  antiAliasingMode: 2
   fxaaMode: 0
   enableSplitDepth: 1
   shadowMode: 1

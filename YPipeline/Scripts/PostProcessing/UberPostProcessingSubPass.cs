@@ -11,7 +11,8 @@ namespace YPipeline
         {
             public Material material;
             
-            public TextureHandle colorAttachment;
+            public TextureHandle inputTexture;
+            
             public TextureHandle bloomTexture;
             public TextureHandle colorGradingLut;
             public TextureHandle finalTexture;
@@ -108,7 +109,15 @@ namespace YPipeline
             using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<UberPostPassData>("Uber Post Processing", out var passData))
             {
                 passData.material = UberPostProcessingMaterial;
-                passData.colorAttachment = builder.ReadTexture(data.CameraColorAttachment);
+
+                if (data.asset.antiAliasingMode == AntiAliasingMode.TAA)
+                {
+                    passData.inputTexture = builder.ReadTexture(data.TAATarget);
+                }
+                else
+                {
+                    passData.inputTexture = builder.ReadTexture(data.CameraColorAttachment);
+                }
                 
                 builder.AllowPassCulling(false);
                 
@@ -240,7 +249,7 @@ namespace YPipeline
                     }
                     
                     // Blit
-                    BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.finalTexture, data.material, 0);
+                    BlitUtility.BlitTexture(context.cmd, data.inputTexture, data.finalTexture, data.material, 0);
                     context.renderContext.ExecuteCommandBuffer(context.cmd);
                     context.cmd.Clear();
                 });

@@ -1,7 +1,5 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.RenderGraphModule;
 
 namespace YPipeline
 {
@@ -13,9 +11,16 @@ namespace YPipeline
         // Matrices
         // ----------------------------------------------------------------------------------------------------
         
-        // public Matrix4x4 viewMatrix;
-        // public Matrix4x4 projectionMatrix;
+        public Matrix4x4 viewMatrix;
+        public Matrix4x4 projectionMatrix;
         public Matrix4x4 jitteredProjectionMatrix;
+
+        public void SetPerCameraDataMatrices(Matrix4x4 viewMatrix, Matrix4x4 projectionMatrix, Matrix4x4 jitteredProjectionMatrix)
+        {
+            this.viewMatrix = viewMatrix;
+            this.projectionMatrix = projectionMatrix;
+            this.jitteredProjectionMatrix = jitteredProjectionMatrix;
+        }
         
         // ----------------------------------------------------------------------------------------------------
         // TAA History
@@ -23,10 +28,9 @@ namespace YPipeline
 
         private RTHandle m_TAAHistory;
 
-        public RTHandle GetTAAHistory(ref RenderTextureDescriptor desc, string name = "TAAHistory")
+        public RTHandle GetTAAHistory(ref RenderTextureDescriptor desc, string name = "TAA History")
         {
-            if (m_TAAHistory == null || m_TAAHistory.rt.width != desc.width || m_TAAHistory.rt.height != desc.height
-                || m_TAAHistory.rt.graphicsFormat != desc.graphicsFormat)
+            if (m_TAAHistory == null || m_TAAHistory.rt.width != desc.width || m_TAAHistory.rt.height != desc.height)
             {
                 m_TAAHistory?.Release();
                 m_TAAHistory = RTHandles.Alloc(desc, FilterMode.Bilinear, TextureWrapMode.Clamp, anisoLevel: 0, name: name);

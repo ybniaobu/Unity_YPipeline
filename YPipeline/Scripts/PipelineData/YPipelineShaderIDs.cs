@@ -70,7 +70,11 @@ namespace YPipeline
         // Post Processing Textures IDs
         // ----------------------------------------------------------------------------------------------------
         
+        // Persistent Textures
+        public static readonly int k_TAAHistoryID = Shader.PropertyToID("_TAAHistory");
+        
         // Result Textures
+        public static readonly int k_TAATargetID = Shader.PropertyToID("_TAATarget");
         public static readonly int k_BloomTextureID = Shader.PropertyToID("_BloomTexture");
         public static readonly int k_ColorGradingLutTextureID = Shader.PropertyToID("_ColorGradingLutTexture");
         
@@ -130,6 +134,8 @@ namespace YPipeline
         // ----------------------------------------------------------------------------------------------------
         // Post Processing Related Param IDs
         // ----------------------------------------------------------------------------------------------------
+        
+        public static readonly int k_TAAParamsID = Shader.PropertyToID("_TAAParams");
         
         public static readonly int k_BloomParamsID = Shader.PropertyToID("_BloomParams");
         public static readonly int k_BloomThresholdID = Shader.PropertyToID("_BloomThreshold");
