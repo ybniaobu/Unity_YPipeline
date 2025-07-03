@@ -10,8 +10,8 @@ float4 _TAAParams; // x: history blend factor
 
 float4 TAAFrag(Varyings IN) : SV_TARGET
 {
-    float4 history = SAMPLE_TEXTURE2D_LOD(_TAAHistory, sampler_PointClamp, IN.uv, 0);
-    float4 current = SAMPLE_TEXTURE2D_LOD(_BlitTexture, sampler_LinearClamp, IN.uv, 0);
+    float4 history = LOAD_TEXTURE2D_LOD(_TAAHistory, IN.positionHCS.xy, 0);
+    float4 current = LOAD_TEXTURE2D_LOD(_BlitTexture, IN.positionHCS.xy, 0);
 
     return lerp(current, history, _TAAParams.x);
 }

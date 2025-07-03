@@ -59,19 +59,19 @@ namespace YPipeline
             return vps;
         }
 
-        public static Matrix4x4 GetShadowJitteredProjectionMatrix(float shadowMapSize, Matrix4x4 projectionMatrix, Vector2 jitter, bool isOrthographic)
-        {
-            if (isOrthographic)
-            {
-                projectionMatrix[0, 3] += jitter.x / shadowMapSize;
-                projectionMatrix[1, 3] += jitter.y / shadowMapSize;
-            }
-            else
-            {
-                projectionMatrix[0, 2] += jitter.x / shadowMapSize;
-                projectionMatrix[1, 2] += jitter.y / shadowMapSize;
-            }
-            return projectionMatrix;
-        }
+        // public static Matrix4x4 GetShadowJitteredProjectionMatrix(float shadowMapSize, Matrix4x4 projectionMatrix, Vector2 jitter, bool isOrthographic)
+        // {
+        //     if (isOrthographic)
+        //     {
+        //         projectionMatrix[0, 3] += jitter.x / shadowMapSize;
+        //         projectionMatrix[1, 3] += jitter.y / shadowMapSize;
+        //     }
+        //     else
+        //     {
+        //         projectionMatrix[0, 2] += jitter.x / shadowMapSize;
+        //         projectionMatrix[1, 2] += jitter.y / shadowMapSize;
+        //     }
+        //     return projectionMatrix;
+        // }
     }
 }

@@ -176,12 +176,14 @@ SAMPLER(SHADOW_SAMPLER);
 TEXTURE2D(ENVIRONMENT_BRDF_LUT);
 SAMPLER(LUT_SAMPLER);
 
-// Depth & Normal & Opaque Texture
+// Pipeline Textures
 TEXTURE2D(_CameraDepthTexture);
 TEXTURE2D(_CameraColorTexture);
+TEXTURE2D(_MotionVectorTexture);
 
 // Blue Noise
 TEXTURE2D(_BlueNoise64);
+float4 _BlueNoise64_TexelSize;
 
 // General Samplers
 SAMPLER(sampler_PointRepeat);

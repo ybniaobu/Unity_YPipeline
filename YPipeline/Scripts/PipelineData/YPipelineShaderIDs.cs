@@ -46,6 +46,7 @@ namespace YPipeline
         // Forward
         public static readonly int k_ColorTextureID = Shader.PropertyToID("_CameraColorTexture");
         public static readonly int k_DepthTextureID = Shader.PropertyToID("_CameraDepthTexture");
+        public static readonly int k_MotionVectorTextureID = Shader.PropertyToID("_MotionVectorTexture");
         public static readonly int k_FinalTextureID = Shader.PropertyToID("_CameraFinalTexture");
         
         // Deferred

@@ -45,8 +45,6 @@ float4 _Time; // (t/20, t, t*2, t*3)
 float4 _SinTime; // sin(t/8), sin(t/4), sin(t/2), sin(t)
 float4 _CosTime; // cos(t/8), cos(t/4), cos(t/2), cos(t)
 float4 unity_DeltaTime; // dt, 1/dt, smoothdt, 1/smoothdt
-float4 _TimeParameters; // t, sin(t), cos(t)
-float4 _LastTimeParameters; // t, sin(t), cos(t)
 
 float3 _WorldSpaceCameraPos;
 
@@ -83,9 +81,15 @@ CBUFFER_START(UnityPerFrame)
     float4x4 glstate_matrix_projection;
     float4x4 unity_MatrixV;
     float4x4 unity_MatrixInvV;
-    float4x4 unity_MatrixInvP;
     float4x4 unity_MatrixVP;
+
+    // TODO：以下这些 unity 不会设置 !!!!!!!!!!!!!!!!!!!!!!!!!!
+    float4x4 unity_MatrixInvP;
     float4x4 unity_MatrixInvVP;
+    float4x4 _PrevViewProjMatrix; // non-jittered.
+    float4x4 _PrevInvViewProjMatrix; // non-jittered
+    float4x4 _NonJitteredViewProjMatrix; // non-jittered.
+    float4x4 _NonJitteredInvViewProjMatrix; // non-jittered.
 CBUFFER_END
 
 // ----------------------------------------------------------------------------------------------------
@@ -100,25 +104,5 @@ SAMPLER(samplerunity_Lightmap);
 
 TEXTURECUBE(unity_SpecCube0);
 SAMPLER(samplerunity_SpecCube0);
-
-
-// ----------------------------------------------------------------------------------------------------
-// for SpaceTransforms.hlsl compatibility
-// ----------------------------------------------------------------------------------------------------
-
-#define UNITY_MATRIX_M          unity_ObjectToWorld
-#define UNITY_MATRIX_I_M        unity_WorldToObject
-#define UNITY_MATRIX_V          unity_MatrixV
-#define UNITY_MATRIX_I_V        unity_MatrixInvV
-#define UNITY_MATRIX_P          glstate_matrix_projection
-#define UNITY_MATRIX_I_P        unity_MatrixInvP
-#define UNITY_MATRIX_VP         unity_MatrixVP
-#define UNITY_MATRIX_I_VP       unity_MatrixInvVP
-#define UNITY_MATRIX_MV         mul(UNITY_MATRIX_V, UNITY_MATRIX_M)
-#define UNITY_MATRIX_T_MV       transpose(UNITY_MATRIX_MV)
-#define UNITY_MATRIX_IT_MV      transpose(mul(UNITY_MATRIX_I_M, UNITY_MATRIX_I_V))
-#define UNITY_MATRIX_MVP        mul(UNITY_MATRIX_VP, UNITY_MATRIX_M)
-#define UNITY_PREV_MATRIX_M     unity_MatrixPreviousM
-#define UNITY_PREV_MATRIX_I_M   unity_MatrixPreviousMI
 
 #endif

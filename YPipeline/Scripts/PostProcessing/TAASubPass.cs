@@ -10,13 +10,17 @@ namespace YPipeline
         private class TAAPassData
         {
             public Material material;
+            public bool isFirstFrame;
             
             public TextureHandle colorAttachment;
+            public TextureHandle motionVectorTexture;
             public TextureHandle taaTarget;
             public TextureHandle taaHistory;
             
             public Vector4 taaParams; 
         }
+        
+        private bool isFirstFrame;
         
         private TAA m_TAA;
         
@@ -34,8 +38,11 @@ namespace YPipeline
                 return m_TAAMaterial;
             }
         }
-        
-        protected override void Initialize() { }
+
+        protected override void Initialize()
+        {
+            isFirstFrame = true;
+        }
 
         public override void OnRecord(ref YPipelineData data)
         {
@@ -46,9 +53,13 @@ namespace YPipeline
                 
                 using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<TAAPassData>("TAA", out var passData))
                 {
+                    YPipelineCamera yCamera = data.camera.GetYPipelineCamera();
                     passData.colorAttachment = builder.UseColorBuffer(data.CameraColorAttachment, 0);
+                    passData.motionVectorTexture = builder.ReadTexture(data.MotionVectorTexture);
                     passData.material = TAAMaterial;
                     passData.taaParams = new Vector4(m_TAA.historyBlendFactor.value, 0f);
+                    passData.isFirstFrame = isFirstFrame;
+                    if (isFirstFrame) isFirstFrame = false;
                     
                     Vector2Int bufferSize = data.BufferSize;
                 
@@ -61,10 +72,9 @@ namespace YPipeline
                         autoGenerateMips = false,
                     };
                     
-                    YPipelineCamera yCamera = data.camera.GetYPipelineCamera();
                     RTHandle taaHistory = yCamera.perCameraData.GetTAAHistory(ref taaHistoryDesc);
-                    passData.taaHistory = data.renderGraph.ImportTexture(taaHistory);
-                    builder.ReadWriteTexture(passData.taaHistory);
+                    data.TAAHistory = data.renderGraph.ImportTexture(taaHistory);
+                    passData.taaHistory = builder.ReadWriteTexture(data.TAAHistory);
 
                     TextureDesc taaTargetDesc = new TextureDesc(taaHistoryDesc)
                     {
@@ -86,7 +96,8 @@ namespace YPipeline
                         
                         data.material.SetTexture(YPipelineShaderIDs.k_TAAHistoryID, data.taaHistory);
                         
-                        BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.taaTarget, data.material, 0);
+                        if (data.isFirstFrame) BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.taaTarget);
+                        else BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.taaTarget, data.material, 0);
                         context.cmd.EndSample("TAABlendHistory");
                         
                         context.cmd.BeginSample("TAACopyHistory");
@@ -94,6 +105,9 @@ namespace YPipeline
                         if (copyTextureSupported) context.cmd.CopyTexture(data.taaTarget, data.taaHistory);
                         else BlitUtility.BlitTexture(context.cmd, data.taaTarget, data.taaHistory);
                         context.cmd.EndSample("TAACopyHistory");
+                        
+                        context.renderContext.ExecuteCommandBuffer(context.cmd);
+                        context.cmd.Clear();
                     });
                 }
             }

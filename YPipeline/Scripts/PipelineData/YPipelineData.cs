@@ -48,6 +48,8 @@ namespace YPipeline
         public TextureHandle PointLightShadowMap { set; get; }
         public bool isPointLightShadowMapCreated;
         
+        public TextureHandle MotionVectorTexture { set; get; }
+        
         public TextureHandle TAATarget { set; get; }
         
         public TextureHandle BloomTexture { set; get; }
@@ -55,6 +57,8 @@ namespace YPipeline
         public TextureHandle CameraFinalTexture { set; get; }
         
         // Imported texture resources
+        public TextureHandle TAAHistory { set; get; }
+        
         public TextureHandle EnvBRDFLut { set; get; }
         public TextureHandle BlueNoise256 { set; get; }
         
