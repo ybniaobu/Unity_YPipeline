@@ -20,8 +20,6 @@ namespace YPipeline
             public Vector4 taaParams; 
         }
         
-        private bool isFirstFrame;
-        
         private TAA m_TAA;
         
         private const string k_TAA = "Hidden/YPipeline/TAA";
@@ -39,10 +37,7 @@ namespace YPipeline
             }
         }
 
-        protected override void Initialize()
-        {
-            isFirstFrame = true;
-        }
+        protected override void Initialize() { }
 
         public override void OnRecord(ref YPipelineData data)
         {
@@ -55,11 +50,10 @@ namespace YPipeline
                 {
                     YPipelineCamera yCamera = data.camera.GetYPipelineCamera();
                     passData.colorAttachment = builder.UseColorBuffer(data.CameraColorAttachment, 0);
-                    passData.motionVectorTexture = builder.ReadTexture(data.MotionVectorTexture);
+                    passData.motionVectorTexture = builder.ReadTexture(data.CameraMotionVectorTexture);
                     passData.material = TAAMaterial;
                     passData.taaParams = new Vector4(m_TAA.historyBlendFactor.value, 0f);
-                    passData.isFirstFrame = isFirstFrame;
-                    if (isFirstFrame) isFirstFrame = false;
+                    passData.isFirstFrame = yCamera.perCameraData.isFirstFrame;
                     
                     Vector2Int bufferSize = data.BufferSize;
                 

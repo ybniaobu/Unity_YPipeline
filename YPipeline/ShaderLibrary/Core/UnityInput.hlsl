@@ -83,13 +83,13 @@ CBUFFER_START(UnityPerFrame)
     float4x4 unity_MatrixInvV;
     float4x4 unity_MatrixVP;
 
-    // TODO：以下这些 unity 不会设置 !!!!!!!!!!!!!!!!!!!!!!!!!!
-    float4x4 unity_MatrixInvP;
-    float4x4 unity_MatrixInvVP;
-    float4x4 _PrevViewProjMatrix; // non-jittered.
-    float4x4 _PrevInvViewProjMatrix; // non-jittered
-    float4x4 _NonJitteredViewProjMatrix; // non-jittered.
-    float4x4 _NonJitteredInvViewProjMatrix; // non-jittered.
+    // 以下这些 unity 不会设置 !!!!!!!!，需上传这些矩阵，见 UnityMatrix.hlsl
+    // float4x4 unity_MatrixInvP;
+    // float4x4 unity_MatrixInvVP;
+    // float4x4 _PrevViewProjMatrix; // non-jittered.
+    // float4x4 _PrevInvViewProjMatrix; // non-jittered
+    // float4x4 _NonJitteredViewProjMatrix; // non-jittered.
+    // float4x4 _NonJitteredInvViewProjMatrix; // non-jittered.
 CBUFFER_END
 
 // ----------------------------------------------------------------------------------------------------

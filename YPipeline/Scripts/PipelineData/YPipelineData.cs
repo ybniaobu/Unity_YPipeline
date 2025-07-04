@@ -32,6 +32,13 @@ namespace YPipeline
         // Buffer and Texture Handles
         // ----------------------------------------------------------------------------------------------------
         
+        public TextureHandle SunLightShadowMap { set; get; }
+        public bool isSunLightShadowMapCreated;
+        public TextureHandle SpotLightShadowMap { set; get; }
+        public bool isSpotLightShadowMapCreated;
+        public TextureHandle PointLightShadowMap { set; get; }
+        public bool isPointLightShadowMapCreated;
+        
         public TextureHandle CameraColorTarget { set; get; }
         public TextureHandle CameraDepthTarget { set; get; }
         public TextureHandle CameraColorAttachment { set; get; }
@@ -39,16 +46,8 @@ namespace YPipeline
         public TextureHandle CameraColorTexture { set; get; }
         public TextureHandle CameraDepthTexture { set; get; }
         
-        public TextureHandle SunLightShadowMap { set; get; }
-        public bool isSunLightShadowMapCreated;
+        public TextureHandle CameraMotionVectorTexture { set; get; }
         
-        public TextureHandle SpotLightShadowMap { set; get; }
-        public bool isSpotLightShadowMapCreated;
-        
-        public TextureHandle PointLightShadowMap { set; get; }
-        public bool isPointLightShadowMapCreated;
-        
-        public TextureHandle MotionVectorTexture { set; get; }
         
         public TextureHandle TAATarget { set; get; }
         

@@ -10,6 +10,43 @@ namespace YPipeline
         {
             public Camera camera;
             public YPipelineCamera yCamera;
+
+            public void SetNonBuiltInCameraMatrixShaderVariables(CommandBuffer cmd)
+            {
+                bool isProjectionMatrixFlipped = SystemInfo.graphicsUVStartsAtTop;
+
+                Matrix4x4 viewMatrix = yCamera.perCameraData.viewMatrix;
+                Matrix4x4 inverseViewMatrix = viewMatrix.inverse;
+                Matrix4x4 gpuProjectionMatrix = GL.GetGPUProjectionMatrix(yCamera.perCameraData.jitteredProjectionMatrix, isProjectionMatrixFlipped);
+                Matrix4x4 inverseProjectionMatrix = gpuProjectionMatrix.inverse;
+                Matrix4x4 gpuNonJitterProjectionMatrix = GL.GetGPUProjectionMatrix(yCamera.perCameraData.projectionMatrix, isProjectionMatrixFlipped);
+                Matrix4x4 nonJitterInverseProjectionMatrix = gpuNonJitterProjectionMatrix.inverse;
+                
+                Matrix4x4 inverseViewProjectionMatrix = inverseViewMatrix * inverseProjectionMatrix;
+                Matrix4x4 nonJitterViewProjectionMatrix = gpuNonJitterProjectionMatrix * viewMatrix;
+                Matrix4x4 nonJitterInverseViewProjectionMatrix = inverseViewMatrix * nonJitterInverseProjectionMatrix;
+                
+                Matrix4x4 previousViewMatrix = yCamera.perCameraData.previousViewMatrix;
+                Matrix4x4 previousInverseViewMatrix = previousViewMatrix.inverse;
+                Matrix4x4 previousGPUProjectionMatrix = GL.GetGPUProjectionMatrix(yCamera.perCameraData.previousJitteredProjectionMatrix, isProjectionMatrixFlipped);
+                Matrix4x4 previousInverseProjectionMatrix = previousGPUProjectionMatrix.inverse;
+                Matrix4x4 previousGPUNonJitterProjectionMatrix = GL.GetGPUProjectionMatrix(yCamera.perCameraData.previousProjectionMatrix, isProjectionMatrixFlipped);
+                Matrix4x4 previousNonJitterInverseProjectionMatrix = previousGPUNonJitterProjectionMatrix.inverse;
+                
+                Matrix4x4 previousViewProjectionMatrix = previousGPUProjectionMatrix * previousViewMatrix;
+                Matrix4x4 previousInverseViewProjectionMatrix = previousInverseViewMatrix * previousInverseProjectionMatrix;
+                Matrix4x4 previousNonJitterViewProjectionMatrix = previousGPUNonJitterProjectionMatrix * previousViewMatrix; //
+                Matrix4x4 previousNonJitterInverseViewProjectionMatrix = previousInverseViewMatrix * previousNonJitterInverseProjectionMatrix;
+                
+                cmd.SetGlobalMatrix(YPipelineShaderIDs.k_InverseProjectionMatrixID, inverseProjectionMatrix);
+                cmd.SetGlobalMatrix(YPipelineShaderIDs.k_InverseViewProjectionMatrixID, inverseViewProjectionMatrix);
+                cmd.SetGlobalMatrix(YPipelineShaderIDs.k_NonJitteredViewProjectionMatrixID, nonJitterViewProjectionMatrix);
+                cmd.SetGlobalMatrix(YPipelineShaderIDs.k_NonJitteredInverseViewProjectionMatrixID, nonJitterInverseViewProjectionMatrix);
+                cmd.SetGlobalMatrix(YPipelineShaderIDs.k_PreviousViewProjectionMatrixID, previousViewProjectionMatrix);
+                cmd.SetGlobalMatrix(YPipelineShaderIDs.k_PreviousInverseViewProjectionMatrixID, previousInverseViewProjectionMatrix);
+                cmd.SetGlobalMatrix(YPipelineShaderIDs.k_NonJitteredPreviousViewProjectionMatrixID, previousNonJitterViewProjectionMatrix);
+                cmd.SetGlobalMatrix(YPipelineShaderIDs.k_NonJitteredPreviousInverseViewProjectionMatrixID, previousNonJitterInverseViewProjectionMatrix);
+            }
         }
 
         private TAA m_TAA;
@@ -50,6 +87,10 @@ namespace YPipeline
                 {
                     context.cmd.SetupCameraProperties(data.camera);
                     context.cmd.SetViewProjectionMatrices(data.yCamera.perCameraData.viewMatrix, data.yCamera.perCameraData.jitteredProjectionMatrix);
+                    data.SetNonBuiltInCameraMatrixShaderVariables(context.cmd);
+                    
+                    context.renderContext.ExecuteCommandBuffer(context.cmd);
+                    context.cmd.Clear();
                 });
             }
         }

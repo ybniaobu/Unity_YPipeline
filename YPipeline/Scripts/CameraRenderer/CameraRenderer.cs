@@ -35,7 +35,7 @@ namespace YPipeline
                     m_CameraPipelineNodes.Add(PipelinePass.Create<CameraSetupPass>());
                     m_CameraPipelineNodes.Add(PipelinePass.Create<DepthNormalPass>());
                     m_CameraPipelineNodes.Add(PipelinePass.Create<CopyDepthPass>());
-                    m_CameraPipelineNodes.Add(PipelinePass.Create<MotionVectorPass>());
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<CameraMotionVectorPass>());
                     m_CameraPipelineNodes.Add(PipelinePass.Create<TiledLightCullingPass>());
                     m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardGeometryPass>());
                     m_CameraPipelineNodes.Add(PipelinePass.Create<ErrorMaterialPass>());

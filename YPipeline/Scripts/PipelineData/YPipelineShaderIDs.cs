@@ -46,7 +46,7 @@ namespace YPipeline
         // Forward
         public static readonly int k_ColorTextureID = Shader.PropertyToID("_CameraColorTexture");
         public static readonly int k_DepthTextureID = Shader.PropertyToID("_CameraDepthTexture");
-        public static readonly int k_MotionVectorTextureID = Shader.PropertyToID("_MotionVectorTexture");
+        public static readonly int k_CameraMotionVectorTextureID = Shader.PropertyToID("_CameraMotionVectorTexture");
         public static readonly int k_FinalTextureID = Shader.PropertyToID("_CameraFinalTexture");
         
         // Deferred
@@ -82,6 +82,19 @@ namespace YPipeline
         // Process Textures
         public static readonly int k_BloomLowerTextureID = Shader.PropertyToID("_BloomLowerTexture");
         public static readonly int k_BloomPrefilterTextureID = Shader.PropertyToID("_BloomPrefilterTexture");
+        
+        // ----------------------------------------------------------------------------------------------------
+        // Non Builtin Camera Matrix IDs
+        // ----------------------------------------------------------------------------------------------------
+        
+        public static readonly int k_InverseProjectionMatrixID = Shader.PropertyToID("_MatrixIP");
+        public static readonly int k_InverseViewProjectionMatrixID = Shader.PropertyToID("_MatrixIVP");
+        public static readonly int k_NonJitteredViewProjectionMatrixID = Shader.PropertyToID("_MatrixNonJitteredVP");
+        public static readonly int k_NonJitteredInverseViewProjectionMatrixID = Shader.PropertyToID("_MatrixNonJitteredIVP");
+        public static readonly int k_PreviousViewProjectionMatrixID = Shader.PropertyToID("_MatrixPreviousVP");
+        public static readonly int k_PreviousInverseViewProjectionMatrixID = Shader.PropertyToID("_MatrixPreviousIVP");
+        public static readonly int k_NonJitteredPreviousViewProjectionMatrixID = Shader.PropertyToID("_MatrixNonJitteredPreviousVP");
+        public static readonly int k_NonJitteredPreviousInverseViewProjectionMatrixID = Shader.PropertyToID("_MatrixNonJitteredPreviousIVP");
         
         // ----------------------------------------------------------------------------------------------------
         // Common Param IDs

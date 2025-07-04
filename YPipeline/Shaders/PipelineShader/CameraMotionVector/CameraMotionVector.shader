@@ -1,7 +1,7 @@
-﻿Shader "Hidden/YPipeline/MotionVector"
+﻿Shader "Hidden/YPipeline/CameraMotionVector"
 {
     HLSLINCLUDE
-    #include "MotionVectorPass.hlsl"
+    #include "CameraMotionVectorPass.hlsl"
     ENDHLSL
 
     SubShader
@@ -23,7 +23,7 @@
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex CopyVert
-            #pragma fragment MotionVectorFrag
+            #pragma fragment CameraMotionVectorFrag
             ENDHLSL
         }
     }
