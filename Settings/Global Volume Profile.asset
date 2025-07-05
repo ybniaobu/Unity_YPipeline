@@ -30,7 +30,7 @@ MonoBehaviour:
     m_Value: 0.5
   threshold:
     m_OverrideState: 1
-    m_Value: 5
+    m_Value: 4
   thresholdKnee:
     m_OverrideState: 1
     m_Value: 0.5
@@ -73,7 +73,7 @@ MonoBehaviour:
     m_Value: 0.5
   exposure:
     m_OverrideState: 1
-    m_Value: 1.2
+    m_Value: 1
   saturation:
     m_OverrideState: 1
     m_Value: 1
@@ -606,7 +606,7 @@ MonoBehaviour:
     dimension: 1
   contribution:
     m_OverrideState: 1
-    m_Value: 0.15
+    m_Value: 0.217
 --- !u!114 &7271516751084142640
 MonoBehaviour:
   m_ObjectHideFlags: 3

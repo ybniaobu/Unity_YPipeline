@@ -24,7 +24,7 @@ MonoBehaviour:
   maxShadowDistance: 100
   distanceFade: 0.05
   cascadeCount: 4
-  spiltRatio1: 0.05
+  spiltRatio1: 0.1
   spiltRatio2: 0.2
   spiltRatio3: 0.4
   cascadeEdgeFade: 0.05
