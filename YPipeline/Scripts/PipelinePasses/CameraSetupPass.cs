@@ -35,7 +35,7 @@ namespace YPipeline
                 
                 Matrix4x4 previousViewProjectionMatrix = previousGPUProjectionMatrix * previousViewMatrix;
                 Matrix4x4 previousInverseViewProjectionMatrix = previousInverseViewMatrix * previousInverseProjectionMatrix;
-                Matrix4x4 previousNonJitterViewProjectionMatrix = previousGPUNonJitterProjectionMatrix * previousViewMatrix; //
+                Matrix4x4 previousNonJitterViewProjectionMatrix = previousGPUNonJitterProjectionMatrix * previousViewMatrix;
                 Matrix4x4 previousNonJitterInverseViewProjectionMatrix = previousInverseViewMatrix * previousNonJitterInverseProjectionMatrix;
                 
                 cmd.SetGlobalMatrix(YPipelineShaderIDs.k_InverseProjectionMatrixID, inverseProjectionMatrix);
@@ -71,14 +71,14 @@ namespace YPipeline
 
                 if (data.asset.antiAliasingMode == AntiAliasingMode.TAA)
                 {
-                    int taaFrameIndex = Time.frameCount;
-                    Vector2 jitter = RandomUtility.k_Halton[taaFrameIndex % 16 + 1] - new Vector2(0.5f, 0.5f);
+                    int frameIndex = Time.frameCount;
+                    Vector2 jitter = RandomUtility.k_Halton[frameIndex % 16 + 1] - new Vector2(0.5f, 0.5f);
                     jitter *= 2.0f * m_TAA.jitterScale.value;
                     jitteredProjectionMatrix = CameraUtility.GetJitteredProjectionMatrix(data.BufferSize, projectionMatrix, jitter, isOrthographic);
                 }
                 else
                 {
-                    jitteredProjectionMatrix = CameraUtility.GetJitteredProjectionMatrix(data.BufferSize, projectionMatrix, new Vector2(0.0f, 0.0f), isOrthographic);
+                    jitteredProjectionMatrix = projectionMatrix;
                 }
                 
                 yCamera.perCameraData.SetPerCameraDataMatrices(viewMatrix, projectionMatrix, jitteredProjectionMatrix);
