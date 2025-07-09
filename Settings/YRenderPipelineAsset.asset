@@ -29,7 +29,7 @@ MonoBehaviour:
   spiltRatio3: 0.4
   cascadeEdgeFade: 0.05
   sunLightShadowMapSize: 4096
-  spotLightShadowMapSize: 1024
+  spotLightShadowMapSize: 2048
   pointLightShadowMapSize: 1024
   globalVolumeProfile: {fileID: 11400000, guid: eb8647ca7eb7e324fa7d7b19a82bc4f5,
     type: 2}

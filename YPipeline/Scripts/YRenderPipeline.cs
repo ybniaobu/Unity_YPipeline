@@ -44,11 +44,6 @@ namespace YPipeline
 #endif
         }
 
-        protected override void Render(ScriptableRenderContext context, Camera[] cameras)
-        {
-            // Older version of the Render function that can generate garbage, needed for backwards compatibility
-        }
-
         protected override void Render(ScriptableRenderContext context, List<Camera> cameras)
         {
             using var profilingScope = new ProfilingScope(ProfilingSampler.Get(YPipelineProfileIDs.YPipelineTotal));

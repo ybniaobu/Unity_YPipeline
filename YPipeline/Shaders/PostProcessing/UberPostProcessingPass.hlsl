@@ -7,8 +7,6 @@
 #include "../../ShaderLibrary/Core/UnityInput.hlsl"
 #include "CopyPass.hlsl"
 
-float4 _CameraBufferSize; // x: 1.0 / bufferSize.x, y: 1.0 / bufferSize.y, z: bufferSize.x, w: bufferSize.y
-
 float4 _ChromaticAberrationParams; // x: 0.05f * intensity, y: sample count
 
 float4 _BloomThreshold; // x: threshold, y: -threshold + threshold * thresholdKnee, z: 2 * threshold * thresholdKnee, w: 1 / 4 * threshold * thresholdKnee

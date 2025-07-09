@@ -9,6 +9,8 @@
 
 TEXTURE2D(_BlitTexture);
 float4 _BlitTexture_TexelSize;
+float4 _CameraBufferSize;
+
 SAMPLER(sampler_LinearClamp);
 SAMPLER(sampler_PointClamp);
 SAMPLER(sampler_LinearRepeat);
