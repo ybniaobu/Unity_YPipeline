@@ -11,6 +11,8 @@ namespace YPipeline
             public Camera camera;
             public YPipelineCamera yCamera;
 
+            public Vector2 jitter;
+
             public void SetNonBuiltInCameraMatrixShaderVariables(CommandBuffer cmd)
             {
                 bool isProjectionMatrixFlipped = SystemInfo.graphicsUVStartsAtTop;
@@ -75,10 +77,12 @@ namespace YPipeline
                     Vector2 jitter = RandomUtility.k_Halton[frameIndex % 16 + 1] - new Vector2(0.5f, 0.5f);
                     jitter *= 2.0f * m_TAA.jitterScale.value;
                     jitteredProjectionMatrix = CameraUtility.GetJitteredProjectionMatrix(data.BufferSize, projectionMatrix, jitter, isOrthographic);
+                    passData.jitter = jitter;
                 }
                 else
                 {
                     jitteredProjectionMatrix = projectionMatrix;
+                    passData.jitter = new Vector2(0, 0);
                 }
                 
                 yCamera.perCameraData.SetPerCameraDataMatrices(viewMatrix, projectionMatrix, jitteredProjectionMatrix);
@@ -88,6 +92,7 @@ namespace YPipeline
                     context.cmd.SetupCameraProperties(data.camera);
                     context.cmd.SetViewProjectionMatrices(data.yCamera.perCameraData.viewMatrix, data.yCamera.perCameraData.jitteredProjectionMatrix);
                     data.SetNonBuiltInCameraMatrixShaderVariables(context.cmd);
+                    context.cmd.SetGlobalVector(YPipelineShaderIDs.k_JitterID, data.jitter * 0.5f);
                     
                     context.renderContext.ExecuteCommandBuffer(context.cmd);
                     context.cmd.Clear();

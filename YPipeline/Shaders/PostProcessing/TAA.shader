@@ -1,7 +1,12 @@
 ﻿Shader "Hidden/YPipeline/TAA"
 {
     HLSLINCLUDE
+    #pragma target 3.5
+    
+    #pragma multi_compile_local  _ _TAA_SAMPLE_3X3
+    
     #include "TAAPass.hlsl"
+    
     ENDHLSL
 
     SubShader
@@ -21,7 +26,6 @@
             Name "TAA"
             
             HLSLPROGRAM
-            #pragma target 3.5
             #pragma vertex CopyVert
             #pragma fragment TAAFrag
             ENDHLSL

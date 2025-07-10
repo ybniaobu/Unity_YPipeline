@@ -87,6 +87,8 @@ namespace YPipeline
         // Non Builtin Camera Matrix IDs
         // ----------------------------------------------------------------------------------------------------
         
+        public static readonly int k_JitterID = Shader.PropertyToID("_Jitter");
+        
         public static readonly int k_InverseProjectionMatrixID = Shader.PropertyToID("_MatrixIP");
         public static readonly int k_InverseViewProjectionMatrixID = Shader.PropertyToID("_MatrixIVP");
         public static readonly int k_NonJitteredViewProjectionMatrixID = Shader.PropertyToID("_MatrixNonJitteredVP");

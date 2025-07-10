@@ -17,6 +17,24 @@ float4 SampleLinearOffset(TEXTURE2D(tex), float2 uv, float2 offset)
     return SAMPLE_TEXTURE2D_LOD(tex, sampler_LinearClamp, uv + offset * _CameraBufferSize.xy, 0);
 }
 
+float3 RGB2YCoCg(float3 rgb)
+{
+    return float3(
+             rgb.x/4.0 + rgb.y/2.0 + rgb.z/4.0,
+             rgb.x/2.0 - rgb.z/2.0,
+            -rgb.x/4.0 + rgb.y/2.0 - rgb.z/4.0
+        );
+}
+
+float3 YCoCg2RGB(float3 YCoCg)
+{
+    return saturate(float3(
+            YCoCg.x + YCoCg.y - YCoCg.z,
+            YCoCg.x + YCoCg.z,
+            YCoCg.x - YCoCg.y - YCoCg.z
+        ));
+}
+
 // ----------------------------------------------------------------------------------------------------
 // Exponential Moving Average
 // ----------------------------------------------------------------------------------------------------
@@ -41,7 +59,7 @@ float3 LumaExponentialAccumulation(float3 history, float3 current, float blendFa
 // Neighborhood Clamp/Clip (History rejection)
 // ----------------------------------------------------------------------------------------------------
 
-float3 RGBClamp5(TEXTURE2D(tex), int2 pixelCoord, float3 current, float3 history)
+float3 RGBClamp(TEXTURE2D(tex), int2 pixelCoord, float3 current, float3 history)
 {
     float3 N = LoadOffset(tex, pixelCoord, int2(0, 1)).xyz;
     float3 E = LoadOffset(tex, pixelCoord, int2(1, 0)).xyz;
@@ -77,58 +95,87 @@ float3 RGBClamp9(TEXTURE2D(tex), int2 pixelCoord, float3 current, float3 history
 
 float3 YCoCgClamp5(TEXTURE2D(tex), int2 pixelCoord, float3 current, float3 history)
 {
-    current= RGBToYCoCg(current);
-    float3 N = RGBToYCoCg(LoadOffset(tex, pixelCoord, int2(0, 1)).xyz);
-    float3 E = RGBToYCoCg(LoadOffset(tex, pixelCoord, int2(1, 0)).xyz);
-    float3 S = RGBToYCoCg(LoadOffset(tex, pixelCoord, int2(0, -1)).xyz);
-    float3 W = RGBToYCoCg(LoadOffset(tex, pixelCoord, int2(-1, 0)).xyz);
+    current= RGB2YCoCg(current);
+    float3 N = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(0, 1)).xyz);
+    float3 E = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(1, 0)).xyz);
+    float3 S = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(0, -1)).xyz);
+    float3 W = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(-1, 0)).xyz);
 
     float3 boxMin = min(current.xyz, min(N, min(E, min(S, W))));
     float3 boxMax = max(current.xyz, max(N, max(E, max(S, W))));
 
-    history = RGBToYCoCg(history);
+    history = RGB2YCoCg(history);
     history = clamp(history, boxMin, boxMax);
 
-    return YCoCgToRGB(history);
+    return YCoCg2RGB(history);
 }
 
 float3 YCoCgClamp9(TEXTURE2D(tex), int2 pixelCoord, float3 current, float3 history)
 {
-    current= RGBToYCoCg(current);
-    float3 N = RGBToYCoCg(LoadOffset(tex, pixelCoord, int2(0, 1)).xyz);
-    float3 E = RGBToYCoCg(LoadOffset(tex, pixelCoord, int2(1, 0)).xyz);
-    float3 S = RGBToYCoCg(LoadOffset(tex, pixelCoord, int2(0, -1)).xyz);
-    float3 W = RGBToYCoCg(LoadOffset(tex, pixelCoord, int2(-1, 0)).xyz);
-    float3 NW = RGBToYCoCg(LoadOffset(tex, pixelCoord, int2(-1, 1)).xyz);
-    float3 NE = RGBToYCoCg(LoadOffset(tex, pixelCoord, int2(1, 1)).xyz);
-    float3 SW = RGBToYCoCg(LoadOffset(tex, pixelCoord, int2(-1, -1)).xyz);
-    float3 SE = RGBToYCoCg(LoadOffset(tex, pixelCoord, int2(1, -1)).xyz);
+    current= RGB2YCoCg(current);
+    float3 N = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(0, 1)).xyz);
+    float3 E = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(1, 0)).xyz);
+    float3 S = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(0, -1)).xyz);
+    float3 W = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(-1, 0)).xyz);
+    float3 NW = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(-1, 1)).xyz);
+    float3 NE = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(1, 1)).xyz);
+    float3 SW = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(-1, -1)).xyz);
+    float3 SE = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(1, -1)).xyz);
 
     float3 boxMin = min(current.xyz, min(N, min(E, min(S, min(W, min(NW, min(NE, min(SW, SE))))))));
     float3 boxMax = max(current.xyz, max(N, max(E, max(S, max(W, max(NW, max(NE, max(SW, SE))))))));
 
-    history = RGBToYCoCg(history);
+    history = RGB2YCoCg(history);
     history = clamp(history, boxMin, boxMax);
 
-    return YCoCgToRGB(history);
+    return YCoCg2RGB(history);
+}
+
+float3 RGBClip9(TEXTURE2D(tex), int2 pixelCoord, float3 current, float3 history)
+{
+    float3 N = LoadOffset(tex, pixelCoord, int2(0, 1)).xyz;
+    float3 E = LoadOffset(tex, pixelCoord, int2(1, 0)).xyz;
+    float3 S = LoadOffset(tex, pixelCoord, int2(0, -1)).xyz;
+    float3 W = LoadOffset(tex, pixelCoord, int2(-1, 0)).xyz;
+    float3 NW = LoadOffset(tex, pixelCoord, int2(-1, 1)).xyz;
+    float3 NE = LoadOffset(tex, pixelCoord, int2(1, 1)).xyz;
+    float3 SW = LoadOffset(tex, pixelCoord, int2(-1, -1)).xyz;
+    float3 SE = LoadOffset(tex, pixelCoord, int2(1, -1)).xyz;
+
+    float3 boxMin = min(current.xyz, min(N, min(E, min(S, min(W, min(NW, min(NE, min(SW, SE))))))));
+    float3 boxMax = max(current.xyz, max(N, max(E, max(S, max(W, max(NW, max(NE, max(SW, SE))))))));
+
+    history = clamp(history, boxMin, boxMax);
+
+    float3 center  = 0.5 * (boxMax + boxMin);
+    float3 extents = max(0.5 * (boxMax - boxMin), HALF_MIN);
+    float3 offset = history - center;
+
+    float3 v_unit = offset.xyz / extents.xyz;
+    float3 absUnit = abs(v_unit);
+    float maxUnit = Max3(absUnit.x, absUnit.y, absUnit.z);
+    if (maxUnit > 1.0)
+        return (center + (offset / maxUnit));
+    else
+        return (history);
 }
 
 float3 YCoCgClip9(TEXTURE2D(tex), int2 pixelCoord, float3 current, float3 history)
 {
-    current = RGBToYCoCg(current);
-    float3 N = RGBToYCoCg(LoadOffset(tex, pixelCoord, int2(0, 1)).xyz);
-    float3 E = RGBToYCoCg(LoadOffset(tex, pixelCoord, int2(1, 0)).xyz);
-    float3 S = RGBToYCoCg(LoadOffset(tex, pixelCoord, int2(0, -1)).xyz);
-    float3 W = RGBToYCoCg(LoadOffset(tex, pixelCoord, int2(-1, 0)).xyz);
-    float3 NW = RGBToYCoCg(LoadOffset(tex, pixelCoord, int2(-1, 1)).xyz);
-    float3 NE = RGBToYCoCg(LoadOffset(tex, pixelCoord, int2(1, 1)).xyz);
-    float3 SW = RGBToYCoCg(LoadOffset(tex, pixelCoord, int2(-1, -1)).xyz);
-    float3 SE = RGBToYCoCg(LoadOffset(tex, pixelCoord, int2(1, -1)).xyz);
+    current = RGB2YCoCg(current);
+    float3 N = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(0, 1)).xyz);
+    float3 E = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(1, 0)).xyz);
+    float3 S = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(0, -1)).xyz);
+    float3 W = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(-1, 0)).xyz);
+    float3 NW = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(-1, 1)).xyz);
+    float3 NE = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(1, 1)).xyz);
+    float3 SW = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(-1, -1)).xyz);
+    float3 SE = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(1, -1)).xyz);
 
     float3 boxMin = min(current.xyz, min(N, min(E, min(S, min(W, min(NW, min(NE, min(SW, SE))))))));
     float3 boxMax = max(current.xyz, max(N, max(E, max(S, max(W, max(NW, max(NE, max(SW, SE))))))));
 
-    history = RGBToYCoCg(history);
+    history = RGB2YCoCg(history);
 
 
     
@@ -140,10 +187,17 @@ float3 YCoCgClip9(TEXTURE2D(tex), int2 pixelCoord, float3 current, float3 histor
     float3 absUnit = abs(v_unit);
     float maxUnit = Max3(absUnit.x, absUnit.y, absUnit.z);
     if (maxUnit > 1.0)
-        return YCoCgToRGB(center + (offset / maxUnit));
+        return YCoCg2RGB(center + (offset / maxUnit));
     else
-        return YCoCgToRGB(history);
+        return YCoCg2RGB(history);
 }
+
+// ----------------------------------------------------------------------------------------------------
+// Prefilter
+// ----------------------------------------------------------------------------------------------------
+
+
+
 
 // ----------------------------------------------------------------------------------------------------
 // Edge Aliasing 

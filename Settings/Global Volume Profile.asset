@@ -698,6 +698,15 @@ MonoBehaviour:
   historyBlendFactor:
     m_OverrideState: 1
     m_Value: 0.9
+  sampleMode:
+    m_OverrideState: 0
+    m_Value: 0
+  colorClampMode:
+    m_OverrideState: 0
+    m_Value: 4
+  historyFilter:
+    m_OverrideState: 0
+    m_Value: 2
 --- !u!114 &8792400353565013660
 MonoBehaviour:
   m_ObjectHideFlags: 3

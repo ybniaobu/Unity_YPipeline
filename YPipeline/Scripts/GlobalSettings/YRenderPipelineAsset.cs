@@ -10,6 +10,11 @@ namespace YPipeline
     {
         Forward, Deferred, Custom
     }
+
+    public enum Quality
+    {
+        Low, Medium, High, Epic
+    }
     
     public enum AntiAliasingMode
     {
