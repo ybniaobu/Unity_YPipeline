@@ -230,6 +230,9 @@ namespace YPipeline
         // Post Processing Related Keywords
         // ----------------------------------------------------------------------------------------------------
         
+        public const string k_TAASample3X3 = "_TAA_SAMPLE_3X3";
+        public const string k_TAAYCOCG = "_TAA_YCOCG";
+        
         public const string k_BloomBicubicUpsampling = "_BLOOM_BICUBIC_UPSAMPLING";
         
         public const string k_Bloom = "_BLOOM";

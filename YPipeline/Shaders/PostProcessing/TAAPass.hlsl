@@ -12,34 +12,102 @@ TEXTURE2D(_TAAHistory);
 float4 _TAAParams; // x: history blend factor
 float4 _Jitter; // xy: jitter
 
-float4 TAAFrag(Varyings IN) : SV_TARGET
+float4 TAAFrag_AABBClamp(Varyings IN) : SV_TARGET
 {
-    
+    // ------------------------- Filter Resampled History -------------------------
 
-
-
-
-
-
-
-
-    
     // float2 velocityPixelCoord = GetClosestDepthPixelCoord(_CameraDepthTexture, IN.positionHCS.xy);
     // float2 velocity = LOAD_TEXTURE2D_LOD(_CameraMotionVectorTexture, velocityPixelCoord, 0).rg;
     float2 velocity = LOAD_TEXTURE2D_LOD(_CameraMotionVectorTexture, IN.positionHCS.xy, 0).rg;
-    // float2 velocity = SAMPLE_TEXTURE2D_LOD(_CameraMotionVectorTexture, sampler_LinearClamp, IN.uv - _Jitter.xy * _CameraBufferSize.xy, 0).rg;
+
+    // float3 history = LOAD_TEXTURE2D_LOD(_TAAHistory, IN.positionHCS.xy - _CameraBufferSize.zw * velocity, 0).xyz;
+    // float3 history = SAMPLE_TEXTURE2D_LOD(_TAAHistory, sampler_LinearClamp, IN.uv - velocity, 0).xyz;
+    float3 history = SampleHistoryLinear(_TAAHistory, IN.uv - velocity);
+
+    // ------------------------- Get Neighbourhood Samples -------------------------
+
+    NeighbourhoodSamples samples = (NeighbourhoodSamples) 0;
+    GetNeighbourhoodSamples(samples, _BlitTexture, IN.positionHCS.xy);
+    MinMaxNeighbourhood(samples);
+
+    // ------------------------- Filter Current Middle Sample -------------------------
     
-    //float3 history = LOAD_TEXTURE2D_LOD(_TAAHistory, IN.positionHCS.xy - _CameraBufferSize.zw * velocity, 0).xyz;
-    float3 history = SAMPLE_TEXTURE2D_LOD(_TAAHistory, sampler_LinearClamp, IN.uv - velocity, 0).xyz;
-    float3 current = LOAD_TEXTURE2D_LOD(_BlitTexture, IN.positionHCS.xy, 0).xyz;
-    //float3 current = SAMPLE_TEXTURE2D_LOD(_BlitTexture, sampler_LinearClamp, IN.uv, 0).xyz;
+    
+    // ------------------------- Rectify History by Neighborhood Clamping/Clipping -------------------------
 
-    // history = YCoCgClamp9(_BlitTexture, IN.positionHCS.xy, current, history);
-    // history = YCoCgClip9(_BlitTexture, IN.positionHCS.xy, current, history);
+    history = NeighborhoodAABBClamp(samples, history);
 
+    // ------------------------- Exponential Blending -------------------------
+    
     //float3 color = LumaExponentialAccumulation(history, current, _TAAParams.x);
-    float3 color = lerp(current, history, _TAAParams.x);
+    float3 color = lerp(samples.M, history, _TAAParams.x);
+    color = OutputColor(color);
+    return float4(color, 1.0);
+}
 
+float4 TAAFrag_ClipToAABBCenter(Varyings IN) : SV_TARGET
+{
+    // ------------------------- Filter Resampled History -------------------------
+
+    // float2 velocityPixelCoord = GetClosestDepthPixelCoord(_CameraDepthTexture, IN.positionHCS.xy);
+    // float2 velocity = LOAD_TEXTURE2D_LOD(_CameraMotionVectorTexture, velocityPixelCoord, 0).rg;
+    float2 velocity = LOAD_TEXTURE2D_LOD(_CameraMotionVectorTexture, IN.positionHCS.xy, 0).rg;
+
+    // float3 history = LOAD_TEXTURE2D_LOD(_TAAHistory, IN.positionHCS.xy - _CameraBufferSize.zw * velocity, 0).xyz;
+    // float3 history = SAMPLE_TEXTURE2D_LOD(_TAAHistory, sampler_LinearClamp, IN.uv - velocity, 0).xyz;
+    float3 history = SampleHistoryLinear(_TAAHistory, IN.uv - velocity);
+
+    // ------------------------- Get Neighbourhood Samples -------------------------
+
+    NeighbourhoodSamples samples = (NeighbourhoodSamples) 0;
+    GetNeighbourhoodSamples(samples, _BlitTexture, IN.positionHCS.xy);
+    MinMaxNeighbourhood(samples);
+
+    // ------------------------- Filter Current Middle Sample -------------------------
+    
+    
+    // ------------------------- Rectify History by Neighborhood Clamping/Clipping -------------------------
+
+    history = NeighborhoodClipToAABBCenter(samples, history);
+
+    // ------------------------- Exponential Blending -------------------------
+    
+    //float3 color = LumaExponentialAccumulation(history, current, _TAAParams.x);
+    float3 color = lerp(samples.M, history, _TAAParams.x);
+    color = OutputColor(color);
+    return float4(color, 1.0);
+}
+
+float4 TAAFrag_ClipToFiltered(Varyings IN) : SV_TARGET
+{
+    // ------------------------- Filter Resampled History -------------------------
+
+    // float2 velocityPixelCoord = GetClosestDepthPixelCoord(_CameraDepthTexture, IN.positionHCS.xy);
+    // float2 velocity = LOAD_TEXTURE2D_LOD(_CameraMotionVectorTexture, velocityPixelCoord, 0).rg;
+    float2 velocity = LOAD_TEXTURE2D_LOD(_CameraMotionVectorTexture, IN.positionHCS.xy, 0).rg;
+
+    // float3 history = LOAD_TEXTURE2D_LOD(_TAAHistory, IN.positionHCS.xy - _CameraBufferSize.zw * velocity, 0).xyz;
+    // float3 history = SAMPLE_TEXTURE2D_LOD(_TAAHistory, sampler_LinearClamp, IN.uv - velocity, 0).xyz;
+    float3 history = SampleHistoryLinear(_TAAHistory, IN.uv - velocity);
+
+    // ------------------------- Get Neighbourhood Samples -------------------------
+
+    NeighbourhoodSamples samples = (NeighbourhoodSamples) 0;
+    GetNeighbourhoodSamples(samples, _BlitTexture, IN.positionHCS.xy);
+    MinMaxNeighbourhood(samples);
+
+    // ------------------------- Filter Current Middle Sample -------------------------
+    samples.filteredM = samples.M;
+    
+    // ------------------------- Rectify History by Neighborhood Clamping/Clipping -------------------------
+
+    history = NeighborhoodClipToFiltered(samples, samples.filteredM, history);
+
+    // ------------------------- Exponential Blending -------------------------
+    
+    //float3 color = LumaExponentialAccumulation(history, current, _TAAParams.x);
+    float3 color = lerp(samples.M, history, _TAAParams.x);
+    color = OutputColor(color);
     return float4(color, 1.0);
 }
 

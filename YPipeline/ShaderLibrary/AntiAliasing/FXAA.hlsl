@@ -105,15 +105,18 @@ float3 ApplyFXAAQuality(float2 uv, float4 middleColor)
     float SW = GetLuma(SampleOffset(uv, -1, -1));
     float SE = GetLuma(SampleOffset(uv,  1, -1));
 
-    // Calculate Contrast
+    // ------------------------- Calculate Contrast -------------------------
+    
     float maxLuma = max(max(max(N, E), max(W, S)), M);
     float minLuma = min(min(min(N, E), min(W, S)), M);
     float contrast = maxLuma - minLuma;
 
-    // Threshold
+    // ------------------------- Threshold -------------------------
+    
     if (contrast < max(FXAA_QUALITY_CONTRAST_THRESHOLD, maxLuma * FXAA_QUALITY_RELATIVE_THRESHOLD)) return middleColor.rgb;
 
-    // Measure Blend Direction
+    // ------------------------- Measure Blend Direction -------------------------
+    
     float horizontal = abs(N + S - 2.0 * M) * 2.0 + abs(NE + SE - 2.0 * E) + abs(NW + SW - 2.0 * W);
     float vertical   = abs(E + W - 2.0 * M) * 2.0 + abs(NE + NW - 2.0 * N) + abs(SE + SW - 2.0 * S);
     bool isHorizontal = horizontal > vertical;
@@ -122,7 +125,8 @@ float3 ApplyFXAAQuality(float2 uv, float4 middleColor)
     float negative = abs((isHorizontal ? S : W) - M);
     // if (positive < negative) pixelStep = -pixelStep;
 
-    // Reserve Blending Pixel Gradient & Luma
+    // ------------------------- Reserve Blending Pixel Gradient & Luma -------------------------
+    
     float gradient, oppositeLuma;
     if (positive > negative)
     {
@@ -136,7 +140,8 @@ float3 ApplyFXAAQuality(float2 uv, float4 middleColor)
         oppositeLuma = isHorizontal ? S : W;
     }
 
-    // Blend Factor Calculation
+    // ------------------------- Blend Factor Calculation -------------------------
+    
     float filter = 2.0 * (N + E + S + W) + NE + NW + SE + SW;
     filter = filter / 12.0;
     filter = abs(filter - M);
@@ -144,7 +149,8 @@ float3 ApplyFXAAQuality(float2 uv, float4 middleColor)
     float blendFactor = smoothstep(0.0, 1.0, filter);
     blendFactor = blendFactor * blendFactor * FXAA_QUALITY_BLEND_FACTOR;
 
-    // Edge Searching
+    // ------------------------- Edge Searching -------------------------
+    
     float2 edgeUV = uv;
     edgeUV += pixelStep * 0.5f;
     float2 edgeStep = isHorizontal ? float2(TEXEL_SIZE.x, 0) : float2(0, TEXEL_SIZE.y);
@@ -192,7 +198,8 @@ float3 ApplyFXAAQuality(float2 uv, float4 middleColor)
         distanceN = uv.y - uvN.y;
     }
 
-    // Edge Factor Calculation
+    // ------------------------- Edge Factor Calculation -------------------------
+    
     float edgeFactor;
     if (distanceP < distanceN)
     {
@@ -230,21 +237,25 @@ float3 ApplyFXAAConsole(float2 uv, float4 middleColor)
     float SW = GetLuma(SampleOffset(uv, -0.5, -0.5));
     float SE = GetLuma(SampleOffset(uv,  0.5, -0.5));
 
-    // Calculate Contrast
+    // ------------------------- Calculate Contrast -------------------------
+    
     float maxLuma = max(max(NW, NE), max(SW, SE));
     float minLuma = min(min(NW, NE), min(NW, NE));
     float contrast = max(maxLuma, M) - min(minLuma, M);
     
-    // Threshold
+    // ------------------------- Threshold -------------------------
+    
     if (contrast < max(FXAA_CONSOLE_CONTRAST_THRESHOLD, maxLuma * FXAA_CONSOLE_RELATIVE_THRESHOLD)) return middleColor.rgb;
 
-    // Determine Blending Direction
+    // ------------------------- Determine Blending Direction -------------------------
+    
     float2 dir;
     dir.x = -((NW + NE) - (SW + SE));
     dir.y = ((NE + SE) - (NW + SW));
     dir = normalize(dir);
 
-    // Blend
+    // ------------------------- Blend -------------------------
+    
     float2 dir1 = dir * TEXEL_SIZE.xy * FXAA_CONSOLE_SCALE;
     float4 rgbN1 = SampleOffsetZero(uv - dir1);
     float4 rgbP1 = SampleOffsetZero(uv + dir1);

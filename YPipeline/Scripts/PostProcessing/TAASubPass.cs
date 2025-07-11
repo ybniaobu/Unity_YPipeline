@@ -17,7 +17,13 @@ namespace YPipeline
             public TextureHandle taaTarget;
             public TextureHandle taaHistory;
             
+            // Shader Variables
             public Vector4 taaParams; 
+            
+            // Shader Keywords Related
+            public bool is3X3;
+            public bool isYCoCg;
+            public ColorRectifyMode rectifyMode;
         }
         
         private TAA m_TAA;
@@ -52,9 +58,16 @@ namespace YPipeline
                     passData.colorAttachment = builder.UseColorBuffer(data.CameraColorAttachment, 0);
                     passData.motionVectorTexture = builder.ReadTexture(data.CameraMotionVectorTexture);
                     passData.material = TAAMaterial;
-                    passData.taaParams = new Vector4(m_TAA.historyBlendFactor.value, 0f);
                     passData.isFirstFrame = yCamera.perCameraData.isFirstFrame;
                     
+                    // Record shader variables & keywords
+                    passData.taaParams = new Vector4(m_TAA.historyBlendFactor.value, 0f);
+
+                    passData.is3X3 = m_TAA.neighborhood.value == TAANeighborhood._3X3;
+                    passData.isYCoCg = m_TAA.colorSpace.value == TAAColorSpace.YCoCg;
+                    passData.rectifyMode = m_TAA.colorRectifyMode.value;
+                    
+                    // Import TAA history
                     Vector2Int bufferSize = data.BufferSize;
                 
                     RenderTextureDescriptor taaHistoryDesc = new RenderTextureDescriptor(bufferSize.x, bufferSize.y)
@@ -70,6 +83,7 @@ namespace YPipeline
                     data.TAAHistory = data.renderGraph.ImportTexture(taaHistory);
                     passData.taaHistory = builder.ReadWriteTexture(data.TAAHistory);
 
+                    // Create TAA target
                     TextureDesc taaTargetDesc = new TextureDesc(taaHistoryDesc)
                     {
                         anisoLevel = 0,
@@ -88,10 +102,23 @@ namespace YPipeline
                         context.cmd.BeginSample("TAABlendHistory");
                         data.material.SetVector(YPipelineShaderIDs.k_TAAParamsID, data.taaParams);
                         
+                        CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAASample3X3, data.is3X3);
+                        CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAAYCOCG, data.isYCoCg);
+
+                        int pass;
+                        switch (passData.rectifyMode)
+                        {
+                            case ColorRectifyMode.AABBClamp: pass = 0; break;
+                            case ColorRectifyMode.AABBClipToCenter: pass = 1; break;
+                            case ColorRectifyMode.AABBClipToFiltered: pass = 2; break;
+                            case ColorRectifyMode.VarianceClip: pass = 3; break;
+                            default: pass = 3; break;
+                        }
+                        
                         data.material.SetTexture(YPipelineShaderIDs.k_TAAHistoryID, data.taaHistory);
                         
                         if (data.isFirstFrame) BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.taaTarget);
-                        else BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.taaTarget, data.material, 0);
+                        else BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.taaTarget, data.material, pass);
                         context.cmd.EndSample("TAABlendHistory");
                         
                         context.cmd.BeginSample("TAACopyHistory");

@@ -99,10 +99,8 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     
     StandardPBRParams standardPBRParams = (StandardPBRParams) 0;
     InitializeStandardPBRParams(IN, standardPBRParams);
-
-    // ----------------------------------------------------------------------------------------------------
-    // Indirect Lighting
-    // ----------------------------------------------------------------------------------------------------
+    
+    // ------------------------- Indirect Lighting -------------------------
     
     float3 envBRDF = SampleEnvLut(ENVIRONMENT_BRDF_LUT, LUT_SAMPLER, standardPBRParams.NoV, standardPBRParams.roughness);
     float3 energyCompensation = 1.0 + standardPBRParams.F0 * (1.0 / envBRDF.x - 1) * 0.5; // 0.5 is a magic number
@@ -112,10 +110,8 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     //renderingEquationContent.indirectLightSpecular += CalculateIBL_Specular(standardPBRParams, unity_SpecCube0, samplerunity_SpecCube0, envBRDF.rg, energyCompensation);
     renderingEquationContent.indirectLightSpecular += CalculateIBL_Specular_RemappedMipmap(standardPBRParams, unity_SpecCube0,
         samplerunity_SpecCube0, envBRDF.rg, energyCompensation);
-
-    // ----------------------------------------------------------------------------------------------------
-    // Direct Lighting - Sun Light
-    // ----------------------------------------------------------------------------------------------------
+    
+    // ------------------------- Direct Lighting - Sun Light -------------------------
     
     LightParams sunLightParams = (LightParams) 0;
     InitializeSunLightParams(sunLightParams, standardPBRParams.V, normalize(IN.normalWS), IN.positionWS, IN.positionHCS.xyz);
@@ -125,9 +121,7 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
 
     renderingEquationContent.directSunLight += CalculateLightIrradiance(sunLightParams) * StandardPBR_EnergyCompensation(sunBRDFParams, standardPBRParams, energyCompensation);
     
-    // ----------------------------------------------------------------------------------------------------
-    // Direct Lighting - Punctual Light
-    // ----------------------------------------------------------------------------------------------------
+    // ------------------------- Direct Lighting - Punctual Light -------------------------
 
     LightsTileParams lightsTileParams = (LightsTileParams) 0;
     InitializeLightsTileParams(lightsTileParams, IN.positionHCS.xy);
@@ -163,20 +157,16 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     //     
     //     renderingEquationContent.directPunctualLights += CalculateLightIrradiance(punctualLightParams) * StandardPBR_EnergyCompensation(punctualBRDFParams, standardPBRParams, energyCompensation);
     // }
-
-    // ----------------------------------------------------------------------------------------------------
-    // Clipping
-    // ----------------------------------------------------------------------------------------------------
+    
+    // ------------------------- Clipping -------------------------
     
     // TODO：去除 _OpacityTex，因为和烘焙系统不太兼容
     float alpha = SAMPLE_TEXTURE2D(_OpacityTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).r * _BaseColor.a;
     #if defined(_CLIPPING)
         clip(alpha - _Cutoff);
     #endif
-
-    // ----------------------------------------------------------------------------------------------------
-    // LOD Fade
-    // ----------------------------------------------------------------------------------------------------
+    
+    // ------------------------- LOD Fade -------------------------
     
     #if defined(LOD_FADE_CROSSFADE)
         float dither = InterleavedGradientNoise(IN.positionHCS.xy, 0);

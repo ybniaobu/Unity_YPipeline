@@ -4,15 +4,15 @@
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
 
 // ----------------------------------------------------------------------------------------------------
-// Utility Functions
+// TAA Utility Functions
 // ----------------------------------------------------------------------------------------------------
 
-float4 LoadOffset(TEXTURE2D(tex), int2 pixelCoord, int2 offset)
+float4 LoadOffset(TEXTURE2D(tex), float2 pixelCoord, int2 offset)
 {
     return LOAD_TEXTURE2D_LOD(tex, pixelCoord + offset, 0);
 }
 
-float4 SampleLinearOffset(TEXTURE2D(tex), float2 uv, float2 offset)
+float4 SampleLinearOffset(TEXTURE2D(tex), float2 uv, int2 offset)
 {
     return SAMPLE_TEXTURE2D_LOD(tex, sampler_LinearClamp, uv + offset * _CameraBufferSize.xy, 0);
 }
@@ -28,179 +28,150 @@ float3 RGB2YCoCg(float3 rgb)
 
 float3 YCoCg2RGB(float3 YCoCg)
 {
-    return saturate(float3(
+    return float3(
             YCoCg.x + YCoCg.y - YCoCg.z,
             YCoCg.x + YCoCg.z,
             YCoCg.x - YCoCg.y - YCoCg.z
-        ));
+        );
+}
+
+float3 LoadColor(TEXTURE2D(tex), float2 pixelCoord, int2 offset)
+{
+    #if _TAA_YCOCG
+        return RGB2YCoCg(LoadOffset(tex, pixelCoord, offset).xyz);
+    #else
+        return LoadOffset(tex, pixelCoord, offset).xyz;
+    #endif
+}
+
+float3 OutputColor(float3 color)
+{
+    #if _TAA_YCOCG
+        return max(YCoCg2RGB(color), 0);
+    #else
+        return max(color, 0);
+    #endif
 }
 
 // ----------------------------------------------------------------------------------------------------
-// Exponential Moving Average
+// History Filter
 // ----------------------------------------------------------------------------------------------------
 
-float3 SimpleExponentialAccumulation(float3 history, float3 current, float blendFactor)
+float3 SampleHistoryLinear(TEXTURE2D(tex), float2 uv)
 {
-    return lerp(current, history, blendFactor);
-}
-
-float3 LumaExponentialAccumulation(float3 history, float3 current, float blendFactor)
-{
-    float historyLuma = Luminance(history);
-    float currentLuma = Luminance(current);
-    float historyLumaWeight = rcp(historyLuma + 1.0);
-    float currentLumaWeight = rcp(currentLuma + 1.0);
-    float weightSum = lerp(currentLumaWeight, historyLumaWeight, blendFactor);
-    float3 blendColor = lerp(current * currentLumaWeight, history * historyLumaWeight, blendFactor);
-    return blendColor / weightSum;
+    #if _TAA_YCOCG
+    return RGB2YCoCg(SAMPLE_TEXTURE2D_LOD(tex, sampler_LinearClamp, uv, 0).xyz);
+    #else
+    return SAMPLE_TEXTURE2D_LOD(tex, sampler_LinearClamp, uv, 0).xyz;
+    #endif
 }
 
 // ----------------------------------------------------------------------------------------------------
-// Neighborhood Clamp/Clip (History rejection)
+// Neighbourhood Samples Related
 // ----------------------------------------------------------------------------------------------------
 
-float3 RGBClamp(TEXTURE2D(tex), int2 pixelCoord, float3 current, float3 history)
+struct NeighbourhoodSamples
 {
-    float3 N = LoadOffset(tex, pixelCoord, int2(0, 1)).xyz;
-    float3 E = LoadOffset(tex, pixelCoord, int2(1, 0)).xyz;
-    float3 S = LoadOffset(tex, pixelCoord, int2(0, -1)).xyz;
-    float3 W = LoadOffset(tex, pixelCoord, int2(-1, 0)).xyz;
+    #if _TAA_SAMPLE_3X3
+    float3 neighbours[8];
+    #else
+    float3 neighbours[4];
+    #endif
+    float3 M;
+    float3 filteredM;
+    float3 min;
+    float3 max;
+};
 
-    float3 boxMin = min(current.xyz, min(N, min(E, min(S, W))));
-    float3 boxMax = max(current.xyz, max(N, max(E, max(S, W))));
+void GetNeighbourhoodSamples(inout NeighbourhoodSamples samples, TEXTURE2D(tex), float2 pixelCoord)
+{
+    samples.M = LoadColor(tex, pixelCoord, int2(0, 0)).xyz;
+    samples.neighbours[0] = LoadColor(tex, pixelCoord, int2(0, 1)).xyz;
+    samples.neighbours[1] = LoadColor(tex, pixelCoord, int2(1, 0)).xyz;
+    samples.neighbours[2] = LoadColor(tex, pixelCoord, int2(0, -1)).xyz;
+    samples.neighbours[3] = LoadColor(tex, pixelCoord, int2(-1, 0)).xyz;
 
-    history = clamp(history, boxMin, boxMax);
+    #if _TAA_SAMPLE_3X3
+    samples.neighbours[4] = LoadColor(tex, pixelCoord, int2(-1, 1)).xyz;
+    samples.neighbours[5] = LoadColor(tex, pixelCoord, int2(1, 1)).xyz;
+    samples.neighbours[6] = LoadColor(tex, pixelCoord, int2(-1, -1)).xyz;
+    samples.neighbours[7] = LoadColor(tex, pixelCoord, int2(1, -1)).xyz;
+    #endif
+}
 
+void MinMaxNeighbourhood(inout NeighbourhoodSamples samples)
+{
+    samples.min = min(samples.M, min(samples.neighbours[0], min(samples.neighbours[1], min(samples.neighbours[2], samples.neighbours[3]))));
+    samples.max = max(samples.M, max(samples.neighbours[0], max(samples.neighbours[1], max(samples.neighbours[2], samples.neighbours[3]))));
+
+    #if _TAA_SAMPLE_3X3
+    samples.min = min(samples.min, min(samples.neighbours[4], min(samples.neighbours[5], min(samples.neighbours[6], samples.neighbours[7]))));
+    samples.max = max(samples.max, max(samples.neighbours[4], max(samples.neighbours[5], max(samples.neighbours[6], samples.neighbours[7]))));
+    #endif
+}
+
+// void VarianceNeighbourhood(inout NeighbourhoodSamples samples)
+// {
+//     samples.min = min(samples.M, min(samples.neighbours[0], min(samples.neighbours[1], min(samples.neighbours[2], samples.neighbours[3]))));
+//     samples.max = max(samples.M, max(samples.neighbours[0], max(samples.neighbours[1], max(samples.neighbours[2], samples.neighbours[3]))));
+//
+//     #if _TAA_SAMPLE_3X3
+//     samples.min = min(samples.min, min(samples.neighbours[4], min(samples.neighbours[5], min(samples.neighbours[6], samples.neighbours[7]))));
+//     samples.max = max(samples.max, max(samples.neighbours[4], max(samples.neighbours[5], max(samples.neighbours[6], samples.neighbours[7]))));
+//     #endif
+// }
+
+// ----------------------------------------------------------------------------------------------------
+// Neighborhood AABB Clamp/AABB Clip/Variance Clip (Color Rejection)
+// ----------------------------------------------------------------------------------------------------
+
+float3 NeighborhoodAABBClamp(in NeighbourhoodSamples samples, float3 history)
+{
+    history = clamp(history, samples.min, samples.max);
     return history;
 }
 
-float3 RGBClamp9(TEXTURE2D(tex), int2 pixelCoord, float3 current, float3 history)
+// From "Temporal Reprojection Antialiasing in INSIDE (Playdead Studio)" at GDC 2016
+// https://github.com/playdeadgames/temporal/blob/4795aa0007d464371abe60b7b28a1cf893a4e349/Assets/Shaders/TemporalReprojection.shader
+// https://www.gdcvault.com/play/1022970/Temporal-Reprojection-Anti-Aliasing-in
+float3 NeighborhoodClipToAABBCenter(in NeighbourhoodSamples samples, float3 history)
 {
-    float3 N = LoadOffset(tex, pixelCoord, int2(0, 1)).xyz;
-    float3 E = LoadOffset(tex, pixelCoord, int2(1, 0)).xyz;
-    float3 S = LoadOffset(tex, pixelCoord, int2(0, -1)).xyz;
-    float3 W = LoadOffset(tex, pixelCoord, int2(-1, 0)).xyz;
-    float3 NW = LoadOffset(tex, pixelCoord, int2(-1, 1)).xyz;
-    float3 NE = LoadOffset(tex, pixelCoord, int2(1, 1)).xyz;
-    float3 SW = LoadOffset(tex, pixelCoord, int2(-1, -1)).xyz;
-    float3 SE = LoadOffset(tex, pixelCoord, int2(1, -1)).xyz;
-
-    float3 boxMin = min(current.xyz, min(N, min(E, min(S, min(W, min(NW, min(NE, min(SW, SE))))))));
-    float3 boxMax = max(current.xyz, max(N, max(E, max(S, max(W, max(NW, max(NE, max(SW, SE))))))));
-
-    history = clamp(history, boxMin, boxMax);
-
-    return history;
-}
-
-float3 YCoCgClamp5(TEXTURE2D(tex), int2 pixelCoord, float3 current, float3 history)
-{
-    current= RGB2YCoCg(current);
-    float3 N = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(0, 1)).xyz);
-    float3 E = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(1, 0)).xyz);
-    float3 S = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(0, -1)).xyz);
-    float3 W = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(-1, 0)).xyz);
-
-    float3 boxMin = min(current.xyz, min(N, min(E, min(S, W))));
-    float3 boxMax = max(current.xyz, max(N, max(E, max(S, W))));
-
-    history = RGB2YCoCg(history);
-    history = clamp(history, boxMin, boxMax);
-
-    return YCoCg2RGB(history);
-}
-
-float3 YCoCgClamp9(TEXTURE2D(tex), int2 pixelCoord, float3 current, float3 history)
-{
-    current= RGB2YCoCg(current);
-    float3 N = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(0, 1)).xyz);
-    float3 E = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(1, 0)).xyz);
-    float3 S = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(0, -1)).xyz);
-    float3 W = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(-1, 0)).xyz);
-    float3 NW = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(-1, 1)).xyz);
-    float3 NE = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(1, 1)).xyz);
-    float3 SW = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(-1, -1)).xyz);
-    float3 SE = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(1, -1)).xyz);
-
-    float3 boxMin = min(current.xyz, min(N, min(E, min(S, min(W, min(NW, min(NE, min(SW, SE))))))));
-    float3 boxMax = max(current.xyz, max(N, max(E, max(S, max(W, max(NW, max(NE, max(SW, SE))))))));
-
-    history = RGB2YCoCg(history);
-    history = clamp(history, boxMin, boxMax);
-
-    return YCoCg2RGB(history);
-}
-
-float3 RGBClip9(TEXTURE2D(tex), int2 pixelCoord, float3 current, float3 history)
-{
-    float3 N = LoadOffset(tex, pixelCoord, int2(0, 1)).xyz;
-    float3 E = LoadOffset(tex, pixelCoord, int2(1, 0)).xyz;
-    float3 S = LoadOffset(tex, pixelCoord, int2(0, -1)).xyz;
-    float3 W = LoadOffset(tex, pixelCoord, int2(-1, 0)).xyz;
-    float3 NW = LoadOffset(tex, pixelCoord, int2(-1, 1)).xyz;
-    float3 NE = LoadOffset(tex, pixelCoord, int2(1, 1)).xyz;
-    float3 SW = LoadOffset(tex, pixelCoord, int2(-1, -1)).xyz;
-    float3 SE = LoadOffset(tex, pixelCoord, int2(1, -1)).xyz;
-
-    float3 boxMin = min(current.xyz, min(N, min(E, min(S, min(W, min(NW, min(NE, min(SW, SE))))))));
-    float3 boxMax = max(current.xyz, max(N, max(E, max(S, max(W, max(NW, max(NE, max(SW, SE))))))));
-
-    history = clamp(history, boxMin, boxMax);
-
-    float3 center  = 0.5 * (boxMax + boxMin);
-    float3 extents = max(0.5 * (boxMax - boxMin), HALF_MIN);
-    float3 offset = history - center;
-
-    float3 v_unit = offset.xyz / extents.xyz;
-    float3 absUnit = abs(v_unit);
-    float maxUnit = Max3(absUnit.x, absUnit.y, absUnit.z);
-    if (maxUnit > 1.0)
-        return (center + (offset / maxUnit));
-    else
-        return (history);
-}
-
-float3 YCoCgClip9(TEXTURE2D(tex), int2 pixelCoord, float3 current, float3 history)
-{
-    current = RGB2YCoCg(current);
-    float3 N = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(0, 1)).xyz);
-    float3 E = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(1, 0)).xyz);
-    float3 S = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(0, -1)).xyz);
-    float3 W = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(-1, 0)).xyz);
-    float3 NW = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(-1, 1)).xyz);
-    float3 NE = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(1, 1)).xyz);
-    float3 SW = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(-1, -1)).xyz);
-    float3 SE = RGB2YCoCg(LoadOffset(tex, pixelCoord, int2(1, -1)).xyz);
-
-    float3 boxMin = min(current.xyz, min(N, min(E, min(S, min(W, min(NW, min(NE, min(SW, SE))))))));
-    float3 boxMax = max(current.xyz, max(N, max(E, max(S, max(W, max(NW, max(NE, max(SW, SE))))))));
-
-    history = RGB2YCoCg(history);
-
-
+    // note: only clips towards aabb center (but fast!)
+    float3 center  = 0.5 * (samples.max + samples.min);
+    float3 extents = 0.5 * (samples.max - samples.min) + HALF_MIN;
     
-    float3 center  = 0.5 * (boxMax + boxMin);
-    float3 extents = max(0.5 * (boxMax - boxMin), HALF_MIN);
-    float3 offset = history - center;
-
-    float3 v_unit = offset.xyz / extents.xyz;
-    float3 absUnit = abs(v_unit);
+    float3 vOffset = history - center;
+    float3 vUnit = vOffset / extents;
+    float3 absUnit = abs(vUnit);
     float maxUnit = Max3(absUnit.x, absUnit.y, absUnit.z);
+
     if (maxUnit > 1.0)
-        return YCoCg2RGB(center + (offset / maxUnit));
+        return center + (vOffset / maxUnit);
     else
-        return YCoCg2RGB(history);
+        return history;
 }
 
+// UE4 Version
+// Here the ray referenced goes from history to (filtered) center color
+float3 NeighborhoodClipToFiltered(in NeighbourhoodSamples samples, float3 filtered, float3 history)
+{
+    float3 center  = 0.5 * (samples.max + samples.min);
+    float3 extents = 0.5 * (samples.max - samples.min);
+
+    float3 rayDir = filtered - history;
+    rayDir = abs(rayDir) < HALF_MIN ? HALF_MIN : rayDir;
+    float3 rayPos = history - center;
+    float3 invDir = rcp(rayDir);
+    float3 t0 = (extents - rayPos)  * invDir;
+    float3 t1 = -(extents + rayPos) * invDir;
+    float intersection = max(max(min(t0.x, t1.x), min(t0.y, t1.y)), min(t0.z, t1.z));
+    float historyBlend = saturate(intersection);
+    return lerp(history, filtered, historyBlend);
+}
+
+
 // ----------------------------------------------------------------------------------------------------
-// Prefilter
-// ----------------------------------------------------------------------------------------------------
-
-
-
-
-// ----------------------------------------------------------------------------------------------------
-// Edge Aliasing 
+// Velocity Rejection
 // ----------------------------------------------------------------------------------------------------
 
 float2 GetClosestDepthPixelCoord(TEXTURE2D(depthTex), int2 pixelCoord)
@@ -226,6 +197,31 @@ float2 GetClosestDepthPixelCoord(TEXTURE2D(depthTex), int2 pixelCoord)
     offset = lerp(offset, float3(1, -1, SE), COMPARE_DEVICE_DEPTH_CLOSER(SE, offset.z));
 
     return pixelCoord + offset.xy;
+}
+
+// ----------------------------------------------------------------------------------------------------
+// Prefilter
+// ----------------------------------------------------------------------------------------------------
+
+
+// ----------------------------------------------------------------------------------------------------
+// Exponential Moving Average
+// ----------------------------------------------------------------------------------------------------
+
+float3 SimpleExponentialAccumulation(float3 history, float3 current, float blendFactor)
+{
+    return lerp(current, history, blendFactor);
+}
+
+float3 LumaExponentialAccumulation(float3 history, float3 current, float blendFactor)
+{
+    float historyLuma = Luminance(history);
+    float currentLuma = Luminance(current);
+    float historyLumaWeight = rcp(historyLuma + 1.0);
+    float currentLumaWeight = rcp(currentLuma + 1.0);
+    float weightSum = lerp(currentLumaWeight, historyLumaWeight, blendFactor);
+    float3 blendColor = lerp(current * currentLumaWeight, history * historyLumaWeight, blendFactor);
+    return blendColor / weightSum;
 }
 
 #endif

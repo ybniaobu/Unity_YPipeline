@@ -4,19 +4,19 @@ using UnityEngine.Serialization;
 
 namespace YPipeline
 {
-    public enum TAASampleMode
+    public enum TAANeighborhood
     {
-        [InspectorName("3X3 (9 taps)")] _3X3,
-        [InspectorName("Cross (5 taps)")] Cross,
+        [InspectorName("3X3 (9 taps)")] _3X3, [InspectorName("Cross (5 taps)")] Cross
+    }
+    
+    public enum TAAColorSpace
+    {
+        [InspectorName("YCoCg")] YCoCg, RGB
     }
 
-    public enum ColorClampMode
+    public enum ColorRectifyMode
     {
-        RGBClamping,
-        [InspectorName("YCoCg Clamping")] YCoCgClamping,
-        RGBClipping,
-        [InspectorName("YCoCg Clipping")] YCoCgClipping,
-        VarianceClipping,
+        AABBClamp, AABBClipToCenter, AABBClipToFiltered, VarianceClip
     }
     
     public enum HistoryFilter
@@ -24,16 +24,24 @@ namespace YPipeline
         Linear, Bicubic, CatmullRom
     }
     
+    
+    
     [System.Serializable]
-    public sealed class TAASampleModeParameter : VolumeParameter<TAASampleMode>
+    public sealed class TAANeighborhoodParameter : VolumeParameter<TAANeighborhood>
     {
-        public TAASampleModeParameter(TAASampleMode value, bool overrideState = false) : base(value, overrideState) { }
+        public TAANeighborhoodParameter(TAANeighborhood value, bool overrideState = false) : base(value, overrideState) { }
     }
     
     [System.Serializable]
-    public sealed class ColorClampModeParameter : VolumeParameter<ColorClampMode>
+    public sealed class TAAColorSpaceParameter : VolumeParameter<TAAColorSpace>
     {
-        public ColorClampModeParameter(ColorClampMode value, bool overrideState = false) : base(value, overrideState) { }
+        public TAAColorSpaceParameter(TAAColorSpace value, bool overrideState = false) : base(value, overrideState) { }
+    }
+    
+    [System.Serializable]
+    public sealed class ColorRectifyModeParameter : VolumeParameter<ColorRectifyMode>
+    {
+        public ColorRectifyModeParameter(ColorRectifyMode value, bool overrideState = false) : base(value, overrideState) { }
     }
     
     [System.Serializable]
@@ -53,10 +61,13 @@ namespace YPipeline
         public ClampedFloatParameter historyBlendFactor = new ClampedFloatParameter(0.9f, 0.0f, 1.0f);
         
         [Tooltip("采样模式 Using a 3X3 or crossed(5 taps) neighborhood samples")]
-        public TAASampleModeParameter sampleMode = new TAASampleModeParameter(TAASampleMode._3X3);
+        public TAANeighborhoodParameter neighborhood = new TAANeighborhoodParameter(TAANeighborhood._3X3);
+        
+        [Tooltip("XXXXXXXXXXXXXXXX")]
+        public TAAColorSpaceParameter colorSpace = new TAAColorSpaceParameter(TAAColorSpace.YCoCg);
         
         [Tooltip("修正历史颜色的方式 Rectify invalid history by clamp or clip to the range of neighborhood samples")]
-        public ColorClampModeParameter colorClampMode = new ColorClampModeParameter(ColorClampMode.VarianceClipping);
+        public ColorRectifyModeParameter colorRectifyMode = new ColorRectifyModeParameter(ColorRectifyMode.VarianceClip);
         
         [Tooltip("过滤历史以减少模糊 Filtering history to reduce reprojection blur")]
         public HistoryFilterParameter historyFilter = new HistoryFilterParameter(HistoryFilter.CatmullRom);
