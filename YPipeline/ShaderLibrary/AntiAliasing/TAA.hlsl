@@ -70,6 +70,12 @@ float3 SampleHistoryLinear(TEXTURE2D(tex), float2 uv)
 // Neighbourhood Samples Related
 // ----------------------------------------------------------------------------------------------------
 
+#ifdef _TAA_SAMPLE_3X3
+#define _TAA_SAMPLE_NUMBER 9
+#else
+#define _TAA_SAMPLE_NUMBER 5
+#endif
+
 struct NeighbourhoodSamples
 {
     #if _TAA_SAMPLE_3X3
@@ -110,16 +116,28 @@ void MinMaxNeighbourhood(inout NeighbourhoodSamples samples)
     #endif
 }
 
-// void VarianceNeighbourhood(inout NeighbourhoodSamples samples)
-// {
-//     samples.min = min(samples.M, min(samples.neighbours[0], min(samples.neighbours[1], min(samples.neighbours[2], samples.neighbours[3]))));
-//     samples.max = max(samples.M, max(samples.neighbours[0], max(samples.neighbours[1], max(samples.neighbours[2], samples.neighbours[3]))));
-//
-//     #if _TAA_SAMPLE_3X3
-//     samples.min = min(samples.min, min(samples.neighbours[4], min(samples.neighbours[5], min(samples.neighbours[6], samples.neighbours[7]))));
-//     samples.max = max(samples.max, max(samples.neighbours[4], max(samples.neighbours[5], max(samples.neighbours[6], samples.neighbours[7]))));
-//     #endif
-// }
+void VarianceNeighbourhood(inout NeighbourhoodSamples samples)
+{
+    float3 m1 = 0;
+    float3 m2 = 0;
+    for (int i = 0; i < _TAA_SAMPLE_NUMBER; i++)
+    {
+        float3 sampleColor = samples.neighbours[i];
+        m1 += sampleColor;
+        m2 += sampleColor * sampleColor;
+    }
+
+    m1 += samples.M;
+    m2 += samples.M * samples.M;
+
+    const int sampleCount = _TAA_SAMPLE_NUMBER + 1;
+    m1 *= rcp(sampleCount);
+    m2 *= rcp(sampleCount);
+
+    float3 simga = sqrt(abs(m2 - m1 * m1)); // standard deviation
+    samples.min = m1 - 1.25 * simga;
+    samples.max = m1 + 1.25 * simga;
+}
 
 // ----------------------------------------------------------------------------------------------------
 // Neighborhood AABB Clamp/AABB Clip/Variance Clip (Color Rejection)
@@ -155,18 +173,31 @@ float3 NeighborhoodClipToAABBCenter(in NeighbourhoodSamples samples, float3 hist
 // Here the ray referenced goes from history to (filtered) center color
 float3 NeighborhoodClipToFiltered(in NeighbourhoodSamples samples, float3 filtered, float3 history)
 {
-    float3 center  = 0.5 * (samples.max + samples.min);
-    float3 extents = 0.5 * (samples.max - samples.min);
+    float3 boxMin = samples.min;
+    float3 boxMax = samples.max;
 
+    float3 rayOrigin = history;
     float3 rayDir = filtered - history;
     rayDir = abs(rayDir) < HALF_MIN ? HALF_MIN : rayDir;
-    float3 rayPos = history - center;
     float3 invDir = rcp(rayDir);
-    float3 t0 = (extents - rayPos)  * invDir;
-    float3 t1 = -(extents + rayPos) * invDir;
-    float intersection = max(max(min(t0.x, t1.x), min(t0.y, t1.y)), min(t0.z, t1.z));
-    float historyBlend = saturate(intersection);
+    
+    float3 minIntersect = (boxMin - rayOrigin) * invDir;
+    float3 maxIntersect = (boxMax - rayOrigin) * invDir;
+    float3 enterIntersect = min(minIntersect, maxIntersect);
+    float intersect = Max3(enterIntersect.x, enterIntersect.y, enterIntersect.z);
+    float historyBlend = saturate(intersect);
     return lerp(history, filtered, historyBlend);
+}
+
+// From "An Excursion in Temporal Supersampling" at GDC 2016
+// https://developer.download.nvidia.com/gameworks/events/GDC2016/msalvi_temporal_supersampling.pdf
+float3 NeighborhoodVarianceClip(in NeighbourhoodSamples samples)
+{
+    float3 m1 = 0;
+    float3 m2 = 0;
+    #if _TAA_SAMPLE_3X3
+    m1 += samples.neighbours[0] + samples.neighbours[1] + samples.neighbours[2] + samples.neighbours[3];
+    #endif
 }
 
 
