@@ -14,17 +14,20 @@ namespace YPipeline
         [InspectorName("YCoCg")] YCoCg, RGB
     }
 
+    public enum AABBMode
+    {
+        MinMax, Variance
+    }
+
     public enum ColorRectifyMode
     {
-        AABBClamp, AABBClipToCenter, AABBClipToFiltered, VarianceClip
+        Clamp, ClipToAABBCenter, ClipToFiltered
     }
     
     public enum HistoryFilter
     {
-        Linear, Bicubic, CatmullRom
+        Linear, [InspectorName("Catmull-Rom Bicubic")] CatmullRomBicubic
     }
-    
-    
     
     [System.Serializable]
     public sealed class TAANeighborhoodParameter : VolumeParameter<TAANeighborhood>
@@ -36,6 +39,12 @@ namespace YPipeline
     public sealed class TAAColorSpaceParameter : VolumeParameter<TAAColorSpace>
     {
         public TAAColorSpaceParameter(TAAColorSpace value, bool overrideState = false) : base(value, overrideState) { }
+    }
+    
+    [System.Serializable]
+    public sealed class AABBModeParameter : VolumeParameter<AABBMode>
+    {
+        public AABBModeParameter(AABBMode value, bool overrideState = false) : base(value, overrideState) { }
     }
     
     [System.Serializable]
@@ -63,14 +72,20 @@ namespace YPipeline
         [Tooltip("采样模式 Using a 3X3 or crossed(5 taps) neighborhood samples")]
         public TAANeighborhoodParameter neighborhood = new TAANeighborhoodParameter(TAANeighborhood._3X3);
         
-        [Tooltip("XXXXXXXXXXXXXXXX")]
+        [Tooltip("修正历史颜色的颜色空间 YCoCg color space leads to less ghosting")]
         public TAAColorSpaceParameter colorSpace = new TAAColorSpaceParameter(TAAColorSpace.YCoCg);
         
+        [Tooltip("建立 AABB 的方式 Variance builds an improved AABB using a statistical method, reducing ghosting artifacts")]
+        public AABBModeParameter AABB = new AABBModeParameter(AABBMode.Variance);
+        
+        [Tooltip("标准差乘数 The critical value of confidence intervals, determining the volume of AABB box. Lower value reduces ghosting but produces more flicking, higher value reduces flicking but produces more ghosting")]
+        public ClampedFloatParameter varianceCriticalValue = new ClampedFloatParameter(1.25f, 0.5f, 1.5f);
+        
         [Tooltip("修正历史颜色的方式 Rectify invalid history by clamp or clip to the range of neighborhood samples")]
-        public ColorRectifyModeParameter colorRectifyMode = new ColorRectifyModeParameter(ColorRectifyMode.VarianceClip);
+        public ColorRectifyModeParameter colorRectifyMode = new ColorRectifyModeParameter(ColorRectifyMode.ClipToFiltered);
         
         [Tooltip("过滤历史以减少模糊 Filtering history to reduce reprojection blur")]
-        public HistoryFilterParameter historyFilter = new HistoryFilterParameter(HistoryFilter.CatmullRom);
+        public HistoryFilterParameter historyFilter = new HistoryFilterParameter(HistoryFilter.CatmullRomBicubic);
         
         public bool IsActive() => true;
     }

@@ -2,6 +2,7 @@
 #define YPIPELINE_TAA_INCLUDED
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Filtering.hlsl"
 
 // ----------------------------------------------------------------------------------------------------
 // TAA Utility Functions
@@ -35,6 +36,15 @@ float3 YCoCg2RGB(float3 YCoCg)
         );
 }
 
+float GetLuma(float3 color)
+{
+    #if _TAA_YCOCG
+    return color.r;
+    #else
+    return Luminance(color);
+    #endif
+}
+
 float3 LoadColor(TEXTURE2D(tex), float2 pixelCoord, int2 offset)
 {
     #if _TAA_YCOCG
@@ -65,6 +75,54 @@ float3 SampleHistoryLinear(TEXTURE2D(tex), float2 uv)
     return SAMPLE_TEXTURE2D_LOD(tex, sampler_LinearClamp, uv, 0).xyz;
     #endif
 }
+
+
+float3 SampleHistoryBicubic(TEXTURE2D(tex), float2 uv)
+{
+    float2 samplePos = uv * _CameraBufferSize.zw;
+    float2 tc1 = floor(samplePos - 0.5) + 0.5;
+    float2 f = samplePos - tc1;
+    float2 f2 = f * f;
+    float2 f3 = f * f2;
+
+    float c = 0.5;
+    
+    float2 w0 = -c         * f3 +  2.0 * c         * f2 - c * f;
+    float2 w1 =  (2.0 - c) * f3 - (3.0 - c)        * f2          + 1.0;
+    float2 w2 = -(2.0 - c) * f3 + (3.0 - 2.0 * c)  * f2 + c * f;
+    float2 w3 = c          * f3 - c                * f2;
+
+    float2 w12 = w1 + w2;
+    float2 tc0 = _CameraBufferSize.xy   * (tc1 - 1.0);
+    float2 tc3 = _CameraBufferSize.xy   * (tc1 + 2.0);
+    float2 tc12 = _CameraBufferSize.xy  * (tc1 + w2 / w12);
+
+    float3 s0 = SampleHistoryLinear(tex, float2(tc12.x, tc0.y));
+    float3 s1 = SampleHistoryLinear(tex, float2(tc0.x, tc12.y));
+    float3 s2 = SampleHistoryLinear(tex, float2(tc12.x, tc12.y));
+    float3 s3 = SampleHistoryLinear(tex, float2(tc3.x, tc12.y));
+    float3 s4 = SampleHistoryLinear(tex, float2(tc12.x, tc3.y));
+
+    float cw0 = (w12.x * w0.y);
+    float cw1 = (w0.x * w12.y);
+    float cw2 = (w12.x * w12.y);
+    float cw3 = (w3.x * w12.y);
+    float cw4 = (w12.x *  w3.y);
+
+    s0 *= cw0;
+    s1 *= cw1;
+    s2 *= cw2;
+    s3 *= cw3;
+    s4 *= cw4;
+
+    float3 historyFiltered = s0 + s1 + s2 + s3 + s4;
+    float weightSum = cw0 + cw1 + cw2 + cw3 + cw4;
+
+    float3 filteredVal = historyFiltered * rcp(weightSum);
+
+    return filteredVal;
+}
+
 
 // ----------------------------------------------------------------------------------------------------
 // Neighbourhood Samples Related
@@ -105,6 +163,37 @@ void GetNeighbourhoodSamples(inout NeighbourhoodSamples samples, TEXTURE2D(tex),
     #endif
 }
 
+// ----------------------------------------------------------------------------------------------------
+// Prefilter Middle Color
+// ----------------------------------------------------------------------------------------------------
+
+float3 BoxFilterMiddleColor(in NeighbourhoodSamples samples)
+{
+    const float weight = 1.0 / float(_TAA_SAMPLE_NUMBER);
+    float weightSum = rcp(GetLuma(samples.M) + 1.0) * weight;
+    float3 filtered = weightSum * samples.M;
+    
+    for (int i = 0; i < _TAA_SAMPLE_NUMBER - 1; i++)
+    {
+        float lumaWeight = rcp(GetLuma(samples.neighbours[i]) + 1.0) * weight;
+        weightSum += lumaWeight;
+        filtered += lumaWeight * samples.neighbours[i];
+    }
+    filtered *= rcp(weightSum);
+    return filtered;
+}
+
+float3 GaussianFilterMiddleColor(in NeighbourhoodSamples samples)
+{
+    float3 filtered = samples.M * 4;
+    float weightSum = 4;
+    
+}
+
+// ----------------------------------------------------------------------------------------------------
+// Build AABB Box
+// ----------------------------------------------------------------------------------------------------
+
 void MinMaxNeighbourhood(inout NeighbourhoodSamples samples)
 {
     samples.min = min(samples.M, min(samples.neighbours[0], min(samples.neighbours[1], min(samples.neighbours[2], samples.neighbours[3]))));
@@ -116,11 +205,13 @@ void MinMaxNeighbourhood(inout NeighbourhoodSamples samples)
     #endif
 }
 
-void VarianceNeighbourhood(inout NeighbourhoodSamples samples)
+// From "An Excursion in Temporal Supersampling" at GDC 2016
+// https://developer.download.nvidia.com/gameworks/events/GDC2016/msalvi_temporal_supersampling.pdf
+void VarianceNeighbourhood(inout NeighbourhoodSamples samples, float gamma = 1.25)
 {
     float3 m1 = 0;
     float3 m2 = 0;
-    for (int i = 0; i < _TAA_SAMPLE_NUMBER; i++)
+    for (int i = 0; i < _TAA_SAMPLE_NUMBER - 1; i++)
     {
         float3 sampleColor = samples.neighbours[i];
         m1 += sampleColor;
@@ -130,13 +221,19 @@ void VarianceNeighbourhood(inout NeighbourhoodSamples samples)
     m1 += samples.M;
     m2 += samples.M * samples.M;
 
-    const int sampleCount = _TAA_SAMPLE_NUMBER + 1;
+    const int sampleCount = _TAA_SAMPLE_NUMBER;
     m1 *= rcp(sampleCount);
     m2 *= rcp(sampleCount);
 
-    float3 simga = sqrt(abs(m2 - m1 * m1)); // standard deviation
-    samples.min = m1 - 1.25 * simga;
-    samples.max = m1 + 1.25 * simga;
+    float3 sigma = sqrt(abs(m2 - m1 * m1)); // standard deviation
+    float3 neighborMin = m1 - gamma * sigma;
+    float3 neighborMax = m1 + gamma * sigma;
+
+    neighborMin = min(neighborMin, samples.filteredM);
+    neighborMax = max(neighborMax, samples.filteredM);
+    
+    samples.min = neighborMin;
+    samples.max = neighborMax;
 }
 
 // ----------------------------------------------------------------------------------------------------
@@ -189,18 +286,6 @@ float3 NeighborhoodClipToFiltered(in NeighbourhoodSamples samples, float3 filter
     return lerp(history, filtered, historyBlend);
 }
 
-// From "An Excursion in Temporal Supersampling" at GDC 2016
-// https://developer.download.nvidia.com/gameworks/events/GDC2016/msalvi_temporal_supersampling.pdf
-float3 NeighborhoodVarianceClip(in NeighbourhoodSamples samples)
-{
-    float3 m1 = 0;
-    float3 m2 = 0;
-    #if _TAA_SAMPLE_3X3
-    m1 += samples.neighbours[0] + samples.neighbours[1] + samples.neighbours[2] + samples.neighbours[3];
-    #endif
-}
-
-
 // ----------------------------------------------------------------------------------------------------
 // Velocity Rejection
 // ----------------------------------------------------------------------------------------------------
@@ -230,10 +315,6 @@ float2 GetClosestDepthPixelCoord(TEXTURE2D(depthTex), int2 pixelCoord)
     return pixelCoord + offset.xy;
 }
 
-// ----------------------------------------------------------------------------------------------------
-// Prefilter
-// ----------------------------------------------------------------------------------------------------
-
 
 // ----------------------------------------------------------------------------------------------------
 // Exponential Moving Average
@@ -246,8 +327,8 @@ float3 SimpleExponentialAccumulation(float3 history, float3 current, float blend
 
 float3 LumaExponentialAccumulation(float3 history, float3 current, float blendFactor)
 {
-    float historyLuma = Luminance(history);
-    float currentLuma = Luminance(current);
+    float historyLuma = GetLuma(history);
+    float currentLuma = GetLuma(current);
     float historyLumaWeight = rcp(historyLuma + 1.0);
     float currentLumaWeight = rcp(currentLuma + 1.0);
     float weightSum = lerp(currentLumaWeight, historyLumaWeight, blendFactor);

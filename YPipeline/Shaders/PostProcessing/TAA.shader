@@ -5,6 +5,7 @@
     
     #pragma multi_compile_local_fragment _ _TAA_SAMPLE_3X3
     #pragma multi_compile_local_fragment _ _TAA_YCOCG
+    #pragma multi_compile_local_fragment _ _TAA_VARIANCE
     
     #include "TAAPass.hlsl"
     
@@ -34,7 +35,7 @@
 
         Pass
         {
-            Name "TAA - AABB Clip To AABB Center"  // 1
+            Name "TAA - Clip To AABB Center"  // 1
             
             HLSLPROGRAM
             #pragma vertex CopyVert
@@ -44,21 +45,11 @@
 
         Pass
         {
-            Name "TAA - AABB Clip To Filtered"  // 2
+            Name "TAA - Clip To Filtered"  // 2
             
             HLSLPROGRAM
             #pragma vertex CopyVert
             #pragma fragment TAAFrag_ClipToFiltered
-            ENDHLSL
-        }
-
-        Pass
-        {
-            Name "TAA - Variance Clip"  // 3
-            
-            HLSLPROGRAM
-            #pragma vertex CopyVert
-            #pragma fragment TAAFrag_ClipToAABBCenter
             ENDHLSL
         }
     }

@@ -61,7 +61,7 @@ namespace YPipeline
                     passData.isFirstFrame = yCamera.perCameraData.isFirstFrame;
                     
                     // Record shader variables & keywords
-                    passData.taaParams = new Vector4(m_TAA.historyBlendFactor.value, 0f);
+                    passData.taaParams = new Vector4(m_TAA.historyBlendFactor.value, m_TAA.varianceCriticalValue.value);
 
                     passData.is3X3 = m_TAA.neighborhood.value == TAANeighborhood._3X3;
                     passData.isYCoCg = m_TAA.colorSpace.value == TAAColorSpace.YCoCg;
@@ -104,21 +104,11 @@ namespace YPipeline
                         
                         CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAASample3X3, data.is3X3);
                         CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAAYCOCG, data.isYCoCg);
-
-                        int pass;
-                        switch (passData.rectifyMode)
-                        {
-                            case ColorRectifyMode.AABBClamp: pass = 0; break;
-                            case ColorRectifyMode.AABBClipToCenter: pass = 1; break;
-                            case ColorRectifyMode.AABBClipToFiltered: pass = 2; break;
-                            case ColorRectifyMode.VarianceClip: pass = 3; break;
-                            default: pass = 3; break;
-                        }
                         
                         data.material.SetTexture(YPipelineShaderIDs.k_TAAHistoryID, data.taaHistory);
                         
                         if (data.isFirstFrame) BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.taaTarget);
-                        else BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.taaTarget, data.material, pass);
+                        else BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.taaTarget, data.material, (int) passData.rectifyMode);
                         context.cmd.EndSample("TAABlendHistory");
                         
                         context.cmd.BeginSample("TAACopyHistory");
