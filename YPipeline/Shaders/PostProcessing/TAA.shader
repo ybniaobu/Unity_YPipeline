@@ -6,6 +6,8 @@
     #pragma multi_compile_local_fragment _ _TAA_SAMPLE_3X3
     #pragma multi_compile_local_fragment _ _TAA_YCOCG
     #pragma multi_compile_local_fragment _ _TAA_VARIANCE
+    #pragma multi_compile_local_fragment _ _TAA_CURRENT_FILTER
+    #pragma multi_compile_local_fragment _ _TAA_HISTORY_FILTER
     
     #include "TAAPass.hlsl"
     

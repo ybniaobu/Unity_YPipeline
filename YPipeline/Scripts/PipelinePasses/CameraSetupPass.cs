@@ -74,8 +74,10 @@ namespace YPipeline
                 if (data.asset.antiAliasingMode == AntiAliasingMode.TAA)
                 {
                     int frameIndex = Time.frameCount;
-                    Vector2 jitter = RandomUtility.k_Halton[frameIndex % 16 + 1] - new Vector2(0.5f, 0.5f);
-                    jitter *= 2.0f * m_TAA.jitterScale.value;
+                    // Vector2 jitter = RandomUtility.k_Halton[frameIndex % 16 + 1] - new Vector2(0.5f, 0.5f);
+                    // jitter *= 2.0f * m_TAA.jitterScale.value;
+                    Vector2 jitter = RandomUtility.k_HaltonDisk[frameIndex % 8 + 1];
+                    jitter *= m_TAA.jitterScale.value;
                     jitteredProjectionMatrix = CameraUtility.GetJitteredProjectionMatrix(data.BufferSize, projectionMatrix, jitter, isOrthographic);
                     passData.jitter = jitter;
                 }

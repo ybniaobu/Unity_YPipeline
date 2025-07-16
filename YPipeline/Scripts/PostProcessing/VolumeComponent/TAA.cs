@@ -24,6 +24,11 @@ namespace YPipeline
         Clamp, ClipToAABBCenter, ClipToFiltered
     }
     
+    public enum CurrentFilter
+    {
+        None, Gaussian
+    }
+    
     public enum HistoryFilter
     {
         Linear, [InspectorName("Catmull-Rom Bicubic")] CatmullRomBicubic
@@ -51,6 +56,12 @@ namespace YPipeline
     public sealed class ColorRectifyModeParameter : VolumeParameter<ColorRectifyMode>
     {
         public ColorRectifyModeParameter(ColorRectifyMode value, bool overrideState = false) : base(value, overrideState) { }
+    }
+    
+    [System.Serializable]
+    public sealed class CurrentFilterParameter : VolumeParameter<CurrentFilter>
+    {
+        public CurrentFilterParameter(CurrentFilter value, bool overrideState = false) : base(value, overrideState) { }
     }
     
     [System.Serializable]
@@ -83,6 +94,9 @@ namespace YPipeline
         
         [Tooltip("修正历史颜色的方式 Rectify invalid history by clamp or clip to the range of neighborhood samples")]
         public ColorRectifyModeParameter colorRectifyMode = new ColorRectifyModeParameter(ColorRectifyMode.ClipToFiltered);
+        
+        [Tooltip("过滤当前帧以减少闪烁 Filtering current color to reduce flicking")]
+        public CurrentFilterParameter currentFilter = new CurrentFilterParameter(CurrentFilter.Gaussian);
         
         [Tooltip("过滤历史以减少模糊 Filtering history to reduce reprojection blur")]
         public HistoryFilterParameter historyFilter = new HistoryFilterParameter(HistoryFilter.CatmullRomBicubic);

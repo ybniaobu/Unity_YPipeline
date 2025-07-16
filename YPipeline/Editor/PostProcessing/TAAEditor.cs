@@ -13,6 +13,7 @@ namespace YPipeline.Editor
         private SerializedDataParameter m_AABB;
         private SerializedDataParameter m_VarianceCriticalValue;
         private SerializedDataParameter m_ColorRectifyMode;
+        private SerializedDataParameter m_CurrentFilter;
         private SerializedDataParameter m_HistoryFilter;
 
         public override void OnEnable()
@@ -26,6 +27,7 @@ namespace YPipeline.Editor
             m_AABB = Unpack(o.Find(x => x.AABB));
             m_VarianceCriticalValue = Unpack(o.Find(x => x.varianceCriticalValue));
             m_ColorRectifyMode = Unpack(o.Find(x => x.colorRectifyMode));
+            m_CurrentFilter = Unpack(o.Find(x => x.currentFilter));
             m_HistoryFilter = Unpack(o.Find(x => x.historyFilter));
         }
 
@@ -43,6 +45,7 @@ namespace YPipeline.Editor
             }
             
             PropertyField(m_ColorRectifyMode);
+            PropertyField(m_CurrentFilter);
             PropertyField(m_HistoryFilter);
         }
     }

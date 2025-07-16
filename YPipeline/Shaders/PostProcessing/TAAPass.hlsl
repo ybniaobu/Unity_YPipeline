@@ -22,7 +22,9 @@ float4 TAAFrag_AABBClamp(Varyings IN) : SV_TARGET
 
     // float3 history = LOAD_TEXTURE2D_LOD(_TAAHistory, IN.positionHCS.xy - _CameraBufferSize.zw * velocity, 0).xyz;
     // float3 history = SAMPLE_TEXTURE2D_LOD(_TAAHistory, sampler_LinearClamp, IN.uv - velocity, 0).xyz;
-    float3 history = SampleHistoryLinear(_TAAHistory, IN.uv - velocity);
+    // float3 history = SampleHistoryLinear(_TAAHistory, IN.uv - velocity);
+
+    float3 history = SampleHistoryBicubic(_TAAHistory, IN.uv - velocity);
 
     // ------------------------- Get Neighbourhood Samples -------------------------
 
@@ -31,8 +33,7 @@ float4 TAAFrag_AABBClamp(Varyings IN) : SV_TARGET
 
     // ------------------------- Filter Current Middle Sample -------------------------
     
-    // samples.filteredM = samples.M;
-    samples.filteredM = BoxFilterMiddleColor(samples);
+    samples.filteredM = FilterMiddleColor(samples);
 
     // ------------------------- Build AABB -------------------------
     
@@ -44,12 +45,12 @@ float4 TAAFrag_AABBClamp(Varyings IN) : SV_TARGET
     
     // ------------------------- Rectify History by Neighborhood Clamping/Clipping -------------------------
 
-    history = NeighborhoodAABBClamp(samples, history);
+    float3 clampedHistory = NeighborhoodAABBClamp(samples, history);
 
     // ------------------------- Exponential Blending -------------------------
     
-    //float3 color = LumaExponentialAccumulation(history, current, _TAAParams.x);
-    float3 color = lerp(samples.filteredM, history, _TAAParams.x);
+    float3 color = LumaExponentialAccumulation(clampedHistory, samples.filteredM, _TAAParams.x);
+    // float3 color = lerp(samples.filteredM, history, _TAAParams.x);
     color = OutputColor(color);
     return float4(color, 1.0);
 }
@@ -64,7 +65,9 @@ float4 TAAFrag_ClipToAABBCenter(Varyings IN) : SV_TARGET
 
     // float3 history = LOAD_TEXTURE2D_LOD(_TAAHistory, IN.positionHCS.xy - _CameraBufferSize.zw * velocity, 0).xyz;
     // float3 history = SAMPLE_TEXTURE2D_LOD(_TAAHistory, sampler_LinearClamp, IN.uv - velocity, 0).xyz;
-    float3 history = SampleHistoryLinear(_TAAHistory, IN.uv - velocity);
+    // float3 history = SampleHistoryLinear(_TAAHistory, IN.uv - velocity);
+
+    float3 history = SampleHistoryBicubic(_TAAHistory, IN.uv - velocity);
 
     // ------------------------- Get Neighbourhood Samples -------------------------
 
@@ -72,9 +75,8 @@ float4 TAAFrag_ClipToAABBCenter(Varyings IN) : SV_TARGET
     GetNeighbourhoodSamples(samples, _BlitTexture, IN.positionHCS.xy);
 
     // ------------------------- Filter Current Middle Sample -------------------------
-
-    // samples.filteredM = samples.M;
-    samples.filteredM = BoxFilterMiddleColor(samples);
+    
+    samples.filteredM = FilterMiddleColor(samples);
     
     // ------------------------- Build AABB -------------------------
     
@@ -86,12 +88,12 @@ float4 TAAFrag_ClipToAABBCenter(Varyings IN) : SV_TARGET
     
     // ------------------------- Rectify History by Neighborhood Clamping/Clipping -------------------------
 
-    history = NeighborhoodClipToAABBCenter(samples, history);
+    float3 clampedHistory = NeighborhoodClipToAABBCenter(samples, history);
 
     // ------------------------- Exponential Blending -------------------------
     
-    //float3 color = LumaExponentialAccumulation(history, current, _TAAParams.x);
-    float3 color = lerp(samples.filteredM, history, _TAAParams.x);
+    float3 color = LumaExponentialAccumulation(clampedHistory, samples.filteredM, _TAAParams.x);
+    // float3 color = lerp(samples.filteredM, history, _TAAParams.x);
     color = OutputColor(color);
     return float4(color, 1.0);
 }
@@ -116,9 +118,8 @@ float4 TAAFrag_ClipToFiltered(Varyings IN) : SV_TARGET
     GetNeighbourhoodSamples(samples, _BlitTexture, IN.positionHCS.xy);
 
     // ------------------------- Filter Current Middle Sample -------------------------
-
-    // samples.filteredM = samples.M;
-    samples.filteredM = BoxFilterMiddleColor(samples);
+    
+    samples.filteredM = FilterMiddleColor(samples);
 
     // ------------------------- Build AABB -------------------------
     
@@ -130,12 +131,23 @@ float4 TAAFrag_ClipToFiltered(Varyings IN) : SV_TARGET
     
     // ------------------------- Rectify History by Neighborhood Clamping/Clipping -------------------------
 
-    history = NeighborhoodClipToFiltered(samples, samples.filteredM, history);
+    float3 clampedHistory = NeighborhoodClipToFiltered(samples, history);
+
+    // ------------------------- Adaptive Blending Factor -------------------------
+
+    // float velocityFactor = length(velocity) - HALF_MIN > 0 ? 0 : 0.95;
+    // //
+    // // //float velocityFactor = any(velocity) >= HALF_MIN;
+    // float blendFactor = lerp(_TAAParams.x - 0.1, 1.0, velocityFactor);
+    //
+    // //TODO: 根据深度增加 blendFactor
+    // //TODO：根据 history 和 current 的差值减少 blendFactor
+    float depth = LoadOffset(_CameraDepthTexture, IN.positionHCS.xy, int2(0, 0)).x;
+    float blendFactor = lerp(_TAAParams.x, 0.975, (1.0 - depth));
+    
 
     // ------------------------- Exponential Blending -------------------------
-
-    
-    float3 color = LumaExponentialAccumulation(history, samples.filteredM, _TAAParams.x);
+    float3 color = LumaExponentialAccumulation(clampedHistory, samples.filteredM, blendFactor);
     // float3 color = lerp(samples.filteredM, history, _TAAParams.x);
     color = OutputColor(color);
     return float4(color, 1.0);

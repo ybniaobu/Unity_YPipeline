@@ -29,7 +29,7 @@ float4 BloomPrefilterFrag(Varyings IN) : SV_TARGET
 {
     float3 color = float3(0.0, 0.0, 0.0);
     float weight = 0.0;
-    float2 offsets[5] = { float2(0.0, 0.0), float2(-1.0, -1.0), float2(-1.0, 1.0), float2(1.0, -1.0), float2(1.0, 1.0)};
+    const float2 offsets[5] = { float2(0.0, 0.0), float2(-1.0, -1.0), float2(-1.0, 1.0), float2(1.0, -1.0), float2(1.0, 1.0)};
     // float2 offsets[9] = { float2(0.0, 0.0), float2(-1.0, -1.0), float2(-1.0, 1.0), float2(1.0, -1.0), float2(1.0, 1.0),
     // float2(-1.0, 0.0), float2(1.0, 0.0), float2(0.0, -1.0), float2(0.0, 1.0)};
 
@@ -53,8 +53,8 @@ float4 BloomPrefilterFrag(Varyings IN) : SV_TARGET
 float4 BloomGaussianBlurHorizontalFrag(Varyings IN) : SV_TARGET
 {
     float3 color = float3(0.0, 0.0, 0.0);
-    float offsets[9] = { -4.0, -3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0, 4.0 };
-    float weights[9] = { 0.01621622, 0.05405405, 0.12162162, 0.19459459, 0.22702703, 0.19459459, 0.12162162, 0.05405405, 0.01621622 };
+    const float offsets[9] = { -4.0, -3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0, 4.0 };
+    const float weights[9] = { 0.01621622, 0.05405405, 0.12162162, 0.19459459, 0.22702703, 0.19459459, 0.12162162, 0.05405405, 0.01621622 };
 
     // 9×9 Gaussian filter
     UNITY_UNROLL
@@ -70,8 +70,8 @@ float4 BloomGaussianBlurHorizontalFrag(Varyings IN) : SV_TARGET
 float4 BloomGaussianBlurVerticalFrag(Varyings IN) : SV_TARGET
 {
     float3 color = float3(0.0, 0.0, 0.0);
-    float offsets[5] = { -3.23076923, -1.38461538, 0.0, 1.38461538, 3.23076923 };
-    float weights[5] = { 0.07027027, 0.31621622, 0.22702703, 0.31621622, 0.07027027 };
+    const float offsets[5] = { -3.23076923, -1.38461538, 0.0, 1.38461538, 3.23076923 };
+    const float weights[5] = { 0.07027027, 0.31621622, 0.22702703, 0.31621622, 0.07027027 };
 
     // 5×5 Gaussian filter
     UNITY_UNROLL

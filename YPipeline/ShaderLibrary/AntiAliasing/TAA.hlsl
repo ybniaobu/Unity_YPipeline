@@ -76,7 +76,6 @@ float3 SampleHistoryLinear(TEXTURE2D(tex), float2 uv)
     #endif
 }
 
-
 float3 SampleHistoryBicubic(TEXTURE2D(tex), float2 uv)
 {
     float2 samplePos = uv * _CameraBufferSize.zw;
@@ -85,7 +84,7 @@ float3 SampleHistoryBicubic(TEXTURE2D(tex), float2 uv)
     float2 f2 = f * f;
     float2 f3 = f * f2;
 
-    float c = 0.5;
+    float c = 0.5; // sharpen factor (0, 1)
     
     float2 w0 = -c         * f3 +  2.0 * c         * f2 - c * f;
     float2 w1 =  (2.0 - c) * f3 - (3.0 - c)        * f2          + 1.0;
@@ -109,6 +108,9 @@ float3 SampleHistoryBicubic(TEXTURE2D(tex), float2 uv)
     float cw3 = (w3.x * w12.y);
     float cw4 = (w12.x *  w3.y);
 
+    float3 minHistory = min(s0, min(s1, min(s2, min(s3, s4))));
+    float3 maxHistory = max(s0, max(s1, max(s2, max(s3, s4))));
+
     s0 *= cw0;
     s1 *= cw1;
     s2 *= cw2;
@@ -120,7 +122,7 @@ float3 SampleHistoryBicubic(TEXTURE2D(tex), float2 uv)
 
     float3 filteredVal = historyFiltered * rcp(weightSum);
 
-    return filteredVal;
+    return clamp(filteredVal, minHistory, maxHistory);
 }
 
 
@@ -167,6 +169,7 @@ void GetNeighbourhoodSamples(inout NeighbourhoodSamples samples, TEXTURE2D(tex),
 // Prefilter Middle Color
 // ----------------------------------------------------------------------------------------------------
 
+// Not recommended, box filter is not suitable for reconstruction or sharpen
 float3 BoxFilterMiddleColor(in NeighbourhoodSamples samples)
 {
     const float weight = 1.0 / float(_TAA_SAMPLE_NUMBER);
@@ -183,11 +186,52 @@ float3 BoxFilterMiddleColor(in NeighbourhoodSamples samples)
     return filtered;
 }
 
+float3 GaussianApproxFilterMiddleColor(in NeighbourhoodSamples samples)
+{
+    const float weights[9] = { 4.0, 2.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0, 1.0 };
+    float weightSum = rcp(GetLuma(samples.M) + 1.0) * 4.0;
+    float3 filtered = weightSum * samples.M;
+
+    for (int i = 0; i < _TAA_SAMPLE_NUMBER - 1; i++)
+    {
+        float lumaWeight = rcp(GetLuma(samples.neighbours[i]) + 1.0) * weights[i + 1];
+        weightSum += lumaWeight;
+        filtered += lumaWeight * samples.neighbours[i];
+    }
+    filtered *= rcp(weightSum);
+    return filtered;
+}
+
 float3 GaussianFilterMiddleColor(in NeighbourhoodSamples samples)
 {
-    float3 filtered = samples.M * 4;
-    float weightSum = 4;
+    // sigma = 0.8
+    // const float weights[9] = { 1.0, 0.4578, 0.4578, 0.4578, 0.4578, 0.2097, 0.2097, 0.2097, 0.2097 };
     
+    // sigma = 0.6
+    const float weights[9] = { 1.0, 0.2493, 0.2493, 0.2493, 0.2493, 0.0625, 0.0625, 0.0625, 0.0625 };
+
+    // sigma = 0.5
+    // const float weights[9] = { 1.0, 0.1353, 0.1353, 0.1353, 0.1353, 0.0183, 0.0183, 0.0183, 0.0183 };
+    float weightSum = rcp(GetLuma(samples.M) + 1.0) * 1.0;
+    float3 filtered = weightSum * samples.M;
+
+    for (int i = 0; i < _TAA_SAMPLE_NUMBER - 1; i++)
+    {
+        float lumaWeight = rcp(GetLuma(samples.neighbours[i]) + 1.0) * weights[i + 1];
+        weightSum += lumaWeight;
+        filtered += lumaWeight * samples.neighbours[i];
+    }
+    filtered *= rcp(weightSum);
+    return filtered;
+}
+
+float3 FilterMiddleColor(in NeighbourhoodSamples samples)
+{
+    #if _TAA_CURRENT_FILTER
+    return GaussianFilterMiddleColor(samples);
+    #else
+    return samples.M;
+    #endif
 }
 
 // ----------------------------------------------------------------------------------------------------
@@ -268,13 +312,13 @@ float3 NeighborhoodClipToAABBCenter(in NeighbourhoodSamples samples, float3 hist
 
 // UE4 Version
 // Here the ray referenced goes from history to (filtered) center color
-float3 NeighborhoodClipToFiltered(in NeighbourhoodSamples samples, float3 filtered, float3 history)
+float3 NeighborhoodClipToFiltered(in NeighbourhoodSamples samples, float3 history)
 {
     float3 boxMin = samples.min;
     float3 boxMax = samples.max;
 
     float3 rayOrigin = history;
-    float3 rayDir = filtered - history;
+    float3 rayDir = samples.filteredM - history;
     rayDir = abs(rayDir) < HALF_MIN ? HALF_MIN : rayDir;
     float3 invDir = rcp(rayDir);
     
@@ -283,7 +327,7 @@ float3 NeighborhoodClipToFiltered(in NeighbourhoodSamples samples, float3 filter
     float3 enterIntersect = min(minIntersect, maxIntersect);
     float intersect = Max3(enterIntersect.x, enterIntersect.y, enterIntersect.z);
     float historyBlend = saturate(intersect);
-    return lerp(history, filtered, historyBlend);
+    return lerp(history, samples.filteredM, historyBlend);
 }
 
 // ----------------------------------------------------------------------------------------------------

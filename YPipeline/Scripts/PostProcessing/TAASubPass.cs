@@ -23,6 +23,7 @@ namespace YPipeline
             // Shader Keywords Related
             public bool is3X3;
             public bool isYCoCg;
+            public CurrentFilter currentFilter;
             public ColorRectifyMode rectifyMode;
         }
         
@@ -66,6 +67,7 @@ namespace YPipeline
                     passData.is3X3 = m_TAA.neighborhood.value == TAANeighborhood._3X3;
                     passData.isYCoCg = m_TAA.colorSpace.value == TAAColorSpace.YCoCg;
                     passData.rectifyMode = m_TAA.colorRectifyMode.value;
+                    passData.currentFilter = m_TAA.currentFilter.value;
                     
                     // Import TAA history
                     Vector2Int bufferSize = data.BufferSize;
@@ -104,6 +106,7 @@ namespace YPipeline
                         
                         CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAASample3X3, data.is3X3);
                         CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAAYCOCG, data.isYCoCg);
+                        CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAACurrentFilter, data.currentFilter == CurrentFilter.Gaussian);
                         
                         data.material.SetTexture(YPipelineShaderIDs.k_TAAHistoryID, data.taaHistory);
                         

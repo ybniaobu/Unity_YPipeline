@@ -95,6 +95,7 @@ namespace YPipeline
         // Low-discrepancy sequence - Halton sequence
         // ----------------------------------------------------------------------------------------------------
         
+        // [0, 1)
         public static readonly Vector2[] k_Halton = new Vector2[65]
         {
             new Vector2(0.00000000f, 0.00000000f), 
@@ -114,6 +115,28 @@ namespace YPipeline
             new Vector2(0.67187500f, 0.97530864f), new Vector2(0.42187500f, 0.02469136f), new Vector2(0.92187500f, 0.35802469f), new Vector2(0.10937500f, 0.69135802f),
             new Vector2(0.60937500f, 0.13580247f), new Vector2(0.35937500f, 0.46913580f), new Vector2(0.85937500f, 0.80246914f), new Vector2(0.23437500f, 0.24691358f),
             new Vector2(0.73437500f, 0.58024691f), new Vector2(0.48437500f, 0.91358025f), new Vector2(0.98437500f, 0.06172840f), new Vector2(0.00781250f, 0.39506173f)
+        };
+        
+        // (-1, 1)
+        public static readonly Vector2[] k_HaltonDisk = new Vector2[65]
+        {
+            new Vector2(0.00000000f, 0.00000000f), 
+            new Vector2(-0.35355339f, 0.61237244f), new Vector2(-0.25000000f, -0.43301270f), new Vector2(0.66341395f, 0.55667040f), new Vector2(-0.33223151f, 0.12092238f),
+            new Vector2(0.13728094f, -0.77855889f), new Vector2(0.10633736f, 0.60306912f), new Vector2(-0.87900196f, -0.31993055f), new Vector2(0.19151111f, -0.16069690f),
+            new Vector2(0.72978365f, 0.17296190f), new Vector2(-0.38362074f, 0.40661423f), new Vector2(-0.25852094f, -0.86352008f), new Vector2(0.25857726f, 0.34732953f),
+            new Vector2(-0.82354974f, 0.09625916f), new Vector2(0.26198214f, -0.60734287f), new Vector2(-0.05629849f, 0.96660772f), new Vector2(-0.14769477f, -0.09714038f),
+            new Vector2(0.65134112f, -0.32711580f), new Vector2(0.47392027f, 0.23801171f), new Vector2(-0.73847387f, 0.48570191f), new Vector2(-0.02298376f, -0.39461595f),
+            new Vector2(0.32086128f, 0.74384006f), new Vector2(-0.63306772f, -0.07399500f), new Vector2(0.56847804f, -0.76359853f), new Vector2(-0.08781520f, 0.29332319f),
+            new Vector2(-0.52878470f, -0.56047903f), new Vector2(0.57049812f, -0.13521054f), new Vector2(0.91579649f, 0.07118133f), new Vector2(-0.26453839f, 0.38570642f),
+            new Vector2(-0.36572533f, -0.76484965f), new Vector2(0.48879428f, 0.47940605f), new Vector2(-0.94819874f, 0.26394916f), new Vector2(0.03118014f, -0.12104875f),
+            new Vector2(0.06951701f, 0.71469741f), new Vector2(-0.46919032f, -0.21327317f), new Vector2(0.71185806f, -0.50880556f), new Vector2(0.35709296f, 0.11449725f),
+            new Vector2(-0.59272441f, 0.53786873f), new Vector2(-0.13231492f, -0.61083366f), new Vector2(0.50320065f, 0.79838218f), new Vector2(-0.27929829f, 0.01083805f),
+            new Vector2(0.35435401f, -0.67272449f), new Vector2(-0.07752074f, 0.56755223f), new Vector2(-0.71926819f, -0.55747491f), new Vector2(0.41721815f, -0.17045237f),
+            new Vector2(0.71791777f, 0.43326559f), new Vector2(-0.58937817f, 0.32520512f), new Vector2(0.01893139f, -0.97609764f), new Vector2(0.07009045f, 0.20484708f),
+            new Vector2(-0.72564809f, -0.14251264f), new Vector2(0.35825865f, -0.41051887f), new Vector2(-0.32152293f, 0.83276528f), new Vector2(-0.26027716f, -0.32269305f),
+            new Vector2(0.80983534f, -0.12665594f), new Vector2(0.64171823f, 0.10036290f), new Vector2(-0.60278955f, 0.74734179f), new Vector2(-0.11911759f, -0.30852229f),
+            new Vector2(0.51327745f, 0.58815071f), new Vector2(-0.58824189f, 0.11552694f), new Vector2(0.30010940f, -0.87710282f), new Vector2(0.00938779f, 0.48403189f),
+            new Vector2(-0.75031560f, -0.41400664f), new Vector2(0.59586694f, -0.35960754f), new Vector2(0.91846328f, 0.37523354f), new Vector2(-0.06986150f, 0.05414675f)
         };
 
         public static Vector2 Halton_Specialized(uint index)
