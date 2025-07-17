@@ -14,17 +14,15 @@ float4 _Jitter; // xy: jitter
 
 float4 TAAFrag_AABBClamp(Varyings IN) : SV_TARGET
 {
+    // ------------------------- Get closest motion vector -------------------------
+
+    float depth;
+    float2 velocityPixelCoord = GetClosestDepthPixelCoord(_CameraDepthTexture, IN.positionHCS.xy, depth);
+    float2 velocity = LOAD_TEXTURE2D_LOD(_CameraMotionVectorTexture, velocityPixelCoord, 0).rg;
+    
     // ------------------------- Filter Resampled History -------------------------
 
-    // float2 velocityPixelCoord = GetClosestDepthPixelCoord(_CameraDepthTexture, IN.positionHCS.xy);
-    // float2 velocity = LOAD_TEXTURE2D_LOD(_CameraMotionVectorTexture, velocityPixelCoord, 0).rg;
-    float2 velocity = LOAD_TEXTURE2D_LOD(_CameraMotionVectorTexture, IN.positionHCS.xy, 0).rg;
-
-    // float3 history = LOAD_TEXTURE2D_LOD(_TAAHistory, IN.positionHCS.xy - _CameraBufferSize.zw * velocity, 0).xyz;
-    // float3 history = SAMPLE_TEXTURE2D_LOD(_TAAHistory, sampler_LinearClamp, IN.uv - velocity, 0).xyz;
-    // float3 history = SampleHistoryLinear(_TAAHistory, IN.uv - velocity);
-
-    float3 history = SampleHistoryBicubic(_TAAHistory, IN.uv - velocity);
+    float3 history = SampleHistory(_TAAHistory, IN.uv - velocity);
 
     // ------------------------- Get Neighbourhood Samples -------------------------
 
@@ -47,27 +45,28 @@ float4 TAAFrag_AABBClamp(Varyings IN) : SV_TARGET
 
     float3 clampedHistory = NeighborhoodAABBClamp(samples, history);
 
+    // ------------------------- Adaptive Blending Factor -------------------------
+
+    
+
     // ------------------------- Exponential Blending -------------------------
     
     float3 color = LumaExponentialAccumulation(clampedHistory, samples.filteredM, _TAAParams.x);
-    // float3 color = lerp(samples.filteredM, history, _TAAParams.x);
     color = OutputColor(color);
     return float4(color, 1.0);
 }
 
 float4 TAAFrag_ClipToAABBCenter(Varyings IN) : SV_TARGET
 {
+    // ------------------------- Get closest motion vector -------------------------
+
+    float depth;
+    float2 velocityPixelCoord = GetClosestDepthPixelCoord(_CameraDepthTexture, IN.positionHCS.xy, depth);
+    float2 velocity = LOAD_TEXTURE2D_LOD(_CameraMotionVectorTexture, velocityPixelCoord, 0).rg;
+
     // ------------------------- Filter Resampled History -------------------------
 
-    // float2 velocityPixelCoord = GetClosestDepthPixelCoord(_CameraDepthTexture, IN.positionHCS.xy);
-    // float2 velocity = LOAD_TEXTURE2D_LOD(_CameraMotionVectorTexture, velocityPixelCoord, 0).rg;
-    float2 velocity = LOAD_TEXTURE2D_LOD(_CameraMotionVectorTexture, IN.positionHCS.xy, 0).rg;
-
-    // float3 history = LOAD_TEXTURE2D_LOD(_TAAHistory, IN.positionHCS.xy - _CameraBufferSize.zw * velocity, 0).xyz;
-    // float3 history = SAMPLE_TEXTURE2D_LOD(_TAAHistory, sampler_LinearClamp, IN.uv - velocity, 0).xyz;
-    // float3 history = SampleHistoryLinear(_TAAHistory, IN.uv - velocity);
-
-    float3 history = SampleHistoryBicubic(_TAAHistory, IN.uv - velocity);
+    float3 history = SampleHistory(_TAAHistory, IN.uv - velocity);
 
     // ------------------------- Get Neighbourhood Samples -------------------------
 
@@ -90,27 +89,28 @@ float4 TAAFrag_ClipToAABBCenter(Varyings IN) : SV_TARGET
 
     float3 clampedHistory = NeighborhoodClipToAABBCenter(samples, history);
 
+    // ------------------------- Adaptive Blending Factor -------------------------
+
+    
+
     // ------------------------- Exponential Blending -------------------------
     
     float3 color = LumaExponentialAccumulation(clampedHistory, samples.filteredM, _TAAParams.x);
-    // float3 color = lerp(samples.filteredM, history, _TAAParams.x);
     color = OutputColor(color);
     return float4(color, 1.0);
 }
 
 float4 TAAFrag_ClipToFiltered(Varyings IN) : SV_TARGET
 {
+    // ------------------------- Get closest motion vector -------------------------
+
+    float depth;
+    float2 velocityPixelCoord = GetClosestDepthPixelCoord(_CameraDepthTexture, IN.positionHCS.xy, depth);
+    float2 velocity = LOAD_TEXTURE2D_LOD(_CameraMotionVectorTexture, velocityPixelCoord, 0).rg;
+
     // ------------------------- Filter Resampled History -------------------------
 
-    float2 velocityPixelCoord = GetClosestDepthPixelCoord(_CameraDepthTexture, IN.positionHCS.xy);
-    float2 velocity = LOAD_TEXTURE2D_LOD(_CameraMotionVectorTexture, velocityPixelCoord, 0).rg;
-    // float2 velocity = LOAD_TEXTURE2D_LOD(_CameraMotionVectorTexture, IN.positionHCS.xy, 0).rg;
-
-    // float3 history = LOAD_TEXTURE2D_LOD(_TAAHistory, IN.positionHCS.xy - _CameraBufferSize.zw * velocity, 0).xyz;
-    // float3 history = SAMPLE_TEXTURE2D_LOD(_TAAHistory, sampler_LinearClamp, IN.uv - velocity, 0).xyz;
-    // float3 history = SampleHistoryLinear(_TAAHistory, IN.uv - velocity);
-
-    float3 history = SampleHistoryBicubic(_TAAHistory, IN.uv - velocity);
+    float3 history = SampleHistory(_TAAHistory, IN.uv - velocity);
 
     // ------------------------- Get Neighbourhood Samples -------------------------
 
@@ -142,13 +142,15 @@ float4 TAAFrag_ClipToFiltered(Varyings IN) : SV_TARGET
     //
     // //TODO: 根据深度增加 blendFactor
     // //TODO：根据 history 和 current 的差值减少 blendFactor
-    float depth = LoadOffset(_CameraDepthTexture, IN.positionHCS.xy, int2(0, 0)).x;
-    float blendFactor = lerp(_TAAParams.x, 0.975, (1.0 - depth));
+    // if (all(velocity) == 0) clampedHistory = history;
+    float velocitySqr = dot(velocity, velocity);
+    float blendFactor = lerp(_TAAParams.x + 0.025, 0, saturate(velocitySqr));
+    blendFactor = depth == 0 ? 0 : lerp(blendFactor, 0.975, sqrt(1.0 - depth));
     
 
     // ------------------------- Exponential Blending -------------------------
-    float3 color = LumaExponentialAccumulation(clampedHistory, samples.filteredM, blendFactor);
-    // float3 color = lerp(samples.filteredM, history, _TAAParams.x);
+    
+    float3 color = LumaExponentialAccumulation(clampedHistory, samples.filteredM, _TAAParams.x);
     color = OutputColor(color);
     return float4(color, 1.0);
 }

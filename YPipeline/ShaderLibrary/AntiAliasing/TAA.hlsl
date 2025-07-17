@@ -64,6 +64,36 @@ float3 OutputColor(float3 color)
 }
 
 // ----------------------------------------------------------------------------------------------------
+// Closest Velocity
+// ----------------------------------------------------------------------------------------------------
+
+float2 GetClosestDepthPixelCoord(TEXTURE2D(depthTex), int2 pixelCoord, out float depth)
+{
+    float M = LoadOffset(depthTex, pixelCoord, int2(0, 0)).x;
+    float N = LoadOffset(depthTex, pixelCoord, int2(0, 1)).x;
+    float E = LoadOffset(depthTex, pixelCoord, int2(1, 0)).x;
+    float S = LoadOffset(depthTex, pixelCoord, int2(0, -1)).x;
+    float W = LoadOffset(depthTex, pixelCoord, int2(-1, 0)).x;
+    float NW = LoadOffset(depthTex, pixelCoord, int2(-1, 1)).x;
+    float NE = LoadOffset(depthTex, pixelCoord, int2(1, 1)).x;
+    float SW = LoadOffset(depthTex, pixelCoord, int2(-1, -1)).x;
+    float SE = LoadOffset(depthTex, pixelCoord, int2(1, -1)).x;
+
+    float3 offset = float3(0, 0, M);
+    offset = lerp(offset, float3(0, 1, N), COMPARE_DEVICE_DEPTH_CLOSER(N, offset.z));
+    offset = lerp(offset, float3(1, 0, E), COMPARE_DEVICE_DEPTH_CLOSER(E, offset.z));
+    offset = lerp(offset, float3(0, -1, S), COMPARE_DEVICE_DEPTH_CLOSER(S, offset.z));
+    offset = lerp(offset, float3(-1, 0, W), COMPARE_DEVICE_DEPTH_CLOSER(W, offset.z));
+    offset = lerp(offset, float3(-1, 1, NW), COMPARE_DEVICE_DEPTH_CLOSER(NW, offset.z));
+    offset = lerp(offset, float3(1, 1, NE), COMPARE_DEVICE_DEPTH_CLOSER(NE, offset.z));
+    offset = lerp(offset, float3(-1, -1, SW), COMPARE_DEVICE_DEPTH_CLOSER(SW, offset.z));
+    offset = lerp(offset, float3(1, -1, SE), COMPARE_DEVICE_DEPTH_CLOSER(SE, offset.z));
+
+    depth = offset.z;
+    return pixelCoord + offset.xy;
+}
+
+// ----------------------------------------------------------------------------------------------------
 // History Filter
 // ----------------------------------------------------------------------------------------------------
 
@@ -123,6 +153,15 @@ float3 SampleHistoryBicubic(TEXTURE2D(tex), float2 uv)
     float3 filteredVal = historyFiltered * rcp(weightSum);
 
     return clamp(filteredVal, minHistory, maxHistory);
+}
+
+float3 SampleHistory(TEXTURE2D(tex), float2 uv)
+{
+    #if _TAA_HISTORY_FILTER
+    return SampleHistoryBicubic(tex, uv);
+    #else
+    return SampleHistoryLinear(tex, uv);
+    #endif
 }
 
 
@@ -331,33 +370,10 @@ float3 NeighborhoodClipToFiltered(in NeighbourhoodSamples samples, float3 histor
 }
 
 // ----------------------------------------------------------------------------------------------------
-// Velocity Rejection
+// Adaptive Blending Factor
 // ----------------------------------------------------------------------------------------------------
 
-float2 GetClosestDepthPixelCoord(TEXTURE2D(depthTex), int2 pixelCoord)
-{
-    float M = LoadOffset(depthTex, pixelCoord, int2(0, 0)).x;
-    float N = LoadOffset(depthTex, pixelCoord, int2(0, 1)).x;
-    float E = LoadOffset(depthTex, pixelCoord, int2(1, 0)).x;
-    float S = LoadOffset(depthTex, pixelCoord, int2(0, -1)).x;
-    float W = LoadOffset(depthTex, pixelCoord, int2(-1, 0)).x;
-    float NW = LoadOffset(depthTex, pixelCoord, int2(-1, 1)).x;
-    float NE = LoadOffset(depthTex, pixelCoord, int2(1, 1)).x;
-    float SW = LoadOffset(depthTex, pixelCoord, int2(-1, -1)).x;
-    float SE = LoadOffset(depthTex, pixelCoord, int2(1, -1)).x;
 
-    float3 offset = float3(0, 0, M);
-    offset = lerp(offset, float3(0, 1, N), COMPARE_DEVICE_DEPTH_CLOSER(N, offset.z));
-    offset = lerp(offset, float3(1, 0, E), COMPARE_DEVICE_DEPTH_CLOSER(E, offset.z));
-    offset = lerp(offset, float3(0, -1, S), COMPARE_DEVICE_DEPTH_CLOSER(S, offset.z));
-    offset = lerp(offset, float3(-1, 0, W), COMPARE_DEVICE_DEPTH_CLOSER(W, offset.z));
-    offset = lerp(offset, float3(-1, 1, NW), COMPARE_DEVICE_DEPTH_CLOSER(NW, offset.z));
-    offset = lerp(offset, float3(1, 1, NE), COMPARE_DEVICE_DEPTH_CLOSER(NE, offset.z));
-    offset = lerp(offset, float3(-1, -1, SW), COMPARE_DEVICE_DEPTH_CLOSER(SW, offset.z));
-    offset = lerp(offset, float3(1, -1, SE), COMPARE_DEVICE_DEPTH_CLOSER(SE, offset.z));
-
-    return pixelCoord + offset.xy;
-}
 
 
 // ----------------------------------------------------------------------------------------------------

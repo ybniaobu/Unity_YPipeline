@@ -234,6 +234,7 @@ namespace YPipeline
         public const string k_TAAYCOCG = "_TAA_YCOCG";
         public const string k_TAAVariance = "_TAA_VARIANCE";
         public const string k_TAACurrentFilter = "_TAA_CURRENT_FILTER";
+        public const string k_TAAHistoryFilter = "_TAA_HISTORY_FILTER";
         
         public const string k_BloomBicubicUpsampling = "_BLOOM_BICUBIC_UPSAMPLING";
         

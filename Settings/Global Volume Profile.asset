@@ -73,13 +73,13 @@ MonoBehaviour:
     m_Value: 0.5
   exposure:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 2
   saturation:
     m_OverrideState: 1
-    m_Value: 1.1
+    m_Value: 1
   contrast:
     m_OverrideState: 1
-    m_Value: 1.1
+    m_Value: 1
   master:
     m_OverrideState: 0
     m_Value:

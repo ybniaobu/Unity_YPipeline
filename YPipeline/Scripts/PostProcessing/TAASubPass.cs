@@ -23,8 +23,10 @@ namespace YPipeline
             // Shader Keywords Related
             public bool is3X3;
             public bool isYCoCg;
-            public CurrentFilter currentFilter;
+            public bool isVarianceAABB;
             public ColorRectifyMode rectifyMode;
+            public CurrentFilter currentFilter;
+            public HistoryFilter historyFilter;
         }
         
         private TAA m_TAA;
@@ -66,8 +68,10 @@ namespace YPipeline
 
                     passData.is3X3 = m_TAA.neighborhood.value == TAANeighborhood._3X3;
                     passData.isYCoCg = m_TAA.colorSpace.value == TAAColorSpace.YCoCg;
+                    passData.isVarianceAABB = m_TAA.AABB.value == AABBMode.Variance;
                     passData.rectifyMode = m_TAA.colorRectifyMode.value;
                     passData.currentFilter = m_TAA.currentFilter.value;
+                    passData.historyFilter = m_TAA.historyFilter.value;
                     
                     // Import TAA history
                     Vector2Int bufferSize = data.BufferSize;
@@ -106,7 +110,9 @@ namespace YPipeline
                         
                         CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAASample3X3, data.is3X3);
                         CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAAYCOCG, data.isYCoCg);
+                        CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAAVariance, data.isVarianceAABB);
                         CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAACurrentFilter, data.currentFilter == CurrentFilter.Gaussian);
+                        CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAAHistoryFilter, data.historyFilter == HistoryFilter.CatmullRomBicubic);
                         
                         data.material.SetTexture(YPipelineShaderIDs.k_TAAHistoryID, data.taaHistory);
                         
