@@ -47,11 +47,15 @@ float4 TAAFrag_AABBClamp(Varyings IN) : SV_TARGET
 
     // ------------------------- Adaptive Blending Factor -------------------------
 
+    float blendFactor = depth == 0 ? 0 : lerp(_TAAParams.x + 0.025, 0.975, sqrt(1.0 - depth));
     
+    float velocityLength = length(velocity);
+    if (velocityLength < HALF_MIN) clampedHistory = lerp(clampedHistory, history, blendFactor);
+    blendFactor = lerp(blendFactor, 0, saturate(velocityLength * velocityLength / 2));
 
     // ------------------------- Exponential Blending -------------------------
     
-    float3 color = LumaExponentialAccumulation(clampedHistory, samples.filteredM, _TAAParams.x);
+    float3 color = LumaExponentialAccumulation(clampedHistory, samples.filteredM, blendFactor);
     color = OutputColor(color);
     return float4(color, 1.0);
 }
@@ -91,11 +95,15 @@ float4 TAAFrag_ClipToAABBCenter(Varyings IN) : SV_TARGET
 
     // ------------------------- Adaptive Blending Factor -------------------------
 
+    float blendFactor = depth == 0 ? 0 : lerp(_TAAParams.x + 0.025, 0.975, sqrt(1.0 - depth));
     
+    float velocityLength = length(velocity);
+    if (velocityLength < HALF_MIN) clampedHistory = lerp(clampedHistory, history, blendFactor);
+    blendFactor = lerp(blendFactor, 0, saturate(velocityLength * velocityLength / 2));
 
     // ------------------------- Exponential Blending -------------------------
     
-    float3 color = LumaExponentialAccumulation(clampedHistory, samples.filteredM, _TAAParams.x);
+    float3 color = LumaExponentialAccumulation(clampedHistory, samples.filteredM, blendFactor);
     color = OutputColor(color);
     return float4(color, 1.0);
 }
@@ -142,15 +150,19 @@ float4 TAAFrag_ClipToFiltered(Varyings IN) : SV_TARGET
     //
     // //TODO: 根据深度增加 blendFactor
     // //TODO：根据 history 和 current 的差值减少 blendFactor
-    // if (all(velocity) == 0) clampedHistory = history;
-    float velocitySqr = dot(velocity, velocity);
-    float blendFactor = lerp(_TAAParams.x + 0.025, 0, saturate(velocitySqr));
-    blendFactor = depth == 0 ? 0 : lerp(blendFactor, 0.975, sqrt(1.0 - depth));
+
+    
+    float blendFactor = lerp(_TAAParams.x + 0.025, 0.975, (1.0 - depth));
+    
+    float velocityFactor = saturate(sqrt(length(velocity)));
+    if (velocityFactor == 0.0 && depth != 0) clampedHistory = history;
+    blendFactor = lerp(blendFactor, 0, velocityFactor);
     
 
     // ------------------------- Exponential Blending -------------------------
     
-    float3 color = LumaExponentialAccumulation(clampedHistory, samples.filteredM, _TAAParams.x);
+    float3 color = LumaExponentialAccumulation(clampedHistory, samples.filteredM, blendFactor);
+    
     color = OutputColor(color);
     return float4(color, 1.0);
 }

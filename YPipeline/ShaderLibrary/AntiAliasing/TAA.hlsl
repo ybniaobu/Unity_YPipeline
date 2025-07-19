@@ -74,20 +74,24 @@ float2 GetClosestDepthPixelCoord(TEXTURE2D(depthTex), int2 pixelCoord, out float
     float E = LoadOffset(depthTex, pixelCoord, int2(1, 0)).x;
     float S = LoadOffset(depthTex, pixelCoord, int2(0, -1)).x;
     float W = LoadOffset(depthTex, pixelCoord, int2(-1, 0)).x;
+    #if _TAA_SAMPLE_3X3
     float NW = LoadOffset(depthTex, pixelCoord, int2(-1, 1)).x;
     float NE = LoadOffset(depthTex, pixelCoord, int2(1, 1)).x;
     float SW = LoadOffset(depthTex, pixelCoord, int2(-1, -1)).x;
     float SE = LoadOffset(depthTex, pixelCoord, int2(1, -1)).x;
+    #endif
 
     float3 offset = float3(0, 0, M);
     offset = lerp(offset, float3(0, 1, N), COMPARE_DEVICE_DEPTH_CLOSER(N, offset.z));
     offset = lerp(offset, float3(1, 0, E), COMPARE_DEVICE_DEPTH_CLOSER(E, offset.z));
     offset = lerp(offset, float3(0, -1, S), COMPARE_DEVICE_DEPTH_CLOSER(S, offset.z));
     offset = lerp(offset, float3(-1, 0, W), COMPARE_DEVICE_DEPTH_CLOSER(W, offset.z));
+    #if _TAA_SAMPLE_3X3
     offset = lerp(offset, float3(-1, 1, NW), COMPARE_DEVICE_DEPTH_CLOSER(NW, offset.z));
     offset = lerp(offset, float3(1, 1, NE), COMPARE_DEVICE_DEPTH_CLOSER(NE, offset.z));
     offset = lerp(offset, float3(-1, -1, SW), COMPARE_DEVICE_DEPTH_CLOSER(SW, offset.z));
     offset = lerp(offset, float3(1, -1, SE), COMPARE_DEVICE_DEPTH_CLOSER(SE, offset.z));
+    #endif
 
     depth = offset.z;
     return pixelCoord + offset.xy;
@@ -247,10 +251,10 @@ float3 GaussianFilterMiddleColor(in NeighbourhoodSamples samples)
     // const float weights[9] = { 1.0, 0.4578, 0.4578, 0.4578, 0.4578, 0.2097, 0.2097, 0.2097, 0.2097 };
     
     // sigma = 0.6
-    const float weights[9] = { 1.0, 0.2493, 0.2493, 0.2493, 0.2493, 0.0625, 0.0625, 0.0625, 0.0625 };
+    // const float weights[9] = { 1.0, 0.2493, 0.2493, 0.2493, 0.2493, 0.0625, 0.0625, 0.0625, 0.0625 };
 
     // sigma = 0.5
-    // const float weights[9] = { 1.0, 0.1353, 0.1353, 0.1353, 0.1353, 0.0183, 0.0183, 0.0183, 0.0183 };
+    const float weights[9] = { 1.0, 0.1353, 0.1353, 0.1353, 0.1353, 0.0183, 0.0183, 0.0183, 0.0183 };
     float weightSum = rcp(GetLuma(samples.M) + 1.0) * 1.0;
     float3 filtered = weightSum * samples.M;
 

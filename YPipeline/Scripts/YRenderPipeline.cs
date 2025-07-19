@@ -37,6 +37,7 @@ namespace YPipeline
 #if UNITY_EDITOR
             m_SceneCameraRenderer = CameraRenderer.Create<SceneCameraRenderer>(ref m_Data);
             InitializeLightmapper();
+            EditorPrefs.SetInt("SceneViewFPS", 30);
 #endif
             
 #if UNITY_EDITOR || DEVELOPMENT_BUILD

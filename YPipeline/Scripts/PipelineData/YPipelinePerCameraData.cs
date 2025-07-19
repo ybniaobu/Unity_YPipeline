@@ -5,8 +5,6 @@ namespace YPipeline
 {
     public class YPipelinePerCameraData
     {
-        public bool isFirstFrame;
-        
         // ----------------------------------------------------------------------------------------------------
         // Matrices
         // ----------------------------------------------------------------------------------------------------
@@ -20,7 +18,7 @@ namespace YPipeline
 
         public void SetPerCameraDataMatrices(Matrix4x4 viewMatrix, Matrix4x4 projectionMatrix, Matrix4x4 jitteredProjectionMatrix)
         {
-            if (isFirstFrame)
+            if (Time.frameCount == 1)
             {
                 this.previousViewMatrix = viewMatrix;
                 this.previousProjectionMatrix = projectionMatrix;
@@ -36,7 +34,6 @@ namespace YPipeline
             this.viewMatrix = viewMatrix;
             this.projectionMatrix = projectionMatrix;
             this.jitteredProjectionMatrix = jitteredProjectionMatrix;
-            isFirstFrame = false;
         }
         
         // ----------------------------------------------------------------------------------------------------
@@ -54,13 +51,17 @@ namespace YPipeline
             }
             return m_TAAHistory;
         }
+
+        /// <summary>
+        /// Tracks which frame TAA History was last updated
+        /// </summary>
+        public int TAAHistoryLastUpdateFrame { get; set; }
         
         // ----------------------------------------------------------------------------------------------------
         // 
         // ----------------------------------------------------------------------------------------------------
         public YPipelinePerCameraData()
         {
-            isFirstFrame = true;
             m_TAAHistory?.Release();
             m_TAAHistory = null;
         }

@@ -13,7 +13,6 @@ namespace YPipeline
             public bool isFirstFrame;
             
             public TextureHandle colorAttachment;
-            public TextureHandle motionVectorTexture;
             public TextureHandle taaTarget;
             public TextureHandle taaHistory;
             
@@ -54,14 +53,16 @@ namespace YPipeline
             {
                 var stack = VolumeManager.instance.stack;
                 m_TAA = stack.GetComponent<TAA>();
+                YPipelineCamera yCamera = data.camera.GetYPipelineCamera();
                 
                 using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<TAAPassData>("TAA", out var passData))
                 {
-                    YPipelineCamera yCamera = data.camera.GetYPipelineCamera();
-                    passData.colorAttachment = builder.UseColorBuffer(data.CameraColorAttachment, 0);
-                    passData.motionVectorTexture = builder.ReadTexture(data.CameraMotionVectorTexture);
                     passData.material = TAAMaterial;
-                    passData.isFirstFrame = yCamera.perCameraData.isFirstFrame;
+                    passData.isFirstFrame = Time.frameCount == 1;
+                    
+                    passData.colorAttachment = builder.ReadTexture(data.CameraColorAttachment);
+                    builder.ReadTexture(data.CameraMotionVectorTexture);
+                    builder.ReadTexture(data.CameraDepthTexture);
                     
                     // Record shader variables & keywords
                     passData.taaParams = new Vector4(m_TAA.historyBlendFactor.value, m_TAA.varianceCriticalValue.value);
@@ -114,10 +115,10 @@ namespace YPipeline
                         CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAACurrentFilter, data.currentFilter == CurrentFilter.Gaussian);
                         CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAAHistoryFilter, data.historyFilter == HistoryFilter.CatmullRomBicubic);
                         
+                        if (data.isFirstFrame) BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.taaHistory);
                         data.material.SetTexture(YPipelineShaderIDs.k_TAAHistoryID, data.taaHistory);
                         
-                        if (data.isFirstFrame) BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.taaTarget);
-                        else BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.taaTarget, data.material, (int) passData.rectifyMode);
+                        BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.taaTarget, data.material, (int) passData.rectifyMode);
                         context.cmd.EndSample("TAABlendHistory");
                         
                         context.cmd.BeginSample("TAACopyHistory");
@@ -130,6 +131,7 @@ namespace YPipeline
                         context.cmd.Clear();
                     });
                 }
+                yCamera.perCameraData.TAAHistoryLastUpdateFrame = Time.frameCount;
             }
         }
     }
