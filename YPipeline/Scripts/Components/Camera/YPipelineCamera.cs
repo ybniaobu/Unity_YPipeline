@@ -42,10 +42,12 @@ namespace YPipeline
         public void OnDisable()
         {
             perCameraData?.Dispose();
+            perCameraData = null;
         }
 
         public void OnDestroy()
         {
+            perCameraData?.Dispose();
             perCameraData = null;
         }
     }

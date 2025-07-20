@@ -10,6 +10,7 @@ namespace YPipeline
         private class TAAPassData
         {
             public Material material;
+            public bool isTAAHistoryReset;
             public bool isFirstFrame;
             
             public TextureHandle colorAttachment;
@@ -87,6 +88,8 @@ namespace YPipeline
                     };
                     
                     RTHandle taaHistory = yCamera.perCameraData.GetTAAHistory(ref taaHistoryDesc);
+                    passData.isTAAHistoryReset = yCamera.perCameraData.IsTAAHistoryReset;
+                    yCamera.perCameraData.IsTAAHistoryReset = false;
                     data.TAAHistory = data.renderGraph.ImportTexture(taaHistory);
                     passData.taaHistory = builder.ReadWriteTexture(data.TAAHistory);
 
@@ -115,10 +118,10 @@ namespace YPipeline
                         CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAACurrentFilter, data.currentFilter == CurrentFilter.Gaussian);
                         CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAAHistoryFilter, data.historyFilter == HistoryFilter.CatmullRomBicubic);
                         
-                        if (data.isFirstFrame) BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.taaHistory);
+                        if (data.isFirstFrame || data.isTAAHistoryReset) BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.taaHistory);
                         data.material.SetTexture(YPipelineShaderIDs.k_TAAHistoryID, data.taaHistory);
                         
-                        BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.taaTarget, data.material, (int) passData.rectifyMode);
+                        BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.taaTarget, data.material, (int) data.rectifyMode);
                         context.cmd.EndSample("TAABlendHistory");
                         
                         context.cmd.BeginSample("TAACopyHistory");
@@ -131,7 +134,6 @@ namespace YPipeline
                         context.cmd.Clear();
                     });
                 }
-                yCamera.perCameraData.TAAHistoryLastUpdateFrame = Time.frameCount;
             }
         }
     }

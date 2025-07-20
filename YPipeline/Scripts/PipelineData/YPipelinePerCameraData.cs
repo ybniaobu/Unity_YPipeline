@@ -46,16 +46,14 @@ namespace YPipeline
         {
             if (m_TAAHistory == null || m_TAAHistory.rt.width != desc.width || m_TAAHistory.rt.height != desc.height)
             {
+                IsTAAHistoryReset = true;
                 m_TAAHistory?.Release();
                 m_TAAHistory = RTHandles.Alloc(desc, FilterMode.Bilinear, TextureWrapMode.Clamp, anisoLevel: 0, name: name);
             }
             return m_TAAHistory;
         }
-
-        /// <summary>
-        /// Tracks which frame TAA History was last updated
-        /// </summary>
-        public int TAAHistoryLastUpdateFrame { get; set; }
+        
+        public bool IsTAAHistoryReset { get; set; }
         
         // ----------------------------------------------------------------------------------------------------
         // 
