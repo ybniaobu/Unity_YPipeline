@@ -67,7 +67,7 @@ float3 OutputColor(float3 color)
 // Closest Velocity
 // ----------------------------------------------------------------------------------------------------
 
-float2 GetClosestDepthPixelCoord(TEXTURE2D(depthTex), int2 pixelCoord, out float depth)
+float2 GetClosestDepthPixelCoord(TEXTURE2D(depthTex), float2 pixelCoord, out float depth)
 {
     float M = LoadOffset(depthTex, pixelCoord, int2(0, 0)).x;
     float N = LoadOffset(depthTex, pixelCoord, int2(0, 1)).x;
@@ -130,11 +130,11 @@ float3 SampleHistoryBicubic(TEXTURE2D(tex), float2 uv)
     float2 tc3 = _CameraBufferSize.xy   * (tc1 + 2.0);
     float2 tc12 = _CameraBufferSize.xy  * (tc1 + w2 / w12);
 
-    float3 s0 = SampleHistoryLinear(tex, float2(tc12.x, tc0.y));
-    float3 s1 = SampleHistoryLinear(tex, float2(tc0.x, tc12.y));
-    float3 s2 = SampleHistoryLinear(tex, float2(tc12.x, tc12.y));
-    float3 s3 = SampleHistoryLinear(tex, float2(tc3.x, tc12.y));
-    float3 s4 = SampleHistoryLinear(tex, float2(tc12.x, tc3.y));
+    float3 s0 = SAMPLE_TEXTURE2D_LOD(tex, sampler_LinearClamp, float2(tc12.x, tc0.y), 0).xyz;
+    float3 s1 = SAMPLE_TEXTURE2D_LOD(tex, sampler_LinearClamp, float2(tc0.x, tc12.y), 0).xyz;
+    float3 s2 = SAMPLE_TEXTURE2D_LOD(tex, sampler_LinearClamp, float2(tc12.x, tc12.y), 0).xyz;
+    float3 s3 = SAMPLE_TEXTURE2D_LOD(tex, sampler_LinearClamp, float2(tc3.x, tc12.y), 0).xyz;
+    float3 s4 = SAMPLE_TEXTURE2D_LOD(tex, sampler_LinearClamp, float2(tc12.x, tc3.y), 0).xyz;
 
     float cw0 = (w12.x * w0.y);
     float cw1 = (w0.x * w12.y);
@@ -156,7 +156,11 @@ float3 SampleHistoryBicubic(TEXTURE2D(tex), float2 uv)
 
     float3 filteredVal = historyFiltered * rcp(weightSum);
 
+    #if _TAA_YCOCG
+    return RGB2YCoCg(clamp(filteredVal, minHistory, maxHistory));
+    #else
     return clamp(filteredVal, minHistory, maxHistory);
+    #endif
 }
 
 float3 SampleHistory(TEXTURE2D(tex), float2 uv)

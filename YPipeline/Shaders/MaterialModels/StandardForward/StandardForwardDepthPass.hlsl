@@ -1,7 +1,7 @@
 ﻿#ifndef YPIPELINE_DEPTH_PASS_INCLUDED
 #define YPIPELINE_DEPTH_PASS_INCLUDED
 
-#include "../../ShaderLibrary/Core/YPipelineCore.hlsl"
+#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
 
 CBUFFER_START (UnityPerMaterial)
     float4 _BaseColor;

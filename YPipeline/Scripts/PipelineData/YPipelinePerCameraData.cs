@@ -5,6 +5,8 @@ namespace YPipeline
 {
     public class YPipelinePerCameraData
     {
+        private bool m_IsPerCameraDataReset;
+        
         // ----------------------------------------------------------------------------------------------------
         // Matrices
         // ----------------------------------------------------------------------------------------------------
@@ -18,11 +20,12 @@ namespace YPipeline
 
         public void SetPerCameraDataMatrices(Matrix4x4 viewMatrix, Matrix4x4 projectionMatrix, Matrix4x4 jitteredProjectionMatrix)
         {
-            if (Time.frameCount == 1)
+            if (Time.frameCount == 1 || m_IsPerCameraDataReset)
             {
                 this.previousViewMatrix = viewMatrix;
                 this.previousProjectionMatrix = projectionMatrix;
                 this.previousJitteredProjectionMatrix = jitteredProjectionMatrix;
+                m_IsPerCameraDataReset = false;
             }
             else
             {
@@ -60,6 +63,7 @@ namespace YPipeline
         // ----------------------------------------------------------------------------------------------------
         public YPipelinePerCameraData()
         {
+            m_IsPerCameraDataReset = true;
             m_TAAHistory?.Release();
             m_TAAHistory = null;
         }

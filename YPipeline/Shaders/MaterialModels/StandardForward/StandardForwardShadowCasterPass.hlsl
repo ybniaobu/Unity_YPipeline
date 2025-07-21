@@ -1,21 +1,30 @@
 ﻿#ifndef YPIPELINE_SHADOW_CASTER_PASS_INCLUDED
 #define YPIPELINE_SHADOW_CASTER_PASS_INCLUDED
 
-#include "../../ShaderLibrary/Core/YPipelineCore.hlsl"
+#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+
+CBUFFER_START (UnityPerMaterial)
+    float4 _BaseColor;
+    float4 _BaseTex_ST;
+    float4 _EmissionColor;
+    float _Specular;
+    float _Roughness;
+    float _Metallic;
+    float _NormalIntensity;
+    float _Cutoff;
+CBUFFER_END
+
+Texture2D _BaseTex;             SamplerState sampler_Trilinear_Repeat_BaseTex;
+Texture2D _EmissionTex;
+Texture2D _RoughnessTex;
+Texture2D _MetallicTex;
+Texture2D _NormalTex;
+Texture2D _AOTex;
+Texture2D _OpacityTex;
 
 CBUFFER_START(PerShadowDraw)
     float _ShadowPancaking;
 CBUFFER_END
-
-CBUFFER_START(UnityPerMaterial)
-    float4 _BaseColor;
-    float4 _BaseTex_ST;
-    float4 _EmissionColor;
-    float _Cutoff;
-CBUFFER_END
-
-Texture2D _BaseTex;     SamplerState sampler_Trilinear_Repeat_BaseTex;
-Texture2D _EmissionTex;
 
 struct Attributes
 {
@@ -48,10 +57,12 @@ Varyings ShadowCasterVert(Attributes IN)
 
 void ShadowCasterFrag(Varyings IN)
 {
-    float4 albedo = SAMPLE_TEXTURE2D(_BaseTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).rgba * _BaseColor.rgba;
-    
+    // ----------------------------------------------------------------------------------------------------
+    // Clipping
+    // ----------------------------------------------------------------------------------------------------
+    float alpha = SAMPLE_TEXTURE2D(_OpacityTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).r;
     #if defined(_CLIPPING)
-        clip(albedo.a - _Cutoff);
+        clip(alpha - _Cutoff);
     #endif
 }
 

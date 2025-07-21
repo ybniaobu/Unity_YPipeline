@@ -98,7 +98,7 @@ Shader "YPipeline/PBR/Standard Forward (Separated Texture)"
 
 			#pragma shader_feature_local_fragment _CLIPPING
 			
-			#include "../ShadowCasterPass.hlsl"
+			#include "StandardForwardShadowCasterPass.hlsl"
 			ENDHLSL
 		}
 

@@ -1,8 +1,8 @@
 ﻿#ifndef YPIPELINE_STANDARD_FORWARD_PASS_INCLUDED
 #define YPIPELINE_STANDARD_FORWARD_PASS_INCLUDED
 
-#include "../../ShaderLibrary/Core/YPipelineCore.hlsl"
-#include "../../ShaderLibrary/RenderingEquationLibrary.hlsl"
+#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+#include "../../../ShaderLibrary/RenderingEquationLibrary.hlsl"
 
 CBUFFER_START (UnityPerMaterial)
     float4 _BaseColor;

@@ -16,8 +16,8 @@ float4 TAAFrag_AABBClamp(Varyings IN) : SV_TARGET
 {
     // ------------------------- Get closest motion vector -------------------------
 
-    float depth;
-    float2 velocityPixelCoord = GetClosestDepthPixelCoord(_CameraDepthTexture, IN.positionHCS.xy, depth);
+    float closestDepth;
+    float2 velocityPixelCoord = GetClosestDepthPixelCoord(_CameraDepthTexture, IN.positionHCS.xy, closestDepth);
     float2 velocity = LOAD_TEXTURE2D_LOD(_CameraMotionVectorTexture, velocityPixelCoord, 0).rg;
     
     // ------------------------- Filter Resampled History -------------------------
@@ -47,7 +47,7 @@ float4 TAAFrag_AABBClamp(Varyings IN) : SV_TARGET
 
     // ------------------------- Adaptive Blending Factor -------------------------
 
-    float blendFactor = depth == 0 ? 0 : lerp(_TAAParams.x + 0.025, 0.975, sqrt(1.0 - depth));
+    float blendFactor = closestDepth == 0 ? 0 : lerp(_TAAParams.x + 0.025, 0.975, sqrt(1.0 - closestDepth));
     
     float velocityLength = length(velocity);
     if (velocityLength < HALF_MIN) clampedHistory = lerp(clampedHistory, history, blendFactor);
@@ -64,8 +64,8 @@ float4 TAAFrag_ClipToAABBCenter(Varyings IN) : SV_TARGET
 {
     // ------------------------- Get closest motion vector -------------------------
 
-    float depth;
-    float2 velocityPixelCoord = GetClosestDepthPixelCoord(_CameraDepthTexture, IN.positionHCS.xy, depth);
+    float closestDepth;
+    float2 velocityPixelCoord = GetClosestDepthPixelCoord(_CameraDepthTexture, IN.positionHCS.xy, closestDepth);
     float2 velocity = LOAD_TEXTURE2D_LOD(_CameraMotionVectorTexture, velocityPixelCoord, 0).rg;
 
     // ------------------------- Filter Resampled History -------------------------
@@ -95,7 +95,7 @@ float4 TAAFrag_ClipToAABBCenter(Varyings IN) : SV_TARGET
 
     // ------------------------- Adaptive Blending Factor -------------------------
 
-    float blendFactor = depth == 0 ? 0 : lerp(_TAAParams.x + 0.025, 0.975, sqrt(1.0 - depth));
+    float blendFactor = closestDepth == 0 ? 0 : lerp(_TAAParams.x + 0.025, 0.975, sqrt(1.0 - closestDepth));
     
     float velocityLength = length(velocity);
     if (velocityLength < HALF_MIN) clampedHistory = lerp(clampedHistory, history, blendFactor);
@@ -112,8 +112,8 @@ float4 TAAFrag_ClipToFiltered(Varyings IN) : SV_TARGET
 {
     // ------------------------- Get closest motion vector -------------------------
 
-    float depth;
-    float2 velocityPixelCoord = GetClosestDepthPixelCoord(_CameraDepthTexture, IN.positionHCS.xy, depth);
+    float closestDepth;
+    float2 velocityPixelCoord = GetClosestDepthPixelCoord(_CameraDepthTexture, IN.positionHCS.xy, closestDepth);
     float2 velocity = LOAD_TEXTURE2D_LOD(_CameraMotionVectorTexture, velocityPixelCoord, 0).rg;
 
     // ------------------------- Filter Resampled History -------------------------
@@ -152,11 +152,11 @@ float4 TAAFrag_ClipToFiltered(Varyings IN) : SV_TARGET
     // //TODO：根据 history 和 current 的差值减少 blendFactor
 
     
-    float blendFactor = lerp(_TAAParams.x + 0.025, 0.975, (1.0 - depth));
+    float blendFactor = lerp(_TAAParams.x, 0.95, (1.0 - closestDepth));
     
     float velocityFactor = saturate(sqrt(length(velocity)));
-    if (velocityFactor == 0.0 && depth != 0) clampedHistory = history;
-    blendFactor = lerp(blendFactor, 0, velocityFactor);
+    // if (velocityFactor == 0.0) clampedHistory = history;
+    blendFactor = closestDepth == 0 ? 0 : lerp(blendFactor, 0, velocityFactor);
     
 
     // ------------------------- Exponential Blending -------------------------

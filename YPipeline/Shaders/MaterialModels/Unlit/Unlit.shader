@@ -41,6 +41,8 @@ Shader "YPipeline/Unlit"
 
             #pragma shader_feature_local_fragment _CLIPPING
 
+            #pragma multi_compile _ LOD_FADE_CROSSFADE
+
             #pragma multi_compile_instancing
             
             #include "UnlitPass.hlsl"
@@ -63,8 +65,38 @@ Shader "YPipeline/Unlit"
 			#pragma fragment ShadowCasterFrag
 
 			#pragma shader_feature_local_fragment _CLIPPING
+
+			#pragma multi_compile _ LOD_FADE_CROSSFADE
+
+			#pragma multi_compile_instancing
 			
 			#include "UnlitShadowCasterPass.hlsl"
+			ENDHLSL
+		}
+
+		Pass
+		{
+			Name "Depth"
+			
+			Tags { "LightMode" = "Depth" }
+			
+			ZWrite On
+			ColorMask 0
+			Cull [_Cull]
+			
+			HLSLPROGRAM
+			#pragma target 4.5
+
+			#pragma vertex DepthVert
+			#pragma fragment DepthFrag
+			
+			#pragma shader_feature_local_fragment _CLIPPING
+
+			#pragma multi_compile _ LOD_FADE_CROSSFADE
+
+			#pragma multi_compile_instancing
+
+			#include "UnlitDepthPass.hlsl"
 			ENDHLSL
 		}
 
