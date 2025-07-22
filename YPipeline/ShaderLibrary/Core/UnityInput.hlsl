@@ -32,8 +32,14 @@ CBUFFER_START(UnityPerDraw)
     float4 unity_SHBb;
     float4 unity_SHC;
 
+    // Motion Vector
     float4x4 unity_MatrixPreviousM;
     float4x4 unity_MatrixPreviousMI;
+    // x : Use last frame positions (right now skinned meshes are the only objects that use this)
+    // y : Force No Motion
+    // z : Z bias value
+    // w : Camera only
+    float4 unity_MotionVectorsParams;
 CBUFFER_END
 
 // ----------------------------------------------------------------------------------------------------

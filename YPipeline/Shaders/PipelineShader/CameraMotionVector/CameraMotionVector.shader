@@ -15,6 +15,12 @@
         ZWrite Off
         Blend Off
         Cull Off
+        
+        Stencil
+        {
+            Ref 1
+            Comp NotEqual
+        }
 
         Pass
         {

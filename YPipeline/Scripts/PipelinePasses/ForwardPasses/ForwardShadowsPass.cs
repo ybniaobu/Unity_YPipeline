@@ -366,6 +366,7 @@ namespace YPipeline
                     filterMode = FilterMode.Bilinear,
                     isShadowMap = true,
                     clearBuffer = false,
+                    discardBuffer = true,
                     msaaSamples = MSAASamples.None,
                     name = "Spot Light Shadow Map"
                 };
@@ -416,6 +417,7 @@ namespace YPipeline
                     filterMode = FilterMode.Bilinear,
                     isShadowMap = true,
                     clearBuffer = false,
+                    discardBuffer = true,
                     msaaSamples = MSAASamples.None,
                     name = "Point Light Shadow Map"
                 };

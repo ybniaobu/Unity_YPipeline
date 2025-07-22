@@ -46,7 +46,7 @@ namespace YPipeline
         public TextureHandle CameraColorTexture { set; get; }
         public TextureHandle CameraDepthTexture { set; get; }
         
-        public TextureHandle CameraMotionVectorTexture { set; get; }
+        public TextureHandle MotionVectorTexture { set; get; }
         
         
         public TextureHandle TAATarget { set; get; }

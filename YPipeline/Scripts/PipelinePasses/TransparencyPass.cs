@@ -31,7 +31,7 @@ namespace YPipeline
             {
                 RendererListDesc transparencyRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_TransparencyShaderTagIds, data.cullingResults, data.camera)
                 {
-                    rendererConfiguration = PerObjectData.ReflectionProbes | PerObjectData.Lightmaps | PerObjectData.ShadowMask | PerObjectData.LightProbe | PerObjectData.OcclusionProbe,
+                    rendererConfiguration = PerObjectData.ReflectionProbes | PerObjectData.Lightmaps | PerObjectData.LightProbe,
                     renderQueueRange = RenderQueueRange.transparent,
                     sortingCriteria = SortingCriteria.CommonTransparent
                 };

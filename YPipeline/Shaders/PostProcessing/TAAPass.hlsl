@@ -6,7 +6,7 @@
 #include "../../ShaderLibrary/AntiAliasing/TAA.hlsl"
 
 TEXTURE2D(_CameraDepthTexture);
-TEXTURE2D(_CameraMotionVectorTexture);
+TEXTURE2D(_MotionVectorTexture);
 TEXTURE2D(_TAAHistory);
 
 float4 _TAAParams; // x: history blend factor, y: variance clipping critical value
@@ -18,7 +18,7 @@ float4 TAAFrag_AABBClamp(Varyings IN) : SV_TARGET
 
     float closestDepth;
     float2 velocityPixelCoord = GetClosestDepthPixelCoord(_CameraDepthTexture, IN.positionHCS.xy, closestDepth);
-    float2 velocity = LOAD_TEXTURE2D_LOD(_CameraMotionVectorTexture, velocityPixelCoord, 0).rg;
+    float2 velocity = LOAD_TEXTURE2D_LOD(_MotionVectorTexture, velocityPixelCoord, 0).rg;
     
     // ------------------------- Filter Resampled History -------------------------
 
@@ -66,7 +66,7 @@ float4 TAAFrag_ClipToAABBCenter(Varyings IN) : SV_TARGET
 
     float closestDepth;
     float2 velocityPixelCoord = GetClosestDepthPixelCoord(_CameraDepthTexture, IN.positionHCS.xy, closestDepth);
-    float2 velocity = LOAD_TEXTURE2D_LOD(_CameraMotionVectorTexture, velocityPixelCoord, 0).rg;
+    float2 velocity = LOAD_TEXTURE2D_LOD(_MotionVectorTexture, velocityPixelCoord, 0).rg;
 
     // ------------------------- Filter Resampled History -------------------------
 
@@ -114,7 +114,7 @@ float4 TAAFrag_ClipToFiltered(Varyings IN) : SV_TARGET
 
     float closestDepth;
     float2 velocityPixelCoord = GetClosestDepthPixelCoord(_CameraDepthTexture, IN.positionHCS.xy, closestDepth);
-    float2 velocity = LOAD_TEXTURE2D_LOD(_CameraMotionVectorTexture, velocityPixelCoord, 0).rg;
+    float2 velocity = LOAD_TEXTURE2D_LOD(_MotionVectorTexture, velocityPixelCoord, 0).rg;
 
     // ------------------------- Filter Resampled History -------------------------
 
@@ -152,11 +152,12 @@ float4 TAAFrag_ClipToFiltered(Varyings IN) : SV_TARGET
     // //TODO：根据 history 和 current 的差值减少 blendFactor
 
     
-    float blendFactor = lerp(_TAAParams.x, 0.95, (1.0 - closestDepth));
+    // float blendFactor = lerp(_TAAParams.x, 0.95, (1.0 - closestDepth));
     
     float velocityFactor = saturate(sqrt(length(velocity)));
     // if (velocityFactor == 0.0) clampedHistory = history;
-    blendFactor = closestDepth == 0 ? 0 : lerp(blendFactor, 0, velocityFactor);
+    // blendFactor = closestDepth == 0 ? 0 : lerp(blendFactor, 0, velocityFactor);
+    float blendFactor = lerp(0.95, 0, velocityFactor);
     
 
     // ------------------------- Exponential Blending -------------------------

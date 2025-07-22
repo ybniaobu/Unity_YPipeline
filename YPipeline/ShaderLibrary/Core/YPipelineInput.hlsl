@@ -179,7 +179,7 @@ SAMPLER(LUT_SAMPLER);
 // Pipeline Textures
 TEXTURE2D(_CameraDepthTexture);
 TEXTURE2D(_CameraColorTexture);
-TEXTURE2D(_CameraMotionVectorTexture);
+TEXTURE2D(_MotionVectorTexture);
 
 // Blue Noise
 TEXTURE2D(_BlueNoise64);

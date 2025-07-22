@@ -1,9 +1,10 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace YPipeline
 {
-    public class YPipelinePerCameraData
+    public class YPipelinePerCameraData : IDisposable
     {
         private bool m_IsPerCameraDataReset;
         
@@ -59,19 +60,42 @@ namespace YPipeline
         public bool IsTAAHistoryReset { get; set; }
         
         // ----------------------------------------------------------------------------------------------------
-        // 
+        // Standard Dispose Pattern
         // ----------------------------------------------------------------------------------------------------
+        
+        bool m_Disposed = false;
+        
         public YPipelinePerCameraData()
         {
             m_IsPerCameraDataReset = true;
-            m_TAAHistory?.Release();
-            m_TAAHistory = null;
         }
         
         public void Dispose()
         {
-            m_TAAHistory?.Release();
-            m_TAAHistory = null;
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        ~YPipelinePerCameraData()
+        {
+            Dispose(false);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!m_Disposed)
+            {
+                if (disposing)
+                {
+                    //Dispose managed resources
+                }
+                //Dispose unmanaged resources
+                m_TAAHistory?.Release();
+                m_TAAHistory = null;
+            }
+            
+            m_IsPerCameraDataReset = true;
+            m_Disposed = true;
         }
     }
 }

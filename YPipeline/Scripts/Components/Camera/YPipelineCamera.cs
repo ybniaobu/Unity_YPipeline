@@ -27,7 +27,7 @@ namespace YPipeline
     public class YPipelineCamera : MonoBehaviour, ISerializationCallbackReceiver
     {
         public Camera Camera => GetComponent<Camera>();
-        [NonSerialized] public YPipelinePerCameraData perCameraData = new YPipelinePerCameraData();
+        [NonSerialized] public YPipelinePerCameraData perCameraData;
         
         public void OnBeforeSerialize()
         {
@@ -39,15 +39,20 @@ namespace YPipeline
             
         }
 
+        public void OnEnable()
+        {
+            perCameraData = new YPipelinePerCameraData();
+        }
+
         public void OnDisable()
         {
             perCameraData?.Dispose();
-            // perCameraData = null;
+            perCameraData = null;
         }
 
         public void OnDestroy()
         {
-            // perCameraData?.Dispose();
+            perCameraData?.Dispose();
             perCameraData = null;
         }
     }

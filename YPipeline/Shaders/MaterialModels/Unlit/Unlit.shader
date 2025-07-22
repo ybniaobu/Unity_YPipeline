@@ -9,7 +9,9 @@ Shader "YPipeline/Unlit"
         [Header(Transparency Settings)] [Space(8)]
         [Enum(UnityEngine.Rendering.BlendMode)] _SrcBlend ("Src Blend", Float) = 1
         [Enum(UnityEngine.Rendering.BlendMode)] _DstBlend ("Dst Blend", Float) = 0
+    	[Enum(UnityEngine.Rendering.BlendOp)] _BlendOp ("Blend Operation", Float) = 0
         [Enum(Off, 0, On, 1)] _ZWrite ("Z Write", Float) = 1
+    	[Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("Z Test", Float) = 4
         [Toggle(_CLIPPING)] _Clipping ("Alpha Clipping", Float) = 0
         _Cutoff("Alpha CutOff", Range(0.0, 1.0)) = 0.5
         
@@ -25,19 +27,46 @@ Shader "YPipeline/Unlit"
     {
         Pass
         {
-        	Name "Unlit"
-        	
-            Tags { "LightMode" = "SRPDefaultUnlit" }
+        	Name "Unlit Opaque"
+            Tags { "LightMode" = "YPipelineForward" }
             
-            Blend [_SrcBlend] [_DstBlend]
-            ZWrite [_ZWrite]
+            Blend One Zero
+            ZWrite Off
+            ZTest Equal
             Cull [_Cull]
             
             HLSLPROGRAM
             #pragma target 4.5
             
             #pragma vertex UnlitVert
-            #pragma fragment UnlitFrag
+            #pragma fragment UnlitOpaqueFrag
+
+            #pragma shader_feature_local_fragment _CLIPPING
+
+            #pragma multi_compile _ LOD_FADE_CROSSFADE
+
+            #pragma multi_compile_instancing
+            
+            #include "UnlitPass.hlsl"
+            ENDHLSL
+        }
+
+        Pass
+        {
+        	Name "Unlit Transparency"
+            Tags { "LightMode" = "YPipelineTransparency" }
+            
+            Blend [_SrcBlend] [_DstBlend]
+            BlendOp [_BlendOp]
+            ZWrite [_ZWrite]
+            ZTest [_ZTest]
+            Cull [_Cull]
+            
+            HLSLPROGRAM
+            #pragma target 4.5
+            
+            #pragma vertex UnlitVert
+            #pragma fragment UnlitTransparencyFrag
 
             #pragma shader_feature_local_fragment _CLIPPING
 
@@ -52,7 +81,6 @@ Shader "YPipeline/Unlit"
         Pass
         {
         	Name "ShadowCaster"
-        	
 			Tags { "LightMode" = "ShadowCaster" }
 
 			ColorMask 0
@@ -77,7 +105,6 @@ Shader "YPipeline/Unlit"
 		Pass
 		{
 			Name "Depth"
-			
 			Tags { "LightMode" = "Depth" }
 			
 			ZWrite On
@@ -103,7 +130,6 @@ Shader "YPipeline/Unlit"
         Pass
         {
         	Name "Meta"
-        	
 			Tags { "LightMode" = "Meta" }
 
 			Cull Off
@@ -116,6 +142,40 @@ Shader "YPipeline/Unlit"
 			
 			#include "UnlitMetaPass.hlsl"
 			ENDHLSL
+		}
+
+		Pass
+		{
+			Name "MotionVectors"
+            Tags { "LightMode" = "MotionVectors" }
+            
+            ZWrite On
+            ColorMask RG
+            Cull [_Cull]
+            
+            Stencil
+            {
+                WriteMask 1
+                Ref 1
+                Comp Always
+                Pass Replace
+            }
+            
+            HLSLPROGRAM
+            #pragma target 4.5
+
+            #pragma vertex MotionVectorVert
+			#pragma fragment MotionVectorFrag
+
+            #pragma shader_feature_local_fragment _CLIPPING
+            #pragma shader_feature_local_vertex _ADD_PRECOMPUTED_VELOCITY
+
+			#pragma multi_compile _ LOD_FADE_CROSSFADE
+
+            #pragma multi_compile_instancing
+
+            #include "UnlitMotionVectorPass.hlsl"
+            ENDHLSL
 		}
     }
     

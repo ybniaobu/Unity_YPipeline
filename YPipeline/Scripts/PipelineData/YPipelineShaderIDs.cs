@@ -7,10 +7,12 @@ namespace YPipeline
     {
         public static ShaderTagId k_SRPDefaultShaderTagId = new ShaderTagId("SRPDefaultUnlit");
         
-        public static ShaderTagId k_DepthShaderTagId = new ShaderTagId("Depth");
-        public static ShaderTagId k_DepthNormalShaderTagId = new ShaderTagId("DepthNormal");
         public static ShaderTagId k_ForwardLitShaderTagId = new ShaderTagId("YPipelineForward");
         public static ShaderTagId k_TransparencyShaderTagId = new ShaderTagId("YPipelineTransparency");
+        
+        public static ShaderTagId k_DepthShaderTagId = new ShaderTagId("Depth");
+        public static ShaderTagId k_DepthNormalShaderTagId = new ShaderTagId("DepthNormal");
+        public static ShaderTagId k_MotionVectorsShaderTagId = new ShaderTagId("MotionVectors");
         
         public static ShaderTagId[] k_OpaqueShaderTagIds = new ShaderTagId[]
         {
@@ -46,7 +48,7 @@ namespace YPipeline
         // Forward
         public static readonly int k_ColorTextureID = Shader.PropertyToID("_CameraColorTexture");
         public static readonly int k_DepthTextureID = Shader.PropertyToID("_CameraDepthTexture");
-        public static readonly int k_CameraMotionVectorTextureID = Shader.PropertyToID("_CameraMotionVectorTexture");
+        public static readonly int k_MotionVectorTextureID = Shader.PropertyToID("_MotionVectorTexture");
         public static readonly int k_FinalTextureID = Shader.PropertyToID("_CameraFinalTexture");
         
         // Deferred

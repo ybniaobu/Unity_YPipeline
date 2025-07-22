@@ -62,7 +62,7 @@ namespace YPipeline
                     passData.isFirstFrame = Time.frameCount == 1;
                     
                     passData.colorAttachment = builder.ReadTexture(data.CameraColorAttachment);
-                    builder.ReadTexture(data.CameraMotionVectorTexture);
+                    builder.ReadTexture(data.MotionVectorTexture);
                     builder.ReadTexture(data.CameraDepthTexture);
                     
                     // Record shader variables & keywords
