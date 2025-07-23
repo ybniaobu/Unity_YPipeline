@@ -3,6 +3,7 @@ using static YPipeline.RandomUtility;
 
 public class Debugger : MonoBehaviour
 {
+    public Material material;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -12,6 +13,6 @@ public class Debugger : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        Debug.Log(material.GetShaderPassEnabled("MotionVectors"));
     }
 }

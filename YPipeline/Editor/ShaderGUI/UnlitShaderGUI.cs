@@ -25,5 +25,21 @@ namespace YPipeline.Editor
                 }
             }
         }
+
+        public override void ValidateMaterial(Material material)
+        {
+            base.ValidateMaterial(material);
+            DisableMotionVectorsPass(material);
+        }
+
+
+        private const string k_MotionVectorPassName = "MotionVectors";
+        private void DisableMotionVectorsPass(Material material)
+        {
+            if (material.GetShaderPassEnabled(k_MotionVectorPassName))
+            {
+                material.SetShaderPassEnabled(k_MotionVectorPassName, false);
+            }
+        }
     }
 }

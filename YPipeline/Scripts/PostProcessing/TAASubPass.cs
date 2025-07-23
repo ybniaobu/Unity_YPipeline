@@ -14,6 +14,7 @@ namespace YPipeline
             public bool isFirstFrame;
             
             public TextureHandle colorAttachment;
+            public TextureHandle motionVectorTexture;
             public TextureHandle taaTarget;
             public TextureHandle taaHistory;
             
@@ -62,7 +63,7 @@ namespace YPipeline
                     passData.isFirstFrame = Time.frameCount == 1;
                     
                     passData.colorAttachment = builder.ReadTexture(data.CameraColorAttachment);
-                    builder.ReadTexture(data.MotionVectorTexture);
+                    passData.motionVectorTexture = builder.ReadTexture(data.MotionVectorTexture);
                     builder.ReadTexture(data.CameraDepthTexture);
                     
                     // Record shader variables & keywords
@@ -111,6 +112,7 @@ namespace YPipeline
                     {
                         context.cmd.BeginSample("TAABlendHistory");
                         data.material.SetVector(YPipelineShaderIDs.k_TAAParamsID, data.taaParams);
+                        // data.material.SetTexture(YPipelineShaderIDs.k_MotionVectorTextureID, data.isFirstFrame || data.isTAAHistoryReset ? context.defaultResources.blackTexture : data.motionVectorTexture);
                         
                         CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAASample3X3, data.is3X3);
                         CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAAYCOCG, data.isYCoCg);

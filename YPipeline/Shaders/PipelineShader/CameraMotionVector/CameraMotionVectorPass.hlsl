@@ -31,8 +31,8 @@ float4 CameraMotionVectorFrag(Varyings IN) : SV_TARGET
     float4 currentPositionCS = mul(UNITY_MATRIX_NONJITTERED_VP, float4(currentPositionWS.xyz, 1.0));
     float4 previousPositionCS = mul(UNITY_PREV_MATRIX_NONJITTERED_VP, float4(currentPositionWS.xyz, 1.0));
     
-    float2 currentPositionNDC = currentPositionCS.xy * rcp(currentPositionCS.w);
-    float2 previousPositionNDC = previousPositionCS.xy * rcp(previousPositionCS.w);
+    float2 currentPositionNDC = currentPositionCS.xy / currentPositionCS.w;
+    float2 previousPositionNDC = previousPositionCS.xy / previousPositionCS.w;
     
     float2 velocity = currentPositionNDC - previousPositionNDC;
     

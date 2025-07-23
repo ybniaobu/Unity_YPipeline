@@ -17,5 +17,15 @@ namespace YPipeline.Editor
             m_Materials = materialEditor.targets;
             m_Properties = properties;
         }
+
+        public override void ValidateMaterial(Material material)
+        {
+            base.ValidateMaterial(material);
+        }
+
+        public override void AssignNewShaderToMaterial(Material material, Shader oldShader, Shader newShader)
+        {
+            base.AssignNewShaderToMaterial(material, oldShader, newShader);
+        }
     }
 }

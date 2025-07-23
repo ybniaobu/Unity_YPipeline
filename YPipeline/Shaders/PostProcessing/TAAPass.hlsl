@@ -162,7 +162,7 @@ float4 TAAFrag_ClipToFiltered(Varyings IN) : SV_TARGET
 
     // ------------------------- Exponential Blending -------------------------
     
-    float3 color = LumaExponentialAccumulation(clampedHistory, samples.filteredM, blendFactor);
+    float3 color = LumaExponentialAccumulation(clampedHistory, samples.filteredM, _TAAParams.x);
     
     color = OutputColor(color);
     return float4(color, 1.0);

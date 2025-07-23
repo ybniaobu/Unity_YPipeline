@@ -34,12 +34,14 @@ Varyings MotionVectorVert(Attributes IN)
 
     OUT.nonJitterPositionHCS = mul(UNITY_MATRIX_NONJITTERED_VP, mul(UNITY_MATRIX_M, float4(IN.positionOS.xyz, 1.0)));
 
-    // float4 previousPositionOS = (unity_MotionVectorsParams.x == 1) ? float4(IN.previousPositionOS, 1.0) : IN.positionOS;
-    float4 previousPositionOS = float4(IN.previousPositionOS, 1.0);
+    // Skin or morph
+    float4 previousPositionOS = unity_MotionVectorsParams.x > 0.0 ? float4(IN.previousPositionOS, 1.0) : float4(IN.positionOS.xyz, 1.0);
+    
     #if _ADD_PRECOMPUTED_VELOCITY
         previousPositionOS = previousPositionOS - float4(IN.precomputedVelocity, 0);
     #endif
-    OUT.previousNonJitterPositionHCS = mul(UNITY_PREV_MATRIX_NONJITTERED_VP, mul(UNITY_PREV_MATRIX_M, float4(IN.positionOS.xyz, 1.0)));
+    
+    OUT.previousNonJitterPositionHCS = mul(UNITY_PREV_MATRIX_NONJITTERED_VP, mul(UNITY_PREV_MATRIX_M, previousPositionOS));
 
     return OUT;
 }
@@ -49,6 +51,18 @@ float4 MotionVectorFrag(Varyings IN) : SV_Target
     UNITY_SETUP_INSTANCE_ID(IN);
     float4 baseColor = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _BaseColor);
     float4 albedo = SAMPLE_TEXTURE2D(_BaseTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).rgba * baseColor;
+
+    // bool forceNoMotion = unity_MotionVectorsParams.y == 0.0;
+    float2 currentPositionNDC = IN.nonJitterPositionHCS.xy / IN.nonJitterPositionHCS.w;
+    float2 previousPositionNDC = IN.previousNonJitterPositionHCS.xy / IN.previousNonJitterPositionHCS.w;
+
+    float2 velocity = currentPositionNDC - previousPositionNDC;
+
+    #if UNITY_UV_STARTS_AT_TOP
+        velocity.y = -velocity.y;
+    #endif
+    
+    velocity *= 0.5;
 
     #if defined(_CLIPPING)
         clip(albedo.a - UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Cutoff));
@@ -60,18 +74,6 @@ float4 MotionVectorFrag(Varyings IN) : SV_Target
         dither = lerp(-dither, dither, isNextLodLevel);
         clip(unity_LODFade.x + dither);
     #endif
-
-    // bool forceNoMotion = unity_MotionVectorsParams.y == 0.0;
-    float2 currentPositionNDC = IN.nonJitterPositionHCS.xy * rcp(IN.nonJitterPositionHCS.w);
-    float2 previousPositionNDC = IN.previousNonJitterPositionHCS.xy * rcp(IN.previousNonJitterPositionHCS.w);
-
-    float2 velocity = currentPositionNDC - previousPositionNDC;
-
-    #if UNITY_UV_STARTS_AT_TOP
-    velocity.y = -velocity.y;
-    #endif
-    
-    velocity *= 0.5;
 
     return float4(velocity, 0, 0);
 }
