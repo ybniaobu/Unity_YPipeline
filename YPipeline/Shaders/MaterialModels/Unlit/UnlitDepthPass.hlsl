@@ -1,18 +1,6 @@
 ﻿#ifndef YPIPELINE_UNLIT_DEPTH_PASS_INCLUDED
 #define YPIPELINE_UNLIT_DEPTH_PASS_INCLUDED
 
-#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
-
-UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
-    UNITY_DEFINE_INSTANCED_PROP(float4, _BaseColor)
-    UNITY_DEFINE_INSTANCED_PROP(float4, _BaseTex_ST)
-    UNITY_DEFINE_INSTANCED_PROP(float4, _EmissionColor)
-    UNITY_DEFINE_INSTANCED_PROP(float, _Cutoff)
-UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
-
-Texture2D _BaseTex;     SamplerState sampler_Trilinear_Repeat_BaseTex;
-Texture2D _EmissionTex;
-
 struct Attributes
 {
     float4 positionOS : POSITION;
@@ -41,10 +29,10 @@ Varyings DepthVert(Attributes IN)
 float DepthFrag(Varyings IN) : SV_DEPTH
 {
     UNITY_SETUP_INSTANCE_ID(IN);
-    float4 baseColor = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _BaseColor);
-    float4 albedo = SAMPLE_TEXTURE2D(_BaseTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).rgba * baseColor;
 
     #if defined(_CLIPPING)
+        float4 baseColor = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _BaseColor);
+        float4 albedo = SAMPLE_TEXTURE2D(_BaseTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).rgba * baseColor;
         clip(albedo.a - UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Cutoff));
     #endif
         

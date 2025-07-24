@@ -1,20 +1,6 @@
 ﻿#ifndef YPIPELINE_UNLIT_PASS_INCLUDED
 #define YPIPELINE_UNLIT_PASS_INCLUDED
 
-#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
-
-UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
-    UNITY_DEFINE_INSTANCED_PROP(float4, _BaseColor)
-    UNITY_DEFINE_INSTANCED_PROP(float4, _BaseTex_ST)
-    UNITY_DEFINE_INSTANCED_PROP(float4, _EmissionColor)
-    UNITY_DEFINE_INSTANCED_PROP(float, _Cutoff)
-UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
-
-//float _Cutoff;
-
-Texture2D _BaseTex;     SamplerState sampler_Trilinear_Repeat_BaseTex;
-Texture2D _EmissionTex;
-
 struct Attributes
 {
     float4 positionOS : POSITION;
@@ -50,7 +36,6 @@ float4 UnlitOpaqueFrag(Varyings IN) : SV_Target
     
     #if defined(_CLIPPING)
         clip(albedo.a - UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Cutoff));
-        //clip(albedo.a - _Cutoff);
     #endif
 
     #if defined(LOD_FADE_CROSSFADE)
@@ -73,7 +58,6 @@ float4 UnlitTransparencyFrag(Varyings IN) : SV_Target
     
     #if defined(_CLIPPING)
         clip(albedo.a - UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Cutoff));
-        //clip(albedo.a - _Cutoff);
     #endif
 
     #if defined(LOD_FADE_CROSSFADE)

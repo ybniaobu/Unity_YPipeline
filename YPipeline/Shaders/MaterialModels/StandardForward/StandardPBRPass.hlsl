@@ -1,27 +1,7 @@
-﻿#ifndef YPIPELINE_STANDARD_FORWARD_PASS_INCLUDED
-#define YPIPELINE_STANDARD_FORWARD_PASS_INCLUDED
+﻿#ifndef YPIPELINE_STANDARD_PBR_PASS_INCLUDED
+#define YPIPELINE_STANDARD_PBR_PASS_INCLUDED
 
-#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
 #include "../../../ShaderLibrary/RenderingEquationLibrary.hlsl"
-
-CBUFFER_START (UnityPerMaterial)
-    float4 _BaseColor;
-    float4 _BaseTex_ST;
-    float4 _EmissionColor;
-    float _Specular;
-    float _Roughness;
-    float _Metallic;
-    float _NormalIntensity;
-    float _Cutoff;
-CBUFFER_END
-
-Texture2D _BaseTex;             SamplerState sampler_Trilinear_Repeat_BaseTex;
-Texture2D _EmissionTex;
-Texture2D _RoughnessTex;
-Texture2D _MetallicTex;
-Texture2D _NormalTex;
-Texture2D _AOTex;
-Texture2D _OpacityTex;
 
 struct Attributes
 {
@@ -43,7 +23,7 @@ struct Varyings
     LIGHTMAP_UV(5)
 };
 
-void InitializeStandardPBRParams(Varyings IN, out StandardPBRParams standardPBRParams)
+void InitializeStandardPBRParams(Varyings IN, inout StandardPBRParams standardPBRParams)
 {
     standardPBRParams.albedo = SAMPLE_TEXTURE2D(_BaseTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).rgb * _BaseColor.rgb;
     standardPBRParams.emission = SAMPLE_TEXTURE2D(_EmissionTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).rgb * _EmissionColor.rgb;
@@ -80,7 +60,7 @@ void InitializeStandardPBRParams(Varyings IN, out StandardPBRParams standardPBRP
     standardPBRParams.NoV = saturate(dot(standardPBRParams.N, standardPBRParams.V)) + 1e-3; //防止小黑点
 }
 
-Varyings StandardVert(Attributes IN)
+Varyings StandardPBRVert(Attributes IN)
 {
     Varyings OUT;
     OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
@@ -93,7 +73,7 @@ Varyings StandardVert(Attributes IN)
     return OUT;
 }
 
-float4 StandardFrag(Varyings IN) : SV_TARGET
+float4 StandardPBRFrag(Varyings IN) : SV_TARGET
 {
     RenderingEquationContent renderingEquationContent = (RenderingEquationContent) 0;
     
@@ -160,9 +140,8 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
     
     // ------------------------- Clipping -------------------------
     
-    // TODO：去除 _OpacityTex，因为和烘焙系统不太兼容
-    float alpha = SAMPLE_TEXTURE2D(_OpacityTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).r * _BaseColor.a;
     #if defined(_CLIPPING)
+        float alpha = SAMPLE_TEXTURE2D(_BaseTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).a * _BaseColor.a;
         clip(alpha - _Cutoff);
     #endif
     
@@ -175,7 +154,7 @@ float4 StandardFrag(Varyings IN) : SV_TARGET
         clip(unity_LODFade.x + dither);
     #endif
     
-    return float4(renderingEquationContent.directSunLight + renderingEquationContent.directPunctualLights + renderingEquationContent.indirectLightDiffuse + renderingEquationContent.indirectLightSpecular + standardPBRParams.emission, alpha);
+    return float4(renderingEquationContent.directSunLight + renderingEquationContent.directPunctualLights + renderingEquationContent.indirectLightDiffuse + renderingEquationContent.indirectLightSpecular + standardPBRParams.emission, 1.0);
 }
 
 #endif

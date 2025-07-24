@@ -1,4 +1,4 @@
-Shader "YPipeline/Shading Models/Unlit"
+﻿Shader "YPipeline/Shading Models/Unlit(Instancing)"
 {
     Properties
     {
@@ -21,7 +21,14 @@ Shader "YPipeline/Shading Models/Unlit"
         
         [Header(Other Settings)] [Space(8)]
         [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull Mode", Float) = 2
+        
+    	_Instancing("Removing SRP Compatibility", Float) = 1
     }
+    
+    HLSLINCLUDE
+    // TODO: 必须被使用才能取消 SRP Compatibility
+    float _Instancing;
+    ENDHLSL
     
     SubShader
     {

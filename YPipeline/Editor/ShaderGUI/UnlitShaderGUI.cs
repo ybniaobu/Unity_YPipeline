@@ -6,6 +6,10 @@ namespace YPipeline.Editor
 {
     public class UnlitShaderGUI : YPipelineShaderGUI
     {
+        // ----------------------------------------------------------------------------------------------------
+        // OnGUI Related
+        // ----------------------------------------------------------------------------------------------------
+        
         public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] properties)
         {
             base.OnGUI(materialEditor, properties);
@@ -25,21 +29,14 @@ namespace YPipeline.Editor
                 }
             }
         }
+        
+        // ----------------------------------------------------------------------------------------------------
+        // ValidateMaterial Related
+        // ----------------------------------------------------------------------------------------------------
 
         public override void ValidateMaterial(Material material)
         {
-            base.ValidateMaterial(material);
             DisableMotionVectorsPass(material);
-        }
-
-
-        private const string k_MotionVectorPassName = "MotionVectors";
-        private void DisableMotionVectorsPass(Material material)
-        {
-            if (material.GetShaderPassEnabled(k_MotionVectorPassName))
-            {
-                material.SetShaderPassEnabled(k_MotionVectorPassName, false);
-            }
         }
     }
 }

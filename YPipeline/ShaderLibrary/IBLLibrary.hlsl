@@ -44,7 +44,7 @@ float3 SampleEnvLut(Texture2D envLut, SamplerState envLutSampler, float NoV, flo
 //     return DecodeHDREnvironment(env, unity_SpecCube0_HDR);
 // }
 
-float3 CalculateIBL_Diffuse(StandardPBRParams standardPBRParams, float envBRDF_Diffuse)
+float3 CalculateIBL_Diffuse(in StandardPBRParams standardPBRParams, float envBRDF_Diffuse)
 {
     float3 irradiance = SampleSH(standardPBRParams.N);
     float3 envBRDFDiffuse = standardPBRParams.albedo * envBRDF_Diffuse;
@@ -59,7 +59,7 @@ float RoughnessToMipmapLevel(float roughness, float maxMipLevel)
     return roughness * maxMipLevel;
 }
 
-float3 CalculateIBL_Specular(StandardPBRParams standardPBRParams, TextureCube prefilteredEnvMap, SamplerState prefilteredEnvMapSampler, float2 envBRDF_Specular, float3 energyCompensation)
+float3 CalculateIBL_Specular(in StandardPBRParams standardPBRParams, TextureCube prefilteredEnvMap, SamplerState prefilteredEnvMapSampler, float2 envBRDF_Specular, float3 energyCompensation)
 {
     float3 prefilteredColor = SAMPLE_TEXTURECUBE_LOD(prefilteredEnvMap, prefilteredEnvMapSampler, standardPBRParams.R, 6.0 * standardPBRParams.roughness).rgb;
     //float3 prefilteredColor = SampleHDREnvironment(prefilteredEnvMap, prefilteredEnvMapSampler, standardPBRParams.R, 6.0 * standardPBRParams.roughness);
@@ -71,7 +71,7 @@ float3 CalculateIBL_Specular(StandardPBRParams standardPBRParams, TextureCube pr
     return IBLSpecular;
 }
 
-float3 CalculateIBL_Specular_RemappedMipmap(StandardPBRParams standardPBRParams, TextureCube prefilteredEnvMap, SamplerState prefilteredEnvMapSampler, float2 envBRDF_Specular, float3 energyCompensation)
+float3 CalculateIBL_Specular_RemappedMipmap(in StandardPBRParams standardPBRParams, TextureCube prefilteredEnvMap, SamplerState prefilteredEnvMapSampler, float2 envBRDF_Specular, float3 energyCompensation)
 {
     float mipmap = RoughnessToMipmapLevel(standardPBRParams.roughness, 6.0);
     float3 prefilteredColor = SAMPLE_TEXTURECUBE_LOD(prefilteredEnvMap, prefilteredEnvMapSampler, standardPBRParams.R, mipmap).rgb;

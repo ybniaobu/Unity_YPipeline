@@ -1,4 +1,4 @@
-Shader "YPipeline/PBR/Standard Forward (Separated Texture)"
+Shader "YPipeline/Shading Models/Standard PBR(Separated Texture)"
 {
     Properties
     {
@@ -34,7 +34,6 @@ Shader "YPipeline/PBR/Standard Forward (Separated Texture)"
     	[Header(Alpha Clipping Settings)] [Space(8)]
         [Toggle(_CLIPPING)] _Clipping ("Alpha Clipping", Float) = 0
         _Cutoff("Alpha CutOff", Range(0.0, 1.0)) = 0.5
-    	[NoScaleOffset] _OpacityTex("Opacity Texture", 2D) = "white" {}
         
         [Header(Other Settings)] [Space(8)]
         [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull Mode", Float) = 2
@@ -44,7 +43,7 @@ Shader "YPipeline/PBR/Standard Forward (Separated Texture)"
     {
         Tags
         {
-            "Queue"= "Geometry"
+            "Queue" = "Geometry"
             "RenderType" = "Opaque"
         }
 
@@ -62,8 +61,8 @@ Shader "YPipeline/PBR/Standard Forward (Separated Texture)"
             HLSLPROGRAM
             #pragma target 4.5
             
-            #pragma vertex StandardVert
-            #pragma fragment StandardFrag
+            #pragma vertex StandardPBRVert
+            #pragma fragment StandardPBRFrag
             
             #pragma shader_feature_local_fragment _USE_ROUGHNESSTEX
             #pragma shader_feature_local_fragment _USE_METALLICTEX
@@ -74,8 +73,10 @@ Shader "YPipeline/PBR/Standard Forward (Separated Texture)"
             #pragma multi_compile _SHADOW_PCF _SHADOW_PCSS
 
             #pragma multi_compile _ LOD_FADE_CROSSFADE
-            
-            #include "StandardForwardPass.hlsl"
+
+            #include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+			#include "StandardPBRForTestInput.hlsl"
+            #include "StandardPBRPass.hlsl"
             ENDHLSL
         }
 
@@ -97,8 +98,12 @@ Shader "YPipeline/PBR/Standard Forward (Separated Texture)"
 			#pragma fragment ShadowCasterFrag
 
 			#pragma shader_feature_local_fragment _CLIPPING
-			
-			#include "StandardForwardShadowCasterPass.hlsl"
+
+			#pragma multi_compile _ LOD_FADE_CROSSFADE
+
+			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+			#include "StandardPBRForTestInput.hlsl"
+			#include "StandardPBRShadowCasterPass.hlsl"
 			ENDHLSL
 		}
 
@@ -122,7 +127,9 @@ Shader "YPipeline/PBR/Standard Forward (Separated Texture)"
 
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
 
-			#include "StandardForwardDepthPass.hlsl"
+			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+			#include "StandardPBRForTestInput.hlsl"
+			#include "StandardPBRDepthPass.hlsl"
 			ENDHLSL
 		}
 		
@@ -139,9 +146,45 @@ Shader "YPipeline/PBR/Standard Forward (Separated Texture)"
 			
 			#pragma vertex MetaVert
 			#pragma fragment MetaFrag
-			
-			#include "StandardForwardMetaPass.hlsl"
+
+			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+			#include "StandardPBRForTestInput.hlsl"
+			#include "StandardPBRMetaPass.hlsl"
 			ENDHLSL
+		}
+
+	    Pass
+		{
+			Name "MotionVectors"
+            Tags { "LightMode" = "MotionVectors" }
+            
+            ZWrite On
+            ColorMask RG
+            Cull [_Cull]
+            
+            Stencil
+            {
+                WriteMask 1
+                Ref 1
+                Comp Always
+                Pass Replace
+            }
+            
+            HLSLPROGRAM
+            #pragma target 4.5
+
+            #pragma vertex MotionVectorVert
+			#pragma fragment MotionVectorFrag
+
+            #pragma shader_feature_local_fragment _CLIPPING
+            #pragma shader_feature_local_vertex _ADD_PRECOMPUTED_VELOCITY
+
+			#pragma multi_compile _ LOD_FADE_CROSSFADE
+
+            #include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+			#include "StandardPBRForTestInput.hlsl"
+			#include "../MotionVectorCommon.hlsl"
+            ENDHLSL
 		}
     }
 

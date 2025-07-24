@@ -6,6 +6,10 @@ namespace YPipeline.Editor
 {
     public class StandardForwardShaderGUI : YPipelineShaderGUI
     {
+        // ----------------------------------------------------------------------------------------------------
+        // OnGUI Related
+        // ----------------------------------------------------------------------------------------------------
+        
         public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] properties)
         {
             base.OnGUI(materialEditor, properties);
@@ -32,5 +36,14 @@ namespace YPipeline.Editor
         // {
         //     GUILayout.Label("Main Maps", EditorStyles.boldLabel);
         // }
+        
+        // ----------------------------------------------------------------------------------------------------
+        // ValidateMaterial Related
+        // ----------------------------------------------------------------------------------------------------
+
+        public override void ValidateMaterial(Material material)
+        {
+            DisableMotionVectorsPass(material);
+        }
     }
 }

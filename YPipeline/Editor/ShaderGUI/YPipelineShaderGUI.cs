@@ -27,5 +27,20 @@ namespace YPipeline.Editor
         {
             base.AssignNewShaderToMaterial(material, oldShader, newShader);
         }
+        
+        // ----------------------------------------------------------------------------------------------------
+        // Motion Vector Related
+        // ----------------------------------------------------------------------------------------------------
+        
+        private const string k_MotionVectorPassName = "MotionVectors";
+        
+        // All Setup Keyword functions must be static. It allow to create script to automatically update the shaders with a script if code change
+        protected static void DisableMotionVectorsPass(Material material)
+        {
+            if (material.GetShaderPassEnabled(k_MotionVectorPassName))
+            {
+                material.SetShaderPassEnabled(k_MotionVectorPassName, false);
+            }
+        }
     }
 }

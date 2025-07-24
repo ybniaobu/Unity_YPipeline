@@ -1,21 +1,7 @@
-﻿#ifndef YPIPELINE_STANDARD_FORWARD_DEPTH_PASS_INCLUDED
-#define YPIPELINE_STANDARD_FORWARD_DEPTH_PASS_INCLUDED
+﻿#ifndef YPIPELINE_STANDARD_PBR_DEPTH_PASS_INCLUDED
+#define YPIPELINE_STANDARD_PBR_DEPTH_PASS_INCLUDED
 
 #include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
-
-CBUFFER_START (UnityPerMaterial)
-    float4 _BaseColor;
-    float4 _BaseTex_ST;
-    float4 _EmissionColor;
-    float _Specular;
-    float _Roughness;
-    float _Metallic;
-    float _NormalIntensity;
-    float _Cutoff;
-CBUFFER_END
-
-Texture2D _BaseTex;             SamplerState sampler_Trilinear_Repeat_BaseTex;
-Texture2D _OpacityTex;
 
 struct Attributes
 {
@@ -39,11 +25,8 @@ Varyings DepthVert(Attributes IN)
 
 float DepthFrag(Varyings IN) : SV_DEPTH
 {
-    float baseTexAlpha = SAMPLE_TEXTURE2D(_BaseTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).a;
-    float opacityTexAlpha = SAMPLE_TEXTURE2D(_OpacityTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).r;
-    float alpha = baseTexAlpha * opacityTexAlpha * _BaseColor.a;
-
     #if defined(_CLIPPING)
+        float alpha = SAMPLE_TEXTURE2D(_BaseTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).a * _BaseColor.a;
         clip(alpha - _Cutoff);
     #endif
         

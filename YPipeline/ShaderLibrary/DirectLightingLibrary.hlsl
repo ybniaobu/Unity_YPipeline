@@ -15,7 +15,7 @@ struct LightsTileParams
     int lastLightIndex;
 };
 
-void InitializeLightsTileParams(out LightsTileParams lightsTileParams, float2 pixelCoord)
+void InitializeLightsTileParams(inout LightsTileParams lightsTileParams, float2 pixelCoord)
 {
     uint2 coord = floor(pixelCoord * _CameraBufferSize.xy / _TileParams.zw);
     lightsTileParams.tileIndex = coord.y * (int) _TileParams.x + coord.x;
@@ -66,7 +66,7 @@ struct LightParams
     // uint layerMask;
 };
 
-float3 CalculateLightIrradiance(LightParams lightParams)
+float3 CalculateLightIrradiance(in LightParams lightParams)
 {
     float3 irradiance = lightParams.color * lightParams.shadowAttenuation * lightParams.distanceAttenuation * lightParams.angleAttenuation;
     return irradiance;
@@ -76,7 +76,7 @@ float3 CalculateLightIrradiance(LightParams lightParams)
 // Initialize Directional Light Parameters
 // ----------------------------------------------------------------------------------------------------
 
-void InitializeSunLightParams(out LightParams sunLightParams, float3 V, float3 normalWS, float3 positionWS, float3 positionHCS)
+void InitializeSunLightParams(inout LightParams sunLightParams, float3 V, float3 normalWS, float3 positionWS, float3 positionHCS)
 {
     sunLightParams.color = GetSunLightColor();
     sunLightParams.positionWS = float4(GetSunLightDirection(), 0.0); //Directional Light has no position
@@ -105,7 +105,7 @@ void InitializeSunLightParams(out LightParams sunLightParams, float3 V, float3 n
 // Initialize Punctual Lights Parameters
 // ----------------------------------------------------------------------------------------------------
 
-void InitializeSpotLightParams(out LightParams spotLightParams, int lightIndex, float3 V, float3 normalWS, float3 positionWS, float3 positionHCS)
+void InitializeSpotLightParams(inout LightParams spotLightParams, int lightIndex, float3 V, float3 normalWS, float3 positionWS, float3 positionHCS)
 {
     spotLightParams.color = GetPunctualLightColor(lightIndex);
     spotLightParams.positionWS = float4(GetPunctualLightPosition(lightIndex), 1.0);
@@ -137,7 +137,7 @@ void InitializeSpotLightParams(out LightParams spotLightParams, int lightIndex, 
     }
 }
 
-void InitializePointLightParams(out LightParams pointLightParams, int lightIndex, float3 V, float3 normalWS, float3 positionWS, float3 positionHCS)
+void InitializePointLightParams(inout LightParams pointLightParams, int lightIndex, float3 V, float3 normalWS, float3 positionWS, float3 positionHCS)
 {
     pointLightParams.color = GetPunctualLightColor(lightIndex);
     pointLightParams.positionWS = float4(GetPunctualLightPosition(lightIndex), 1.0);

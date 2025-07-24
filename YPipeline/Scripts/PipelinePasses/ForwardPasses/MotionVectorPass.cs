@@ -41,6 +41,11 @@ namespace YPipeline
         {
             using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<MotionVectorPassData>("Camera & Object Motion Vector", out var passData))
             {
+                // These flags are still required in SRP or the engine won't compute previous model matrices...
+                // If the flag hasn't been set yet on this camera, motion vectors will skip a frame.
+                data.camera.depthTextureMode |= DepthTextureMode.MotionVectors | DepthTextureMode.Depth;
+                
+                // Motion Vector Texture
                 Vector2Int bufferSize = data.BufferSize;
                 TextureDesc motionVectorDesc = new TextureDesc(bufferSize.x, bufferSize.y)
                 {

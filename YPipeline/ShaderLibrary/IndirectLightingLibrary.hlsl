@@ -4,7 +4,7 @@
 #include "../ShaderLibrary/UnityLightMappingLibrary.hlsl"
 #include "../ShaderLibrary/IBLLibrary.hlsl"
 
-float3 IndirectLighting_Diffuse(float2 lightMapUV, StandardPBRParams standardPBRParams, float envBRDF_Diffuse)
+float3 IndirectLighting_Diffuse(float2 lightMapUV, in StandardPBRParams standardPBRParams, float envBRDF_Diffuse)
 {
     #if defined(LIGHTMAP_ON)
         return CalculateLightMap_Diffuse(lightMapUV, standardPBRParams, envBRDF_Diffuse);
