@@ -1,7 +1,7 @@
-﻿#ifndef YPIPELINE_UNLIT_META_PASS_INCLUDED
-#define YPIPELINE_UNLIT_META_PASS_INCLUDED
+﻿#ifndef YPIPELINE_META_COMMON_INCLUDED
+#define YPIPELINE_META_COMMON_INCLUDED
 
-#include "../../../ShaderLibrary/UnityMetaPassLibrary.hlsl"
+#include "../../ShaderLibrary/UnityMetaPassLibrary.hlsl"
 
 struct Attributes
 {

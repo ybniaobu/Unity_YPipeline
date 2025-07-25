@@ -103,7 +103,7 @@ Shader "YPipeline/Shading Models/Standard PBR(Separated Texture)"
 
 			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "StandardPBRForTestInput.hlsl"
-			#include "StandardPBRShadowCasterPass.hlsl"
+			#include "../ShadowCasterCommon.hlsl"
 			ENDHLSL
 		}
 
@@ -129,7 +129,7 @@ Shader "YPipeline/Shading Models/Standard PBR(Separated Texture)"
 
 			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "StandardPBRForTestInput.hlsl"
-			#include "StandardPBRDepthPass.hlsl"
+			#include "../DepthPrePassCommon.hlsl"
 			ENDHLSL
 		}
 		
@@ -149,7 +149,7 @@ Shader "YPipeline/Shading Models/Standard PBR(Separated Texture)"
 
 			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "StandardPBRForTestInput.hlsl"
-			#include "StandardPBRMetaPass.hlsl"
+			#include "../MetaCommon.hlsl"
 			ENDHLSL
 		}
 

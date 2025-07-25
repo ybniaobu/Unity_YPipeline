@@ -1,5 +1,5 @@
-﻿#ifndef YPIPELINE_UNLIT_SHADOW_CASTER_PASS_INCLUDED
-#define YPIPELINE_UNLIT_SHADOW_CASTER_PASS_INCLUDED
+﻿#ifndef YPIPELINE_SHADOW_CASTER_COMMON_INCLUDED
+#define YPIPELINE_SHADOW_CASTER_COMMON_INCLUDED
 
 float _ShadowPancaking;
 
@@ -25,9 +25,9 @@ Varyings ShadowCasterVert(Attributes IN)
     OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
 
     #if UNITY_REVERSED_Z
-        float clamped = min(OUT.positionHCS.z, OUT.positionHCS.w * UNITY_NEAR_CLIP_VALUE);
+    float clamped = min(OUT.positionHCS.z, OUT.positionHCS.w * UNITY_NEAR_CLIP_VALUE);
     #else
-        float clamped = max(OUT.positionHCS.z, OUT.positionHCS.w * UNITY_NEAR_CLIP_VALUE);
+    float clamped = max(OUT.positionHCS.z, OUT.positionHCS.w * UNITY_NEAR_CLIP_VALUE);
     #endif
 
     OUT.positionHCS.z = lerp(OUT.positionHCS.z, clamped, _ShadowPancaking);
@@ -42,8 +42,8 @@ void ShadowCasterFrag(Varyings IN)
     
     #if defined(_CLIPPING)
         float4 baseColor = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _BaseColor);
-        float4 albedo = SAMPLE_TEXTURE2D(_BaseTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).rgba * baseColor;
-        clip(albedo.a - UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Cutoff));
+        float alpha = SAMPLE_TEXTURE2D(_BaseTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).a * baseColor.a;
+        clip(alpha - UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Cutoff));
     #endif
 
     #if defined(LOD_FADE_CROSSFADE)

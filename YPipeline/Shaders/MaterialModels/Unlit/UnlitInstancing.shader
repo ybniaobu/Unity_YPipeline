@@ -22,13 +22,8 @@
         [Header(Other Settings)] [Space(8)]
         [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull Mode", Float) = 2
         
-    	_Instancing("Removing SRP Compatibility", Float) = 1
+    	[HideInInspector] _Instancing("Removing SRP Compatibility", Float) = 0.0
     }
-    
-    HLSLINCLUDE
-    // TODO: 必须被使用才能取消 SRP Compatibility
-    float _Instancing;
-    ENDHLSL
     
     SubShader
     {
@@ -45,7 +40,7 @@
             HLSLPROGRAM
             #pragma target 4.5
             
-            #pragma vertex UnlitVert
+            #pragma vertex UnlitInstancingVert
             #pragma fragment UnlitOpaqueFrag
 
             #pragma shader_feature_local_fragment _CLIPPING
@@ -57,6 +52,20 @@
             #include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "UnlitInput.hlsl"
             #include "UnlitPass.hlsl"
+
+            // For Removing SRP Batcher Compatibility
+			float _Instancing;
+
+            Varyings UnlitInstancingVert(Attributes IN)
+			{
+			    Varyings OUT;
+			    UNITY_SETUP_INSTANCE_ID(IN);
+			    UNITY_TRANSFER_INSTANCE_ID(IN, OUT);
+			    OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
+			    float4 baseST = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _BaseTex_ST) + _Instancing;
+			    OUT.uv = IN.uv * baseST.xy + baseST.zw;
+			    return OUT;
+			}
             ENDHLSL
         }
 
@@ -74,7 +83,7 @@
             HLSLPROGRAM
             #pragma target 4.5
             
-            #pragma vertex UnlitVert
+            #pragma vertex UnlitInstancingVert
             #pragma fragment UnlitTransparencyFrag
 
             #pragma shader_feature_local_fragment _CLIPPING
@@ -86,6 +95,20 @@
             #include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "UnlitInput.hlsl"
             #include "UnlitPass.hlsl"
+
+            // For Removing SRP Batcher Compatibility
+			float _Instancing;
+
+            Varyings UnlitInstancingVert(Attributes IN)
+			{
+			    Varyings OUT;
+			    UNITY_SETUP_INSTANCE_ID(IN);
+			    UNITY_TRANSFER_INSTANCE_ID(IN, OUT);
+			    OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
+			    float4 baseST = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _BaseTex_ST) + _Instancing;
+			    OUT.uv = IN.uv * baseST.xy + baseST.zw;
+			    return OUT;
+			}
             ENDHLSL
         }
 
@@ -111,7 +134,7 @@
 
 			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "UnlitInput.hlsl"
-			#include "UnlitShadowCasterPass.hlsl"
+			#include "../ShadowCasterCommon.hlsl"
 			ENDHLSL
 		}
 
@@ -138,7 +161,7 @@
 
 			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "UnlitInput.hlsl"
-			#include "UnlitDepthPass.hlsl"
+			#include "../DepthPrePassCommon.hlsl"
 			ENDHLSL
 		}
 
@@ -157,7 +180,7 @@
 
 			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "UnlitInput.hlsl"
-			#include "UnlitMetaPass.hlsl"
+			#include "../MetaCommon.hlsl"
 			ENDHLSL
 		}
 

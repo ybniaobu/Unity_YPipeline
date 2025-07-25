@@ -63,7 +63,8 @@ namespace YPipeline
                 // Object Motion Vector
                 TextureDesc motionVectorStencilDesc = new TextureDesc(bufferSize.x,bufferSize.y)
                 {
-                    format = GraphicsFormat.S8_UInt,
+                    format = GraphicsFormat.D32_SFloat_S8_UInt,
+                    //format = GraphicsFormat.S8_UInt,
                     filterMode = FilterMode.Point,
                     wrapMode = TextureWrapMode.Clamp,
                     clearBuffer = true,

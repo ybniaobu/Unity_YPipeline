@@ -45,8 +45,6 @@ Shader "YPipeline/Shading Models/Unlit"
 
             #pragma multi_compile _ LOD_FADE_CROSSFADE
 
-            #pragma multi_compile_instancing
-
             #include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "UnlitInput.hlsl"
             #include "UnlitPass.hlsl"
@@ -74,8 +72,6 @@ Shader "YPipeline/Shading Models/Unlit"
 
             #pragma multi_compile _ LOD_FADE_CROSSFADE
 
-            #pragma multi_compile_instancing
-
             #include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "UnlitInput.hlsl"
             #include "UnlitPass.hlsl"
@@ -100,11 +96,9 @@ Shader "YPipeline/Shading Models/Unlit"
 
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
 
-			#pragma multi_compile_instancing
-
 			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "UnlitInput.hlsl"
-			#include "UnlitShadowCasterPass.hlsl"
+			#include "../ShadowCasterCommon.hlsl"
 			ENDHLSL
 		}
 
@@ -127,11 +121,9 @@ Shader "YPipeline/Shading Models/Unlit"
 
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
 
-			#pragma multi_compile_instancing
-
 			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "UnlitInput.hlsl"
-			#include "UnlitDepthPass.hlsl"
+			#include "../DepthPrePassCommon.hlsl"
 			ENDHLSL
 		}
 
@@ -150,7 +142,7 @@ Shader "YPipeline/Shading Models/Unlit"
 
 			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "UnlitInput.hlsl"
-			#include "UnlitMetaPass.hlsl"
+			#include "../MetaCommon.hlsl"
 			ENDHLSL
 		}
 
@@ -181,8 +173,6 @@ Shader "YPipeline/Shading Models/Unlit"
             #pragma shader_feature_local_vertex _ADD_PRECOMPUTED_VELOCITY
 
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
-
-            #pragma multi_compile_instancing
 
             #include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "UnlitInput.hlsl"
