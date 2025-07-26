@@ -32,7 +32,7 @@ namespace YPipeline
                 {
                     rendererConfiguration = PerObjectData.None,
                     renderQueueRange = new RenderQueueRange(2450, 2499),
-                    sortingCriteria = SortingCriteria.OptimizeStateChanges
+                    sortingCriteria = SortingCriteria.CommonOpaque
                 };
                 
                 passData.opaqueRendererList = data.renderGraph.CreateRendererList(opaqueRendererListDesc);

@@ -27,7 +27,7 @@ namespace YPipeline
             m_CameraPipelineNodes.Clear();
             switch (renderPath)
             {
-                case RenderPath.Forward: 
+                case RenderPath.TiledBasedForward: 
                     m_CameraPipelineNodes.Add(PipelinePass.Create<CullingPass>());
                     m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardLightsPass>());
                     m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardShadowsPass>());
@@ -51,10 +51,10 @@ namespace YPipeline
                     m_CameraPipelineNodes.Add(PipelinePass.Create<GizmosPass>());
 #endif
                     break;
-                case RenderPath.Deferred:
+                case RenderPath.TiledBasedDeferred:
                     
                     break;
-                case RenderPath.Custom:
+                case RenderPath.ClusteredBasedForward:
                     
                     break;
             }

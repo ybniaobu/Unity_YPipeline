@@ -189,7 +189,8 @@
 			Name "MotionVectors"
             Tags { "LightMode" = "MotionVectors" }
             
-            ZWrite On
+            ZWrite Off
+            ZTest Equal
             ColorMask RG
             Cull [_Cull]
             

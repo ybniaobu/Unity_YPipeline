@@ -8,7 +8,7 @@ namespace YPipeline
 {
     public enum RenderPath
     {
-        Forward, Deferred, Custom
+        TiledBasedForward, TiledBasedDeferred, ClusteredBasedForward
     }
 
     public enum Quality
@@ -47,7 +47,9 @@ namespace YPipeline
         // ----------------------------------------------------------------------------------------------------
         
         public override string renderPipelineShaderTag => string.Empty;
-        public override Shader defaultShader => Shader.Find("YPipeline/PBR/Standard Forward (Separated Texture)");
+        public override Shader defaultShader => Shader.Find("YPipeline/Shading Models/Standard PBR(Separated Texture)");
+
+        public override Material defaultMaterial => pipelineResources.defaultMaterials.standardPBR;
 
         protected override RenderPipeline CreatePipeline()
         {
@@ -62,7 +64,7 @@ namespace YPipeline
         [Header("Rendering Settings")]
         public YPipelineResources pipelineResources;
         
-        public RenderPath renderPath = RenderPath.Forward;
+        public RenderPath renderPath = RenderPath.TiledBasedForward;
         
         public bool enableHDRColorBuffer = true;
         

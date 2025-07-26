@@ -12,10 +12,31 @@ namespace YPipeline.Editor
         
         public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] properties)
         {
+            // FindProperties(properties);
+            // GUILayout.Label("Hello Word");
+            // DrawBaseTexAndColor(m_Material);
+            
+            
             base.OnGUI(materialEditor, properties);
+
+            
             UnityEmissionProperty();
+            
         }
         
+        // ----------------------------------------------------------------------------------------------------
+        // Find Properties
+        // ----------------------------------------------------------------------------------------------------
+
+        public override void FindProperties(MaterialProperty[] properties)
+        {
+            base.FindProperties(properties);
+        }
+        
+        // ----------------------------------------------------------------------------------------------------
+        // Draw Properties
+        // ----------------------------------------------------------------------------------------------------
+
         private void UnityEmissionProperty()
         {
             EditorGUI.BeginChangeCheck();

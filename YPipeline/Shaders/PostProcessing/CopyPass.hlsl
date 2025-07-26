@@ -41,7 +41,8 @@ Varyings CopyVert(uint vertexID : SV_VertexID)
 
 float4 CopyFrag(Varyings IN) : SV_TARGET
 {
-    return SAMPLE_TEXTURE2D_LOD(_BlitTexture, sampler_LinearClamp, IN.uv, 0);
+    return LOAD_TEXTURE2D_LOD(_BlitTexture, IN.positionHCS.xy, 0);
+    // return SAMPLE_TEXTURE2D_LOD(_BlitTexture, sampler_LinearClamp, IN.uv, 0);
 }
 
 #endif

@@ -158,7 +158,8 @@ Shader "YPipeline/Shading Models/Standard PBR(Separated Texture)"
 			Name "MotionVectors"
             Tags { "LightMode" = "MotionVectors" }
             
-            ZWrite On
+            ZWrite Off
+            ZTest Equal
             ColorMask RG
             Cull [_Cull]
             

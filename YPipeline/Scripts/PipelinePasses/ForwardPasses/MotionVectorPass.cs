@@ -16,8 +16,7 @@ namespace YPipeline
             public RendererListHandle alphaTestRendererList;
             
             public TextureHandle motionVectorTexture;
-            public TextureHandle motionVectorStencil;
-            
+            public TextureHandle depthAttachment;
         }
         
         private const string k_CameraMotionVector = "Hidden/YPipeline/CameraMotionVector";
@@ -61,23 +60,13 @@ namespace YPipeline
                 passData.motionVectorTexture = builder.WriteTexture(data.MotionVectorTexture);
                 
                 // Object Motion Vector
-                TextureDesc motionVectorStencilDesc = new TextureDesc(bufferSize.x,bufferSize.y)
-                {
-                    format = GraphicsFormat.D32_SFloat_S8_UInt,
-                    //format = GraphicsFormat.S8_UInt,
-                    filterMode = FilterMode.Point,
-                    wrapMode = TextureWrapMode.Clamp,
-                    clearBuffer = true,
-                    name = "Motion Vector Stencil"
-                };
-                
-                passData.motionVectorStencil = builder.CreateTransientTexture(motionVectorStencilDesc);
+                passData.depthAttachment = builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.ReadWrite);
                 
                 RendererListDesc opaqueRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_MotionVectorsShaderTagId, data.cullingResults, data.camera)
                 {
                     rendererConfiguration = PerObjectData.MotionVectors,
                     renderQueueRange = new RenderQueueRange(2000, 2449),
-                    sortingCriteria = SortingCriteria.CommonOpaque
+                    sortingCriteria = SortingCriteria.OptimizeStateChanges
                 };
                 
                 RendererListDesc alphaTestRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_MotionVectorsShaderTagId, data.cullingResults, data.camera)
@@ -103,7 +92,7 @@ namespace YPipeline
                 builder.SetRenderFunc((MotionVectorPassData data, RenderGraphContext context) =>
                 {
                     context.cmd.SetRenderTarget(data.motionVectorTexture, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store,
-                        data.motionVectorStencil, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
+                        data.depthAttachment, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
                     
                     // Object Motion Vector
                     context.cmd.BeginSample("Object Motion Vector");

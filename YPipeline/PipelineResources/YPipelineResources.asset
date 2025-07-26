@@ -33,3 +33,5 @@ MonoBehaviour:
   computeShaders:
     tiledLightCullingCs: {fileID: 7200000, guid: f0b81bd803cf09b48a241b0856dbef54,
       type: 3}
+  defaultMaterials:
+    standardPBR: {fileID: 2100000, guid: c0ab7d7107a2e474ba54f45508a1308e, type: 2}

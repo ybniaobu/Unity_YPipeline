@@ -34,5 +34,14 @@ namespace YPipeline
         }
         
         public ComputeShaders computeShaders;
+
+
+        [System.Serializable]
+        public struct DefaultMaterials
+        {
+            public Material standardPBR;
+        }
+        
+        public DefaultMaterials defaultMaterials;
     }
 }
