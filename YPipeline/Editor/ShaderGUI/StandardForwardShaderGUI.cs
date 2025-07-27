@@ -4,18 +4,21 @@ using UnityEngine.Rendering;
 
 namespace YPipeline.Editor
 {
-    public class StandardForwardShaderGUI : YPipelineShaderGUI
+    public class StandardForwardShaderGUI : YPipelineBaseShaderGUI
     {
+        protected override bool ShowDefaultGUI => true;
+
         // ----------------------------------------------------------------------------------------------------
-        // OnGUI Related
+        // ShaderGUI Event Functions
         // ----------------------------------------------------------------------------------------------------
         
         public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] properties)
         {
             base.OnGUI(materialEditor, properties);
-            // DrawMaterialProperties();
+            FindProperties(properties);
             
             UnityEmissionProperty();
+            DrawAlembicMotionVectorsOption(m_Material);
         }
 
         private void UnityEmissionProperty()
@@ -31,11 +34,6 @@ namespace YPipeline.Editor
                 }
             }
         }
-
-        // private void DrawMaterialProperties()
-        // {
-        //     GUILayout.Label("Main Maps", EditorStyles.boldLabel);
-        // }
         
         // ----------------------------------------------------------------------------------------------------
         // ValidateMaterial Related
@@ -43,7 +41,7 @@ namespace YPipeline.Editor
 
         public override void ValidateMaterial(Material material)
         {
-            DisableMotionVectorsPass(material);
+            SetupMotionVectorsPassAndKeywords(material);
         }
     }
 }

@@ -14,5 +14,6 @@ public class Debugger : MonoBehaviour
     void Update()
     {
         Debug.Log(material.GetShaderPassEnabled("MotionVectors"));
+        Debug.Log(material.IsKeywordEnabled("_ADD_PRECOMPUTED_VELOCITY"));
     }
 }

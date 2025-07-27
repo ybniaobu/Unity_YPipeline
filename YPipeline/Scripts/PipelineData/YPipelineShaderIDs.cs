@@ -232,6 +232,7 @@ namespace YPipeline
         // Post Processing Related Keywords
         // ----------------------------------------------------------------------------------------------------
         
+        public const string k_AddPrecomputedVelocity = "_ADD_PRECOMPUTED_VELOCITY";
         public const string k_TAASample3X3 = "_TAA_SAMPLE_3X3";
         public const string k_TAAYCOCG = "_TAA_YCOCG";
         public const string k_TAAVariance = "_TAA_VARIANCE";

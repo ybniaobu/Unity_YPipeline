@@ -4,24 +4,24 @@ using UnityEngine.Rendering;
 
 namespace YPipeline.Editor
 {
-    public class UnlitShaderGUI : YPipelineShaderGUI
+    public class UnlitShaderGUI : YPipelineBaseShaderGUI
     {
+        protected override bool ShowDefaultGUI => true;
+        
         // ----------------------------------------------------------------------------------------------------
-        // OnGUI Related
+        // ShaderGUI Event Functions
         // ----------------------------------------------------------------------------------------------------
         
         public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] properties)
         {
-            // FindProperties(properties);
-            // GUILayout.Label("Hello Word");
-            // DrawBaseTexAndColor(m_Material);
-            
-            
             base.OnGUI(materialEditor, properties);
-
+            
+            FindProperties(properties);
+            // DrawBaseTexAndColor(m_Material);
+            // DrawEmissionTexAndColor(m_Material);
             
             UnityEmissionProperty();
-            
+            DrawAlembicMotionVectorsOption(m_Material);
         }
         
         // ----------------------------------------------------------------------------------------------------
@@ -57,7 +57,7 @@ namespace YPipeline.Editor
 
         public override void ValidateMaterial(Material material)
         {
-            DisableMotionVectorsPass(material);
+            SetupMotionVectorsPassAndKeywords(material);
         }
     }
 }

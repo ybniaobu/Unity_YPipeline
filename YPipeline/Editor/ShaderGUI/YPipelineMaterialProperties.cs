@@ -12,5 +12,7 @@ namespace YPipeline.Editor
         
         public static readonly string k_AlphaClipping = "_Clipping";
         public static readonly string k_AlphaCutoff = "_Cutoff";
+        
+        public static readonly string k_AddPrecomputedVelocity = "_AddPrecomputedVelocity";
     }
 }

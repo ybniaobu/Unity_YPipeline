@@ -14,6 +14,7 @@ Shader "YPipeline/Shading Models/Unlit"
     	[Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("Z Test", Float) = 4
         [Toggle(_CLIPPING)] _Clipping ("Alpha Clipping", Float) = 0
         _Cutoff("Alpha CutOff", Range(0.0, 1.0)) = 0.5
+    	// [Enum(Off, 0, On, 1)] _AlphaToCoverage ("Alpha To Coverage", Float) = 0
         
         [Header(Emission Settings)] [Space(8)]
         [HDR] _EmissionColor("Emission Color", Color) = (0.0, 0.0, 0.0, 1.0)
@@ -21,6 +22,8 @@ Shader "YPipeline/Shading Models/Unlit"
         
         [Header(Other Settings)] [Space(8)]
         [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull Mode", Float) = 2
+    	
+    	[HideInInspector] _AddPrecomputedVelocity("_AddPrecomputedVelocity", Float) = 0.0
     }
     
     SubShader

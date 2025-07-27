@@ -23,6 +23,7 @@
         [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull Mode", Float) = 2
         
     	[HideInInspector] _Instancing("Removing SRP Compatibility", Float) = 0.0
+    	[HideInInspector] _AddPrecomputedVelocity("Add Precomputed Velocity", Float) = 0.0
     }
     
     SubShader

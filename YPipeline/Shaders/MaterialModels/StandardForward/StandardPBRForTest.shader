@@ -37,6 +37,8 @@ Shader "YPipeline/Shading Models/Standard PBR(Separated Texture)"
         
         [Header(Other Settings)] [Space(8)]
         [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull Mode", Float) = 2
+    	
+    	[HideInInspector] _AddPrecomputedVelocity("_AddPrecomputedVelocity", Float) = 0.0
     }
     
     SubShader
