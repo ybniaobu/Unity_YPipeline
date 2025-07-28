@@ -54,6 +54,16 @@ float3 LoadColor(TEXTURE2D(tex), float2 pixelCoord, int2 offset)
     #endif
 }
 
+float4 LoadColorAndAlpha(TEXTURE2D(tex), float2 pixelCoord, int2 offset)
+{
+    float4 color = LoadOffset(tex, pixelCoord, offset);
+    #if _TAA_YCOCG
+        return float4(RGB2YCoCg(color.rgb), color.a);
+    #else
+        return color;
+    #endif
+}
+
 float3 OutputColor(float3 color)
 {
     #if _TAA_YCOCG
@@ -194,11 +204,14 @@ struct NeighbourhoodSamples
     float3 filteredM;
     float3 min;
     float3 max;
+    float alpha; // store accumulated high contrast neighbourhood
 };
 
 void GetNeighbourhoodSamples(inout NeighbourhoodSamples samples, TEXTURE2D(tex), float2 pixelCoord)
 {
-    samples.M = LoadColor(tex, pixelCoord, int2(0, 0)).xyz;
+    float4 middleColor = LoadColorAndAlpha(tex, pixelCoord, int2(0, 0));
+    samples.M = middleColor.xyz;
+    samples.alpha = middleColor.w;
     samples.neighbours[0] = LoadColor(tex, pixelCoord, int2(0, 1)).xyz;
     samples.neighbours[1] = LoadColor(tex, pixelCoord, int2(1, 0)).xyz;
     samples.neighbours[2] = LoadColor(tex, pixelCoord, int2(0, -1)).xyz;

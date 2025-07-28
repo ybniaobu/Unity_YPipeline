@@ -719,6 +719,9 @@ MonoBehaviour:
   historyFilter:
     m_OverrideState: 1
     m_Value: 1
+  useHistoryVelocity:
+    m_OverrideState: 1
+    m_Value: 1
 --- !u!114 &8792400353565013660
 MonoBehaviour:
   m_ObjectHideFlags: 3

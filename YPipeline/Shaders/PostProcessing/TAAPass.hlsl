@@ -10,7 +10,6 @@ TEXTURE2D(_MotionVectorTexture);
 TEXTURE2D(_TAAHistory);
 
 float4 _TAAParams; // x: history blend factor, y: variance clipping critical value
-float4 _Jitter; // xy: jitter
 
 float4 TAAFrag_AABBClamp(Varyings IN) : SV_TARGET
 {
@@ -142,22 +141,25 @@ float4 TAAFrag_ClipToFiltered(Varyings IN) : SV_TARGET
     float3 clampedHistory = NeighborhoodClipToFiltered(samples, history);
 
     // ------------------------- Adaptive Blending Factor -------------------------
-
-    // float velocityFactor = length(velocity) - HALF_MIN > 0 ? 0 : 0.95;
-    // //
-    // // //float velocityFactor = any(velocity) >= HALF_MIN;
-    // float blendFactor = lerp(_TAAParams.x - 0.1, 1.0, velocityFactor);
-    //
-    // //TODO: 根据深度增加 blendFactor
-    // //TODO：根据 history 和 current 的差值减少 blendFactor
-
-    
-    // float blendFactor = lerp(_TAAParams.x, 0.95, (1.0 - closestDepth));
-    
     float velocityFactor = saturate(sqrt(length(velocity)));
+    
+    float blendFactor = _TAAParams.x;
+    
+    // float clampedHistoryLuma = GetLuma(clampedHistory);
+    // float minLuma = GetLuma(samples.min);
+    // float maxLuma = GetLuma(samples.max);
+    // float lumaContrast = max(maxLuma - minLuma, 0) / clampedHistoryLuma;
+    //
+    // float alpha = lerp(samples.alpha, lumaContrast, 0.1);
+    // if (alpha > 0.25)
+    // {
+    //     blendFactor = 0.96;
+    // }
+    
+    // float velocityFactor = saturate(sqrt(length(velocity)));
     // if (velocityFactor == 0.0) clampedHistory = history;
     // blendFactor = closestDepth == 0 ? 0 : lerp(blendFactor, 0, velocityFactor);
-    float blendFactor = lerp(0.95, 0, velocityFactor);
+    blendFactor = lerp(blendFactor + 0.025, 0, velocityFactor);
     
 
     // ------------------------- Exponential Blending -------------------------
@@ -166,6 +168,7 @@ float4 TAAFrag_ClipToFiltered(Varyings IN) : SV_TARGET
     
     color = OutputColor(color);
     return float4(color, 1.0);
+    // return float4(color, alpha);
 }
 
 #endif

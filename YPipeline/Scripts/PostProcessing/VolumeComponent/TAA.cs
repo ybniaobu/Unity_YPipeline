@@ -101,6 +101,9 @@ namespace YPipeline
         [Tooltip("过滤历史以减少模糊 Filtering history to reduce reprojection blur")]
         public HistoryFilterParameter historyFilter = new HistoryFilterParameter(HistoryFilter.CatmullRomBicubic);
         
+        [Tooltip("额外存储历史运动向量贴图以更好地减少模糊以及闪烁 ")]
+        public BoolParameter useHistoryVelocity = new BoolParameter(true);
+        
         public bool IsActive() => true;
     }
 }
