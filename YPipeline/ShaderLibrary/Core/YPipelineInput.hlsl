@@ -6,7 +6,6 @@
 // ----------------------------------------------------------------------------------------------------
 
 float4 _CameraBufferSize; // x: 1.0 / bufferSize.x, y: 1.0 / bufferSize.y, z: bufferSize.x, w: bufferSize.y
-float4 _Jitter; // xy: halton jitter (-0.5, 0.5)
 
 // TODO: Global Constant buffer 存放一些全局的只需设置一次的 constant buffer
 // CBUFFER_START(ParamsPerSetting)

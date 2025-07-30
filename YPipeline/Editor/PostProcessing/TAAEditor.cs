@@ -15,6 +15,8 @@ namespace YPipeline.Editor
         private SerializedDataParameter m_ColorRectifyMode;
         private SerializedDataParameter m_CurrentFilter;
         private SerializedDataParameter m_HistoryFilter;
+        private SerializedDataParameter m_RelativeContrastThreshold;
+        private SerializedDataParameter m_FixedContrastThreshold;
         private SerializedDataParameter m_UseHistoryVelocity;
 
         public override void OnEnable()
@@ -30,6 +32,8 @@ namespace YPipeline.Editor
             m_ColorRectifyMode = Unpack(o.Find(x => x.colorRectifyMode));
             m_CurrentFilter = Unpack(o.Find(x => x.currentFilter));
             m_HistoryFilter = Unpack(o.Find(x => x.historyFilter));
+            m_FixedContrastThreshold = Unpack(o.Find(x => x.fixedContrastThreshold));
+            m_RelativeContrastThreshold = Unpack(o.Find(x => x.relativeContrastThreshold));
             m_UseHistoryVelocity = Unpack(o.Find(x => x.useHistoryVelocity));
         }
 
@@ -49,6 +53,8 @@ namespace YPipeline.Editor
             PropertyField(m_ColorRectifyMode);
             PropertyField(m_CurrentFilter);
             PropertyField(m_HistoryFilter);
+            PropertyField(m_FixedContrastThreshold);
+            PropertyField(m_RelativeContrastThreshold);
             PropertyField(m_UseHistoryVelocity);
         }
     }

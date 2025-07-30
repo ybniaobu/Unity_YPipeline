@@ -75,6 +75,7 @@ namespace YPipeline
         
         // Persistent Textures
         public static readonly int k_TAAHistoryID = Shader.PropertyToID("_TAAHistory");
+        public static readonly int k_MotionVectorHistoryID = Shader.PropertyToID("_MotionVectorHistory");
         
         // Result Textures
         public static readonly int k_TAATargetID = Shader.PropertyToID("_TAATarget");
@@ -88,8 +89,6 @@ namespace YPipeline
         // ----------------------------------------------------------------------------------------------------
         // Non Builtin Camera Matrix IDs
         // ----------------------------------------------------------------------------------------------------
-        
-        public static readonly int k_JitterID = Shader.PropertyToID("_Jitter");
         
         public static readonly int k_InverseProjectionMatrixID = Shader.PropertyToID("_MatrixIP");
         public static readonly int k_InverseViewProjectionMatrixID = Shader.PropertyToID("_MatrixIVP");
@@ -154,6 +153,7 @@ namespace YPipeline
         // ----------------------------------------------------------------------------------------------------
         
         public static readonly int k_TAAParamsID = Shader.PropertyToID("_TAAParams");
+        // public static readonly int k_TAAJitterID = Shader.PropertyToID("_TAAJitter");
         
         public static readonly int k_BloomParamsID = Shader.PropertyToID("_BloomParams");
         public static readonly int k_BloomThresholdID = Shader.PropertyToID("_BloomThreshold");
@@ -233,11 +233,13 @@ namespace YPipeline
         // ----------------------------------------------------------------------------------------------------
         
         public const string k_AddPrecomputedVelocity = "_ADD_PRECOMPUTED_VELOCITY";
+        
         public const string k_TAASample3X3 = "_TAA_SAMPLE_3X3";
         public const string k_TAAYCOCG = "_TAA_YCOCG";
         public const string k_TAAVariance = "_TAA_VARIANCE";
         public const string k_TAACurrentFilter = "_TAA_CURRENT_FILTER";
         public const string k_TAAHistoryFilter = "_TAA_HISTORY_FILTER";
+        public const string k_TAAUseHistoryVelocity = "_TAA_USE_HISTORY_VELOCITY";
         
         public const string k_BloomBicubicUpsampling = "_BLOOM_BICUBIC_UPSAMPLING";
         

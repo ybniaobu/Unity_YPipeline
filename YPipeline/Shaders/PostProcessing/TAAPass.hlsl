@@ -8,8 +8,10 @@
 TEXTURE2D(_CameraDepthTexture);
 TEXTURE2D(_MotionVectorTexture);
 TEXTURE2D(_TAAHistory);
+TEXTURE2D(_MotionVectorHistory);
 
-float4 _TAAParams; // x: history blend factor, y: variance clipping critical value
+float4 _TAAParams; // x: history blend factor, y: variance clipping critical value, z: fixed luma contrast threshold, w: relative luma contrast threshold
+// float4 _TAAJitter; // xy: current jitter, zw: history jitter
 
 float4 TAAFrag_AABBClamp(Varyings IN) : SV_TARGET
 {
@@ -21,7 +23,8 @@ float4 TAAFrag_AABBClamp(Varyings IN) : SV_TARGET
     
     // ------------------------- Filter Resampled History -------------------------
 
-    float3 history = SampleHistory(_TAAHistory, IN.uv - velocity);
+    float2 historyUV = IN.uv - velocity;
+    float3 history = SampleHistory(_TAAHistory, historyUV);
 
     // ------------------------- Get Neighbourhood Samples -------------------------
 
@@ -46,17 +49,23 @@ float4 TAAFrag_AABBClamp(Varyings IN) : SV_TARGET
 
     // ------------------------- Adaptive Blending Factor -------------------------
 
-    float blendFactor = closestDepth == 0 ? 0 : lerp(_TAAParams.x + 0.025, 0.975, sqrt(1.0 - closestDepth));
-    
-    float velocityLength = length(velocity);
-    if (velocityLength < HALF_MIN) clampedHistory = lerp(clampedHistory, history, blendFactor);
-    blendFactor = lerp(blendFactor, 0, saturate(velocityLength * velocityLength / 2));
+    float blendFactor = _TAAParams.x;
+
+    float velocityFactor = saturate(dot(velocity,velocity) - HALF_MIN);
+    blendFactor = lerp(blendFactor + 0.025, 0, velocityFactor);
+
+    float historyLuma = GetLuma(history);
+    float minLuma = GetLuma(samples.min);
+    float maxLuma = GetLuma(samples.max);
+    float accumulatedLumaContrast = GetHistoryAlpha(_TAAHistory, historyUV);
+    blendFactor = GetLumaContrastWeightedBlendFactor(blendFactor, minLuma, maxLuma, historyLuma, _TAAParams.zw, accumulatedLumaContrast);
+    float alpha = accumulatedLumaContrast;
 
     // ------------------------- Exponential Blending -------------------------
     
     float3 color = LumaExponentialAccumulation(clampedHistory, samples.filteredM, blendFactor);
     color = OutputColor(color);
-    return float4(color, 1.0);
+    return float4(color, alpha);
 }
 
 float4 TAAFrag_ClipToAABBCenter(Varyings IN) : SV_TARGET
@@ -69,7 +78,8 @@ float4 TAAFrag_ClipToAABBCenter(Varyings IN) : SV_TARGET
 
     // ------------------------- Filter Resampled History -------------------------
 
-    float3 history = SampleHistory(_TAAHistory, IN.uv - velocity);
+    float2 historyUV = IN.uv - velocity;
+    float3 history = SampleHistory(_TAAHistory, historyUV);
 
     // ------------------------- Get Neighbourhood Samples -------------------------
 
@@ -94,17 +104,23 @@ float4 TAAFrag_ClipToAABBCenter(Varyings IN) : SV_TARGET
 
     // ------------------------- Adaptive Blending Factor -------------------------
 
-    float blendFactor = closestDepth == 0 ? 0 : lerp(_TAAParams.x + 0.025, 0.975, sqrt(1.0 - closestDepth));
-    
-    float velocityLength = length(velocity);
-    if (velocityLength < HALF_MIN) clampedHistory = lerp(clampedHistory, history, blendFactor);
-    blendFactor = lerp(blendFactor, 0, saturate(velocityLength * velocityLength / 2));
+    float blendFactor = _TAAParams.x;
+
+    float velocityFactor = saturate(dot(velocity,velocity) - HALF_MIN);
+    blendFactor = lerp(blendFactor + 0.025, 0, velocityFactor);
+
+    float historyLuma = GetLuma(history);
+    float minLuma = GetLuma(samples.min);
+    float maxLuma = GetLuma(samples.max);
+    float accumulatedLumaContrast = GetHistoryAlpha(_TAAHistory, historyUV);
+    blendFactor = GetLumaContrastWeightedBlendFactor(blendFactor, minLuma, maxLuma, historyLuma, _TAAParams.zw, accumulatedLumaContrast);
+    float alpha = accumulatedLumaContrast;
 
     // ------------------------- Exponential Blending -------------------------
     
     float3 color = LumaExponentialAccumulation(clampedHistory, samples.filteredM, blendFactor);
     color = OutputColor(color);
-    return float4(color, 1.0);
+    return float4(color, alpha);
 }
 
 float4 TAAFrag_ClipToFiltered(Varyings IN) : SV_TARGET
@@ -117,7 +133,8 @@ float4 TAAFrag_ClipToFiltered(Varyings IN) : SV_TARGET
 
     // ------------------------- Filter Resampled History -------------------------
 
-    float3 history = SampleHistory(_TAAHistory, IN.uv - velocity);
+    float2 historyUV = IN.uv - velocity;
+    float3 history = SampleHistory(_TAAHistory, historyUV);
 
     // ------------------------- Get Neighbourhood Samples -------------------------
 
@@ -141,34 +158,29 @@ float4 TAAFrag_ClipToFiltered(Varyings IN) : SV_TARGET
     float3 clampedHistory = NeighborhoodClipToFiltered(samples, history);
 
     // ------------------------- Adaptive Blending Factor -------------------------
-    float velocityFactor = saturate(sqrt(length(velocity)));
     
     float blendFactor = _TAAParams.x;
     
-    // float clampedHistoryLuma = GetLuma(clampedHistory);
-    // float minLuma = GetLuma(samples.min);
-    // float maxLuma = GetLuma(samples.max);
-    // float lumaContrast = max(maxLuma - minLuma, 0) / clampedHistoryLuma;
-    //
-    // float alpha = lerp(samples.alpha, lumaContrast, 0.1);
-    // if (alpha > 0.25)
-    // {
-    //     blendFactor = 0.96;
-    // }
-    
-    // float velocityFactor = saturate(sqrt(length(velocity)));
-    // if (velocityFactor == 0.0) clampedHistory = history;
-    // blendFactor = closestDepth == 0 ? 0 : lerp(blendFactor, 0, velocityFactor);
+    float velocityFactor = saturate(dot(velocity,velocity) - HALF_MIN);
     blendFactor = lerp(blendFactor + 0.025, 0, velocityFactor);
-    
+
+    float historyLuma = GetLuma(history);
+    float minLuma = GetLuma(samples.min);
+    float maxLuma = GetLuma(samples.max);
+    float accumulatedLumaContrast = GetHistoryAlpha(_TAAHistory, historyUV);
+    blendFactor = GetLumaContrastWeightedBlendFactor(blendFactor, minLuma, maxLuma, historyLuma, _TAAParams.zw, accumulatedLumaContrast);
+    float alpha = accumulatedLumaContrast;
+
+    // ------------------------- Off Screen(Camera Jump) -------------------------
+
+    blendFactor = lerp(blendFactor, 0, any(abs(historyUV - 0.5) > 0.5));
 
     // ------------------------- Exponential Blending -------------------------
     
     float3 color = LumaExponentialAccumulation(clampedHistory, samples.filteredM, blendFactor);
     
     color = OutputColor(color);
-    return float4(color, 1.0);
-    // return float4(color, alpha);
+    return float4(color, alpha);
 }
 
 #endif

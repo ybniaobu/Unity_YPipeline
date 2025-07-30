@@ -59,6 +59,18 @@ namespace YPipeline
         
         public bool IsTAAHistoryReset { get; set; }
         
+        private RTHandle m_MotionVectorHistory;
+
+        public RTHandle GetMotionVectorHistory(ref RenderTextureDescriptor desc, string name = "Motion Vector History")
+        {
+            if (m_MotionVectorHistory == null || m_MotionVectorHistory.rt.width != desc.width || m_MotionVectorHistory.rt.height != desc.height)
+            {
+                m_MotionVectorHistory?.Release();
+                m_MotionVectorHistory = RTHandles.Alloc(desc, FilterMode.Bilinear, TextureWrapMode.Clamp, anisoLevel: 0, name: name);
+            }
+            return m_MotionVectorHistory;
+        }
+        
         // ----------------------------------------------------------------------------------------------------
         // Standard Dispose Pattern
         // ----------------------------------------------------------------------------------------------------
@@ -92,6 +104,8 @@ namespace YPipeline
                 //Dispose unmanaged resources
                 m_TAAHistory?.Release();
                 m_TAAHistory = null;
+                m_MotionVectorHistory?.Release();
+                m_MotionVectorHistory = null;
             }
             
             m_IsPerCameraDataReset = true;

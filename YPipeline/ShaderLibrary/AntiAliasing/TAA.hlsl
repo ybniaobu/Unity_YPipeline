@@ -204,24 +204,21 @@ struct NeighbourhoodSamples
     float3 filteredM;
     float3 min;
     float3 max;
-    float alpha; // store accumulated high contrast neighbourhood
 };
 
 void GetNeighbourhoodSamples(inout NeighbourhoodSamples samples, TEXTURE2D(tex), float2 pixelCoord)
 {
-    float4 middleColor = LoadColorAndAlpha(tex, pixelCoord, int2(0, 0));
-    samples.M = middleColor.xyz;
-    samples.alpha = middleColor.w;
-    samples.neighbours[0] = LoadColor(tex, pixelCoord, int2(0, 1)).xyz;
-    samples.neighbours[1] = LoadColor(tex, pixelCoord, int2(1, 0)).xyz;
-    samples.neighbours[2] = LoadColor(tex, pixelCoord, int2(0, -1)).xyz;
-    samples.neighbours[3] = LoadColor(tex, pixelCoord, int2(-1, 0)).xyz;
+    samples.M = LoadColor(tex, pixelCoord, int2(0, 0));
+    samples.neighbours[0] = LoadColor(tex, pixelCoord, int2(0, 1));
+    samples.neighbours[1] = LoadColor(tex, pixelCoord, int2(1, 0));
+    samples.neighbours[2] = LoadColor(tex, pixelCoord, int2(0, -1));
+    samples.neighbours[3] = LoadColor(tex, pixelCoord, int2(-1, 0));
 
     #if _TAA_SAMPLE_3X3
-    samples.neighbours[4] = LoadColor(tex, pixelCoord, int2(-1, 1)).xyz;
-    samples.neighbours[5] = LoadColor(tex, pixelCoord, int2(1, 1)).xyz;
-    samples.neighbours[6] = LoadColor(tex, pixelCoord, int2(-1, -1)).xyz;
-    samples.neighbours[7] = LoadColor(tex, pixelCoord, int2(1, -1)).xyz;
+    samples.neighbours[4] = LoadColor(tex, pixelCoord, int2(-1, 1));
+    samples.neighbours[5] = LoadColor(tex, pixelCoord, int2(1, 1));
+    samples.neighbours[6] = LoadColor(tex, pixelCoord, int2(-1, -1));
+    samples.neighbours[7] = LoadColor(tex, pixelCoord, int2(1, -1));
     #endif
 }
 
@@ -268,10 +265,10 @@ float3 GaussianFilterMiddleColor(in NeighbourhoodSamples samples)
     // const float weights[9] = { 1.0, 0.4578, 0.4578, 0.4578, 0.4578, 0.2097, 0.2097, 0.2097, 0.2097 };
     
     // sigma = 0.6
-    // const float weights[9] = { 1.0, 0.2493, 0.2493, 0.2493, 0.2493, 0.0625, 0.0625, 0.0625, 0.0625 };
+    const float weights[9] = { 1.0, 0.2493, 0.2493, 0.2493, 0.2493, 0.0625, 0.0625, 0.0625, 0.0625 };
 
     // sigma = 0.5
-    const float weights[9] = { 1.0, 0.1353, 0.1353, 0.1353, 0.1353, 0.0183, 0.0183, 0.0183, 0.0183 };
+    // const float weights[9] = { 1.0, 0.1353, 0.1353, 0.1353, 0.1353, 0.0183, 0.0183, 0.0183, 0.0183 };
     float weightSum = rcp(GetLuma(samples.M) + 1.0) * 1.0;
     float3 filtered = weightSum * samples.M;
 
@@ -394,8 +391,21 @@ float3 NeighborhoodClipToFiltered(in NeighbourhoodSamples samples, float3 histor
 // Adaptive Blending Factor
 // ----------------------------------------------------------------------------------------------------
 
+float GetHistoryAlpha(TEXTURE2D(tex), float2 historyUV)
+{
+    return SAMPLE_TEXTURE2D_LOD(tex, sampler_LinearClamp, historyUV, 0).a;
+}
 
-
+// recommend blendFactor >= 0.95
+float GetLumaContrastWeightedBlendFactor(float blendFactor, float minNeighbourLuma, float maxNeighbourLuma, float historyLuma, float2 contrastThreshold, inout float accumulatedLumaContrast)
+{
+    float lumaContrast = max(maxNeighbourLuma - minNeighbourLuma, 0);
+    accumulatedLumaContrast = lerp(lumaContrast, accumulatedLumaContrast, 0.95);
+    float threshold = max(contrastThreshold.x, historyLuma * contrastThreshold.y);
+    float lumaFactor = saturate(accumulatedLumaContrast - threshold);
+    blendFactor = lerp(blendFactor, 0.98, lumaFactor);
+    return blendFactor;
+}
 
 // ----------------------------------------------------------------------------------------------------
 // Exponential Moving Average

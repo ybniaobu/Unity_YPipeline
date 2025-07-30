@@ -73,7 +73,7 @@ MonoBehaviour:
     m_Value: 0.5
   exposure:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 1.65
   saturation:
     m_OverrideState: 1
     m_Value: 1
@@ -697,7 +697,7 @@ MonoBehaviour:
     m_Value: 1
   historyBlendFactor:
     m_OverrideState: 1
-    m_Value: 0.9
+    m_Value: 0.925
   neighborhood:
     m_OverrideState: 1
     m_Value: 0
@@ -719,9 +719,15 @@ MonoBehaviour:
   historyFilter:
     m_OverrideState: 1
     m_Value: 1
+  fixedContrastThreshold:
+    m_OverrideState: 1
+    m_Value: 0.0625
+  relativeContrastThreshold:
+    m_OverrideState: 1
+    m_Value: 0.25
   useHistoryVelocity:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0
 --- !u!114 &8792400353565013660
 MonoBehaviour:
   m_ObjectHideFlags: 3

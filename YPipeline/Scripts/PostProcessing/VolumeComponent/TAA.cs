@@ -78,7 +78,7 @@ namespace YPipeline
         public ClampedFloatParameter jitterScale = new ClampedFloatParameter(1.0f, 0.0f, 2.0f);
         
         [Tooltip("历史帧混合系数 Determines how much the history is blended with the current frame")]
-        public ClampedFloatParameter historyBlendFactor = new ClampedFloatParameter(0.9f, 0.85f, 0.95f);
+        public ClampedFloatParameter historyBlendFactor = new ClampedFloatParameter(0.925f, 0.85f, 0.95f);
         
         [Tooltip("采样模式 Using a 3X3 or crossed(5 taps) neighborhood samples")]
         public TAANeighborhoodParameter neighborhood = new TAANeighborhoodParameter(TAANeighborhood._3X3);
@@ -101,7 +101,13 @@ namespace YPipeline
         [Tooltip("过滤历史以减少模糊 Filtering history to reduce reprojection blur")]
         public HistoryFilterParameter historyFilter = new HistoryFilterParameter(HistoryFilter.CatmullRomBicubic);
         
-        [Tooltip("额外存储历史运动向量贴图以更好地减少模糊以及闪烁 ")]
+        [Tooltip("闪烁绝对阈值 A fixed/absolute luma contrast threshold to judge whether a pixel is flicking")]
+        public ClampedFloatParameter fixedContrastThreshold = new ClampedFloatParameter(0.0625f, 0.03125f, 0.08333f);
+        
+        [Tooltip("闪烁相对阈值 A relative luma contrast threshold to judge whether a pixel is flicking")]
+        public ClampedFloatParameter relativeContrastThreshold = new ClampedFloatParameter(0.25f, 0.125f, 0.5f);
+        
+        [Tooltip("额外存储历史运动向量贴图以更好地减少模糊以及闪烁 Enable the motion vector history to better control ghosting & flicking artifacts")]
         public BoolParameter useHistoryVelocity = new BoolParameter(true);
         
         public bool IsActive() => true;
