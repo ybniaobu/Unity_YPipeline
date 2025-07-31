@@ -11,7 +11,7 @@ public class AutoRotation : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        Application.targetFrameRate = 30;
+        Application.targetFrameRate = 60;
         m_Transform = GetComponent<Transform>();
         m_StartPosition = m_Transform.position;
     }

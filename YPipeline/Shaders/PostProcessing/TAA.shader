@@ -8,7 +8,6 @@
     #pragma multi_compile_local_fragment _ _TAA_VARIANCE
     #pragma multi_compile_local_fragment _ _TAA_CURRENT_FILTER
     #pragma multi_compile_local_fragment _ _TAA_HISTORY_FILTER
-    #pragma multi_compile_local_fragment _ _TAA_USE_HISTORY_VELOCITY
     
     #include "TAAPass.hlsl"
     

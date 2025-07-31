@@ -29,7 +29,6 @@ namespace YPipeline
             public ColorRectifyMode rectifyMode;
             public CurrentFilter currentFilter;
             public HistoryFilter historyFilter;
-            public bool useHistoryVelocity;
         }
         
         private TAA m_TAA;
@@ -78,7 +77,6 @@ namespace YPipeline
                     passData.rectifyMode = m_TAA.colorRectifyMode.value;
                     passData.currentFilter = m_TAA.currentFilter.value;
                     passData.historyFilter = m_TAA.historyFilter.value;
-                    passData.useHistoryVelocity = m_TAA.useHistoryVelocity.value;
                     
                     // Import TAA history
                     Vector2Int bufferSize = data.BufferSize;
@@ -97,23 +95,6 @@ namespace YPipeline
                     yCamera.perCameraData.IsTAAHistoryReset = false;
                     data.TAAHistory = data.renderGraph.ImportTexture(taaHistory);
                     passData.taaHistory = builder.ReadWriteTexture(data.TAAHistory);
-                    
-                    // Import Motion Vector History
-                    if (passData.useHistoryVelocity)
-                    {
-                        RenderTextureDescriptor motionVectorHistoryDesc = new RenderTextureDescriptor(bufferSize.x, bufferSize.y)
-                        {
-                            graphicsFormat = GraphicsFormat.R16G16_SFloat,
-                            volumeDepth = 1,
-                            msaaSamples = 1,
-                            mipCount = 0,
-                            autoGenerateMips = false,
-                        };
-                        
-                        RTHandle motionVectorHistory = yCamera.perCameraData.GetMotionVectorHistory(ref motionVectorHistoryDesc);
-                        passData.motionVectorHistory = data.renderGraph.ImportTexture(motionVectorHistory);
-                        builder.ReadWriteTexture(passData.motionVectorHistory);
-                    }
 
                     // Create TAA target
                     TextureDesc taaTargetDesc = new TextureDesc(taaHistoryDesc)
@@ -133,7 +114,6 @@ namespace YPipeline
                     {
                         context.cmd.BeginSample("TAABlendHistory");
                         data.material.SetVector(YPipelineShaderIDs.k_TAAParamsID, data.taaParams);
-                        data.material.SetTexture(YPipelineShaderIDs.k_MotionVectorHistoryID, data.motionVectorHistory);
                         // data.material.SetTexture(YPipelineShaderIDs.k_MotionVectorTextureID, data.isFirstFrame || data.isTAAHistoryReset ? context.defaultResources.blackTexture : data.motionVectorTexture);
                         
                         CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAASample3X3, data.is3X3);
@@ -141,7 +121,6 @@ namespace YPipeline
                         CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAAVariance, data.isVarianceAABB);
                         CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAACurrentFilter, data.currentFilter == CurrentFilter.Gaussian);
                         CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAAHistoryFilter, data.historyFilter == HistoryFilter.CatmullRomBicubic);
-                        CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAAUseHistoryVelocity, data.useHistoryVelocity);
                         
                         if (data.isFirstFrame || data.isTAAHistoryReset) BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.taaHistory);
                         data.material.SetTexture(YPipelineShaderIDs.k_TAAHistoryID, data.taaHistory);
@@ -154,14 +133,6 @@ namespace YPipeline
                         if (copyTextureSupported) context.cmd.CopyTexture(data.taaTarget, data.taaHistory);
                         else BlitUtility.BlitTexture(context.cmd, data.taaTarget, data.taaHistory);
                         context.cmd.EndSample("TAACopyHistory");
-
-                        if (data.useHistoryVelocity)
-                        {
-                            context.cmd.BeginSample("CopyMotionVectorHistory");
-                            if (copyTextureSupported) context.cmd.CopyTexture(data.motionVectorTexture, data.motionVectorHistory);
-                            else BlitUtility.BlitTexture(context.cmd, data.motionVectorTexture, data.motionVectorHistory);
-                            context.cmd.EndSample("CopyMotionVectorHistory");
-                        }
                         
                         context.renderContext.ExecuteCommandBuffer(context.cmd);
                         context.cmd.Clear();

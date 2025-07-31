@@ -2,23 +2,19 @@
 #define YPIPELINE_TAA_PASS_INCLUDED
 
 #include "CopyPass.hlsl"
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
 #include "../../ShaderLibrary/AntiAliasing/TAA.hlsl"
 
 TEXTURE2D(_CameraDepthTexture);
 TEXTURE2D(_MotionVectorTexture);
 TEXTURE2D(_TAAHistory);
-TEXTURE2D(_MotionVectorHistory);
 
 float4 _TAAParams; // x: history blend factor, y: variance clipping critical value, z: fixed luma contrast threshold, w: relative luma contrast threshold
-// float4 _TAAJitter; // xy: current jitter, zw: history jitter
 
 float4 TAAFrag_AABBClamp(Varyings IN) : SV_TARGET
 {
     // ------------------------- Get closest motion vector -------------------------
-
-    float closestDepth;
-    float2 velocityPixelCoord = GetClosestDepthPixelCoord(_CameraDepthTexture, IN.positionHCS.xy, closestDepth);
+    
+    float2 velocityPixelCoord = GetClosestDepthPixelCoord(_CameraDepthTexture, IN.positionHCS.xy);
     float2 velocity = LOAD_TEXTURE2D_LOD(_MotionVectorTexture, velocityPixelCoord, 0).rg;
     
     // ------------------------- Filter Resampled History -------------------------
@@ -49,31 +45,35 @@ float4 TAAFrag_AABBClamp(Varyings IN) : SV_TARGET
 
     // ------------------------- Adaptive Blending Factor -------------------------
 
-    float blendFactor = _TAAParams.x;
+    float blendFactor = _TAAParams.x + 0.025;
 
-    float velocityFactor = saturate(dot(velocity,velocity) - HALF_MIN);
-    blendFactor = lerp(blendFactor + 0.025, 0, velocityFactor);
-
+    // Luma Weighted
     float historyLuma = GetLuma(history);
     float minLuma = GetLuma(samples.min);
     float maxLuma = GetLuma(samples.max);
     float accumulatedLumaContrast = GetHistoryAlpha(_TAAHistory, historyUV);
     blendFactor = GetLumaContrastWeightedBlendFactor(blendFactor, minLuma, maxLuma, historyLuma, _TAAParams.zw, accumulatedLumaContrast);
-    float alpha = accumulatedLumaContrast;
+
+    // Velocity Weighted
+    blendFactor = GetVelocityWeightedBlendFactor(blendFactor, velocity);
+
+    // ------------------------- Off Screen(Camera Jump) -------------------------
+
+    blendFactor = lerp(blendFactor, 0, any(abs(historyUV - 0.5) > 0.5));
 
     // ------------------------- Exponential Blending -------------------------
     
     float3 color = LumaExponentialAccumulation(clampedHistory, samples.filteredM, blendFactor);
+    
     color = OutputColor(color);
-    return float4(color, alpha);
+    return float4(color, accumulatedLumaContrast);
 }
 
 float4 TAAFrag_ClipToAABBCenter(Varyings IN) : SV_TARGET
 {
     // ------------------------- Get closest motion vector -------------------------
-
-    float closestDepth;
-    float2 velocityPixelCoord = GetClosestDepthPixelCoord(_CameraDepthTexture, IN.positionHCS.xy, closestDepth);
+    
+    float2 velocityPixelCoord = GetClosestDepthPixelCoord(_CameraDepthTexture, IN.positionHCS.xy);
     float2 velocity = LOAD_TEXTURE2D_LOD(_MotionVectorTexture, velocityPixelCoord, 0).rg;
 
     // ------------------------- Filter Resampled History -------------------------
@@ -104,31 +104,35 @@ float4 TAAFrag_ClipToAABBCenter(Varyings IN) : SV_TARGET
 
     // ------------------------- Adaptive Blending Factor -------------------------
 
-    float blendFactor = _TAAParams.x;
+    float blendFactor = _TAAParams.x + 0.025;
 
-    float velocityFactor = saturate(dot(velocity,velocity) - HALF_MIN);
-    blendFactor = lerp(blendFactor + 0.025, 0, velocityFactor);
-
+    // Luma Weighted
     float historyLuma = GetLuma(history);
     float minLuma = GetLuma(samples.min);
     float maxLuma = GetLuma(samples.max);
     float accumulatedLumaContrast = GetHistoryAlpha(_TAAHistory, historyUV);
     blendFactor = GetLumaContrastWeightedBlendFactor(blendFactor, minLuma, maxLuma, historyLuma, _TAAParams.zw, accumulatedLumaContrast);
-    float alpha = accumulatedLumaContrast;
+
+    // Velocity Weighted
+    blendFactor = GetVelocityWeightedBlendFactor(blendFactor, velocity);
+
+    // ------------------------- Off Screen(Camera Jump) -------------------------
+
+    blendFactor = lerp(blendFactor, 0, any(abs(historyUV - 0.5) > 0.5));
 
     // ------------------------- Exponential Blending -------------------------
     
     float3 color = LumaExponentialAccumulation(clampedHistory, samples.filteredM, blendFactor);
+    
     color = OutputColor(color);
-    return float4(color, alpha);
+    return float4(color, accumulatedLumaContrast);
 }
 
 float4 TAAFrag_ClipToFiltered(Varyings IN) : SV_TARGET
 {
     // ------------------------- Get closest motion vector -------------------------
-
-    float closestDepth;
-    float2 velocityPixelCoord = GetClosestDepthPixelCoord(_CameraDepthTexture, IN.positionHCS.xy, closestDepth);
+    
+    float2 velocityPixelCoord = GetClosestDepthPixelCoord(_CameraDepthTexture, IN.positionHCS.xy);
     float2 velocity = LOAD_TEXTURE2D_LOD(_MotionVectorTexture, velocityPixelCoord, 0).rg;
 
     // ------------------------- Filter Resampled History -------------------------
@@ -159,18 +163,18 @@ float4 TAAFrag_ClipToFiltered(Varyings IN) : SV_TARGET
 
     // ------------------------- Adaptive Blending Factor -------------------------
     
-    float blendFactor = _TAAParams.x;
-    
-    float velocityFactor = saturate(dot(velocity,velocity) - HALF_MIN);
-    blendFactor = lerp(blendFactor + 0.025, 0, velocityFactor);
+    float blendFactor = _TAAParams.x + 0.025;
 
+    // Luma Weighted
     float historyLuma = GetLuma(history);
     float minLuma = GetLuma(samples.min);
     float maxLuma = GetLuma(samples.max);
     float accumulatedLumaContrast = GetHistoryAlpha(_TAAHistory, historyUV);
     blendFactor = GetLumaContrastWeightedBlendFactor(blendFactor, minLuma, maxLuma, historyLuma, _TAAParams.zw, accumulatedLumaContrast);
-    float alpha = accumulatedLumaContrast;
 
+    // Velocity Weighted
+    blendFactor = GetVelocityWeightedBlendFactor(blendFactor, velocity);
+    
     // ------------------------- Off Screen(Camera Jump) -------------------------
 
     blendFactor = lerp(blendFactor, 0, any(abs(historyUV - 0.5) > 0.5));
@@ -180,7 +184,7 @@ float4 TAAFrag_ClipToFiltered(Varyings IN) : SV_TARGET
     float3 color = LumaExponentialAccumulation(clampedHistory, samples.filteredM, blendFactor);
     
     color = OutputColor(color);
-    return float4(color, alpha);
+    return float4(color, accumulatedLumaContrast);
 }
 
 #endif

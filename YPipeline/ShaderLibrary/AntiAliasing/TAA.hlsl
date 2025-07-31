@@ -77,7 +77,7 @@ float3 OutputColor(float3 color)
 // Closest Velocity
 // ----------------------------------------------------------------------------------------------------
 
-float2 GetClosestDepthPixelCoord(TEXTURE2D(depthTex), float2 pixelCoord, out float depth)
+float2 GetClosestDepthPixelCoord(TEXTURE2D(depthTex), float2 pixelCoord)
 {
     float M = LoadOffset(depthTex, pixelCoord, int2(0, 0)).x;
     float N = LoadOffset(depthTex, pixelCoord, int2(0, 1)).x;
@@ -102,8 +102,7 @@ float2 GetClosestDepthPixelCoord(TEXTURE2D(depthTex), float2 pixelCoord, out flo
     offset = lerp(offset, float3(-1, -1, SW), COMPARE_DEVICE_DEPTH_CLOSER(SW, offset.z));
     offset = lerp(offset, float3(1, -1, SE), COMPARE_DEVICE_DEPTH_CLOSER(SE, offset.z));
     #endif
-
-    depth = offset.z;
+    
     return pixelCoord + offset.xy;
 }
 
@@ -396,7 +395,6 @@ float GetHistoryAlpha(TEXTURE2D(tex), float2 historyUV)
     return SAMPLE_TEXTURE2D_LOD(tex, sampler_LinearClamp, historyUV, 0).a;
 }
 
-// recommend blendFactor >= 0.95
 float GetLumaContrastWeightedBlendFactor(float blendFactor, float minNeighbourLuma, float maxNeighbourLuma, float historyLuma, float2 contrastThreshold, inout float accumulatedLumaContrast)
 {
     float lumaContrast = max(maxNeighbourLuma - minNeighbourLuma, 0);
@@ -404,6 +402,13 @@ float GetLumaContrastWeightedBlendFactor(float blendFactor, float minNeighbourLu
     float threshold = max(contrastThreshold.x, historyLuma * contrastThreshold.y);
     float lumaFactor = saturate(accumulatedLumaContrast - threshold);
     blendFactor = lerp(blendFactor, 0.98, lumaFactor);
+    return blendFactor;
+}
+
+float GetVelocityWeightedBlendFactor(float blendFactor, float2 velocity)
+{
+    float velocityFactor = dot(velocity, velocity);
+    blendFactor = lerp(blendFactor, 0, saturate(velocityFactor * 10));
     return blendFactor;
 }
 

@@ -107,9 +107,6 @@ namespace YPipeline
         [Tooltip("闪烁相对阈值 A relative luma contrast threshold to judge whether a pixel is flicking")]
         public ClampedFloatParameter relativeContrastThreshold = new ClampedFloatParameter(0.25f, 0.125f, 0.5f);
         
-        [Tooltip("额外存储历史运动向量贴图以更好地减少模糊以及闪烁 Enable the motion vector history to better control ghosting & flicking artifacts")]
-        public BoolParameter useHistoryVelocity = new BoolParameter(true);
-        
         public bool IsActive() => true;
     }
 }
