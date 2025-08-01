@@ -134,6 +134,33 @@ Shader "YPipeline/Shading Models/Standard PBR(Separated Texture)"
 			#include "../DepthPrePassCommon.hlsl"
 			ENDHLSL
 		}
+
+		Pass
+		{
+			Name "ThinGBuffer"
+			
+			Tags { "LightMode" = "ThinGBuffer" }
+			
+			ZWrite On
+			Cull [_Cull]
+			
+			HLSLPROGRAM
+			#pragma target 4.5
+
+			#pragma vertex ThinGBufferVert
+			#pragma fragment ThinGBufferFrag
+
+			#pragma shader_feature_local_fragment _USE_ROUGHNESSTEX
+            #pragma shader_feature_local_fragment _USE_NORMALTEX
+			#pragma shader_feature_local_fragment _CLIPPING
+
+			#pragma multi_compile _ LOD_FADE_CROSSFADE
+
+			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+			#include "StandardPBRForTestInput.hlsl"
+			#include "../ThinGBufferCommon.hlsl"
+			ENDHLSL
+		}
 		
         Pass
         {

@@ -49,17 +49,10 @@ Varyings MotionVectorVert(Attributes IN)
 float4 MotionVectorFrag(Varyings IN) : SV_Target
 {
     UNITY_SETUP_INSTANCE_ID(IN);
-    
-    float2 currentPositionNDC = IN.nonJitterPositionHCS.xy / IN.nonJitterPositionHCS.w;
-    float2 previousPositionNDC = IN.previousNonJitterPositionHCS.xy / IN.previousNonJitterPositionHCS.w;
 
-    float2 velocity = currentPositionNDC - previousPositionNDC;
-
-    #if UNITY_UV_STARTS_AT_TOP
-        velocity.y = -velocity.y;
-    #endif
-    
-    velocity *= 0.5;
+    // Note: unity_MotionVectorsParams.y is 0 is forceNoMotion is enabled
+    bool forceNoMotion = unity_MotionVectorsParams.y == 0.0;
+    if (forceNoMotion) return float4(0.0, 0.0, 0.0, 0.0);
 
     #if defined(_CLIPPING)
         float4 baseColor = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _BaseColor);
@@ -73,10 +66,17 @@ float4 MotionVectorFrag(Varyings IN) : SV_Target
         dither = lerp(-dither, dither, isNextLodLevel);
         clip(unity_LODFade.x + dither);
     #endif
+    
+    float2 currentPositionNDC = IN.nonJitterPositionHCS.xy / IN.nonJitterPositionHCS.w;
+    float2 previousPositionNDC = IN.previousNonJitterPositionHCS.xy / IN.previousNonJitterPositionHCS.w;
 
-    // Note: unity_MotionVectorsParams.y is 0 is forceNoMotion is enabled
-    bool forceNoMotion = unity_MotionVectorsParams.y == 0.0;
-    if (forceNoMotion) return float4(0.0, 0.0, 0.0, 0.0);
+    float2 velocity = currentPositionNDC - previousPositionNDC;
+
+    #if UNITY_UV_STARTS_AT_TOP
+        velocity.y = -velocity.y;
+    #endif
+    
+    velocity *= 0.5;
 
     return float4(velocity, 0, 0);
 }

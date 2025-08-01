@@ -360,7 +360,7 @@ namespace YPipeline
                 TextureDesc desc = new TextureDesc(size,size)
                 {
                     colorFormat = SystemInfo.GetGraphicsFormat(DefaultFormat.Shadow),
-                    depthBufferBits = DepthBits.Depth32,
+                    depthBufferBits = DepthBits.Depth16,
                     dimension = TextureDimension.Tex2DArray,
                     slices = data.lightsData.shadowingSpotLightCount,
                     filterMode = FilterMode.Bilinear,
@@ -411,7 +411,7 @@ namespace YPipeline
                 TextureDesc desc = new TextureDesc(size,size)
                 {
                     colorFormat = SystemInfo.GetGraphicsFormat(DefaultFormat.Shadow),
-                    depthBufferBits = DepthBits.Depth32,
+                    depthBufferBits = DepthBits.Depth16,
                     dimension = TextureDimension.CubeArray,
                     slices = data.lightsData.shadowingPointLightCount * 6,
                     filterMode = FilterMode.Bilinear,

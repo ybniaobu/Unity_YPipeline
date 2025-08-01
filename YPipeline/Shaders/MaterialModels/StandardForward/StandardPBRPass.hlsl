@@ -18,8 +18,7 @@ struct Varyings
     float2 uv           : TEXCOORD0;
     float3 positionWS   : TEXCOORD1;
     float3 normalWS     : TEXCOORD2;
-    float3 tangentWS    : TEXCOORD3;
-    float3 binormalWS   : TEXCOORD4;
+    float4 tangentWS    : TEXCOORD3;
     LIGHTMAP_UV(5)
 };
 
@@ -44,8 +43,8 @@ void InitializeStandardPBRParams(Varyings IN, inout StandardPBRParams standardPB
         float4 packedNormal = SAMPLE_TEXTURE2D(_NormalTex, sampler_Trilinear_Repeat_BaseTex, IN.uv);
         float3 normalTS = UnpackNormalScale(packedNormal, _NormalIntensity);
         float3 n = normalize(IN.normalWS);
-        float3 t = normalize(IN.tangentWS);
-        float3 b = normalize(IN.binormalWS);
+        float3 t = normalize(IN.tangentWS.xyz);
+        float3 b = normalize(cross(n, t) * IN.tangentWS.w);
         float3x3 tbn = float3x3(t, b, n);
         standardPBRParams.N = normalize(mul(normalTS, tbn));
     #else
@@ -67,8 +66,7 @@ Varyings StandardPBRVert(Attributes IN)
     OUT.uv = TRANSFORM_TEX(IN.uv, _BaseTex);
     OUT.positionWS = TransformObjectToWorld(IN.positionOS.xyz);
     OUT.normalWS = TransformObjectToWorldNormal(IN.normalOS);
-    OUT.tangentWS = TransformObjectToWorldDir(IN.tangentOS.xyz);
-    OUT.binormalWS = cross(OUT.normalWS, OUT.tangentWS) * IN.tangentOS.w;
+    OUT.tangentWS = float4(TransformObjectToWorldDir(IN.tangentOS.xyz), IN.tangentOS.w);
     TRANSFER_LIGHTMAP_UV(IN, OUT)
     return OUT;
 }
@@ -79,6 +77,23 @@ float4 StandardPBRFrag(Varyings IN) : SV_TARGET
     
     StandardPBRParams standardPBRParams = (StandardPBRParams) 0;
     InitializeStandardPBRParams(IN, standardPBRParams);
+
+    // ------------------------- Clipping -------------------------
+
+    // TODO: 修改 StandardPBRParams 的 albedo，让其包含 alpha
+    #if defined(_CLIPPING)
+        float alpha = SAMPLE_TEXTURE2D(_BaseTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).a * _BaseColor.a;
+        clip(alpha - _Cutoff);
+    #endif
+    
+    // ------------------------- LOD Fade -------------------------
+    
+    #if defined(LOD_FADE_CROSSFADE)
+        float dither = InterleavedGradientNoise(IN.positionHCS.xy, 0);
+        float isNextLodLevel = step(unity_LODFade.x, 0);
+        dither = lerp(-dither, dither, isNextLodLevel);
+        clip(unity_LODFade.x + dither);
+    #endif
     
     // ------------------------- Indirect Lighting -------------------------
     
@@ -137,22 +152,6 @@ float4 StandardPBRFrag(Varyings IN) : SV_TARGET
     //     
     //     renderingEquationContent.directPunctualLights += CalculateLightIrradiance(punctualLightParams) * StandardPBR_EnergyCompensation(punctualBRDFParams, standardPBRParams, energyCompensation);
     // }
-    
-    // ------------------------- Clipping -------------------------
-    
-    #if defined(_CLIPPING)
-        float alpha = SAMPLE_TEXTURE2D(_BaseTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).a * _BaseColor.a;
-        clip(alpha - _Cutoff);
-    #endif
-    
-    // ------------------------- LOD Fade -------------------------
-    
-    #if defined(LOD_FADE_CROSSFADE)
-        float dither = InterleavedGradientNoise(IN.positionHCS.xy, 0);
-        float isNextLodLevel = step(unity_LODFade.x, 0);
-        dither = lerp(-dither, dither, isNextLodLevel);
-        clip(unity_LODFade.x + dither);
-    #endif
     
     return float4(renderingEquationContent.directSunLight + renderingEquationContent.directPunctualLights + renderingEquationContent.indirectLightDiffuse + renderingEquationContent.indirectLightSpecular + standardPBRParams.emission, 1.0);
 }
