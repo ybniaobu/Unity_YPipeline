@@ -1,7 +1,7 @@
-﻿#ifndef YPIPELINE_THIN_GBUFFER_COMMON_INCLUDED
-#define YPIPELINE_THIN_GBUFFER_COMMON_INCLUDED
+﻿#ifndef YPIPELINE_UNLIT_THIN_GBUFFER_PASS_INCLUDED
+#define YPIPELINE_UNLIT_THIN_GBUFFER_PASS_INCLUDED
 
-#include "../../ShaderLibrary/EncodingLibrary.hlsl"
+#include "../../../ShaderLibrary/EncodingLibrary.hlsl"
 
 struct Attributes
 {
@@ -36,14 +36,14 @@ Varyings ThinGBufferVert(Attributes IN)
     return OUT;
 }
 
-float4 ThinGBufferFrag(Varyings IN, out float depth: SV_DEPTH) : SV_TARGET
+float4 ThinGBufferUnlitFrag(Varyings IN, out float depth: SV_DEPTH) : SV_TARGET
 {
     UNITY_SETUP_INSTANCE_ID(IN);
 
     #if defined(_CLIPPING)
-        float4 baseColor = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _BaseColor);
-        float alpha = SAMPLE_TEXTURE2D(_BaseTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).a * baseColor.a;
-        clip(alpha - UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Cutoff));
+    float4 baseColor = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _BaseColor);
+    float alpha = SAMPLE_TEXTURE2D(_BaseTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).a * baseColor.a;
+    clip(alpha - UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Cutoff));
     #endif
         
     #if defined(LOD_FADE_CROSSFADE)
@@ -52,28 +52,11 @@ float4 ThinGBufferFrag(Varyings IN, out float depth: SV_DEPTH) : SV_TARGET
         dither = lerp(-dither, dither, isNextLodLevel);
         clip(unity_LODFade.x + dither);
     #endif
-
-    #if _USE_ROUGHNESSTEX
-        float roughness = SAMPLE_TEXTURE2D(_RoughnessTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).r;
-    #else
-        float roughness = _Roughness;
-    #endif
-
-    #if _USE_NORMALTEX
-        float4 packedNormal = SAMPLE_TEXTURE2D(_NormalTex, sampler_Trilinear_Repeat_BaseTex, IN.uv);
-        float3 normalTS = UnpackNormalScale(packedNormal, _NormalIntensity);
-        float3 n = normalize(IN.normalWS);
-        float3 t = normalize(IN.tangentWS.xyz);
-        float3 b = normalize(cross(n, t) * IN.tangentWS.w);
-        float3x3 tbn = float3x3(t, b, n);
-        float3 N = normalize(mul(normalTS, tbn));
-    #else
-        float3 N = normalize(IN.normalWS);
-    #endif
-
+    
+    float3 N = normalize(IN.normalWS);
     depth = IN.positionHCS.z;
 
-    return float4(EncodeNormalInto888(N), roughness);
+    return float4(EncodeNormalInto888(N), 1);
 }
 
 #endif

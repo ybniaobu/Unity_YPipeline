@@ -46,6 +46,8 @@ namespace YPipeline
         public TextureHandle CameraColorTexture { set; get; }
         public TextureHandle CameraDepthTexture { set; get; }
         
+        public TextureHandle ThinGBuffer { set; get; }
+        
         public TextureHandle MotionVectorTexture { set; get; }
         
         

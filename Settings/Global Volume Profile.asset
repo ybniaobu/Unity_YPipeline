@@ -30,7 +30,7 @@ MonoBehaviour:
     m_Value: 0.5
   threshold:
     m_OverrideState: 1
-    m_Value: 5
+    m_Value: 10
   thresholdKnee:
     m_OverrideState: 1
     m_Value: 0.5
@@ -371,6 +371,8 @@ MonoBehaviour:
   m_Name: Global Volume Profile
   m_EditorClassIdentifier: 
   components:
+  - {fileID: 603639355023213161}
+  - {fileID: 8665324697614909667}
   - {fileID: -3444846745659079112}
   - {fileID: -3172449948836970238}
   - {fileID: 7271516751084142640}
@@ -380,7 +382,19 @@ MonoBehaviour:
   - {fileID: 8792400353565013660}
   - {fileID: 3228833441281930345}
   - {fileID: 5557600475121756230}
-  - {fileID: 8665324697614909667}
+--- !u!114 &603639355023213161
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f31ec85b5984bf49cc6cd5b436e2984, type: 3}
+  m_Name: AmbientOcclusion
+  m_EditorClassIdentifier: 
+  active: 1
 --- !u!114 &1171536392866436449
 MonoBehaviour:
   m_ObjectHideFlags: 3

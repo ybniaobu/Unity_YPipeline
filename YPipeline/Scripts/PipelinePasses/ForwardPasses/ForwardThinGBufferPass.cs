@@ -5,30 +5,31 @@ using UnityEngine.Rendering.RenderGraphModule;
 
 namespace YPipeline
 {
-    public class DepthNormalPass : PipelinePass
+    public class ForwardThinGBufferPass : PipelinePass
     {
-        private class DepthNormalPassData
+        private class ThinGBufferPassData
         {
             public TextureHandle depthAttachment;
+            public TextureHandle thinGBuffer;
             
             public RendererListHandle opaqueRendererList;
             public RendererListHandle alphaTestRendererList;
         }
-
+        
         protected override void Initialize() { }
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<DepthNormalPassData>("Depth Normal PrePass", out var passData))
+            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<ThinGBufferPassData>("Thin GBuffer", out var passData))
             {
-                RendererListDesc opaqueRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_DepthShaderTagId, data.cullingResults, data.camera)
+                RendererListDesc opaqueRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_ThinGBufferShaderTagId, data.cullingResults, data.camera)
                 {
                     rendererConfiguration = PerObjectData.None,
                     renderQueueRange = new RenderQueueRange(2000, 2449),
                     sortingCriteria = SortingCriteria.CommonOpaque
                 };
                 
-                RendererListDesc alphaTestRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_DepthShaderTagId, data.cullingResults, data.camera)
+                RendererListDesc alphaTestRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_ThinGBufferShaderTagId, data.cullingResults, data.camera)
                 {
                     rendererConfiguration = PerObjectData.None,
                     renderQueueRange = new RenderQueueRange(2450, 2499),
@@ -41,16 +42,21 @@ namespace YPipeline
                 builder.UseRendererList(passData.alphaTestRendererList);
 
                 passData.depthAttachment = builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.Write);
+                passData.thinGBuffer = builder.WriteTexture(data.ThinGBuffer);
                 
                 builder.AllowPassCulling(false);
                 builder.AllowRendererListCulling(false);
 
-                builder.SetRenderFunc((DepthNormalPassData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((ThinGBufferPassData data, RenderGraphContext context) =>
                 {
-                    context.cmd.SetRenderTarget(data.depthAttachment, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                    context.cmd.SetRenderTarget(data.thinGBuffer, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store, 
+                        data.depthAttachment, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
                     
                     context.cmd.DrawRendererList(data.opaqueRendererList);
                     context.cmd.DrawRendererList(data.alphaTestRendererList);
+                    
+                    context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_ThinGBufferTextureID, data.thinGBuffer);
+                    
                     context.renderContext.ExecuteCommandBuffer(context.cmd);
                     context.cmd.Clear();
                 });

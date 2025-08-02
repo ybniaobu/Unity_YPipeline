@@ -130,6 +130,31 @@ Shader "YPipeline/Shading Models/Unlit"
 			ENDHLSL
 		}
 
+		Pass
+		{
+			Name "ThinGBuffer"
+			
+			Tags { "LightMode" = "ThinGBuffer" }
+			
+			ZWrite On
+			Cull [_Cull]
+			
+			HLSLPROGRAM
+			#pragma target 4.5
+
+			#pragma vertex ThinGBufferVert
+			#pragma fragment ThinGBufferUnlitFrag
+			
+			#pragma shader_feature_local_fragment _CLIPPING
+
+			#pragma multi_compile _ LOD_FADE_CROSSFADE
+
+			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+			#include "UnlitInput.hlsl"
+			#include "UnlitThinGBufferPass.hlsl"
+			ENDHLSL
+		}
+
         Pass
         {
         	Name "Meta"

@@ -178,6 +178,7 @@ float V_SmithGGXCorrelated_Anisotropic(float at, float ab, float NoV, float NoL,
     return 0.5 / (V_SmithL + V_SmithV);
 }
 
+// Clear coat
 float V_Kelemen(float LoH)
 {
     return 0.25 / (LoH * LoH);
