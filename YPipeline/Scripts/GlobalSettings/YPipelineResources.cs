@@ -30,6 +30,7 @@ namespace YPipeline
         public struct ComputeShaders
         {
             public ComputeShader tiledLightCullingCs;
+            public ComputeShader ambientOcclusionCs;
             
         }
         

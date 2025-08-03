@@ -28,10 +28,12 @@ MonoBehaviour:
     - {fileID: 2800000, guid: 3e25f95154fc98a429f5e2ffb05134a8, type: 3}
     blueNoise16: {fileID: 2800000, guid: e95f12ac13c411d4f8cfbbfec19856a4, type: 3}
     blueNoise64: {fileID: 2800000, guid: f20af32bca62bab448e8b4454ad1c3b8, type: 3}
-    blueNoise128: {fileID: 0}
+    blueNoise128: {fileID: 2800000, guid: b7a7e4b5b41a1e74a9cc491794aa850e, type: 3}
     blueNoise256: {fileID: 2800000, guid: 327ad2c817f5c5646a409ef7764d931d, type: 3}
   computeShaders:
     tiledLightCullingCs: {fileID: 7200000, guid: f0b81bd803cf09b48a241b0856dbef54,
+      type: 3}
+    ambientOcclusionCs: {fileID: 7200000, guid: a9de2fa8b17c30e4593b18fba4d49293,
       type: 3}
   defaultMaterials:
     standardPBR: {fileID: 2100000, guid: c0ab7d7107a2e474ba54f45508a1308e, type: 2}

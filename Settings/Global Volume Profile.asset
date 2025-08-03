@@ -395,6 +395,15 @@ MonoBehaviour:
   m_Name: AmbientOcclusion
   m_EditorClassIdentifier: 
   active: 1
+  intensity:
+    m_OverrideState: 1
+    m_Value: 0.5
+  radius:
+    m_OverrideState: 0
+    m_Value: 0.5
+  sampleCount:
+    m_OverrideState: 0
+    m_Value: 32
 --- !u!114 &1171536392866436449
 MonoBehaviour:
   m_ObjectHideFlags: 3

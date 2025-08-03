@@ -1,8 +1,6 @@
 ﻿#ifndef YPIPELINE_SAMPLING_LIBRARY_INCLUDED
 #define YPIPELINE_SAMPLING_LIBRARY_INCLUDED
 
-#include "Core/YPipelineCore.hlsl"
-
 // ----------------------------------------------------------------------------------------------------
 // Coordinate conversion
 // ----------------------------------------------------------------------------------------------------
@@ -33,6 +31,7 @@ float2 CartesianCoordToSphericalCoord(float3 cartesianCoord)
     return CartesianCoordToSphericalCoord(cartesianCoord.x, cartesianCoord.y, cartesianCoord.z);
 }
 
+//Transform tangent coordinate to N's given space.
 float3 TangentCoordToWorldCoord(float3 tangentCoord, float3 N)
 {
     float3 up = abs(N.y) > 0.9999 ? float3(0, 0, 1) : float3(0, 1, 0);
@@ -81,6 +80,18 @@ float4 InverseSampleSphere(float2 xi) // Left-handed Spherical and Cartesian Coo
     return float4(N, PDF);
 }
 
+float4 InverseSampleSphere(float3 xi) // Left-handed Spherical and Cartesian Coordinate
+{
+    float phi = PI * (2.0 * xi.x - 1.0);
+    float cosTheta = 1 - 2 * xi.y;
+    float sinTheta = sqrt(1 - cosTheta * cosTheta);
+    float r = pow(xi.z, 1.0 / 3.0);
+
+    float3 N = float3(r * sinTheta * cos(phi), r * cosTheta, r * sinTheta * sin(phi));
+    float PDF = INV_FOUR_PI;
+    return float4(N, PDF);
+}
+
 float4 InverseSampleHemisphere(float2 xi) // Left-handed Spherical and Cartesian Coordinate
 {
     float phi = PI * (2.0 * xi.x - 1.0);
@@ -88,6 +99,18 @@ float4 InverseSampleHemisphere(float2 xi) // Left-handed Spherical and Cartesian
     float sinTheta = sqrt(1 - cosTheta * cosTheta);
 
     float3 N = float3(sinTheta * cos(phi), cosTheta, sinTheta * sin(phi));
+    float PDF = INV_TWO_PI;
+    return float4(N, PDF);
+}
+
+float4 InverseSampleHemisphere(float3 xi) // Left-handed Spherical and Cartesian Coordinate
+{
+    float phi = PI * (2.0 * xi.x - 1.0);
+    float cosTheta = 1 - xi.y;
+    float sinTheta = sqrt(1 - cosTheta * cosTheta);
+    float r = pow(xi.z, 1.0 / 3.0);
+
+    float3 N = float3(r * sinTheta * cos(phi), r * cosTheta, r * sinTheta * sin(phi));
     float PDF = INV_TWO_PI;
     return float4(N, PDF);
 }

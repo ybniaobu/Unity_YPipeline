@@ -14,7 +14,7 @@ namespace YPipeline
         
         public ClampedIntParameter sampleCount = new ClampedIntParameter(32, 8, 64);
         
-        public bool IsActive() => true;
+        public bool IsActive() => intensity.value > 0.0f;
     }
     
     

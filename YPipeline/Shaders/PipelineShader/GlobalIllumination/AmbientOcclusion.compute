@@ -3,13 +3,70 @@
 #define THREAD_NUM_X 16
 #define THREAD_NUM_Y 16
 
-RWTexture2D<float4> Result;
+#include "../../../ShaderLibrary/Core/YPipelineCSCore.hlsl"
+#include "../../../ShaderLibrary/RandomLibrary.hlsl"
+#include "../../../ShaderLibrary/SamplingLibrary.hlsl"
+#include "../../../ShaderLibrary/EncodingLibrary.hlsl"
+
+TEXTURE2D(_CameraDepthTexture);
+TEXTURE2D(_ThinGBufferTexture);
+TEXTURE2D(_BlueNoise64);
+float4 _BlueNoise64_TexelSize;
+SAMPLER(sampler_LinearClamp);
+
+RWTexture2D<float> _AmbientOcclusionTexture;
+
+float4 _CameraBufferSize; // x: 1.0 / bufferSize.x, y: 1.0 / bufferSize.y, z: bufferSize.x, w: bufferSize.y
+#define RADIUS 1
 
 [numthreads(THREAD_NUM_X, THREAD_NUM_Y, 1)]
-void SSAOKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_GroupThreadID, uint3 groupId : SV_GroupID, uint groupIndex : SV_GroupIndex)
+void SSAOKernel(uint3 id : SV_DispatchThreadID)
 {
+    // ------------------------- Get Depth & Normal -------------------------
     
+    float originDepth = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, id.xy, 0).r;
+    float originLinearDepth = GetViewDepthFromDepthTexture(originDepth);
+    float4 NDC = GetNDCFromUVAndDepth(id.xy * _CameraBufferSize.xy, originDepth);
+    float3 originWS = TransformNDCToWorld(NDC, UNITY_MATRIX_I_VP);
 
-    Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
+    float3 packNormalWS = LOAD_TEXTURE2D_LOD(_ThinGBufferTexture, id.xy, 0).rgb;
+    float3 normalWS = normalize(DecodeNormalFrom888(packNormalWS));
+
+    // ------------------------- Generate Normal-Oriented Hemisphere Samples -------------------------
+    
+    float randomRadian = LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.w, 0).r * TWO_PI;
+    float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
+
+    float occlusion = 0.0;
+    for (int i = 0; i < 32; ++i)
+    {
+        float2 xi = k_Halton[i + 1];
+        float3 dirTS = InverseSampleHemisphere(xi).xyz;
+        float random = k_Sobol[i + 1].y;
+        dirTS *= random * RADIUS;
+        
+        dirTS.xz = mul(rotation, dirTS.xz);
+
+        float3 dirWS = TangentCoordToWorldCoord(dirTS, normalWS);
+        float3 positionWS = originWS + dirWS;
+        float4 positionHCS = TransformWorldToHClip(positionWS);
+        positionHCS.xyz /= positionHCS.w;
+        float2 uv = positionHCS.xy * 0.5 + 0.5;
+
+        #if UNITY_UV_STARTS_AT_TOP
+        uv.y = 1.0f - uv.y;
+        #endif
+        
+        
+        float sampledDepth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_LinearClamp, uv, 0).r;
+        float linearDepth = GetViewDepthFromDepthTexture(sampledDepth);
+        
+        float rangeCheck = abs(originLinearDepth - linearDepth) < 0.5;
+        occlusion += COMPARE_DEVICE_DEPTH_CLOSER(linearDepth, positionHCS.w) * 1;
+    }
+
+    occlusion = (occlusion / 32.0);
+
+    _AmbientOcclusionTexture[id.xy] = occlusion;
 }
 

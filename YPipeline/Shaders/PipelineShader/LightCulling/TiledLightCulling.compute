@@ -175,7 +175,8 @@ bool AABBIntersectTest(uint2 tileIndex, float3 lightPositionVS, float lightRange
 [numthreads(THREAD_NUM_X, THREAD_NUM_Y, 1)]
 void TiledLightCulling(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_GroupThreadID, uint3 groupId : SV_GroupID, uint groupIndex : SV_GroupIndex)
 {
-    // initialize shared memory
+    // ------------------------- Initialize shared memory -------------------------
+    
     if (groupIndex == 0)
     {
         tileMinDepthInt = 0x7f7fffff;
@@ -189,7 +190,8 @@ void TiledLightCulling(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_
 
     GroupMemoryBarrierWithGroupSync();
 
-    // get the minimum and maximum depth of the tile
+    // ------------------------- Get the minimum and maximum depth of the tile -------------------------
+    
     bool inScreen = (int) id.x < _CameraBufferSize.z && (int) id.y < _CameraBufferSize.w;
 
     float depth = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, id.xy, 0).r;
@@ -212,7 +214,8 @@ void TiledLightCulling(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_
 
     float2 tileDepthMinMax = float2(asfloat(tileMinDepthInt), asfloat(tileMaxDepthInt));
 
-    // 2.5D Culling: Get the tile depth mask
+    // ------------------------- 2.5D Culling: Get the tile depth mask -------------------------
+    
     #if _TILE_CULLING_SPLIT_DEPTH
     float invDepthRange = 32.0 / (tileDepthMinMax.y - tileDepthMinMax.x + 0.00001);
 
@@ -225,7 +228,8 @@ void TiledLightCulling(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_
     GroupMemoryBarrierWithGroupSync();
     #endif
     
-    // intersect test
+    // ------------------------- Intersect test -------------------------
+    
     uint lightIndex = groupIndex;
     uint2 tileIndex = groupId.xy;
 
@@ -266,7 +270,8 @@ void TiledLightCulling(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_
     
     GroupMemoryBarrierWithGroupSync();
 
-    // recording light indices
+    // ------------------------- Recording light indices -------------------------
+    
     uint headerIndex = (groupId.y * _TileParams.x + groupId.x) * (MAX_LIGHT_COUNT_PER_TILE + 1);
     uint minLightCount = min(lightCountInTile, MAX_LIGHT_COUNT_PER_TILE);
 

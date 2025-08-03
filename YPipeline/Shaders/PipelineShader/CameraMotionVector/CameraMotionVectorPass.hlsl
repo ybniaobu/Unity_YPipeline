@@ -5,23 +5,6 @@
 
 TEXTURE2D(_CameraDepthTexture);
 
-float4 GetNDCFromUVAndDepth(float2 uv, float depth)
-{
-    #if UNITY_UV_STARTS_AT_TOP
-        uv.y = 1.0f - uv.y;
-    #else
-        depth = 2.0 * depth - 1.0;
-    #endif
-    
-    return float4(2.0 * uv - 1.0, depth, 1.0);
-}
-
-float3 TransformNDCToWorld(float4 NDC, float4x4 invViewProjMatrix)
-{
-    float4 positionHWS = mul(invViewProjMatrix, NDC);
-    return positionHWS.xyz / positionHWS.w;
-}
-
 float4 CameraMotionVectorFrag(Varyings IN) : SV_TARGET
 {
     float depth = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, IN.positionHCS.xy, 0).r;

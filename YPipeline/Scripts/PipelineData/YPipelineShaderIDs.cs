@@ -50,6 +50,9 @@ namespace YPipeline
         public static readonly int k_DepthTextureID = Shader.PropertyToID("_CameraDepthTexture");
         public static readonly int k_ThinGBufferTextureID = Shader.PropertyToID("_ThinGBufferTexture");
         public static readonly int k_MotionVectorTextureID = Shader.PropertyToID("_MotionVectorTexture");
+        
+        public static readonly int k_AmbientOcclusionTextureID = Shader.PropertyToID("_AmbientOcclusionTexture");
+        
         public static readonly int k_FinalTextureID = Shader.PropertyToID("_CameraFinalTexture");
         
         // Deferred

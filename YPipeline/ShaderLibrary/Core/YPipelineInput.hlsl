@@ -177,9 +177,11 @@ TEXTURE2D(ENVIRONMENT_BRDF_LUT);
 SAMPLER(LUT_SAMPLER);
 
 // Pipeline Textures
-TEXTURE2D(_CameraDepthTexture);
 TEXTURE2D(_CameraColorTexture);
+TEXTURE2D(_CameraDepthTexture);
+TEXTURE2D(_ThinGBufferTexture);
 TEXTURE2D(_MotionVectorTexture);
+TEXTURE2D(_AmbientOcclusionTexture);
 
 // Blue Noise
 TEXTURE2D(_BlueNoise64);

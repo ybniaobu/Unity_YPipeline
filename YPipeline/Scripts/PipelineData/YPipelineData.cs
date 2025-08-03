@@ -45,14 +45,11 @@ namespace YPipeline
         public TextureHandle CameraDepthAttachment { set; get; }
         public TextureHandle CameraColorTexture { set; get; }
         public TextureHandle CameraDepthTexture { set; get; }
-        
         public TextureHandle ThinGBuffer { set; get; }
-        
         public TextureHandle MotionVectorTexture { set; get; }
-        
-        
+        public TextureHandle AmbientOcclusionTexture { set; get; }
+        public bool isAmbientOcclusionTextureCreated;
         public TextureHandle TAATarget { set; get; }
-        
         public TextureHandle BloomTexture { set; get; }
         public TextureHandle ColorGradingLutTexture { set; get; }
         public TextureHandle CameraFinalTexture { set; get; }

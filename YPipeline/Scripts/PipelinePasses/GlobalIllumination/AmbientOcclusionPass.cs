@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RendererUtils;
 using UnityEngine.Rendering.RenderGraphModule;
@@ -9,27 +10,62 @@ namespace YPipeline
     {
         private class AmbientOcclusionPassData
         {
+            public ComputeShader cs;
             
+            public TextureHandle ambientOcclusionTexture;
+            
+            public Vector2Int bufferSize;
         }
+
+        private AmbientOcclusion m_AmbientOcclusion;
         
         protected override void Initialize() { }
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<AmbientOcclusionPassData>("Ambient Occlusion", out var passData))
+            var stack = VolumeManager.instance.stack;
+            m_AmbientOcclusion = stack.GetComponent<AmbientOcclusion>();
+            data.isAmbientOcclusionTextureCreated = m_AmbientOcclusion.IsActive();
+            
+            if (data.isAmbientOcclusionTextureCreated)
             {
-                
-                builder.ReadTexture(data.ThinGBuffer);
-                
-                builder.AllowPassCulling(false);
-                builder.AllowRendererListCulling(false);
-                
-                builder.SetRenderFunc((AmbientOcclusionPassData data, RenderGraphContext context) =>
+                using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<AmbientOcclusionPassData>("Ambient Occlusion", out var passData))
                 {
-                    
-                    context.renderContext.ExecuteCommandBuffer(context.cmd);
-                    context.cmd.Clear();
-                });
+                    passData.cs = data.asset.pipelineResources.computeShaders.ambientOcclusionCs;
+                    builder.ReadTexture(data.ThinGBuffer);
+                    builder.ReadTexture(data.CameraDepthTexture);
+
+                    // Create Ambient Occlusion Texture
+                    Vector2Int bufferSize = data.BufferSize;
+                    passData.bufferSize = bufferSize;
+
+                    TextureDesc ambientOcclusionTextureDesc = new TextureDesc(bufferSize.x, bufferSize.y)
+                    {
+                        format = GraphicsFormat.R8_UNorm,
+                        filterMode = FilterMode.Bilinear,
+                        clearBuffer = true,
+                        clearColor = Color.clear,
+                        enableRandomWrite = true,
+                        name = "Screen Ambient Occlusion Texture"
+                    };
+
+                    data.AmbientOcclusionTexture = data.renderGraph.CreateTexture(ambientOcclusionTextureDesc);
+                    passData.ambientOcclusionTexture = builder.WriteTexture(data.AmbientOcclusionTexture);
+
+                    builder.AllowPassCulling(false);
+                    builder.AllowRendererListCulling(false);
+
+                    builder.SetRenderFunc((AmbientOcclusionPassData data, RenderGraphContext context) =>
+                    {
+                        int kernel = data.cs.FindKernel("SSAOKernel");
+                        context.cmd.SetComputeTextureParam(data.cs, kernel, YPipelineShaderIDs.k_AmbientOcclusionTextureID, data.ambientOcclusionTexture);
+                        context.cmd.DispatchCompute(data.cs, kernel, data.bufferSize.x / 16, data.bufferSize.y / 16, 1);
+                        context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_AmbientOcclusionTextureID, data.ambientOcclusionTexture);
+
+                        context.renderContext.ExecuteCommandBuffer(context.cmd);
+                        context.cmd.Clear();
+                    });
+                }
             }
         }
     }
