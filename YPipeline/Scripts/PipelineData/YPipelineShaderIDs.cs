@@ -142,6 +142,12 @@ namespace YPipeline
         public static readonly int k_ShadowPancakingID = Shader.PropertyToID("_ShadowPancaking");
         
         // ----------------------------------------------------------------------------------------------------
+        // Ambient Occlusion Related Param IDs
+        // ----------------------------------------------------------------------------------------------------
+        
+        public static readonly int k_AmbientOcclusionParamsID = Shader.PropertyToID("_AmbientOcclusionParams");
+        
+        // ----------------------------------------------------------------------------------------------------
         // Light Culling Related Param IDs
         // ----------------------------------------------------------------------------------------------------
         

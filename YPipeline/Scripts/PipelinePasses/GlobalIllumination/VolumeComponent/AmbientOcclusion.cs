@@ -7,14 +7,11 @@ namespace YPipeline
     [SupportedOnRenderPipeline(typeof(YRenderPipelineAsset))]
     public class AmbientOcclusion : VolumeComponent, IPostProcessComponent
     {
-        [Tooltip("XXXXXXXXXXXXXXXXX")]
-        public MinFloatParameter intensity = new MinFloatParameter(0.5f, 0.0f, true);
+        public ClampedIntParameter sampleCount = new ClampedIntParameter(12, 2, 32);
         
-        public ClampedFloatParameter radius = new ClampedFloatParameter(0.5f, 0.0f, 10.0f);
+        public ClampedFloatParameter radius = new ClampedFloatParameter(0.5f, 0.0f, 5.0f);
         
-        public ClampedIntParameter sampleCount = new ClampedIntParameter(32, 8, 64);
-        
-        public bool IsActive() => intensity.value > 0.0f;
+        public bool IsActive() => true;
     }
     
     

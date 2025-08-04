@@ -1,7 +1,7 @@
 #pragma kernel SSAOKernel
 
-#define THREAD_NUM_X 16
-#define THREAD_NUM_Y 16
+#define THREAD_NUM_X 32
+#define THREAD_NUM_Y 8
 
 #include "../../../ShaderLibrary/Core/YPipelineCSCore.hlsl"
 #include "../../../ShaderLibrary/RandomLibrary.hlsl"
@@ -12,20 +12,33 @@ TEXTURE2D(_CameraDepthTexture);
 TEXTURE2D(_ThinGBufferTexture);
 TEXTURE2D(_BlueNoise64);
 float4 _BlueNoise64_TexelSize;
-SAMPLER(sampler_LinearClamp);
+SAMPLER(sampler_PointClamp);
 
-RWTexture2D<float> _AmbientOcclusionTexture;
+RWTexture2D<float4> _AmbientOcclusionTexture;
 
 float4 _CameraBufferSize; // x: 1.0 / bufferSize.x, y: 1.0 / bufferSize.y, z: bufferSize.x, w: bufferSize.y
-#define RADIUS 1
+float4 _AmbientOcclusionParams; // x: sample count, y: radius
+
+// ----------------------------------------------------------------------------------------------------
+// Input
+// ----------------------------------------------------------------------------------------------------
+
+float GetSSAOSampleCount()      { return _AmbientOcclusionParams.x; }
+float GetSSAORadius()           { return _AmbientOcclusionParams.y; }
+
+// ----------------------------------------------------------------------------------------------------
+// Kernels
+// ----------------------------------------------------------------------------------------------------
 
 [numthreads(THREAD_NUM_X, THREAD_NUM_Y, 1)]
 void SSAOKernel(uint3 id : SV_DispatchThreadID)
 {
+    bool inScreen = (float) id.x < _CameraBufferSize.z && (float) id.y < _CameraBufferSize.w;
+    if (!inScreen) return;
+    
     // ------------------------- Get Depth & Normal -------------------------
     
     float originDepth = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, id.xy, 0).r;
-    float originLinearDepth = GetViewDepthFromDepthTexture(originDepth);
     float4 NDC = GetNDCFromUVAndDepth(id.xy * _CameraBufferSize.xy, originDepth);
     float3 originWS = TransformNDCToWorld(NDC, UNITY_MATRIX_I_VP);
 
@@ -38,17 +51,21 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
 
     float occlusion = 0.0;
-    for (int i = 0; i < 32; ++i)
+    float sampleCount = GetSSAOSampleCount();
+    float radius = GetSSAORadius();
+
+    UNITY_UNROLL
+    for (int i = 0; i < sampleCount; i++)
     {
         float2 xi = k_Halton[i + 1];
         float3 dirTS = InverseSampleHemisphere(xi).xyz;
         float random = k_Sobol[i + 1].y;
-        dirTS *= random * RADIUS;
-        
+        random = random * random;
+        dirTS *= random;
         dirTS.xz = mul(rotation, dirTS.xz);
 
         float3 dirWS = TangentCoordToWorldCoord(dirTS, normalWS);
-        float3 positionWS = originWS + dirWS;
+        float3 positionWS = originWS + dirWS * radius;
         float4 positionHCS = TransformWorldToHClip(positionWS);
         positionHCS.xyz /= positionHCS.w;
         float2 uv = positionHCS.xy * 0.5 + 0.5;
@@ -57,15 +74,15 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
         uv.y = 1.0f - uv.y;
         #endif
         
-        
-        float sampledDepth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_LinearClamp, uv, 0).r;
+        float sampledDepth = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, uv * _CameraBufferSize.zw, 0).r;
         float linearDepth = GetViewDepthFromDepthTexture(sampledDepth);
         
-        float rangeCheck = abs(originLinearDepth - linearDepth) < 0.5;
-        occlusion += COMPARE_DEVICE_DEPTH_CLOSER(linearDepth, positionHCS.w) * 1;
+        bool rangeCheck = abs(positionHCS.w - linearDepth) < radius;
+        
+        occlusion += (linearDepth < positionHCS.w) * rangeCheck;
     }
 
-    occlusion = (occlusion / 32.0);
+    occlusion = 1 - (occlusion / sampleCount);
 
     _AmbientOcclusionTexture[id.xy] = occlusion;
 }

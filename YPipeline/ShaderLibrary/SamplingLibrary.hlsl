@@ -32,12 +32,21 @@ float2 CartesianCoordToSphericalCoord(float3 cartesianCoord)
 }
 
 //Transform tangent coordinate to N's given space.
-float3 TangentCoordToWorldCoord(float3 tangentCoord, float3 N)
+float3 TangentCoordToNormalizedWorldCoord(float3 tangentCoord, float3 N)
 {
     float3 up = abs(N.y) > 0.9999 ? float3(0, 0, 1) : float3(0, 1, 0);
     float3 tangent = normalize(cross(up, N));
     float3 binormal = normalize(cross(tangent, N));
     return normalize(tangent * tangentCoord.x + normalize(N) * tangentCoord.y + binormal * tangentCoord.z);
+}
+
+//Transform tangent coordinate to N's given space.
+float3 TangentCoordToWorldCoord(float3 tangentCoord, float3 N)
+{
+    float3 up = abs(N.y) > 0.9999 ? float3(0, 0, 1) : float3(0, 1, 0);
+    float3 tangent = normalize(cross(up, N));
+    float3 binormal = normalize(cross(tangent, N));
+    return tangent * tangentCoord.x + normalize(N) * tangentCoord.y + binormal * tangentCoord.z;
 }
 
 // ----------------------------------------------------------------------------------------------------
@@ -163,7 +172,7 @@ float3 ImportanceSampleGGX(float2 xi, float roughness, float3 N) // Left-handed 
 
     float3 H = float3(sinTheta * cos(phi), cosTheta, sinTheta * sin(phi));
     
-    return TangentCoordToWorldCoord(H, N);
+    return TangentCoordToNormalizedWorldCoord(H, N);
 }
 
 #endif

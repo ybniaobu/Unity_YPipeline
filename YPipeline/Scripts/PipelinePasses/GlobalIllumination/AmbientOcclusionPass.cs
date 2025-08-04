@@ -15,17 +15,18 @@ namespace YPipeline
             public TextureHandle ambientOcclusionTexture;
             
             public Vector2Int bufferSize;
+            public Vector4 ambientOcclusionParams;
         }
 
-        private AmbientOcclusion m_AmbientOcclusion;
+        private AmbientOcclusion m_AO;
         
         protected override void Initialize() { }
 
         public override void OnRecord(ref YPipelineData data)
         {
             var stack = VolumeManager.instance.stack;
-            m_AmbientOcclusion = stack.GetComponent<AmbientOcclusion>();
-            data.isAmbientOcclusionTextureCreated = m_AmbientOcclusion.IsActive();
+            m_AO = stack.GetComponent<AmbientOcclusion>();
+            data.isAmbientOcclusionTextureCreated = m_AO.IsActive();
             
             if (data.isAmbientOcclusionTextureCreated)
             {
@@ -34,6 +35,8 @@ namespace YPipeline
                     passData.cs = data.asset.pipelineResources.computeShaders.ambientOcclusionCs;
                     builder.ReadTexture(data.ThinGBuffer);
                     builder.ReadTexture(data.CameraDepthTexture);
+
+                    passData.ambientOcclusionParams = new Vector4(m_AO.sampleCount.value, m_AO.radius.value);
 
                     // Create Ambient Occlusion Texture
                     Vector2Int bufferSize = data.BufferSize;
@@ -58,9 +61,9 @@ namespace YPipeline
                     builder.SetRenderFunc((AmbientOcclusionPassData data, RenderGraphContext context) =>
                     {
                         int kernel = data.cs.FindKernel("SSAOKernel");
-                        context.cmd.SetComputeTextureParam(data.cs, kernel, YPipelineShaderIDs.k_AmbientOcclusionTextureID, data.ambientOcclusionTexture);
-                        context.cmd.DispatchCompute(data.cs, kernel, data.bufferSize.x / 16, data.bufferSize.y / 16, 1);
                         context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_AmbientOcclusionTextureID, data.ambientOcclusionTexture);
+                        context.cmd.SetComputeVectorParam(data.cs, YPipelineShaderIDs.k_AmbientOcclusionParamsID, data.ambientOcclusionParams);
+                        context.cmd.DispatchCompute(data.cs, kernel, data.bufferSize.x / 32, data.bufferSize.y / 8, 1);
 
                         context.renderContext.ExecuteCommandBuffer(context.cmd);
                         context.cmd.Clear();

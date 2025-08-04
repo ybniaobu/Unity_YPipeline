@@ -124,7 +124,7 @@ float3 PrefilterEnvMap_GGX(TEXTURECUBE(envMap), SAMPLER(envMapSampler), uint sam
     {
         float2 xi = Hammersley_Bits(i, sampleNumber);
         float4 HandPDF = ImportanceSampleGGX(xi, roughness);
-        float3 H = TangentCoordToWorldCoord(HandPDF.xyz, N);
+        float3 H = TangentCoordToNormalizedWorldCoord(HandPDF.xyz, N);
         float PDF = HandPDF.w;
         float3 L = 2 * dot( V, H ) * H - V;
 
