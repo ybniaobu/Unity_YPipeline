@@ -12,8 +12,8 @@ float3 EncodeNormalInto888(float3 normalWS)
     // The constant was eye-balled to not cause artifacts.
     // TODO: find a proper solution. E.g. we could re-shuffle the faces of the octahedron
     // s.t. the sign of the Z component round-trips.
-    const float seamThreshold = 1.0 / 1024.0;
-    normalWS.z = CopySign(max(seamThreshold, abs(normalWS.z)), normalWS.z);
+    // const float seamThreshold = 1.0 / 1024.0;
+    // normalWS.z = CopySign(max(seamThreshold, abs(normalWS.z)), normalWS.z);
     
     float2 octNormalWS = PackNormalOctQuadEncode(normalWS);
     float3 packNormalWS = PackFloat2To888(saturate(octNormalWS * 0.5 + 0.5));

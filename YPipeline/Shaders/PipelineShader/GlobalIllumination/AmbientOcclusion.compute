@@ -1,4 +1,6 @@
 #pragma kernel SSAOKernel
+#pragma kernel GaussianBlurHorizontalKernel
+#pragma kernel GaussianBlurVerticalKernel
 
 #define THREAD_NUM_X 32
 #define THREAD_NUM_Y 8
@@ -8,15 +10,19 @@
 #include "../../../ShaderLibrary/SamplingLibrary.hlsl"
 #include "../../../ShaderLibrary/EncodingLibrary.hlsl"
 
-TEXTURE2D(_CameraDepthTexture);
 TEXTURE2D(_ThinGBufferTexture);
+TEXTURE2D(_CameraDepthTexture);
 TEXTURE2D(_BlueNoise64);
 float4 _BlueNoise64_TexelSize;
+SAMPLER(sampler_LinearClamp);
+SAMPLER(sampler_LinearRepeat);
 SAMPLER(sampler_PointClamp);
 
-RWTexture2D<float4> _AmbientOcclusionTexture;
+RWTexture2D<float> _OutputTexture;
+Texture2D<float> _InputTexture;
 
 float4 _CameraBufferSize; // x: 1.0 / bufferSize.x, y: 1.0 / bufferSize.y, z: bufferSize.x, w: bufferSize.y
+float4 _TextureSize; // x: 1.0 / width, y: 1.0 / height, z: width, w: height
 float4 _AmbientOcclusionParams; // x: sample count, y: radius
 
 // ----------------------------------------------------------------------------------------------------
@@ -27,27 +33,29 @@ float GetSSAOSampleCount()      { return _AmbientOcclusionParams.x; }
 float GetSSAORadius()           { return _AmbientOcclusionParams.y; }
 
 // ----------------------------------------------------------------------------------------------------
-// Kernels
+// AO Kernels
 // ----------------------------------------------------------------------------------------------------
 
 [numthreads(THREAD_NUM_X, THREAD_NUM_Y, 1)]
 void SSAOKernel(uint3 id : SV_DispatchThreadID)
 {
-    bool inScreen = (float) id.x < _CameraBufferSize.z && (float) id.y < _CameraBufferSize.w;
+    bool inScreen = all(float2(id.xy) < _TextureSize.zw);
     if (!inScreen) return;
     
     // ------------------------- Get Depth & Normal -------------------------
     
-    float originDepth = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, id.xy, 0).r;
-    float4 NDC = GetNDCFromUVAndDepth(id.xy * _CameraBufferSize.xy, originDepth);
+    float2 screenUV = (id.xy + float2(0.5, 0.5)) * _TextureSize.xy;
+    float originDepth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_LinearClamp, screenUV, 0).r;
+    float4 NDC = GetNDCFromUVAndDepth(screenUV, originDepth);
     float3 originWS = TransformNDCToWorld(NDC, UNITY_MATRIX_I_VP);
-
-    float3 packNormalWS = LOAD_TEXTURE2D_LOD(_ThinGBufferTexture, id.xy, 0).rgb;
+    
+    float3 packNormalWS = SAMPLE_TEXTURE2D_LOD(_ThinGBufferTexture, sampler_PointClamp, screenUV, 0).rgb;
     float3 normalWS = normalize(DecodeNormalFrom888(packNormalWS));
 
     // ------------------------- Generate Normal-Oriented Hemisphere Samples -------------------------
     
     float randomRadian = LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.w, 0).r * TWO_PI;
+    // float randomRadian = SAMPLE_TEXTURE2D_LOD(_BlueNoise64, sampler_LinearRepeat, float2(id.xy) % 64 / 64, 0).r * TWO_PI;
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
 
     float occlusion = 0.0;
@@ -57,9 +65,9 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
     UNITY_UNROLL
     for (int i = 0; i < sampleCount; i++)
     {
-        float2 xi = k_Halton[i + 1];
+        float2 xi = k_Sobol[i + 1];
         float3 dirTS = InverseSampleHemisphere(xi).xyz;
-        float random = k_Sobol[i + 1].y;
+        float random = k_Halton[i + 1].y;
         random = random * random;
         dirTS *= random;
         dirTS.xz = mul(rotation, dirTS.xz);
@@ -74,16 +82,61 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
         uv.y = 1.0f - uv.y;
         #endif
         
-        float sampledDepth = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, uv * _CameraBufferSize.zw, 0).r;
+        // float sampledDepth = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, uv * _CameraBufferSize.zw, 0).r;
+        float sampledDepth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_PointClamp, uv, 0).r;
         float linearDepth = GetViewDepthFromDepthTexture(sampledDepth);
         
         bool rangeCheck = abs(positionHCS.w - linearDepth) < radius;
-        
-        occlusion += (linearDepth < positionHCS.w) * rangeCheck;
+        float weight = lerp(0.75, 1, saturate(max(dirTS.z, max(dirTS.x, dirTS.y))));
+        occlusion += (linearDepth < positionHCS.w) * rangeCheck * weight;
     }
 
     occlusion = 1 - (occlusion / sampleCount);
 
-    _AmbientOcclusionTexture[id.xy] = occlusion;
+    _OutputTexture[id.xy] = occlusion;
 }
 
+// ----------------------------------------------------------------------------------------------------
+// Gaussian Blur Kernels Related
+// ----------------------------------------------------------------------------------------------------
+
+// Kernel width 7 x 7
+float GaussianBlur(Texture2D<float> tex, float2 screenUV, float2 offset)
+{
+    const int stepCount = 2;
+    const float offsets[stepCount] = { 0.53805, 2.06278 };
+    const float weights[stepCount] = { 0.44908, 0.05092 };
+    float occlusion = 0.0;
+
+    UNITY_UNROLL
+    for (int i = 0; i < stepCount; i++)
+    {
+        float2 uvOffset = offsets[i] * offset;
+        float sample = SAMPLE_TEXTURE2D_LOD(tex, sampler_LinearClamp, screenUV + uvOffset, 0).r
+        + SAMPLE_TEXTURE2D_LOD(tex, sampler_LinearClamp, screenUV - uvOffset, 0).r;
+        occlusion += sample * weights[i];
+    }
+    return occlusion;
+}
+
+[numthreads(THREAD_NUM_X, THREAD_NUM_Y, 1)]
+void GaussianBlurHorizontalKernel(uint3 id : SV_DispatchThreadID)
+{
+    bool inScreen = all(float2(id.xy) < _TextureSize.zw);
+    if (!inScreen) return;
+    
+    float2 screenUV = (id.xy + float2(0.5, 0.5)) * _TextureSize.xy;
+    float occlusion = GaussianBlur(_InputTexture, screenUV, float2(_TextureSize.x, 0));
+    _OutputTexture[id.xy] = occlusion;
+}
+
+[numthreads(THREAD_NUM_X, THREAD_NUM_Y, 1)]
+void GaussianBlurVerticalKernel(uint3 id : SV_DispatchThreadID)
+{
+    bool inScreen = all(float2(id.xy) < _TextureSize.zw);
+    if (!inScreen) return;
+
+    float2 screenUV = (id.xy + float2(0.5, 0.5)) * _TextureSize.xy;
+    float occlusion = GaussianBlur(_InputTexture, screenUV, float2(0, _TextureSize.y));
+    _OutputTexture[id.xy] = occlusion;
+}

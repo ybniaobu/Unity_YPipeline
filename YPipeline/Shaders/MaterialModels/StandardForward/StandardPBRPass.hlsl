@@ -51,7 +51,7 @@ void InitializeStandardPBRParams(Varyings IN, inout StandardPBRParams standardPB
         standardPBRParams.N = normalize(IN.normalWS);
     #endif
 
-    standardPBRParams.ao = min(SAMPLE_TEXTURE2D(_AOTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).r, LOAD_TEXTURE2D_LOD(_AmbientOcclusionTexture, IN.positionHCS.xy, 0).r);
+    standardPBRParams.ao = min(SAMPLE_TEXTURE2D(_AOTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).r, SAMPLE_TEXTURE2D_LOD(_AmbientOcclusionTexture, sampler_LinearClamp, IN.positionHCS.xy * _CameraBufferSize.xy, 0).r);
     standardPBRParams.F0 = lerp(_Specular * _Specular * float3(0.16, 0.16, 0.16), standardPBRParams.albedo, standardPBRParams.metallic);
     standardPBRParams.F90 = saturate(dot(standardPBRParams.F0, 50.0 * 0.3333));
     standardPBRParams.V = GetWorldSpaceNormalizedViewDir(IN.positionWS);
