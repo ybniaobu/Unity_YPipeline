@@ -73,7 +73,7 @@ MonoBehaviour:
     m_Value: 0.5
   exposure:
     m_OverrideState: 1
-    m_Value: 1.5
+    m_Value: 0
   saturation:
     m_OverrideState: 1
     m_Value: 1
@@ -403,10 +403,13 @@ MonoBehaviour:
     m_Value: 1
   sampleCount:
     m_OverrideState: 1
-    m_Value: 12
+    m_Value: 16
   radius:
     m_OverrideState: 1
     m_Value: 1
+  centerIntensity:
+    m_OverrideState: 1
+    m_Value: 0.75
 --- !u!114 &1171536392866436449
 MonoBehaviour:
   m_ObjectHideFlags: 3

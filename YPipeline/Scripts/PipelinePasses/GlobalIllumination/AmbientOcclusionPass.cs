@@ -38,7 +38,7 @@ namespace YPipeline
                 using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<AmbientOcclusionPassData>("Ambient Occlusion", out var passData))
                 {
                     Vector2Int bufferSize = data.BufferSize / 2;
-                    int threadGroupSizeX = Mathf.CeilToInt(bufferSize.x / 32.0f);
+                    int threadGroupSizeX = Mathf.CeilToInt(bufferSize.x / 8.0f);
                     int threadGroupSizeY = Mathf.CeilToInt(bufferSize.y / 8.0f);
                     passData.threadGroupSize = new Vector2Int(threadGroupSizeX, threadGroupSizeY);
                     passData.textureSize = new Vector4(1f / bufferSize.x, 1f / bufferSize.y, bufferSize.x, bufferSize.y);
@@ -46,8 +46,8 @@ namespace YPipeline
                     passData.cs = data.asset.pipelineResources.computeShaders.ambientOcclusionCs;
                     builder.ReadTexture(data.ThinGBuffer);
                     builder.ReadTexture(data.CameraDepthTexture);
-
-                    passData.ambientOcclusionParams = new Vector4(m_AO.sampleCount.value, m_AO.radius.value);
+                    
+                    passData.ambientOcclusionParams = new Vector4(m_AO.intensity.value, m_AO.sampleCount.value, m_AO.radius.value, m_AO.centerIntensity.value);
 
                     // Create Ambient Occlusion Texture
                     TextureDesc ambientOcclusionTextureDesc = new TextureDesc(bufferSize.x, bufferSize.y)

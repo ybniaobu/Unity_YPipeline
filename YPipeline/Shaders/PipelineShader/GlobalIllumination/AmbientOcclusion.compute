@@ -2,7 +2,7 @@
 #pragma kernel GaussianBlurHorizontalKernel
 #pragma kernel GaussianBlurVerticalKernel
 
-#define THREAD_NUM_X 32
+#define THREAD_NUM_X 8
 #define THREAD_NUM_Y 8
 
 #include "../../../ShaderLibrary/Core/YPipelineCSCore.hlsl"
@@ -10,27 +10,32 @@
 #include "../../../ShaderLibrary/SamplingLibrary.hlsl"
 #include "../../../ShaderLibrary/EncodingLibrary.hlsl"
 
+RWTexture2D<float> _OutputTexture;
+Texture2D<float> _InputTexture;
+
 TEXTURE2D(_ThinGBufferTexture);
 TEXTURE2D(_CameraDepthTexture);
 TEXTURE2D(_BlueNoise64);
 float4 _BlueNoise64_TexelSize;
 SAMPLER(sampler_LinearClamp);
-SAMPLER(sampler_LinearRepeat);
 SAMPLER(sampler_PointClamp);
-
-RWTexture2D<float> _OutputTexture;
-Texture2D<float> _InputTexture;
 
 float4 _CameraBufferSize; // x: 1.0 / bufferSize.x, y: 1.0 / bufferSize.y, z: bufferSize.x, w: bufferSize.y
 float4 _TextureSize; // x: 1.0 / width, y: 1.0 / height, z: width, w: height
-float4 _AmbientOcclusionParams; // x: sample count, y: radius
+
+// SSAO - x: intensity, y: sample count, z: radius, w: center intensity
+// HBAO - x: , y: , z: , w:
+// GTAO - x: , y: , z: , w: 
+float4 _AmbientOcclusionParams;
 
 // ----------------------------------------------------------------------------------------------------
 // Input
 // ----------------------------------------------------------------------------------------------------
 
-float GetSSAOSampleCount()      { return _AmbientOcclusionParams.x; }
-float GetSSAORadius()           { return _AmbientOcclusionParams.y; }
+float GetSSAOIntensity()        { return _AmbientOcclusionParams.x; }
+float GetSSAOSampleCount()      { return _AmbientOcclusionParams.y; }
+float GetSSAORadius()           { return _AmbientOcclusionParams.z; }
+float GetCenterIntensity()      { return _AmbientOcclusionParams.w; }
 
 // ----------------------------------------------------------------------------------------------------
 // AO Kernels
@@ -41,59 +46,66 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
 {
     bool inScreen = all(float2(id.xy) < _TextureSize.zw);
     if (!inScreen) return;
+
+    float2 screenUV = (float2(id.xy) + float2(0.5, 0.5)) * _TextureSize.xy;
     
-    // ------------------------- Get Depth & Normal -------------------------
+    // ------------------------- Get Depth -------------------------
     
-    float2 screenUV = (id.xy + float2(0.5, 0.5)) * _TextureSize.xy;
+    // float originDepth = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, id.xy, 0).r;
     float originDepth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_LinearClamp, screenUV, 0).r;
-    float4 NDC = GetNDCFromUVAndDepth(screenUV, originDepth);
-    float3 originWS = TransformNDCToWorld(NDC, UNITY_MATRIX_I_VP);
-    
+    float4 originNDC = GetNDCFromUVAndDepth(screenUV, originDepth);
+    float3 originWS = TransformNDCToWorld(originNDC, UNITY_MATRIX_I_VP);
+
+    // ------------------------- Get Normal & Build Left-Handed TBN -------------------------
+
+    // float3 packNormalWS = LOAD_TEXTURE2D_LOD(_ThinGBufferTexture, id.xy, 0).rgb;
     float3 packNormalWS = SAMPLE_TEXTURE2D_LOD(_ThinGBufferTexture, sampler_PointClamp, screenUV, 0).rgb;
-    float3 normalWS = normalize(DecodeNormalFrom888(packNormalWS));
+    float3 normalWS = normalize(DecodeNormalFrom888(packNormalWS)); // N
+
+    float3 up = abs(normalWS.y) > 0.99999 ? float3(0, 0, 1) : float3(0, 1, 0);
+    float3 tangent = normalize(cross(up, normalWS)); // T
+    float3 binormal = normalize(cross(tangent, normalWS)); // B
 
     // ------------------------- Generate Normal-Oriented Hemisphere Samples -------------------------
     
     float randomRadian = LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.w, 0).r * TWO_PI;
-    // float randomRadian = SAMPLE_TEXTURE2D_LOD(_BlueNoise64, sampler_LinearRepeat, float2(id.xy) % 64 / 64, 0).r * TWO_PI;
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
 
     float occlusion = 0.0;
     float sampleCount = GetSSAOSampleCount();
     float radius = GetSSAORadius();
+    float centerIntensity = GetCenterIntensity();
 
     UNITY_UNROLL
     for (int i = 0; i < sampleCount; i++)
     {
-        float2 xi = k_Sobol[i + 1];
+        float2 xi = k_Halton[i + 1];
         float3 dirTS = InverseSampleHemisphere(xi).xyz;
-        float random = k_Halton[i + 1].y;
+        float random = k_Sobol[i + 1].y;
         random = random * random;
         dirTS *= random;
         dirTS.xz = mul(rotation, dirTS.xz);
 
-        float3 dirWS = TangentCoordToWorldCoord(dirTS, normalWS);
-        float3 positionWS = originWS + dirWS * radius;
-        float4 positionHCS = TransformWorldToHClip(positionWS);
-        positionHCS.xyz /= positionHCS.w;
-        float2 uv = positionHCS.xy * 0.5 + 0.5;
+        float3 dirWS = tangent * dirTS.x + normalWS * dirTS.y + binormal * dirTS.z;
+        float3 sampleWS = originWS + dirWS * radius;
+        float4 sampleHCS = TransformWorldToHClip(sampleWS);
+        sampleHCS.xyz /= sampleHCS.w;
+        float2 uv = sampleHCS.xy * 0.5 + 0.5;
 
         #if UNITY_UV_STARTS_AT_TOP
         uv.y = 1.0f - uv.y;
         #endif
         
-        // float sampledDepth = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, uv * _CameraBufferSize.zw, 0).r;
-        float sampledDepth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_PointClamp, uv, 0).r;
+        float sampledDepth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_LinearClamp, uv, 0).r;
         float linearDepth = GetViewDepthFromDepthTexture(sampledDepth);
         
-        bool rangeCheck = abs(positionHCS.w - linearDepth) < radius;
-        float weight = lerp(0.75, 1, saturate(max(dirTS.z, max(dirTS.x, dirTS.y))));
-        occlusion += (linearDepth < positionHCS.w) * rangeCheck * weight;
+        bool rangeCheck = abs(sampleHCS.w - linearDepth) < radius;
+        float weight = lerp(centerIntensity, 1, saturate(max(dirTS.z, max(dirTS.x, dirTS.y))));
+        occlusion += (linearDepth < sampleHCS.w) * rangeCheck * weight;
     }
 
-    occlusion = 1 - (occlusion / sampleCount);
-
-    _OutputTexture[id.xy] = occlusion;
+    occlusion = saturate(occlusion / sampleCount * GetSSAOIntensity());
+    _OutputTexture[id.xy] = 1 - occlusion;
 }
 
 // ----------------------------------------------------------------------------------------------------
