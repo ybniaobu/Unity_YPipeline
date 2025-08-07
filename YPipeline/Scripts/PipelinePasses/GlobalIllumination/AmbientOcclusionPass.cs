@@ -32,6 +32,7 @@ namespace YPipeline
             var stack = VolumeManager.instance.stack;
             m_AO = stack.GetComponent<AmbientOcclusion>();
             data.isAmbientOcclusionTextureCreated = m_AO.IsActive();
+            CoreUtils.SetKeyword(data.cmd, YPipelineKeywords.k_ScreenSpaceAmbientOcclusion, data.isAmbientOcclusionTextureCreated);
             
             if (data.isAmbientOcclusionTextureCreated)
             {

@@ -73,6 +73,7 @@ Shader "YPipeline/Shading Models/Standard PBR(Separated Texture)"
             
             #pragma multi_compile _ LIGHTMAP_ON
             #pragma multi_compile _SHADOW_PCF _SHADOW_PCSS
+            #pragma multi_compile _ _SCREEN_SPACE_AMBIENT_OCCLUSION
 
             #pragma multi_compile _ LOD_FADE_CROSSFADE
 
@@ -90,8 +91,7 @@ Shader "YPipeline/Shading Models/Standard PBR(Separated Texture)"
 
 			ColorMask 0
 			Cull [_Cull]
-			// Cull Back
-			// Cull Front
+			// Cull Off
 
 			HLSLPROGRAM
 			#pragma target 4.5

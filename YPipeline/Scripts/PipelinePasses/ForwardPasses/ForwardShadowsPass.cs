@@ -255,10 +255,11 @@ namespace YPipeline
                         {
                             for (int j = 0; j < 6; j++)
                             {
-                                context.cmd.SetViewProjectionMatrices(data.pointLightViewMatrices[i * 6 + j], data.pointLightProjectionMatrices[i * 6 + j]);
-                                context.cmd.SetRenderTarget(new RenderTargetIdentifier(data.pointLightShadowMap, 0, CubemapFace.Unknown, i * 6 + j), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                                int cubeIndex = i * 6 + j;
+                                context.cmd.SetViewProjectionMatrices(data.pointLightViewMatrices[cubeIndex], data.pointLightProjectionMatrices[cubeIndex]);
+                                context.cmd.SetRenderTarget(new RenderTargetIdentifier(data.pointLightShadowMap, 0, CubemapFace.Unknown, cubeIndex), RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
                                 context.cmd.ClearRenderTarget(true, false, Color.clear);
-                                context.cmd.DrawRendererList(data.pointLightShadowRendererList[i * 6 + j]);
+                                context.cmd.DrawRendererList(data.pointLightShadowRendererList[cubeIndex]);
                             }
                         }
                         context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_PointLightShadowMapID, data.pointLightShadowMap);
@@ -444,7 +445,7 @@ namespace YPipeline
                         m_ShadowSplitDataPerLight[splitOffset + j] = splitData;
                         //shadowDrawingSettings.splitData = splitData;
                         
-                        // TODO: 解决正面剔除的问题
+                        // TODO: 解决 ComputePointShadowMatricesAndCullingPrimitives 导致的正面剔除（winding order）的问题
                         // viewMatrix.m11 = -viewMatrix.m11;
                         // viewMatrix.m12 = -viewMatrix.m12;
                         // viewMatrix.m13 = -viewMatrix.m13;

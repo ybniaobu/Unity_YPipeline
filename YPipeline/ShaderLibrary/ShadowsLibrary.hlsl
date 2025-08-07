@@ -203,7 +203,7 @@ float ApplyPCF_CubeArray(float index, float faceIndex, TEXTURECUBE_ARRAY_SHADOW(
         // float2 offset = mul(rotation, InverseSampleCircle(Sobol_Bits(i + 1))) * 0.5;
         offset = offset * penumbraPercent;
         float2 uv_Offset = positionSS.xy + offset;
-        float3 sampleDir = CubeMapping(faceIndex, uv_Offset);
+        float3 sampleDir = PointLightCubeMapping(faceIndex, uv_Offset);
         shadowAttenuation += SampleShadowCubeArray_Compare(sampleDir, positionSS.z, index, shadowMap, SHADOW_SAMPLER_COMPARE);
     }
     return shadowAttenuation / sampleNumber;
@@ -370,7 +370,7 @@ float3 ComputeAverageBlockerDepth_CubeArray(float index, float faceIndex, TEXTUR
         // float2 offset = mul(rotation, InverseSampleCircle(Sobol_Bits(i + 1))) * 0.5;
         offset = offset * searchWidthPercent;
         float2 uv_Offset = positionSS.xy + offset;
-        float3 sampleDir = CubeMapping(faceIndex, uv_Offset);
+        float3 sampleDir = PointLightCubeMapping(faceIndex, uv_Offset);
         float d_Blocker = SampleShadowCubeArray_Depth(sampleDir, index, shadowMap, SHADOW_SAMPLER);
         float ld_Blocker = NonLinearToLinearDepth_Persp(depthParams, d_Blocker);
         
