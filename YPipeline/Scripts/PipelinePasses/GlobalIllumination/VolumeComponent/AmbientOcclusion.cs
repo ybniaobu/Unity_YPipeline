@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Serialization;
 
 namespace YPipeline
 {
@@ -22,11 +23,11 @@ namespace YPipeline
         
         public ClampedFloatParameter intensity = new ClampedFloatParameter(1.0f, 0.0f, 2.0f);
         
-        public ClampedIntParameter sampleCount = new ClampedIntParameter(16, 4, 24);
+        public ClampedIntParameter sampleCount = new ClampedIntParameter(12, 4, 24);
         
         public ClampedFloatParameter radius = new ClampedFloatParameter(1.0f, 0.0f, 5.0f);
         
-        public ClampedFloatParameter centerIntensity = new ClampedFloatParameter(0.75f, 0.0f, 1.5f);
+        public ClampedFloatParameter reflectionRate = new ClampedFloatParameter(0.5f, 0.0f, 1.0f);
         
         public bool IsActive() => ambientOcclusionMode.value != AmbientOcclusionMode.None;
     }

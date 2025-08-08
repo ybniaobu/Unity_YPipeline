@@ -23,7 +23,7 @@ SAMPLER(sampler_PointClamp);
 float4 _CameraBufferSize; // x: 1.0 / bufferSize.x, y: 1.0 / bufferSize.y, z: bufferSize.x, w: bufferSize.y
 float4 _TextureSize; // x: 1.0 / width, y: 1.0 / height, z: width, w: height
 
-// SSAO - x: intensity, y: sample count, z: radius, w: center intensity
+// SSAO - x: intensity, y: sample count, z: radius, w: reflection rate
 // HBAO - x: , y: , z: , w:
 // GTAO - x: , y: , z: , w: 
 float4 _AmbientOcclusionParams;
@@ -35,7 +35,7 @@ float4 _AmbientOcclusionParams;
 float GetSSAOIntensity()        { return _AmbientOcclusionParams.x; }
 float GetSSAOSampleCount()      { return _AmbientOcclusionParams.y; }
 float GetSSAORadius()           { return _AmbientOcclusionParams.z; }
-float GetCenterIntensity()      { return _AmbientOcclusionParams.w; }
+float GetSSAOReflectionRate()      { return _AmbientOcclusionParams.w; }
 
 // ----------------------------------------------------------------------------------------------------
 // AO Kernels
@@ -51,14 +51,13 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
     
     // ------------------------- Get Depth -------------------------
     
-    // float originDepth = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, id.xy, 0).r;
     float originDepth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_LinearClamp, screenUV, 0).r;
     float4 originNDC = GetNDCFromUVAndDepth(screenUV, originDepth);
     float3 originWS = TransformNDCToWorld(originNDC, UNITY_MATRIX_I_VP);
 
     // ------------------------- Get Normal & Build Left-Handed TBN -------------------------
 
-    // float3 packNormalWS = LOAD_TEXTURE2D_LOD(_ThinGBufferTexture, id.xy, 0).rgb;
+    // float3 packNormalWS = LOAD_TEXTURE2D_LOD(_ThinGBufferTexture, id.xy * _TextureSize.xy * _CameraBufferSize.zw, 0).rgb;
     float3 packNormalWS = SAMPLE_TEXTURE2D_LOD(_ThinGBufferTexture, sampler_PointClamp, screenUV, 0).rgb;
     float3 normalWS = normalize(DecodeNormalFrom888(packNormalWS)); // N
 
@@ -71,19 +70,19 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
     float randomRadian = LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.w, 0).r * TWO_PI;
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
 
-    float occlusion = 0.0;
+    float aoFactor = 0.0;
+    float intensity = GetSSAOIntensity();
     float sampleCount = GetSSAOSampleCount();
     float radius = GetSSAORadius();
-    float centerIntensity = GetCenterIntensity();
 
     UNITY_UNROLL
     for (int i = 0; i < sampleCount; i++)
     {
         float2 xi = k_Halton[i + 1];
         float3 dirTS = InverseSampleHemisphere(xi).xyz;
+        float cosTheta = dirTS.y;
         float random = k_Sobol[i + 1].y;
-        random = random * random;
-        dirTS *= random;
+        dirTS *= random * random;
         dirTS.xz = mul(rotation, dirTS.xz);
 
         float3 dirWS = tangent * dirTS.x + normalWS * dirTS.y + binormal * dirTS.z;
@@ -100,12 +99,13 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
         float linearDepth = GetViewDepthFromDepthTexture(sampledDepth);
         
         bool rangeCheck = abs(sampleHCS.w - linearDepth) < radius;
-        float weight = lerp(centerIntensity, 1, saturate(max(dirTS.z, max(dirTS.x, dirTS.y))));
-        occlusion += (linearDepth < sampleHCS.w) * rangeCheck * weight;
+        float occlusion = (linearDepth < sampleHCS.w) * rangeCheck * intensity;
+        aoFactor += (1 - occlusion) * cosTheta;
     }
 
-    occlusion = saturate(occlusion / sampleCount * GetSSAOIntensity());
-    _OutputTexture[id.xy] = 1 - occlusion;
+    aoFactor = saturate(2.0 * aoFactor / sampleCount);
+    aoFactor = aoFactor * rcp(1 - GetSSAOReflectionRate() * (1 - aoFactor));
+    _OutputTexture[id.xy] = aoFactor;
 }
 
 // ----------------------------------------------------------------------------------------------------

@@ -48,7 +48,7 @@ namespace YPipeline
                     builder.ReadTexture(data.ThinGBuffer);
                     builder.ReadTexture(data.CameraDepthTexture);
                     
-                    passData.ambientOcclusionParams = new Vector4(m_AO.intensity.value, m_AO.sampleCount.value, m_AO.radius.value, m_AO.centerIntensity.value);
+                    passData.ambientOcclusionParams = new Vector4(m_AO.intensity.value, m_AO.sampleCount.value, m_AO.radius.value, m_AO.reflectionRate.value);
 
                     // Create Ambient Occlusion Texture
                     TextureDesc ambientOcclusionTextureDesc = new TextureDesc(bufferSize.x, bufferSize.y)
