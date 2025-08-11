@@ -21,6 +21,8 @@ SAMPLER(sampler_LinearClamp);
 SAMPLER(sampler_PointClamp);
 
 float4 _CameraBufferSize; // x: 1.0 / bufferSize.x, y: 1.0 / bufferSize.y, z: bufferSize.x, w: bufferSize.y
+float4 _Jitter; // Halton (0, 1), xy: 1.0 / jitter, zw: jitter
+
 float4 _TextureSize; // x: 1.0 / width, y: 1.0 / height, z: width, w: height
 
 // SSAO - x: intensity, y: sample count, z: radius, w: reflection rate
@@ -66,8 +68,9 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
     float3 binormal = normalize(cross(tangent, normalWS)); // B
 
     // ------------------------- Generate Normal-Oriented Hemisphere Samples -------------------------
-    
-    float randomRadian = LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.w, 0).r * TWO_PI;
+
+    // TODO: Temporal Filter
+    float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.w, 0).r + _Jitter.w) * TWO_PI;
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
 
     float aoFactor = 0.0;

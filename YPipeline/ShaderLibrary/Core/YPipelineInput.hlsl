@@ -6,6 +6,8 @@
 // ----------------------------------------------------------------------------------------------------
 
 float4 _CameraBufferSize; // x: 1.0 / bufferSize.x, y: 1.0 / bufferSize.y, z: bufferSize.x, w: bufferSize.y
+float4 _Jitter; // Halton (-0.5, 0.5), xy: 1.0 / jitter, zw: jitter
+float4 _TimeParams; // x: frameCount, y: 1.0 / frameCount
 
 // TODO: Global Constant buffer 存放一些全局的只需设置一次的 constant buffer
 // CBUFFER_START(ParamsPerSetting)
@@ -160,12 +162,15 @@ float4x4 GetSpotLightShadowMatrix(int shadowIndex)                  { return _Sp
 #define SUN_LIGHT_SHADOW_MAP            _SunLightShadowMap
 #define SPOT_LIGHT_SHADOW_MAP           _SpotLightShadowMap
 #define POINT_LIGHT_SHADOW_MAP          _PointLightShadowMap
-#define SHADOW_SAMPLER_COMPARE          sampler_PointClampCompare
-#define SHADOW_SAMPLER                  sampler_PointClamp
+#define SHADOW_SAMPLER_COMPARE          sampler_LinearClampCompare
+#define SHADOW_SAMPLER                  sampler_LinearClamp
 
 TEXTURE2D_ARRAY_SHADOW(SUN_LIGHT_SHADOW_MAP);
+float4 _SunLightShadowMap_TexelSize;
 TEXTURE2D_ARRAY_SHADOW(SPOT_LIGHT_SHADOW_MAP);
+float4 _SpotLightShadowMap_TexelSize;
 TEXTURECUBE_ARRAY_SHADOW(POINT_LIGHT_SHADOW_MAP);
+float4 _PointLightShadowMap_TexelSize;
 SAMPLER_CMP(SHADOW_SAMPLER_COMPARE);
 SAMPLER(SHADOW_SAMPLER);
 
@@ -189,7 +194,7 @@ float4 _BlueNoise64_TexelSize;
 
 // General Samplers
 SAMPLER(sampler_PointRepeat);
-SAMPLER(sampler_LinearClamp);
+SAMPLER(sampler_PointClamp);
 SAMPLER(sampler_LinearRepeat);
 
 #endif

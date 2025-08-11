@@ -52,7 +52,9 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            if (data.asset.antiAliasingMode == AntiAliasingMode.TAA)
+            bool isTAAEnabled = data.asset.antiAliasingMode == AntiAliasingMode.TAA;
+            CoreUtils.SetKeyword(data.cmd, YPipelineKeywords.k_TAA, isTAAEnabled);
+            if (isTAAEnabled)
             {
                 var stack = VolumeManager.instance.stack;
                 m_TAA = stack.GetComponent<TAA>();

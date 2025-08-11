@@ -14,6 +14,8 @@ namespace YPipeline
             
             // Global Constant Buffer Variables
             public Vector2Int bufferSize;
+            public Vector4 jitter;
+            public Vector4 timeParams;
             public Vector4 cascadeSettings;
             public Vector4 shadowMapSizes;
         }
@@ -110,8 +112,11 @@ namespace YPipeline
                 // ----------------------------------------------------------------------------------------------------
                 // Global Constant Buffer Variables
                 // ----------------------------------------------------------------------------------------------------
+                int frameCount = Time.frameCount;
                 
-                // TODO: constant buffer 设置一次就行!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                Vector2 jitter = RandomUtility.k_Halton[frameCount % 64 + 1] - new Vector2(0.5f, 0.5f);
+                passData.jitter = new Vector4(1.0f / jitter.x, 1.0f / jitter.y, jitter.x, jitter.y);
+                passData.timeParams = new Vector4(frameCount, 1.0f / frameCount);
                 passData.cascadeSettings = new Vector4(data.asset.maxShadowDistance, data.asset.distanceFade, data.asset.cascadeCount, data.asset.cascadeEdgeFade);
                 passData.shadowMapSizes = new Vector4((int) data.asset.sunLightShadowMapSize, (int) data.asset.spotLightShadowMapSize, (int) data.asset.pointLightShadowMapSize);
                 
@@ -122,6 +127,8 @@ namespace YPipeline
                     context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_EnvBRDFLutID, data.envBRDFLut);
                     context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_BlueNoise64ID, data.blueNoise64);
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_BufferSizeID, new Vector4(1f / data.bufferSize.x, 1f / data.bufferSize.y, data.bufferSize.x, data.bufferSize.y));
+                    context.cmd.SetGlobalVector(YPipelineShaderIDs.k_JitterID, data.jitter);
+                    context.cmd.SetGlobalVector(YPipelineShaderIDs.k_TimeParams,data.timeParams);
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_CascadeSettingsID, data.cascadeSettings);
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_ShadowMapSizesID, data.shadowMapSizes);
                     

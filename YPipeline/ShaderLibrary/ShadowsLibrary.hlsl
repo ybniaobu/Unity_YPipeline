@@ -5,7 +5,8 @@
 #include "../ShaderLibrary/RandomLibrary.hlsl"
 #include "../ShaderLibrary/SamplingLibrary.hlsl"
 
-#define SHADOW_SAMPLE_SEQUENCE k_HaltonDisk
+#define SHADOW_SAMPLE_SEQUENCE k_SobolDisk
+#define ROTATION_JITTER_SCALE 1
 
 // ----------------------------------------------------------------------------------------------------
 // Sample Shadow Map or Array
@@ -181,11 +182,10 @@ float3 ApplyShadowAndPenumbraColor(float shadowAttenuation, float3 shadowColor, 
 float ApplyPCF_2DArray(float index, TEXTURE2D_ARRAY_SHADOW(shadowMap), float sampleNumber, float penumbraPercent, float3 positionSS, float2x2 rotation)
 {
     float shadowAttenuation = 0.0;
+    
     for (float i = 0; i < sampleNumber; i++)
     {
-        float2 offset = mul(rotation, SHADOW_SAMPLE_SEQUENCE[i + 1]) * 0.5;
-        // float2 offset = mul(rotation, InverseSampleCircle(Sobol_Bits(i + 1))) * 0.5;
-        // float2 offset = mul(rotation, InverseSampleCircle(Hammersley_Bits(i + 1, sampleNumber + 1))) * 0.5;
+        float2 offset = mul(rotation, SHADOW_SAMPLE_SEQUENCE[i + 1] * 0.5);
         offset = offset * penumbraPercent;
         float2 uv = positionSS.xy + offset;
         shadowAttenuation += SampleShadowArray_Compare(float3(uv, positionSS.z), index, shadowMap, SHADOW_SAMPLER_COMPARE);
@@ -196,11 +196,10 @@ float ApplyPCF_2DArray(float index, TEXTURE2D_ARRAY_SHADOW(shadowMap), float sam
 float ApplyPCF_CubeArray(float index, float faceIndex, TEXTURECUBE_ARRAY_SHADOW(shadowMap), float sampleNumber, float penumbraPercent, float3 positionSS, float2x2 rotation)
 {
     float shadowAttenuation = 0.0;
+    
     for (float i = 0; i < sampleNumber; i++)
     {
-        float2 offset = mul(rotation, SHADOW_SAMPLE_SEQUENCE[i + 1]) * 0.5;
-        // float2 offset = mul(rotation, InverseSampleCircle(Hammersley_Bits(i + 1, sampleNumber + 1))) * 0.5;
-        // float2 offset = mul(rotation, InverseSampleCircle(Sobol_Bits(i + 1))) * 0.5;
+        float2 offset = mul(rotation, SHADOW_SAMPLE_SEQUENCE[i + 1] * 0.5);
         offset = offset * penumbraPercent;
         float2 uv_Offset = positionSS.xy + offset;
         float3 sampleDir = PointLightCubeMapping(faceIndex, uv_Offset);
@@ -229,8 +228,11 @@ float3 GetSunLightShadowAttenuation_PCF(float3 positionWS, float3 normalWS, floa
     float3 positionWS_Bias = ApplyShadowBias(positionWS, GetSunLightShadowBias(), texelSize, GetSunLightPCFPenumbraWidth(), normalWS, L);
     float3 positionSS = TransformWorldToSunLightShadowCoord(positionWS_Bias, cascadeIndex);
 
-    float randomRadian = SAMPLE_TEXTURE2D_LOD(_BlueNoise64, sampler_PointRepeat, positionHCS.xy / 64, 0).r * TWO_PI;
-    // float randomRadian = InterleavedGradientNoise(positionHCS, 0) * TWO_PI;
+    #ifdef _TAA
+        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, positionHCS.xy % _BlueNoise64_TexelSize.w, 0).r + _Jitter.w * ROTATION_JITTER_SCALE) * TWO_PI;
+    #else
+        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, positionHCS.xy % _BlueNoise64_TexelSize.w, 0).r) * TWO_PI;
+    #endif
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
     
     float shadowAttenuation = ApplyPCF_2DArray(cascadeIndex, SUN_LIGHT_SHADOW_MAP, GetSunLightPCFSampleNumber(), penumbraPercent, positionSS, rotation);
@@ -252,8 +254,11 @@ float3 GetSpotLightShadowAttenuation_PCF(int lightIndex, float3 positionWS, floa
     float3 positionWS_Bias = ApplyShadowBias(positionWS, GetSpotLightShadowBias(shadowingSpotLightIndex), texelSize, penumbraWS, normalWS, L);
     float3 positionSS = TransformWorldToSpotLightShadowCoord(positionWS_Bias, shadowingSpotLightIndex);
 
-    float randomRadian = SAMPLE_TEXTURE2D_LOD(_BlueNoise64, sampler_PointRepeat, positionHCS.xy / 64, 0).r * TWO_PI;
-    // float randomRadian = InterleavedGradientNoise(positionHCS, 0) * TWO_PI;
+    #ifdef _TAA
+        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, positionHCS.xy % _BlueNoise64_TexelSize.w, 0).r + _Jitter.w * ROTATION_JITTER_SCALE) * TWO_PI;
+    #else
+        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, positionHCS.xy % _BlueNoise64_TexelSize.w, 0).r) * TWO_PI;
+    #endif
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
     
     float shadowAttenuation = ApplyPCF_2DArray(shadowingSpotLightIndex, SPOT_LIGHT_SHADOW_MAP, GetSpotLightPCFSampleNumber(shadowingSpotLightIndex), penumbraPercent, positionSS, rotation);
@@ -276,8 +281,11 @@ float3 GetPointLightShadowAttenuation_PCF(int lightIndex, float faceIndex, float
     //float3 sampleDir = normalize(positionWS_Bias - GetPointLightPosition(lightIndex));
     float3 positionSS = TransformWorldToPointLightShadowCoord(positionWS_Bias, shadowingPointLightIndex, faceIndex);
 
-    float randomRadian = SAMPLE_TEXTURE2D_LOD(_BlueNoise64, sampler_PointRepeat, positionHCS.xy / 64, 0).r * TWO_PI;
-    // float randomRadian = InterleavedGradientNoise(positionHCS, 0) * TWO_PI;
+    #ifdef _TAA
+        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, positionHCS.xy % _BlueNoise64_TexelSize.w, 0).r + _Jitter.w * ROTATION_JITTER_SCALE) * TWO_PI;
+    #else
+        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, positionHCS.xy % _BlueNoise64_TexelSize.w, 0).r) * TWO_PI;
+    #endif
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
     
     float shadowAttenuation = ApplyPCF_CubeArray(shadowingPointLightIndex, faceIndex, POINT_LIGHT_SHADOW_MAP, GetPointLightPCFSampleNumber(shadowingPointLightIndex), penumbraPercent, positionSS, rotation);
@@ -309,9 +317,7 @@ float3 ComputeAverageBlockerDepth_2DArray_Ortho(float index, TEXTURE2D_ARRAY(sha
 
     for (int i = 0; i < sampleNumber; i++)
     {
-        float2 offset = mul(rotation, SHADOW_SAMPLE_SEQUENCE[i + 1]) * 0.5;
-        // float2 offset = mul(rotation, InverseSampleCircle(Hammersley_Bits(i + 1, sampleNumber + 1))) * 0.5;
-        // float2 offset = mul(rotation, InverseSampleCircle(Sobol_Bits(i + 1))) * 0.5;
+        float2 offset = mul(rotation, SHADOW_SAMPLE_SEQUENCE[i + 1] * 0.5);
         offset = offset * searchWidthPercent;
         float2 uv = positionSS.xy + offset;
         float d_Blocker = SampleShadowArray_Depth(uv, index, shadowMap, SHADOW_SAMPLER);
@@ -337,9 +343,7 @@ float3 ComputeAverageBlockerDepth_2DArray_Persp(float index, TEXTURE2D_ARRAY(sha
 
     for (int i = 0; i < sampleNumber; i++)
     {
-        float2 offset = mul(rotation, SHADOW_SAMPLE_SEQUENCE[i + 1]) * 0.5;
-        // float2 offset = mul(rotation, InverseSampleCircle(Hammersley_Bits(i + 1, sampleNumber + 1))) * 0.5;
-        // float2 offset = mul(rotation, InverseSampleCircle(Sobol_Bits(i + 1))) * 0.5;
+        float2 offset = mul(rotation, SHADOW_SAMPLE_SEQUENCE[i + 1] * 0.5);
         offset = offset * searchWidthPercent;
         float2 uv = positionSS.xy + offset;
         float d_Blocker = SampleShadowArray_Depth(uv, index, shadowMap, SHADOW_SAMPLER);
@@ -365,9 +369,7 @@ float3 ComputeAverageBlockerDepth_CubeArray(float index, float faceIndex, TEXTUR
 
     for (int i = 0; i < sampleNumber; i++)
     {
-        float2 offset = mul(rotation, SHADOW_SAMPLE_SEQUENCE[i + 1]) * 0.5;
-        // float2 offset = mul(rotation, InverseSampleCircle(Hammersley_Bits(i + 1, sampleNumber + 1))) * 0.5;
-        // float2 offset = mul(rotation, InverseSampleCircle(Sobol_Bits(i + 1))) * 0.5;
+        float2 offset = mul(rotation, SHADOW_SAMPLE_SEQUENCE[i + 1] * 0.5);
         offset = offset * searchWidthPercent;
         float2 uv_Offset = positionSS.xy + offset;
         float3 sampleDir = PointLightCubeMapping(faceIndex, uv_Offset);
@@ -404,9 +406,11 @@ float3 GetSunLightShadowAttenuation_PCSS(float3 positionWS, float3 normalWS, flo
     float3 positionWS_SearchBias = ApplyShadowBias(positionWS, GetSunLightShadowBias(), texelSize, searchWidthWS, normalWS, L);
     float3 positionSS_Search = TransformWorldToSunLightShadowCoord(positionWS_SearchBias, cascadeIndex);
     
-    // float randomRadian = InterleavedGradientNoise(positionHCS, 0) * TWO_PI;
-    // float randomRadian = SAMPLE_TEXTURE2D_LOD(_BlueNoise64, sampler_PointRepeat, positionHCS.xy % 64 / 64, 0).r * TWO_PI;
-    float randomRadian = LOAD_TEXTURE2D_LOD(_BlueNoise64, positionHCS.xy % _BlueNoise64_TexelSize.w, 0).r * TWO_PI;
+    #ifdef _TAA
+        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, positionHCS.xy % _BlueNoise64_TexelSize.w, 0).r + _Jitter.w * ROTATION_JITTER_SCALE) * TWO_PI;
+    #else
+        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, positionHCS.xy % _BlueNoise64_TexelSize.w, 0).r) * TWO_PI;
+    #endif
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
 
     float4 depthParams = GetSunLightDepthParams(cascadeIndex);
@@ -443,9 +447,11 @@ float3 GetSpotLightShadowAttenuation_PCSS(int lightIndex, float3 positionWS, flo
     float3 positionWS_SearchBias = ApplyShadowBias(positionWS, GetSpotLightShadowBias(shadowingSpotLightIndex), texelSize, searchWidthWS, normalWS, L);
     float3 positionSS_Search = TransformWorldToSpotLightShadowCoord(positionWS_SearchBias, shadowingSpotLightIndex);
     
-    // float randomRadian = InterleavedGradientNoise(positionHCS, 0) * TWO_PI;
-    // float randomRadian = SAMPLE_TEXTURE2D_LOD(_BlueNoise64, sampler_PointRepeat, positionHCS.xy / 64, 0).r * TWO_PI;
-    float randomRadian = LOAD_TEXTURE2D_LOD(_BlueNoise64, positionHCS.xy % _BlueNoise64_TexelSize.w, 0).r * TWO_PI;
+    #ifdef _TAA
+        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, positionHCS.xy % _BlueNoise64_TexelSize.w, 0).r + _Jitter.w * ROTATION_JITTER_SCALE) * TWO_PI;
+    #else
+        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, positionHCS.xy % _BlueNoise64_TexelSize.w, 0).r) * TWO_PI;
+    #endif
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
     
     float4 depthParams = GetSpotLightDepthParams(shadowingSpotLightIndex);
@@ -482,9 +488,11 @@ float3 GetPointLightShadowAttenuation_PCSS(int lightIndex, float faceIndex, floa
     //float3 sampleDir_Search = normalize(positionWS_SearchBias - GetPointLightPosition(lightIndex));
     float3 positionSS_Search = TransformWorldToPointLightShadowCoord(positionWS_SearchBias, shadowingPointLightIndex, faceIndex);
 
-    // float randomRadian = InterleavedGradientNoise(positionHCS, 0) * TWO_PI;
-    // float randomRadian = SAMPLE_TEXTURE2D_LOD(_BlueNoise64, sampler_PointRepeat, positionHCS.xy / 64, 0).r * TWO_PI;
-    float randomRadian = LOAD_TEXTURE2D_LOD(_BlueNoise64, positionHCS.xy % _BlueNoise64_TexelSize.w, 0).r * TWO_PI;
+    #ifdef _TAA
+        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, positionHCS.xy % _BlueNoise64_TexelSize.w, 0).r + _Jitter.w * ROTATION_JITTER_SCALE) * TWO_PI;
+    #else
+        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, positionHCS.xy % _BlueNoise64_TexelSize.w, 0).r) * TWO_PI;
+    #endif
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
     
     float4 depthParams = GetPointLightDepthParams(shadowingPointLightIndex);
