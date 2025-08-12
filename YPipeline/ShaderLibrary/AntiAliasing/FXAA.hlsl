@@ -72,23 +72,23 @@ static const float EdgeStepSizes[EXTRA_EDGE_STEPS] = { EDGE_STEP_SIZES };
 //#define TEXEL_SIZE _BlitTexture_TexelSize
 #define TEXEL_SIZE 1.0 / _ScreenParams
 
-float GetLuma(float3 rgb)
+inline float GetLuma(float3 rgb)
 {
     return sqrt(Luminance(rgb));
 }
 
-float GetLuma(float4 rgba)
+inline float GetLuma(float4 rgba)
 {
     return sqrt(Luminance(rgba));
 }
 
-float4 SampleOffset(float2 uv, float uOffset, float vOffset)
+inline float4 SampleOffset(float2 uv, float uOffset, float vOffset)
 {
     uv += float2(uOffset, vOffset) * TEXEL_SIZE.xy;
     return SAMPLE_TEXTURE2D_LOD(_BlitTexture, sampler_LinearClamp, uv, 0);
 }
 
-float4 SampleOffsetZero(float2 uv)
+inline float4 SampleOffsetZero(float2 uv)
 {
     return SAMPLE_TEXTURE2D_LOD(_BlitTexture, sampler_LinearClamp, uv, 0);
 }

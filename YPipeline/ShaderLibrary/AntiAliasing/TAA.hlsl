@@ -8,12 +8,12 @@
 // TAA Utility Functions
 // ----------------------------------------------------------------------------------------------------
 
-float4 LoadOffset(TEXTURE2D(tex), float2 pixelCoord, int2 offset)
+inline float4 LoadOffset(TEXTURE2D(tex), float2 pixelCoord, int2 offset)
 {
     return LOAD_TEXTURE2D_LOD(tex, pixelCoord + offset, 0);
 }
 
-float4 SampleLinearOffset(TEXTURE2D(tex), float2 uv, int2 offset)
+inline float4 SampleLinearOffset(TEXTURE2D(tex), float2 uv, int2 offset)
 {
     return SAMPLE_TEXTURE2D_LOD(tex, sampler_LinearClamp, uv + offset * _CameraBufferSize.xy, 0);
 }

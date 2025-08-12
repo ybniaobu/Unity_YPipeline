@@ -16,6 +16,9 @@ MonoBehaviour:
   ambientOcclusionMode:
     m_OverrideState: 1
     m_Value: 1
+  halfResolution:
+    m_OverrideState: 1
+    m_Value: 1
   intensity:
     m_OverrideState: 1
     m_Value: 1
@@ -27,7 +30,16 @@ MonoBehaviour:
     m_Value: 1
   reflectionRate:
     m_OverrideState: 1
-    m_Value: 0.5
+    m_Value: 0.25
+  enableSpatialFilter:
+    m_OverrideState: 1
+    m_Value: 1
+  kernelRadius:
+    m_OverrideState: 1
+    m_Value: 2
+  sigma:
+    m_OverrideState: 1
+    m_Value: 2.5
 --- !u!114 &-3444846745659079112
 MonoBehaviour:
   m_ObjectHideFlags: 3

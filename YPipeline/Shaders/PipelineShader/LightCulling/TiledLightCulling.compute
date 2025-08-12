@@ -36,11 +36,11 @@ groupshared uint lightIndicesInTile[MAX_PUNCTUAL_LIGHT_COUNT];
 // Input
 // ----------------------------------------------------------------------------------------------------
 
-float3 GetPunctualLightPosition(uint lightIndex)    { return _LightInputInfos[lightIndex].bound.xyz; }
-float GetPunctualLightRange(uint lightIndex)        { return _LightInputInfos[lightIndex].bound.w; }
-float3 GetSpotLightDirection(uint lightIndex)       { return _LightInputInfos[lightIndex].spotLightInfos.xyz; }
-float GetSpotLightHalfOuterAngle(uint lightIndex)   { return _LightInputInfos[lightIndex].spotLightInfos.w; }
-float GetPunctualLightCount()                       { return _PunctualLightCount.x; }
+inline float3 GetPunctualLightPosition(uint lightIndex)    { return _LightInputInfos[lightIndex].bound.xyz; }
+inline float GetPunctualLightRange(uint lightIndex)        { return _LightInputInfos[lightIndex].bound.w; }
+inline float3 GetSpotLightDirection(uint lightIndex)       { return _LightInputInfos[lightIndex].spotLightInfos.xyz; }
+inline float GetSpotLightHalfOuterAngle(uint lightIndex)   { return _LightInputInfos[lightIndex].spotLightInfos.w; }
+inline float GetPunctualLightCount()                       { return _PunctualLightCount.x; }
 
 // ----------------------------------------------------------------------------------------------------
 // Intersect Test Referred Functions

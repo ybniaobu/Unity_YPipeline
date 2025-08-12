@@ -12,55 +12,55 @@
 // Sample Shadow Map or Array
 // ----------------------------------------------------------------------------------------------------
 
-float SampleShadowMap_Compare(float3 positionSS, TEXTURE2D_SHADOW(shadowMap), SAMPLER_CMP(shadowMapSampler))
+inline float SampleShadowMap_Compare(float3 positionSS, TEXTURE2D_SHADOW(shadowMap), SAMPLER_CMP(shadowMapSampler))
 {
     float shadowAttenuation = SAMPLE_TEXTURE2D_SHADOW(shadowMap, shadowMapSampler, positionSS);
     return shadowAttenuation;
 }
 
-float SampleShadowMap_Depth(float2 uv, TEXTURE2D(shadowMap), SAMPLER(shadowMapSampler))
+inline float SampleShadowMap_Depth(float2 uv, TEXTURE2D(shadowMap), SAMPLER(shadowMapSampler))
 {
     float depth = SAMPLE_TEXTURE2D_LOD(shadowMap, shadowMapSampler, uv, 0).r;
     return depth;
 }
 
-float SampleShadowMap_DepthCompare(float3 positionSS, TEXTURE2D(shadowMap), SAMPLER(shadowMapSampler))
+inline float SampleShadowMap_DepthCompare(float3 positionSS, TEXTURE2D(shadowMap), SAMPLER(shadowMapSampler))
 {
     float depth = SAMPLE_TEXTURE2D_LOD(shadowMap, shadowMapSampler, positionSS.xy, 0).r;
     return step(depth, positionSS.z);
 }
 
-float SampleShadowArray_Compare(float3 positionSS, float elementIndex, TEXTURE2D_ARRAY_SHADOW(shadowMap), SAMPLER_CMP(shadowMapSampler))
+inline float SampleShadowArray_Compare(float3 positionSS, float elementIndex, TEXTURE2D_ARRAY_SHADOW(shadowMap), SAMPLER_CMP(shadowMapSampler))
 {
     float shadowAttenuation = SAMPLE_TEXTURE2D_ARRAY_SHADOW(shadowMap, shadowMapSampler, positionSS, elementIndex);
     return shadowAttenuation;
 }
 
-float SampleShadowArray_Depth(float2 uv, float elementIndex, TEXTURE2D_ARRAY(shadowMap), SAMPLER(shadowMapSampler))
+inline float SampleShadowArray_Depth(float2 uv, float elementIndex, TEXTURE2D_ARRAY(shadowMap), SAMPLER(shadowMapSampler))
 {
     float depth = SAMPLE_TEXTURE2D_ARRAY_LOD(shadowMap, shadowMapSampler, uv, elementIndex, 0).r;
     return depth;
 }
 
-float SampleShadowArray_DepthCompare(float3 positionSS, float elementIndex, TEXTURE2D_ARRAY(shadowMap), SAMPLER(shadowMapSampler))
+inline float SampleShadowArray_DepthCompare(float3 positionSS, float elementIndex, TEXTURE2D_ARRAY(shadowMap), SAMPLER(shadowMapSampler))
 {
     float depth = SAMPLE_TEXTURE2D_ARRAY_LOD(shadowMap, shadowMapSampler, positionSS.xy, elementIndex, 0).r;
     return step(depth, positionSS.z);
 }
 
-float SampleShadowCubeArray_Compare(float3 sampleDir, float z, float elementIndex, TEXTURECUBE_ARRAY_SHADOW(shadowMap), SAMPLER_CMP(shadowMapSampler))
+inline float SampleShadowCubeArray_Compare(float3 sampleDir, float z, float elementIndex, TEXTURECUBE_ARRAY_SHADOW(shadowMap), SAMPLER_CMP(shadowMapSampler))
 {
     float shadowAttenuation = SAMPLE_TEXTURECUBE_ARRAY_SHADOW(shadowMap, shadowMapSampler, float4(sampleDir, z), elementIndex);
     return shadowAttenuation;
 }
 
-float SampleShadowCubeArray_Depth(float3 sampleDir, float elementIndex, TEXTURECUBE_ARRAY(shadowMap), SAMPLER(shadowMapSampler))
+inline float SampleShadowCubeArray_Depth(float3 sampleDir, float elementIndex, TEXTURECUBE_ARRAY(shadowMap), SAMPLER(shadowMapSampler))
 {
     float depth = SAMPLE_TEXTURECUBE_ARRAY_LOD(shadowMap, shadowMapSampler, sampleDir, elementIndex, 0).r;
     return depth;
 }
 
-float SampleShadowCubeArray_DepthCompare(float3 sampleDir, float z, float elementIndex, TEXTURECUBE_ARRAY(shadowMap), SAMPLER(shadowMapSampler))
+inline float SampleShadowCubeArray_DepthCompare(float3 sampleDir, float z, float elementIndex, TEXTURECUBE_ARRAY(shadowMap), SAMPLER(shadowMapSampler))
 {
     float depth = SAMPLE_TEXTURECUBE_ARRAY_LOD(shadowMap, shadowMapSampler, sampleDir, elementIndex, 0).r;
     return step(depth, z);
@@ -70,14 +70,14 @@ float SampleShadowCubeArray_DepthCompare(float3 sampleDir, float z, float elemen
 // Light/Shadow Space Transform
 // ----------------------------------------------------------------------------------------------------
 
-float3 TransformWorldToSunLightShadowCoord(float3 positionWS, int cascadeIndex)
+inline float3 TransformWorldToSunLightShadowCoord(float3 positionWS, int cascadeIndex)
 {
     // SS: shadow space
     float3 positionSS = mul(GetSunLightShadowMatrix(cascadeIndex), float4(positionWS, 1.0)).xyz;
     return positionSS;
 }
 
-float3 TransformWorldToSpotLightShadowCoord(float3 positionWS, int shadowingLightIndex)
+inline float3 TransformWorldToSpotLightShadowCoord(float3 positionWS, int shadowingLightIndex)
 {
     // SS: shadow space
     float4 positionSS_BeforeDivision = mul(GetSpotLightShadowMatrix(shadowingLightIndex), float4(positionWS, 1.0));
@@ -85,7 +85,7 @@ float3 TransformWorldToSpotLightShadowCoord(float3 positionWS, int shadowingLigh
     return positionSS;
 }
 
-float3 TransformWorldToPointLightShadowCoord(float3 positionWS, int shadowingLightIndex, float faceIndex)
+inline float3 TransformWorldToPointLightShadowCoord(float3 positionWS, int shadowingLightIndex, float faceIndex)
 {
     // SS: shadow space
     float4 positionSS_BeforeDivision = mul(GetPointLightShadowMatrix(shadowingLightIndex * 6 + faceIndex), float4(positionWS, 1.0));
@@ -167,7 +167,7 @@ float3 ApplyShadowBias(float3 positionWS, float4 shadowBias, float texelSize, fl
 // Shadow and Penumbra Color Function
 // ----------------------------------------------------------------------------------------------------
 
-float3 ApplyShadowAndPenumbraColor(float shadowAttenuation, float3 shadowColor, float3 penumbraColor)
+inline float3 ApplyShadowAndPenumbraColor(float shadowAttenuation, float3 shadowColor, float3 penumbraColor)
 {
     penumbraColor = lerp(shadowColor, penumbraColor, shadowAttenuation);
     shadowColor = lerp(penumbraColor, 1, shadowAttenuation);
@@ -297,12 +297,12 @@ float3 GetPointLightShadowAttenuation_PCF(int lightIndex, float faceIndex, float
 // PCSS Related Functions
 // ----------------------------------------------------------------------------------------------------
 
-float NonLinearToLinearDepth_Ortho(float4 depthParams, float nonLinearDepth)
+inline float NonLinearToLinearDepth_Ortho(float4 depthParams, float nonLinearDepth)
 {
     return (depthParams.y - 2.0 * nonLinearDepth + 1.0) / depthParams.x;
 }
 
-float NonLinearToLinearDepth_Persp(float4 depthParams, float nonLinearDepth)
+inline float NonLinearToLinearDepth_Persp(float4 depthParams, float nonLinearDepth)
 {
     return depthParams.y / (2.0 * nonLinearDepth - 1.0 + depthParams.x);
 }

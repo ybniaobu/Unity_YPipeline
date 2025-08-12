@@ -97,7 +97,7 @@ float4 InverseSampleSphere(float3 xi) // Left-handed Spherical and Cartesian Coo
     float r = pow(xi.z, 1.0 / 3.0);
 
     float3 N = float3(r * sinTheta * cos(phi), r * cosTheta, r * sinTheta * sin(phi));
-    float PDF = INV_FOUR_PI;
+    float PDF = 3.0 * rcp(FOUR_PI * r * r * r);
     return float4(N, PDF);
 }
 
@@ -120,7 +120,7 @@ float4 InverseSampleHemisphere(float3 xi) // Left-handed Spherical and Cartesian
     float r = pow(xi.z, 1.0 / 3.0);
 
     float3 N = float3(r * sinTheta * cos(phi), r * cosTheta, r * sinTheta * sin(phi));
-    float PDF = INV_TWO_PI;
+    float PDF = 3.0 * rcp(TWO_PI * r * r * r);
     return float4(N, PDF);
 }
 
