@@ -39,7 +39,7 @@ MonoBehaviour:
     m_Value: 2
   sigma:
     m_OverrideState: 1
-    m_Value: 2.5
+    m_Value: 3
 --- !u!114 &-3444846745659079112
 MonoBehaviour:
   m_ObjectHideFlags: 3

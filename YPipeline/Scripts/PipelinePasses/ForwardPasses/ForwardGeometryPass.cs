@@ -27,14 +27,14 @@ namespace YPipeline
         {
             using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<ForwardGeometryPassData>("Draw Opaque & AlphaTest", out var passData))
             {
-                RendererListDesc opaqueRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_OpaqueShaderTagIds, data.cullingResults, data.camera)
+                RendererListDesc opaqueRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_ForwardOpaqueShaderTagIds, data.cullingResults, data.camera)
                 {
                     rendererConfiguration = PerObjectData.ReflectionProbes | PerObjectData.Lightmaps | PerObjectData.LightProbe,
                     renderQueueRange = new RenderQueueRange(2000, 2449),
                     sortingCriteria = SortingCriteria.OptimizeStateChanges
                 };
                 
-                RendererListDesc alphaTestRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_OpaqueShaderTagIds, data.cullingResults, data.camera)
+                RendererListDesc alphaTestRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_ForwardOpaqueShaderTagIds, data.cullingResults, data.camera)
                 {
                     rendererConfiguration = PerObjectData.ReflectionProbes | PerObjectData.Lightmaps | PerObjectData.LightProbe,
                     renderQueueRange = new RenderQueueRange(2450, 2499),
@@ -66,8 +66,8 @@ namespace YPipeline
 
                 builder.SetRenderFunc((ForwardGeometryPassData data, RenderGraphContext context) =>
                 {
-                    context.cmd.SetRenderTarget(data.colorAttachment, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
-                        data.depthAttachment, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
+                    // context.cmd.SetRenderTarget(data.colorAttachment, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
+                    //     data.depthAttachment, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
                     
                     context.cmd.BeginSample("Draw Opaque");
                     context.cmd.DrawRendererList(data.opaqueRendererList);

@@ -10,7 +10,8 @@ namespace YPipeline
         private class ThinGBufferPassData
         {
             public TextureHandle depthAttachment;
-            public TextureHandle thinGBuffer;
+            public TextureHandle thinGBuffer0;
+            public TextureHandle thinGBuffer1;
             
             public RendererListHandle opaqueRendererList;
             public RendererListHandle alphaTestRendererList;
@@ -42,20 +43,18 @@ namespace YPipeline
                 builder.UseRendererList(passData.alphaTestRendererList);
 
                 passData.depthAttachment = builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.Write);
-                passData.thinGBuffer = builder.WriteTexture(data.ThinGBuffer);
+                passData.thinGBuffer0 = builder.UseColorBuffer(data.ThinGBuffer0, 0);
+                passData.thinGBuffer1 = builder.UseColorBuffer(data.ThinGBuffer1, 1);
                 
                 builder.AllowPassCulling(false);
                 builder.AllowRendererListCulling(false);
 
                 builder.SetRenderFunc((ThinGBufferPassData data, RenderGraphContext context) =>
                 {
-                    context.cmd.SetRenderTarget(data.thinGBuffer, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store, 
-                        data.depthAttachment, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
-                    
                     context.cmd.DrawRendererList(data.opaqueRendererList);
                     context.cmd.DrawRendererList(data.alphaTestRendererList);
                     
-                    context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_ThinGBufferTextureID, data.thinGBuffer);
+                    context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_ThinGBuffer0ID, data.thinGBuffer0);
                     
                     context.renderContext.ExecuteCommandBuffer(context.cmd);
                     context.cmd.Clear();

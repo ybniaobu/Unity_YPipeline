@@ -47,7 +47,7 @@ namespace YPipeline
         // ----------------------------------------------------------------------------------------------------
         
         public override string renderPipelineShaderTag => string.Empty;
-        public override Shader defaultShader => Shader.Find("YPipeline/Shading Models/Standard PBR(Separated Texture)");
+        public override Shader defaultShader => Shader.Find("YPipeline/Shading Models/Standard PBR");
 
         public override Material defaultMaterial => pipelineResources.defaultMaterials.standardPBR;
 

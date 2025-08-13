@@ -57,7 +57,7 @@ namespace YPipeline
                 };
 
                 data.MotionVectorTexture = data.renderGraph.CreateTexture(motionVectorDesc);
-                passData.motionVectorTexture = builder.WriteTexture(data.MotionVectorTexture);
+                passData.motionVectorTexture = builder.UseColorBuffer(data.MotionVectorTexture, 0);
                 
                 // Object Motion Vector
                 passData.depthAttachment = builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.ReadWrite);
@@ -91,8 +91,8 @@ namespace YPipeline
                 
                 builder.SetRenderFunc((MotionVectorPassData data, RenderGraphContext context) =>
                 {
-                    context.cmd.SetRenderTarget(data.motionVectorTexture, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store,
-                        data.depthAttachment, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
+                    // context.cmd.SetRenderTarget(data.motionVectorTexture, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store,
+                    //     data.depthAttachment, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
                     
                     // Object Motion Vector
                     context.cmd.BeginSample("Object Motion Vector");

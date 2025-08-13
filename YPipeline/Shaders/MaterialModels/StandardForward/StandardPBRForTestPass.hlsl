@@ -1,5 +1,5 @@
-﻿#ifndef YPIPELINE_STANDARD_PBR_PASS_INCLUDED
-#define YPIPELINE_STANDARD_PBR_PASS_INCLUDED
+﻿#ifndef YPIPELINE_STANDARD_PBR_FOR_TEST_PASS_INCLUDED
+#define YPIPELINE_STANDARD_PBR_FOR_TEST_PASS_INCLUDED
 
 #include "../../../ShaderLibrary/RenderingEquationLibrary.hlsl"
 
@@ -28,20 +28,21 @@ void InitializeStandardPBRParams(Varyings IN, inout StandardPBRParams standardPB
     standardPBRParams.albedo = color.rgb;
     standardPBRParams.alpha = color.a;
     standardPBRParams.emission = SAMPLE_TEXTURE2D(_EmissionTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).rgb * _EmissionColor.rgb;
-    
-    #if _USE_HYBRIDTEX
-        float4 hybrid = SAMPLE_TEXTURE2D(_HybridTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).rgba;
-        standardPBRParams.roughness = saturate(hybrid.r * pow(10, _RoughnessScale));
-        standardPBRParams.metallic = saturate(hybrid.g * pow(10, _MetallicScale));
-        standardPBRParams.ao = saturate(hybrid.a * pow(0.1, _AOScale));
+
+    #if _USE_ROUGHNESSTEX
+        standardPBRParams.roughness = SAMPLE_TEXTURE2D(_RoughnessTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).r;
+        standardPBRParams.roughness *= pow(10, _RoughnessScale);
+        standardPBRParams.roughness = saturate(standardPBRParams.roughness);
     #else
         standardPBRParams.roughness = _Roughness;
-        standardPBRParams.metallic = _Metallic;
-        standardPBRParams.ao = 1.0;
     #endif
 
-    #if _SCREEN_SPACE_AMBIENT_OCCLUSION
-        standardPBRParams.ao = min(standardPBRParams.ao, SAMPLE_TEXTURE2D_LOD(_AmbientOcclusionTexture, sampler_LinearClamp, IN.positionHCS.xy * _CameraBufferSize.xy, 0).r);
+    #if _USE_METALLICTEX
+        standardPBRParams.metallic = SAMPLE_TEXTURE2D(_MetallicTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).r;
+        standardPBRParams.metallic *= pow(10, _MetallicScale);
+        standardPBRParams.metallic = saturate(standardPBRParams.metallic);
+    #else
+        standardPBRParams.metallic = _Metallic;
     #endif
 
     #if _USE_NORMALTEX
@@ -54,6 +55,14 @@ void InitializeStandardPBRParams(Varyings IN, inout StandardPBRParams standardPB
         standardPBRParams.N = normalize(mul(normalTS, tbn));
     #else
         standardPBRParams.N = normalize(IN.normalWS);
+    #endif
+
+    standardPBRParams.ao = SAMPLE_TEXTURE2D(_AOTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).r;
+    standardPBRParams.ao *= pow(0.1, _AOScale);
+    standardPBRParams.ao = saturate(standardPBRParams.ao);
+    
+    #if _SCREEN_SPACE_AMBIENT_OCCLUSION
+        standardPBRParams.ao = min(standardPBRParams.ao, SAMPLE_TEXTURE2D_LOD(_AmbientOcclusionTexture, sampler_LinearClamp, IN.positionHCS.xy * _CameraBufferSize.xy, 0).r);
     #endif
     
     standardPBRParams.F0 = lerp(_Specular * _Specular * float3(0.16, 0.16, 0.16), standardPBRParams.albedo, standardPBRParams.metallic);

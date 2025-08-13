@@ -7,20 +7,21 @@ namespace YPipeline
     {
         public static ShaderTagId k_SRPDefaultShaderTagId = new ShaderTagId("SRPDefaultUnlit");
         
-        public static ShaderTagId k_ForwardLitShaderTagId = new ShaderTagId("YPipelineForward");
+        public static ShaderTagId k_GBufferShaderTagId = new ShaderTagId("YPipelineGBuffer");
+        public static ShaderTagId k_ForwardShaderTagId = new ShaderTagId("YPipelineForward");
         public static ShaderTagId k_TransparencyShaderTagId = new ShaderTagId("YPipelineTransparency");
         
         public static ShaderTagId k_DepthShaderTagId = new ShaderTagId("Depth");
         public static ShaderTagId k_ThinGBufferShaderTagId = new ShaderTagId("ThinGBuffer");
         public static ShaderTagId k_MotionVectorsShaderTagId = new ShaderTagId("MotionVectors");
         
-        public static ShaderTagId[] k_OpaqueShaderTagIds = new ShaderTagId[]
+        public static ShaderTagId[] k_ForwardOpaqueShaderTagIds = new ShaderTagId[]
         {
             new ShaderTagId("SRPDefaultUnlit"),
             new ShaderTagId("YPipelineForward"),
         };
 
-        public static ShaderTagId[] k_TransparencyShaderTagIds = new ShaderTagId[]
+        public static ShaderTagId[] k_ForwardTransparencyShaderTagIds = new ShaderTagId[]
         {
             new ShaderTagId("SRPDefaultUnlit"),
             new ShaderTagId("YPipelineTransparency"),
@@ -45,15 +46,17 @@ namespace YPipeline
         // Render Target Textures IDs
         // ----------------------------------------------------------------------------------------------------
         
-        // Forward
+        // Both
         public static readonly int k_ColorTextureID = Shader.PropertyToID("_CameraColorTexture");
         public static readonly int k_DepthTextureID = Shader.PropertyToID("_CameraDepthTexture");
-        public static readonly int k_ThinGBufferTextureID = Shader.PropertyToID("_ThinGBufferTexture");
         public static readonly int k_MotionVectorTextureID = Shader.PropertyToID("_MotionVectorTexture");
-        
         public static readonly int k_AmbientOcclusionTextureID = Shader.PropertyToID("_AmbientOcclusionTexture");
         
         public static readonly int k_FinalTextureID = Shader.PropertyToID("_CameraFinalTexture");
+        
+        // Forward
+        public static readonly int k_ThinGBuffer0ID = Shader.PropertyToID("_ThinGBuffer0"); // R10G10B10A2 Normal、
+        public static readonly int k_ThinGBuffer1ID = Shader.PropertyToID("_ThinGBuffer1"); // R8G8B8A8 F0、Roughness
         
         // Deferred
         
@@ -85,7 +88,7 @@ namespace YPipeline
         public static readonly int k_BloomTextureID = Shader.PropertyToID("_BloomTexture");
         public static readonly int k_ColorGradingLutTextureID = Shader.PropertyToID("_ColorGradingLutTexture");
         
-        // Process Textures
+        // Transition Textures
         public static readonly int k_BloomLowerTextureID = Shader.PropertyToID("_BloomLowerTexture");
         public static readonly int k_BloomPrefilterTextureID = Shader.PropertyToID("_BloomPrefilterTexture");
         
@@ -148,6 +151,7 @@ namespace YPipeline
         // ----------------------------------------------------------------------------------------------------
         
         public static readonly int k_AmbientOcclusionParamsID = Shader.PropertyToID("_AmbientOcclusionParams");
+        public static readonly int k_AOSpatialBlurParamsID = Shader.PropertyToID("_AOSpatialBlurParams");
         
         // ----------------------------------------------------------------------------------------------------
         // Light Culling Related Param IDs

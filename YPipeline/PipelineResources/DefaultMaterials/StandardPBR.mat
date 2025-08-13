@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: StandardPBR
-  m_Shader: {fileID: 4800000, guid: c18c78b2ac67893438b954c301fb8478, type: 3}
+  m_Shader: {fileID: 4800000, guid: 19968cea1ec24a14a4525b681daf7a75, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -56,6 +56,10 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _HybridTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _MainTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -86,6 +90,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _AOScale: 0
     - _AddPrecomputedVelocity: 0
     - _BumpScale: 1
     - _Clipping: 0
@@ -97,16 +102,19 @@ Material:
     - _Glossiness: 0.5
     - _GlossyReflections: 1
     - _Metallic: 0
+    - _MetallicScale: 0
     - _Mode: 0
     - _NormalIntensity: 1
     - _OcclusionStrength: 1
     - _Parallax: 0.02
     - _Roughness: 0.5
+    - _RoughnessScale: 0
     - _SmoothnessTextureChannel: 0
     - _Specular: 0.5
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
+    - _UseHybridTex: 0
     - _UseMetallicTex: 0
     - _UseNormalTex: 0
     - _UseRoughnessTex: 0

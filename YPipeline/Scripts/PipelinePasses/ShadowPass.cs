@@ -7,10 +7,13 @@ using UnityEngine.Experimental.Rendering;
 
 namespace YPipeline
 {
-    public class ForwardShadowsPass : PipelinePass
+    public class ShadowPass : PipelinePass
     {
-        private class ForwardShadowsPassData
+        private class ShadowPassData
         {
+            public Matrix4x4 viewMatrix;
+            public Matrix4x4 projectionMatrix;
+            
             public bool isPCSSEnabled;
 
             public TextureHandle sunLightShadowMap;
@@ -139,11 +142,14 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<ForwardShadowsPassData>("Render Shadow Maps", out var passData))
+            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<ShadowPassData>("Render Shadow Maps", out var passData))
             {
                 m_CullingInfoPerLight = new NativeArray<LightShadowCasterCullingInfo>(data.cullingResults.visibleLights.Length, Allocator.Temp);
                 m_ShadowSplitDataPerLight = new NativeArray<ShadowSplitData>(m_CullingInfoPerLight.Length * 6, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
                 
+                YPipelineCamera yCamera = data.camera.GetYPipelineCamera();
+                passData.viewMatrix = yCamera.perCameraData.viewMatrix;
+                passData.projectionMatrix = yCamera.perCameraData.jitteredProjectionMatrix;
                 passData.isPCSSEnabled = data.asset.shadowMode == ShadowMode.PCSS;
                 passData.cascadeCount = data.lightsData.cascadeCount;
                 passData.shadowingSunLightCount = data.lightsData.shadowingSunLightCount;
@@ -154,7 +160,7 @@ namespace YPipeline
                 CreateSunLightShadowMap(ref data, builder, passData);
                 CreateSpotLightShadowMap(ref data, builder, passData);
                 CreatePointLightShadowMap(ref data, builder, passData);
-
+                
                 if (passData.shadowingSunLightCount + passData.shadowingPointLightCount + passData.shadowingSpotLightCount > 0)
                 {
                     data.context.CullShadowCasters(data.cullingResults, new ShadowCastersCullingInfos
@@ -215,7 +221,7 @@ namespace YPipeline
                 builder.AllowPassCulling(false);
                 builder.AllowRendererListCulling(false);
                 
-                builder.SetRenderFunc((ForwardShadowsPassData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((ShadowPassData data, RenderGraphContext context) =>
                 {
                     if (data.isPCSSEnabled)
                     {
@@ -290,13 +296,14 @@ namespace YPipeline
                     }
                     context.cmd.EndSample("Spot Light Shadows");
                     
+                    context.cmd.SetViewProjectionMatrices(data.viewMatrix, data.projectionMatrix);
                     context.renderContext.ExecuteCommandBuffer(context.cmd);
                     context.cmd.Clear();
                 });
             }
         }
 
-        private void CreateSunLightShadowMap(ref YPipelineData data, RenderGraphBuilder builder, ForwardShadowsPassData passData)
+        private void CreateSunLightShadowMap(ref YPipelineData data, RenderGraphBuilder builder, ShadowPassData passData)
         {
             data.isSunLightShadowMapCreated = false;
             if (data.lightsData.shadowingSunLightCount > 0)
@@ -351,7 +358,7 @@ namespace YPipeline
             }
         }
 
-        private void CreateSpotLightShadowMap(ref YPipelineData data, RenderGraphBuilder builder, ForwardShadowsPassData passData)
+        private void CreateSpotLightShadowMap(ref YPipelineData data, RenderGraphBuilder builder, ShadowPassData passData)
         {
             data.isSpotLightShadowMapCreated = false;
             if (data.lightsData.shadowingSpotLightCount > 0)
@@ -402,7 +409,7 @@ namespace YPipeline
             }
         }
 
-        private void CreatePointLightShadowMap(ref YPipelineData data, RenderGraphBuilder builder, ForwardShadowsPassData passData)
+        private void CreatePointLightShadowMap(ref YPipelineData data, RenderGraphBuilder builder, ShadowPassData passData)
         {
             data.isPointLightShadowMapCreated = false;
             if (data.lightsData.shadowingPointLightCount > 0)

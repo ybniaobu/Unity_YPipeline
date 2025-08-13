@@ -1,5 +1,5 @@
-﻿#ifndef YPIPELINE_STANDARD_PBR_FOR_TEST_INPUT_INCLUDED
-#define YPIPELINE_STANDARD_PBR_FOR_TEST_INPUT_INCLUDED
+﻿#ifndef YPIPELINE_STANDARD_PBR_INPUT_INCLUDED
+#define YPIPELINE_STANDARD_PBR_INPUT_INCLUDED
 
 CBUFFER_START(UnityPerMaterial)
     float4 _BaseColor;
@@ -17,9 +17,7 @@ CBUFFER_END
 
 Texture2D _BaseTex;             SamplerState sampler_Trilinear_Repeat_BaseTex;
 Texture2D _EmissionTex;
-Texture2D _RoughnessTex;
-Texture2D _MetallicTex;
+Texture2D _HybridTex;
 Texture2D _NormalTex;
-Texture2D _AOTex;
 
 #endif

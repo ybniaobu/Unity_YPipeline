@@ -29,7 +29,7 @@ namespace YPipeline
         {
             using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<TransparencyPassData>("Draw Transparency", out var passData))
             {
-                RendererListDesc transparencyRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_TransparencyShaderTagIds, data.cullingResults, data.camera)
+                RendererListDesc transparencyRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_ForwardTransparencyShaderTagIds, data.cullingResults, data.camera)
                 {
                     rendererConfiguration = PerObjectData.ReflectionProbes | PerObjectData.Lightmaps | PerObjectData.LightProbe,
                     renderQueueRange = RenderQueueRange.transparent,
@@ -48,9 +48,6 @@ namespace YPipeline
 
                 builder.SetRenderFunc((TransparencyPassData data, RenderGraphContext context) =>
                 {
-                    // context.cmd.SetRenderTarget(data.colorAttachment, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store,
-                    //     data.depthAttachment, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
-                    
                     context.cmd.DrawRendererList(data.transparencyRendererList);
                     context.renderContext.ExecuteCommandBuffer(context.cmd);
                     context.cmd.Clear();

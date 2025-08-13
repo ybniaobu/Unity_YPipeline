@@ -19,9 +19,8 @@ namespace YPipeline
             public TextureHandle transition0;
             public TextureHandle transition1;
             
-            // TODO: 给 shading model 的全局 AO intensity
-            // public Vector4 ambientOcclusionParams;
             public Vector4 ambientOcclusionParams;
+            public Vector4 aoSpatialBlurParams;
         }
 
         private AmbientOcclusion m_AO;
@@ -47,10 +46,11 @@ namespace YPipeline
                     passData.textureSize = new Vector4(1f / textureSize.x, 1f / textureSize.y, textureSize.x, textureSize.y);
 
                     passData.cs = data.asset.pipelineResources.computeShaders.ambientOcclusionCs;
-                    builder.ReadTexture(data.ThinGBuffer);
+                    builder.ReadTexture(data.ThinGBuffer0);
                     builder.ReadTexture(data.CameraDepthTexture);
                     
                     passData.ambientOcclusionParams = new Vector4(m_AO.intensity.value, m_AO.sampleCount.value, m_AO.radius.value, m_AO.reflectionRate.value);
+                    passData.aoSpatialBlurParams = new Vector4(m_AO.kernelRadius.value, m_AO.sigma.value);
 
                     // Create Ambient Occlusion Texture
                     TextureDesc ambientOcclusionTextureDesc = new TextureDesc(textureSize.x, textureSize.y)
@@ -95,6 +95,7 @@ namespace YPipeline
                     {
                         context.cmd.SetComputeVectorParam(data.cs, "_TextureSize", data.textureSize);
                         context.cmd.SetComputeVectorParam(data.cs, YPipelineShaderIDs.k_AmbientOcclusionParamsID, data.ambientOcclusionParams);
+                        context.cmd.SetComputeVectorParam(data.cs, YPipelineShaderIDs.k_AOSpatialBlurParamsID, data.aoSpatialBlurParams);
                         
                         context.cmd.BeginSample("SSAO Compute Occlusion");
                         int ssaoKernel = data.cs.FindKernel("SSAOKernel");

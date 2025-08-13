@@ -184,7 +184,8 @@ SAMPLER(LUT_SAMPLER);
 // Pipeline Textures
 TEXTURE2D(_CameraColorTexture);
 TEXTURE2D(_CameraDepthTexture);
-TEXTURE2D(_ThinGBufferTexture);
+TEXTURE2D(_ThinGBuffer0);
+TEXTURE2D(_ThinGBuffer1);
 TEXTURE2D(_MotionVectorTexture);
 TEXTURE2D(_AmbientOcclusionTexture);
 

@@ -47,7 +47,7 @@ namespace YPipeline
 
                 builder.SetRenderFunc((DepthOnlyPassData data, RenderGraphContext context) =>
                 {
-                    context.cmd.SetRenderTarget(data.depthAttachment, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+                    // context.cmd.SetRenderTarget(data.depthAttachment, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
                     
                     context.cmd.DrawRendererList(data.opaqueRendererList);
                     context.cmd.DrawRendererList(data.alphaTestRendererList);

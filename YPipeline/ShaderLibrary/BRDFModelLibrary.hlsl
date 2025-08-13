@@ -11,6 +11,7 @@
 struct StandardPBRParams
 {
     float3 albedo;
+    float alpha;
     float3 emission;
     float roughness;
     float metallic;

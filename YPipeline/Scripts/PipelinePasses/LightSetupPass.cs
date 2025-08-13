@@ -8,9 +8,9 @@ using UnityEngine.Experimental.Rendering;
 
 namespace YPipeline
 {
-    public class ForwardLightsPass : PipelinePass
+    public class LightSetupPass : PipelinePass
     {
-        private class ForwardLightsPassData
+        private class LightSetupPassData
         {
             public bool isSunLightShadowing;
             public SunLightConstantBuffer sunLightData = new SunLightConstantBuffer();
@@ -78,7 +78,7 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<ForwardLightsPassData>("Set Global Light Data", out var passData))
+            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<LightSetupPassData>("Set Global Light Data", out var passData))
             {
                 RecordLightsData(ref data);
                 
@@ -103,7 +103,7 @@ namespace YPipeline
                 builder.AllowPassCulling(false);
                 builder.AllowRendererListCulling(false);
 
-                builder.SetRenderFunc((ForwardLightsPassData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((LightSetupPassData data, RenderGraphContext context) =>
                 {
                     // Sun Light Data
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_SunLightColorID, data.sunLightData.sunLightColor);

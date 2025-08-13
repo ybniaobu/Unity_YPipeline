@@ -45,7 +45,8 @@ namespace YPipeline
         public TextureHandle CameraDepthAttachment { set; get; }
         public TextureHandle CameraColorTexture { set; get; }
         public TextureHandle CameraDepthTexture { set; get; }
-        public TextureHandle ThinGBuffer { set; get; }
+        public TextureHandle ThinGBuffer0 { set; get; }
+        public TextureHandle ThinGBuffer1 { set; get; }
         public TextureHandle MotionVectorTexture { set; get; }
         public TextureHandle AmbientOcclusionTexture { set; get; }
         public bool isAmbientOcclusionTextureCreated;
