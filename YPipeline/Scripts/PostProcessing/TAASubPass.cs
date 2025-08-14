@@ -54,11 +54,16 @@ namespace YPipeline
         {
             bool isTAAEnabled = data.asset.antiAliasingMode == AntiAliasingMode.TAA;
             CoreUtils.SetKeyword(data.cmd, YPipelineKeywords.k_TAA, isTAAEnabled);
-            if (isTAAEnabled)
+            YPipelineCamera yCamera = data.camera.GetYPipelineCamera();
+            
+            if (!isTAAEnabled)
+            {
+                yCamera.perCameraData.ReleaseTAAHistory();
+            }
+            else
             {
                 var stack = VolumeManager.instance.stack;
                 m_TAA = stack.GetComponent<TAA>();
-                YPipelineCamera yCamera = data.camera.GetYPipelineCamera();
                 
                 using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<TAAPassData>("TAA", out var passData))
                 {

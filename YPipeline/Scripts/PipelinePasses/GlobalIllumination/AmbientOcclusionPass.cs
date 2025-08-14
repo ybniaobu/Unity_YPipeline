@@ -14,13 +14,17 @@ namespace YPipeline
             
             public Vector2Int threadGroupSize;
             public Vector4 textureSize;
+            public bool enableSpatialBlur;
+            public bool enableTemporalBlur;
             
             public TextureHandle ambientOcclusionTexture;
             public TextureHandle transition0;
             public TextureHandle transition1;
+            public TextureHandle aoHistory;
+            public bool isAOHistoryReset;
             
             public Vector4 ambientOcclusionParams;
-            public Vector4 aoSpatialBlurParams;
+            public Vector4 aoBlurParams;
         }
 
         private AmbientOcclusion m_AO;
@@ -31,6 +35,8 @@ namespace YPipeline
         {
             var stack = VolumeManager.instance.stack;
             m_AO = stack.GetComponent<AmbientOcclusion>();
+            YPipelineCamera yCamera = data.camera.GetYPipelineCamera();
+            
             data.isAmbientOcclusionTextureCreated = m_AO.IsActive();
             CoreUtils.SetKeyword(data.cmd, YPipelineKeywords.k_ScreenSpaceAmbientOcclusion, data.isAmbientOcclusionTextureCreated);
             
@@ -48,14 +54,16 @@ namespace YPipeline
                     passData.cs = data.asset.pipelineResources.computeShaders.ambientOcclusionCs;
                     builder.ReadTexture(data.ThinGBuffer0);
                     builder.ReadTexture(data.CameraDepthTexture);
-                    
+
+                    passData.enableSpatialBlur = m_AO.enableSpatialFilter.value;
+                    passData.enableTemporalBlur = m_AO.enableTemporalFilter.value;
                     passData.ambientOcclusionParams = new Vector4(m_AO.intensity.value, m_AO.sampleCount.value, m_AO.radius.value, m_AO.reflectionRate.value);
-                    passData.aoSpatialBlurParams = new Vector4(m_AO.kernelRadius.value, m_AO.sigma.value);
+                    passData.aoBlurParams = new Vector4(m_AO.kernelRadius.value, m_AO.spatialSigma.value, m_AO.depthSigma.value);
 
                     // Create Ambient Occlusion Texture
                     TextureDesc ambientOcclusionTextureDesc = new TextureDesc(textureSize.x, textureSize.y)
                     {
-                        format = GraphicsFormat.R8_UNorm,
+                        format = GraphicsFormat.R16_UNorm,
                         filterMode = FilterMode.Bilinear,
                         clearBuffer = true,
                         clearColor = Color.white,
@@ -69,7 +77,7 @@ namespace YPipeline
                     // Ambient Occlusion Transition Texture
                     TextureDesc transitionDesc0 = new TextureDesc(textureSize.x, textureSize.y)
                     {
-                        format = GraphicsFormat.R8G8B8A8_UNorm,
+                        format = GraphicsFormat.R16G16_UNorm,
                         filterMode = FilterMode.Bilinear,
                         clearBuffer = false,
                         enableRandomWrite = true,
@@ -78,47 +86,97 @@ namespace YPipeline
                     
                     TextureDesc transitionDesc1 = new TextureDesc(textureSize.x, textureSize.y)
                     {
-                        format = GraphicsFormat.R8G8B8A8_UNorm,
+                        format = GraphicsFormat.R16G16_UNorm,
                         filterMode = FilterMode.Bilinear,
                         clearBuffer = false,
                         enableRandomWrite = true,
                         name = "Ambient Occlusion transition1"
                     };
+
+                    if (passData.enableSpatialBlur || passData.enableTemporalBlur)
+                    {
+                        passData.transition0 = builder.CreateTransientTexture(transitionDesc0);
+                    }
+
+                    if (passData.enableSpatialBlur)
+                    {
+                        passData.transition1 = builder.CreateTransientTexture(transitionDesc1);
+                    }
                     
-                    passData.transition0 = builder.CreateTransientTexture(transitionDesc0);
-                    passData.transition1 = builder.CreateTransientTexture(transitionDesc1);
+                    // Ambient Occlusion History
+                    RenderTextureDescriptor aoHistoryDesc = new RenderTextureDescriptor(textureSize.x, textureSize.y)
+                    {
+                        graphicsFormat = GraphicsFormat.R16_UNorm,
+                        msaaSamples = 1,
+                        mipCount = 0,
+                        autoGenerateMips = false,
+                    };
+
+                    if (passData.enableTemporalBlur)
+                    {
+                        RTHandle aoHistory = yCamera.perCameraData.GetAOHistory(ref aoHistoryDesc);
+                        passData.isAOHistoryReset = yCamera.perCameraData.IsAOHistoryReset || Time.frameCount == 1;
+                        yCamera.perCameraData.IsAOHistoryReset = false;
+                        passData.aoHistory = data.renderGraph.ImportTexture(aoHistory);
+                        builder.ReadWriteTexture(passData.aoHistory);
+                    }
+                    else
+                    {
+                        yCamera.perCameraData.ReleaseAOHistory();
+                    }
                     
                     builder.AllowPassCulling(false);
                     builder.AllowRendererListCulling(false);
 
                     builder.SetRenderFunc((AmbientOcclusionPassData data, RenderGraphContext context) =>
                     {
+                        bool enableBlur = data.enableSpatialBlur || data.enableTemporalBlur;
                         context.cmd.SetComputeVectorParam(data.cs, "_TextureSize", data.textureSize);
                         context.cmd.SetComputeVectorParam(data.cs, YPipelineShaderIDs.k_AmbientOcclusionParamsID, data.ambientOcclusionParams);
-                        context.cmd.SetComputeVectorParam(data.cs, YPipelineShaderIDs.k_AOSpatialBlurParamsID, data.aoSpatialBlurParams);
+                        context.cmd.SetComputeVectorParam(data.cs, YPipelineShaderIDs.k_AOBlurParamsID, data.aoBlurParams);
                         
                         context.cmd.BeginSample("SSAO Compute Occlusion");
                         int ssaoKernel = data.cs.FindKernel("SSAOKernel");
-                        context.cmd.SetComputeTextureParam(data.cs, ssaoKernel, "_OutputTexture", data.transition0);
+                        TextureHandle occlusionOutput = enableBlur ? data.transition0 : data.ambientOcclusionTexture;
+                        context.cmd.SetComputeTextureParam(data.cs, ssaoKernel, "_OutputTexture", occlusionOutput);
                         context.cmd.DispatchCompute(data.cs, ssaoKernel, data.threadGroupSize.x, data.threadGroupSize.y, 1);
                         context.cmd.EndSample("SSAO Compute Occlusion");
                         
-                        context.cmd.BeginSample("SSAO Spatial Blur Horizontal");
-                        int blurHorizontalKernel = data.cs.FindKernel("SpatialBlurHorizontalKernel");
-                        context.cmd.SetComputeTextureParam(data.cs, blurHorizontalKernel, "_InputTexture", data.transition0);
-                        context.cmd.SetComputeTextureParam(data.cs, blurHorizontalKernel, "_OutputTexture", data.transition1);
-                        context.cmd.DispatchCompute(data.cs, blurHorizontalKernel, data.threadGroupSize.x, data.threadGroupSize.y, 1);
-                        context.cmd.EndSample("SSAO Spatial Blur Horizontal");
-                        
-                        context.cmd.BeginSample("SSAO Spatial Blur Vertical");
-                        int blurVerticalKernel = data.cs.FindKernel("SpatialBlurVerticalKernel");
-                        context.cmd.SetComputeTextureParam(data.cs, blurVerticalKernel, "_InputTexture", data.transition1);
-                        context.cmd.SetComputeTextureParam(data.cs, blurVerticalKernel, "_OutputTexture", data.ambientOcclusionTexture);
-                        context.cmd.DispatchCompute(data.cs, blurVerticalKernel, data.threadGroupSize.x, data.threadGroupSize.y, 1);
-                        context.cmd.EndSample("SSAO Spatial Blur Vertical");
+                        if (data.enableSpatialBlur)
+                        {
+                            context.cmd.BeginSample("SSAO Spatial Blur Horizontal");
+                            int blurHorizontalKernel = data.cs.FindKernel("SpatialBlurHorizontalKernel");
+                            context.cmd.SetComputeTextureParam(data.cs, blurHorizontalKernel, "_InputTexture", data.transition0);
+                            context.cmd.SetComputeTextureParam(data.cs, blurHorizontalKernel, "_OutputTexture", data.transition1);
+                            context.cmd.DispatchCompute(data.cs, blurHorizontalKernel, data.threadGroupSize.x, data.threadGroupSize.y, 1);
+                            context.cmd.EndSample("SSAO Spatial Blur Horizontal");
+
+                            context.cmd.BeginSample("SSAO Spatial Blur Vertical");
+                            int blurVerticalKernel = data.cs.FindKernel("SpatialBlurVerticalKernel");
+                            context.cmd.SetComputeTextureParam(data.cs, blurVerticalKernel, "_InputTexture", data.transition1);
+                            TextureHandle spatialBlurOutput = data.enableTemporalBlur ? data.transition0 : data.ambientOcclusionTexture;
+                            context.cmd.SetComputeTextureParam(data.cs, blurVerticalKernel, "_OutputTexture", spatialBlurOutput);
+                            context.cmd.DispatchCompute(data.cs, blurVerticalKernel, data.threadGroupSize.x, data.threadGroupSize.y, 1);
+                            context.cmd.EndSample("SSAO Spatial Blur Vertical");
+                        }
+
+                        if (data.enableTemporalBlur)
+                        {
+                            context.cmd.BeginSample("SSAO Temporal Blur");
+                            int temporalBlurKernel = data.cs.FindKernel("TemporalBlurKernel");
+                            context.cmd.SetComputeTextureParam(data.cs, temporalBlurKernel, "_InputTexture", data.transition0);
+                            context.cmd.SetComputeTextureParam(data.cs, temporalBlurKernel, YPipelineShaderIDs.k_AmbientOcclusionHistoryID, data.aoHistory);
+                            context.cmd.SetComputeTextureParam(data.cs, temporalBlurKernel, "_OutputTexture", data.ambientOcclusionTexture);
+                            context.cmd.DispatchCompute(data.cs, temporalBlurKernel, data.threadGroupSize.x, data.threadGroupSize.y, 1);
+                            
+                            bool copyTextureSupported = SystemInfo.copyTextureSupport > CopyTextureSupport.None;
+                            if (copyTextureSupported) context.cmd.CopyTexture(data.ambientOcclusionTexture, data.aoHistory);
+                            else BlitUtility.BlitTexture(context.cmd, data.ambientOcclusionTexture, data.aoHistory);
+                            
+                            context.cmd.EndSample("SSAO Temporal Blur");
+                        }
                         
                         context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_AmbientOcclusionTextureID, data.ambientOcclusionTexture);
-
                         context.renderContext.ExecuteCommandBuffer(context.cmd);
                         context.cmd.Clear();
                     });

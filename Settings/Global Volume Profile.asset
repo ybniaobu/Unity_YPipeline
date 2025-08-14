@@ -24,10 +24,10 @@ MonoBehaviour:
     m_Value: 1
   sampleCount:
     m_OverrideState: 1
-    m_Value: 12
+    m_Value: 8
   radius:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 2
   reflectionRate:
     m_OverrideState: 1
     m_Value: 0.25
@@ -37,9 +37,18 @@ MonoBehaviour:
   kernelRadius:
     m_OverrideState: 1
     m_Value: 2
-  sigma:
+  spatialSigma:
     m_OverrideState: 1
-    m_Value: 3
+    m_Value: 5
+  depthSigma:
+    m_OverrideState: 1
+    m_Value: 0.5
+  enableTemporalFilter:
+    m_OverrideState: 1
+    m_Value: 1
+  blendFactor:
+    m_OverrideState: 1
+    m_Value: 0.9
 --- !u!114 &-3444846745659079112
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -70,7 +79,7 @@ MonoBehaviour:
     m_Value: 0.5
   threshold:
     m_OverrideState: 1
-    m_Value: 5
+    m_Value: 6
   thresholdKnee:
     m_OverrideState: 1
     m_Value: 0.5

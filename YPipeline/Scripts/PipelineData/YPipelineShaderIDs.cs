@@ -51,6 +51,7 @@ namespace YPipeline
         public static readonly int k_DepthTextureID = Shader.PropertyToID("_CameraDepthTexture");
         public static readonly int k_MotionVectorTextureID = Shader.PropertyToID("_MotionVectorTexture");
         public static readonly int k_AmbientOcclusionTextureID = Shader.PropertyToID("_AmbientOcclusionTexture");
+        public static readonly int k_AmbientOcclusionHistoryID = Shader.PropertyToID("_AmbientOcclusionHistory");
         
         public static readonly int k_FinalTextureID = Shader.PropertyToID("_CameraFinalTexture");
         
@@ -151,7 +152,7 @@ namespace YPipeline
         // ----------------------------------------------------------------------------------------------------
         
         public static readonly int k_AmbientOcclusionParamsID = Shader.PropertyToID("_AmbientOcclusionParams");
-        public static readonly int k_AOSpatialBlurParamsID = Shader.PropertyToID("_AOSpatialBlurParams");
+        public static readonly int k_AOBlurParamsID = Shader.PropertyToID("_AOBlurParams");
         
         // ----------------------------------------------------------------------------------------------------
         // Light Culling Related Param IDs

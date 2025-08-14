@@ -44,6 +44,7 @@ namespace YPipeline
         // TAA History
         // ----------------------------------------------------------------------------------------------------
 
+        public bool IsTAAHistoryReset { get; set; }
         private RTHandle m_TAAHistory;
 
         public RTHandle GetTAAHistory(ref RenderTextureDescriptor desc, string name = "TAA History")
@@ -56,8 +57,36 @@ namespace YPipeline
             }
             return m_TAAHistory;
         }
+
+        public void ReleaseTAAHistory()
+        {
+            m_TAAHistory?.Release();
+            m_TAAHistory = null;
+        }
         
-        public bool IsTAAHistoryReset { get; set; }
+        // ----------------------------------------------------------------------------------------------------
+        // Ambient Occlusion History
+        // ----------------------------------------------------------------------------------------------------
+        
+        public bool IsAOHistoryReset { get; set; }
+        private RTHandle m_AOHistory;
+
+        public RTHandle GetAOHistory(ref RenderTextureDescriptor desc, string name = "Ambient Occlusion History")
+        {
+            if (m_AOHistory == null || m_AOHistory.rt.width != desc.width || m_AOHistory.rt.height != desc.height)
+            {
+                IsAOHistoryReset = true;
+                m_AOHistory?.Release();
+                m_AOHistory = RTHandles.Alloc(desc, FilterMode.Bilinear, TextureWrapMode.Clamp, anisoLevel: 0, name: name);
+            }
+            return m_AOHistory;
+        }
+
+        public void ReleaseAOHistory()
+        {
+            m_AOHistory?.Release();
+            m_AOHistory = null;
+        }
         
         // ----------------------------------------------------------------------------------------------------
         // Standard Dispose Pattern
@@ -90,8 +119,8 @@ namespace YPipeline
                     //Dispose managed resources
                 }
                 //Dispose unmanaged resources
-                m_TAAHistory?.Release();
-                m_TAAHistory = null;
+                ReleaseTAAHistory();
+                ReleaseAOHistory();
             }
             
             m_IsPerCameraDataReset = true;

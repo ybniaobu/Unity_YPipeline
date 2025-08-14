@@ -17,9 +17,12 @@ namespace YPipeline.Editor
         // Spatial Filter
         private SerializedDataParameter m_EnableSpatialFilter;
         private SerializedDataParameter m_KernelRadius;
-        private SerializedDataParameter m_Sigma;
+        private SerializedDataParameter m_SpatialSigma;
+        private SerializedDataParameter m_DepthSigma;
         
         // Temporal Filter
+        private SerializedDataParameter m_EnableTemporalFilter;
+        private SerializedDataParameter m_BlendFactor;
 
         public override void OnEnable()
         {
@@ -36,9 +39,12 @@ namespace YPipeline.Editor
             // Spatial Filter
             m_EnableSpatialFilter = Unpack(o.Find(x => x.enableSpatialFilter));
             m_KernelRadius = Unpack(o.Find(x => x.kernelRadius));
-            m_Sigma = Unpack(o.Find(x => x.sigma));
+            m_SpatialSigma = Unpack(o.Find(x => x.spatialSigma));
+            m_DepthSigma = Unpack(o.Find(x => x.depthSigma));
             
             // Temporal Filter
+            m_EnableTemporalFilter = Unpack(o.Find(x => x.enableTemporalFilter));
+            m_BlendFactor = Unpack(o.Find(x => x.blendFactor));
         }
 
         public override void OnInspectorGUI()
@@ -58,10 +64,14 @@ namespace YPipeline.Editor
             
             PropertyField(m_EnableSpatialFilter, EditorGUIUtility.TrTextContent("Enable"));
             PropertyField(m_KernelRadius);
-            PropertyField(m_Sigma);
+            PropertyField(m_SpatialSigma);
+            PropertyField(m_DepthSigma);
             
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Temporal Filter", EditorStyles.boldLabel);
+            
+            PropertyField(m_EnableTemporalFilter, EditorGUIUtility.TrTextContent("Enable"));
+            PropertyField(m_BlendFactor);
         }
     }
 }
