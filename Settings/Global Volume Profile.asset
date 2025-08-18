@@ -24,25 +24,25 @@ MonoBehaviour:
     m_Value: 1
   sampleCount:
     m_OverrideState: 1
-    m_Value: 8
+    m_Value: 16
   radius:
     m_OverrideState: 1
-    m_Value: 2
+    m_Value: 1
   reflectionRate:
     m_OverrideState: 1
-    m_Value: 0.25
+    m_Value: 0
   enableSpatialFilter:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0
   kernelRadius:
     m_OverrideState: 1
-    m_Value: 2
+    m_Value: 3
   spatialSigma:
     m_OverrideState: 1
-    m_Value: 5
+    m_Value: 1
   depthSigma:
     m_OverrideState: 1
-    m_Value: 0.5
+    m_Value: 0.1
   enableTemporalFilter:
     m_OverrideState: 1
     m_Value: 1
@@ -79,7 +79,7 @@ MonoBehaviour:
     m_Value: 0.5
   threshold:
     m_OverrideState: 1
-    m_Value: 6
+    m_Value: 5
   thresholdKnee:
     m_OverrideState: 1
     m_Value: 0.5
@@ -652,11 +652,11 @@ MonoBehaviour:
   active: 0
   texture:
     m_OverrideState: 1
-    m_Value: {fileID: 2800000, guid: c8e7593cb04160d4ba32490ca5adea24, type: 3}
+    m_Value: {fileID: 2800000, guid: 120c734e9ca7c2d4981b809a933e0d37, type: 3}
     dimension: 1
   contribution:
     m_OverrideState: 1
-    m_Value: 0.217
+    m_Value: 0.1
 --- !u!114 &7271516751084142640
 MonoBehaviour:
   m_ObjectHideFlags: 3

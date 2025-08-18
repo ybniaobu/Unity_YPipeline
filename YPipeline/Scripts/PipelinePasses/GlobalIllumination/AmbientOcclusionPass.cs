@@ -119,6 +119,8 @@ namespace YPipeline
                         yCamera.perCameraData.IsAOHistoryReset = false;
                         passData.aoHistory = data.renderGraph.ImportTexture(aoHistory);
                         builder.ReadWriteTexture(passData.aoHistory);
+
+                        builder.ReadTexture(data.MotionVectorTexture);
                     }
                     else
                     {
