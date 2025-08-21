@@ -36,7 +36,7 @@ Varyings ThinGBufferVert(Attributes IN)
     return OUT;
 }
 
-void ThinGBufferFrag(Varyings IN, out float depth: SV_DEPTH, out float4 normal: SV_TARGET0, out float4 reflectanceAndRoughness : SV_TARGET1)
+float4 ThinGBufferFrag(Varyings IN, out float depth: SV_DEPTH) : SV_TARGET
 {
     UNITY_SETUP_INSTANCE_ID(IN);
     
@@ -62,21 +62,10 @@ void ThinGBufferFrag(Varyings IN, out float depth: SV_DEPTH, out float4 normal: 
         float roughness = _Roughness;
     #endif
 
-    #if _USE_METALLICTEX
-        float metallic = SAMPLE_TEXTURE2D(_MetallicTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).r;
-        metallic *= pow(10, _MetallicScale);
-        metallic = saturate(metallic);
-    #else
-        float metallic = _Metallic;
-    #endif
-
     #if _USE_HYBRIDTEX
         float4 hybrid = SAMPLE_TEXTURE2D(_HybridTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).rgba;
         roughness = saturate(hybrid.r * pow(10, _RoughnessScale));
-        metallic = saturate(hybrid.g * pow(10, _MetallicScale));
     #endif
-
-    float3 F0 = lerp(_Specular * _Specular * float3(0.16, 0.16, 0.16), albedo.rgb, metallic);
 
     #if _USE_NORMALTEX
         float4 packedNormal = SAMPLE_TEXTURE2D(_NormalTex, sampler_Trilinear_Repeat_BaseTex, IN.uv);
@@ -91,8 +80,8 @@ void ThinGBufferFrag(Varyings IN, out float depth: SV_DEPTH, out float4 normal: 
     #endif
 
     depth = IN.positionHCS.z;
-    normal = float4(N * 0.5 + 0.5, 0);
-    reflectanceAndRoughness = float4(F0, roughness);
+    float3 encodedNormal = EncodeNormalInto888(N);
+    return float4(encodedNormal, roughness);
 }
 
 #endif

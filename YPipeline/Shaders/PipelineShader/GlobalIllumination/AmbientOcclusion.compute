@@ -15,7 +15,7 @@ RWTexture2D<float2> _OutputTexture;
 Texture2D<float2> _InputTexture;
 Texture2D<float2> _AmbientOcclusionHistory;
 
-TEXTURE2D(_ThinGBuffer0);
+TEXTURE2D(_ThinGBuffer);
 TEXTURE2D(_CameraDepthTexture);
 TEXTURE2D(_MotionVectorTexture);
 TEXTURE2D(_BlueNoise64);
@@ -61,7 +61,7 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
     // ------------------------- Get Depth -------------------------
 
     float4 depths = GATHER_RED_TEXTURE2D(_CameraDepthTexture, sampler_PointClamp, screenUV);
-    //float originDepth = Min3(depths.x, depths.y, min(depths.z, depths.w));
+    // float originDepth = Min3(depths.x, depths.y, min(depths.z, depths.w));
     
     float originDepth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_LinearClamp, screenUV, 0).r;
     float4 originNDC = GetNDCFromUVAndDepth(screenUV, originDepth);
@@ -69,8 +69,8 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
 
     // ------------------------- Get Normal & Build Left-Handed TBN -------------------------
     
-    float3 packNormalWS = SAMPLE_TEXTURE2D_LOD(_ThinGBuffer0, sampler_PointClamp, screenUV, 0).rgb;
-    float3 normalWS = normalize(packNormalWS * 2.0 - 1.0); // N
+    float3 packedNormalWS = SAMPLE_TEXTURE2D_LOD(_ThinGBuffer, sampler_PointClamp, screenUV, 0).rgb;
+    float3 normalWS = DecodeNormalFrom888(packedNormalWS); // N
 
     float3 up = abs(normalWS.y) > 0.999999 ? float3(0, 0, 1) : float3(0, 1, 0);
     float3 tangent = normalize(cross(up, normalWS)); // T
@@ -83,6 +83,8 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
     float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.w, 0).r + _Jitter.w) * TWO_PI;
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
 
+    // GroupMemoryBarrierWithGroupSync();
+    
     float aoFactor = 0.0;
     float intensity = GetSSAOIntensity();
     float sampleCount = GetSSAOSampleCount();
@@ -92,10 +94,10 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
     for (int i = 0; i < sampleCount; i++)
     {
         float2 xi = k_Halton[i + 1];
-        float3 dirTS = InverseSampleHemisphere(xi).xyz;
-        float cosTheta = dirTS.y;
+        float3 dirTS = CosineSampleHemisphere(xi).xyz;
+        
         // float random = k_Sobol[i + 1].y;
-        float random = k_Sobol[i + 1].y + _Jitter.w * 0.025;
+        float random = saturate(k_Sobol[i + 1].y + _Jitter.w * 0);
         dirTS *= random * random;
         dirTS.xz = mul(rotation, dirTS.xz);
 
@@ -114,10 +116,10 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
         
         bool rangeCheck = abs(sampleHCS.w - linearDepth) < radius;
         float occlusion = (linearDepth < sampleHCS.w) * rangeCheck * intensity;
-        aoFactor += (1 - occlusion) * cosTheta;
+        aoFactor += (1 - occlusion);
     }
 
-    aoFactor = saturate(2.0 * aoFactor / sampleCount);
+    aoFactor = saturate(aoFactor / sampleCount);
     // TODO：可以在 PBR 中应用 interreflection ！！！！！！！！！
     // aoFactor = aoFactor * rcp(1 - GetSSAOReflectionRate() * (1 - aoFactor));
     _OutputTexture[id.xy] = float2(aoFactor, originDepth);
@@ -174,12 +176,12 @@ inline float2 BilateralBlur(float2 pixelCoord, float2 pixelOffset)
 
 float GaussianFilterMiddleColor(in float2 samples[9])
 {
-    const float weights[9] = { 4.0, 2.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0, 1.0 };
+    // const float weights[9] = { 4.0, 2.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0, 1.0 };
     // sigma = 0.8
     // const float weights[9] = { 1.0, 0.4578, 0.4578, 0.4578, 0.4578, 0.2097, 0.2097, 0.2097, 0.2097 };
     
     // sigma = 0.6
-    // const float weights[9] = { 1.0, 0.2493, 0.2493, 0.2493, 0.2493, 0.0625, 0.0625, 0.0625, 0.0625 };
+    const float weights[9] = { 1.0, 0.2493, 0.2493, 0.2493, 0.2493, 0.0625, 0.0625, 0.0625, 0.0625 };
     
     float weightSum = 4.0;
     float filtered = weightSum * samples[0].r;

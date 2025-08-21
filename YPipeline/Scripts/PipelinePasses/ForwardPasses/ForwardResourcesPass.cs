@@ -95,28 +95,19 @@ namespace YPipeline
                     name = "Depth Texture"
                 };
                 
-                TextureDesc thinGBuffer0Desc = new TextureDesc(bufferSize.x, bufferSize.y)
-                {
-                    format = GraphicsFormat.A2B10G10R10_UNormPack32,
-                    filterMode = FilterMode.Bilinear,
-                    clearBuffer = true,
-                    name = "Thin GBuffer0"
-                };
-                
-                TextureDesc thinGBuffer1Desc = new TextureDesc(bufferSize.x, bufferSize.y)
+                TextureDesc thinGBufferDesc = new TextureDesc(bufferSize.x, bufferSize.y)
                 {
                     format = GraphicsFormat.R8G8B8A8_UNorm,
                     filterMode = FilterMode.Bilinear,
                     clearBuffer = true,
-                    name = "Thin GBuffer1"
+                    name = "Thin GBuffer"
                 };
                 
                 data.CameraColorAttachment = data.renderGraph.CreateTexture(colorAttachmentDesc);
                 data.CameraDepthAttachment = data.renderGraph.CreateTexture(depthAttachmentDesc);
                 data.CameraColorTexture = data.renderGraph.CreateTexture(colorTextureDesc);
                 data.CameraDepthTexture = data.renderGraph.CreateTexture(depthTextureDesc);
-                data.ThinGBuffer0 = data.renderGraph.CreateTexture(thinGBuffer0Desc);
-                data.ThinGBuffer1 = data.renderGraph.CreateTexture(thinGBuffer1Desc);
+                data.ThinGBuffer = data.renderGraph.CreateTexture(thinGBufferDesc);
                 
                 // ----------------------------------------------------------------------------------------------------
                 // Global Constant Buffer Variables

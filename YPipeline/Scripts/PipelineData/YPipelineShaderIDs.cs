@@ -56,8 +56,7 @@ namespace YPipeline
         public static readonly int k_FinalTextureID = Shader.PropertyToID("_CameraFinalTexture");
         
         // Forward
-        public static readonly int k_ThinGBuffer0ID = Shader.PropertyToID("_ThinGBuffer0"); // R10G10B10A2 Normal、
-        public static readonly int k_ThinGBuffer1ID = Shader.PropertyToID("_ThinGBuffer1"); // R8G8B8A8 F0、Roughness
+        public static readonly int k_ThinGBufferID = Shader.PropertyToID("_ThinGBuffer"); // R8G8B8A8_UNorm Normal、Roughness
         
         // Deferred
         

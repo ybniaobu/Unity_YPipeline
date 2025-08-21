@@ -79,6 +79,7 @@ namespace YPipeline
         // ----------------------------------------------------------------------------------------------------
         // 光照配置
         // ----------------------------------------------------------------------------------------------------
+        
         [Header("Lighting Settings")]
         [Tooltip("Enable light 2.5D culling, which splits depth into cells to better handle depth discontinuities")]
         public bool enableSplitDepth = true;

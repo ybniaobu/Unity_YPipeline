@@ -52,7 +52,7 @@ namespace YPipeline
                     passData.textureSize = new Vector4(1f / textureSize.x, 1f / textureSize.y, textureSize.x, textureSize.y);
 
                     passData.cs = data.asset.pipelineResources.computeShaders.ambientOcclusionCs;
-                    builder.ReadTexture(data.ThinGBuffer0);
+                    builder.ReadTexture(data.ThinGBuffer);
                     builder.ReadTexture(data.CameraDepthTexture);
 
                     passData.enableSpatialBlur = m_AO.enableSpatialFilter.value;

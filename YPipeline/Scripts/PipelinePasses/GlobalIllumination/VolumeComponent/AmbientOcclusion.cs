@@ -6,7 +6,7 @@ namespace YPipeline
 {
     public enum AmbientOcclusionMode
     {
-        None, SSAO, HBAO, GTAO
+        None, [InspectorName("SSAO (Not Recommended)")] SSAO, HBAO, GTAO
     }
     
     [System.Serializable]
@@ -29,7 +29,7 @@ namespace YPipeline
         public ClampedFloatParameter intensity = new ClampedFloatParameter(1.0f, 0.0f, 2.0f);
         
         [Tooltip("采样次数 Increase the amount of samples will produce higher quality results at a cost of lower performance.")]
-        public ClampedIntParameter sampleCount = new ClampedIntParameter(8, 4, 24);
+        public ClampedIntParameter sampleCount = new ClampedIntParameter(12, 4, 24);
         
         [Tooltip("采样半径 Sampling radius. Bigger the radius, wider ambient occlusion will be achieved.")]
         public ClampedFloatParameter radius = new ClampedFloatParameter(2.0f, 0.0f, 5.0f);

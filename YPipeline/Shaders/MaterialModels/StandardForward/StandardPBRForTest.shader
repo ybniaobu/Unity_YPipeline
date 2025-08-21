@@ -155,7 +155,6 @@ Shader "YPipeline/Shading Models/Standard PBR(Separated Texture)"
 			#pragma fragment ThinGBufferFrag
 
 			#pragma shader_feature_local_fragment _USE_ROUGHNESSTEX
-			#pragma shader_feature_local_fragment _USE_METALLICTEX
             #pragma shader_feature_local_fragment _USE_NORMALTEX
 			#pragma shader_feature_local_fragment _CLIPPING
 
