@@ -11,6 +11,8 @@
 #include "../../../ShaderLibrary/SamplingLibrary.hlsl"
 #include "../../../ShaderLibrary/EncodingLibrary.hlsl"
 
+#include "../../../ShaderLibrary/GlobalIllumination/SSAO.hlsl"
+
 RWTexture2D<float2> _OutputTexture;
 Texture2D<float2> _InputTexture;
 Texture2D<float2> _AmbientOcclusionHistory;
@@ -89,16 +91,23 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
     float intensity = GetSSAOIntensity();
     float sampleCount = GetSSAOSampleCount();
     float radius = GetSSAORadius();
+    float weightSum = 0.0;
 
     UNITY_UNROLL
     for (int i = 0; i < sampleCount; i++)
     {
         float2 xi = k_Halton[i + 1];
-        float3 dirTS = CosineSampleHemisphere(xi).xyz;
+        // float3 xi = k_Halton3D[i + 1];
+        // float3 xi = float3(k_SobolScrambled[i], k_Halton[i + 1].x);
         
-        // float random = k_Sobol[i + 1].y;
-        float random = saturate(k_Sobol[i + 1].y + _Jitter.w * 0);
-        dirTS *= random * random;
+        // float3 dirTS = GenerateCosineWeightedHemisphereSamples(xi);
+        float3 dirTS = InverseSampleHemisphere(xi.xy).xyz;
+        // float3 dirTS = CosineSampleHemisphere(xi.xy).xyz;
+        // float3 dirTS = FibonacciSpiralHemisphere(i, sampleCount);
+        float cosTheta = dirTS.y;
+        // float scale = xi.x;
+        float scale = (i + 1) / sampleCount;
+        dirTS *= scale * scale;
         dirTS.xz = mul(rotation, dirTS.xz);
 
         float3 dirWS = tangent * dirTS.x + normalWS * dirTS.y + binormal * dirTS.z;
@@ -116,10 +125,11 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
         
         bool rangeCheck = abs(sampleHCS.w - linearDepth) < radius;
         float occlusion = (linearDepth < sampleHCS.w) * rangeCheck * intensity;
-        aoFactor += (1 - occlusion);
+        aoFactor += (1 - occlusion) * cosTheta;
+        weightSum += cosTheta;
     }
 
-    aoFactor = saturate(aoFactor / sampleCount);
+    aoFactor = saturate(aoFactor / weightSum);
     // TODO：可以在 PBR 中应用 interreflection ！！！！！！！！！
     // aoFactor = aoFactor * rcp(1 - GetSSAOReflectionRate() * (1 - aoFactor));
     _OutputTexture[id.xy] = float2(aoFactor, originDepth);
@@ -263,7 +273,7 @@ inline float2 TemporalBlur(float2 pixelCoord, float2 screenUV)
     
     history.r = NeighborhoodClipToFiltered(minMax, prefiltered, history.r);
     
-    return float2(lerp(neighbours[0].r, history.r, 0.95), neighbours[0].g);
+    return float2(lerp(neighbours[0].r, history.r, 0.9), neighbours[0].g);
 }
 
 // ----------------------------------------------------------------------------------------------------

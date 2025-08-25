@@ -124,6 +124,16 @@ float4 InverseSampleHemisphere(float3 xi) // Left-handed Spherical and Cartesian
     return float4(N, PDF);
 }
 
+inline float3 FibonacciSpiralHemisphere(float index, float sampleCount)
+{
+    const float goldenRatio = 0.61803398875;
+    float phi = TWO_PI * index * goldenRatio;
+    float cosTheta = 1.0 - (2.0 * index + 1.0) / (2.0 * sampleCount);
+    float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+    float3 N = float3(sinTheta * cos(phi), cosTheta, sinTheta * sin(phi));
+    return N;
+}
+
 // ----------------------------------------------------------------------------------------------------
 // Cosine-weighted inverse transform sampling
 // ----------------------------------------------------------------------------------------------------

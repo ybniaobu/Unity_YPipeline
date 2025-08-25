@@ -78,7 +78,7 @@ namespace YPipeline
         public ClampedFloatParameter jitterScale = new ClampedFloatParameter(1.0f, 0.0f, 2.0f);
         
         [Tooltip("历史帧混合系数 Determines how much the history is blended with the current frame")]
-        public ClampedFloatParameter historyBlendFactor = new ClampedFloatParameter(0.925f, 0.85f, 0.95f);
+        public ClampedFloatParameter historyBlendFactor = new ClampedFloatParameter(0.9f, 0.85f, 0.95f);
         
         [Tooltip("采样模式 Using a 3X3 or crossed(5 taps) neighborhood samples")]
         public TAANeighborhoodParameter neighborhood = new TAANeighborhoodParameter(TAANeighborhood._3X3);

@@ -122,7 +122,7 @@ MonoBehaviour:
     m_Value: 0.5
   exposure:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 1.06
   saturation:
     m_OverrideState: 1
     m_Value: 1
@@ -747,7 +747,7 @@ MonoBehaviour:
     m_Value: 1
   historyBlendFactor:
     m_OverrideState: 1
-    m_Value: 0.925
+    m_Value: 0.9
   neighborhood:
     m_OverrideState: 1
     m_Value: 0
@@ -759,7 +759,7 @@ MonoBehaviour:
     m_Value: 1
   varianceCriticalValue:
     m_OverrideState: 1
-    m_Value: 1.25
+    m_Value: 1
   colorRectifyMode:
     m_OverrideState: 1
     m_Value: 2
