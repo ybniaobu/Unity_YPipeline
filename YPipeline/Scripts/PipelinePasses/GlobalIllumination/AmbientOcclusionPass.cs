@@ -14,6 +14,7 @@ namespace YPipeline
             
             public Vector2Int threadGroupSize;
             public Vector4 textureSize;
+            public bool enableHalfResolution;
             public bool enableSpatialBlur;
             public bool enableTemporalBlur;
             
@@ -55,6 +56,7 @@ namespace YPipeline
                     builder.ReadTexture(data.ThinGBuffer);
                     builder.ReadTexture(data.CameraDepthTexture);
 
+                    passData.enableHalfResolution = m_AO.halfResolution.value;
                     passData.enableSpatialBlur = m_AO.enableSpatialFilter.value;
                     passData.enableTemporalBlur = m_AO.enableTemporalFilter.value;
                     passData.ambientOcclusionParams = new Vector4(m_AO.intensity.value, m_AO.sampleCount.value, m_AO.radius.value, m_AO.reflectionRate.value);
@@ -133,6 +135,7 @@ namespace YPipeline
                     builder.SetRenderFunc((AmbientOcclusionPassData data, RenderGraphContext context) =>
                     {
                         bool enableBlur = data.enableSpatialBlur || data.enableTemporalBlur;
+                        CoreUtils.SetKeyword(context.cmd, data.cs, "_HALF_RESOLUTION", data.enableHalfResolution);
                         context.cmd.SetComputeVectorParam(data.cs, "_TextureSize", data.textureSize);
                         context.cmd.SetComputeVectorParam(data.cs, YPipelineShaderIDs.k_AmbientOcclusionParamsID, data.ambientOcclusionParams);
                         context.cmd.SetComputeVectorParam(data.cs, YPipelineShaderIDs.k_AOBlurParamsID, data.aoBlurParams);
