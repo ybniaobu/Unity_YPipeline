@@ -62,12 +62,12 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
 
     float2 screenUV = (float2(id.xy) + float2(0.5, 0.5)) * _TextureSize.xy;
     
-    // ------------------------- Get Depth -------------------------
+    // ------------------------- Get Origin Position -------------------------
 
     float4 depths = GATHER_RED_TEXTURE2D(_CameraDepthTexture, sampler_PointClamp, screenUV);
-    //float originDepth = Min3(depths.x, depths.y, min(depths.z, depths.w));
+    float originDepth = Max3(depths.x, depths.y, max(depths.z, depths.w));
     
-    float originDepth = SampleLinearDepth(screenUV);
+    //float originDepth = SampleLinearDepth(screenUV);
     float4 originNDC = GetNDCFromUVAndDepth(screenUV, originDepth);
     float3 originWS = TransformNDCToWorld(originNDC, UNITY_MATRIX_I_VP);
 
@@ -75,13 +75,14 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
     
     float3 normalWS = LoadAndDecodeNormal(id.xy); // N
 
-    float3 up = abs(normalWS.y) > 0.999999 ? float3(0, 0, 1) : float3(0, 1, 0);
+    float3 up = abs(normalWS.y) > 0.999 ? float3(0, 0, 1) : float3(0, 1, 0);
     float3 tangent = normalize(cross(up, normalWS)); // T
     float3 binormal = normalize(cross(tangent, normalWS)); // B
 
     // ------------------------- Random Rotation -------------------------
 
     // TODO: Temporal Filter
+    // float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.w, 0).r) * TWO_PI;
     float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.w, 0).r + _Jitter.w) * TWO_PI;
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
 
@@ -97,8 +98,9 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
     {
         // ------------------------- Generate Hemisphere Samples -------------------------
         
-        float2 xi = k_Sobol[i + 1]; // Maybe Fibonacci Spiral is better
-        float scale = (i + 0.5) * rcp(sampleCount);
+        float2 xi = k_Sobol[i + 1];
+        // float scale = max(k_Halton[i + 1].y, 0.01);
+        float scale = max(k_Halton[i + 1].y + _Jitter.w * 0.02, 0.01);
         float3 dirTS = GenerateCosineWeightedHemisphereSamples(xi, scale);
         dirTS.xz = mul(rotation, dirTS.xz);
 
