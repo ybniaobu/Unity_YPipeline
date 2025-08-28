@@ -151,7 +151,8 @@ namespace YPipeline
         // ----------------------------------------------------------------------------------------------------
         
         public static readonly int k_AmbientOcclusionParamsID = Shader.PropertyToID("_AmbientOcclusionParams");
-        public static readonly int k_AOBlurParamsID = Shader.PropertyToID("_AOBlurParams");
+        public static readonly int k_AOSpatialBlurParamsID = Shader.PropertyToID("_AOSpatialBlurParams");
+        public static readonly int k_AOTemporalBlurParamsID = Shader.PropertyToID("_AOTemporalBlurParams");
         
         // ----------------------------------------------------------------------------------------------------
         // Light Culling Related Param IDs

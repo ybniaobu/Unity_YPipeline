@@ -24,13 +24,10 @@ MonoBehaviour:
     m_Value: 1
   sampleCount:
     m_OverrideState: 1
-    m_Value: 16
+    m_Value: 12
   radius:
     m_OverrideState: 1
     m_Value: 2
-  reflectionRate:
-    m_OverrideState: 1
-    m_Value: 0
   enableSpatialFilter:
     m_OverrideState: 1
     m_Value: 0
@@ -39,7 +36,7 @@ MonoBehaviour:
     m_Value: 3
   spatialSigma:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 2
   depthSigma:
     m_OverrideState: 1
     m_Value: 0.1
@@ -747,7 +744,7 @@ MonoBehaviour:
     m_Value: 1
   historyBlendFactor:
     m_OverrideState: 1
-    m_Value: 0.9
+    m_Value: 0.925
   neighborhood:
     m_OverrideState: 1
     m_Value: 0

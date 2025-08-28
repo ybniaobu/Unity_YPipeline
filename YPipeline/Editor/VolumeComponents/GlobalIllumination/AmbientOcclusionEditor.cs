@@ -12,7 +12,6 @@ namespace YPipeline.Editor
         private SerializedDataParameter m_Intensity;
         private SerializedDataParameter m_SampleCount;
         private SerializedDataParameter m_Radius;
-        private SerializedDataParameter m_ReflectionRate;
         
         // Spatial Filter
         private SerializedDataParameter m_EnableSpatialFilter;
@@ -34,7 +33,6 @@ namespace YPipeline.Editor
             m_Intensity = Unpack(o.Find(x => x.intensity));
             m_SampleCount = Unpack(o.Find(x => x.sampleCount));
             m_Radius = Unpack(o.Find(x => x.radius));
-            m_ReflectionRate = Unpack(o.Find(x => x.reflectionRate));
             
             // Spatial Filter
             m_EnableSpatialFilter = Unpack(o.Find(x => x.enableSpatialFilter));
@@ -57,7 +55,6 @@ namespace YPipeline.Editor
             PropertyField(m_Intensity);
             PropertyField(m_SampleCount);
             PropertyField(m_Radius);
-            PropertyField(m_ReflectionRate);
             
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Spatial Filter - Bilateral Blur", EditorStyles.boldLabel);

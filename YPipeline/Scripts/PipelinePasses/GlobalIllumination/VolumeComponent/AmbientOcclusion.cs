@@ -34,17 +34,14 @@ namespace YPipeline
         [Tooltip("采样半径 Sampling radius. Bigger the radius, wider ambient occlusion will be achieved.")]
         public ClampedFloatParameter radius = new ClampedFloatParameter(2.0f, 0.0f, 5.0f);
         
-        [Tooltip("相互反射率 Inter-reflection rate. Higher reflectance will brighten the ambient occlusion effect.")]
-        public ClampedFloatParameter reflectionRate = new ClampedFloatParameter(0.25f, 0.0f, 1.0f);
-        
         // Spatial Filter
         public BoolParameter enableSpatialFilter = new BoolParameter(true, BoolParameter.DisplayType.Checkbox);
         
         [Tooltip("过滤核半径 Defines the neighborhood area used for weighted averaging. Larger kernel produces stronger blurring effects.")]
-        public ClampedIntParameter kernelRadius = new ClampedIntParameter(2, 1, 5);
+        public ClampedIntParameter kernelRadius = new ClampedIntParameter(4, 2, 6);
         
         [Tooltip("空域标准差 The smoothing parameter for spatial kernel, higher value results in blurrier result.")]
-        public ClampedFloatParameter spatialSigma = new ClampedFloatParameter(5.0f, 0.1f, 10.0f);
+        public ClampedFloatParameter spatialSigma = new ClampedFloatParameter(3.0f, 0.1f, 10.0f);
         
         [Tooltip("值域标准差 The smoothing parameter for range kernel, lower value achieves a better effect in edge preservation but could introduces false edges.")]
         public ClampedFloatParameter depthSigma = new ClampedFloatParameter(0.5f, 0.1f, 10f);
