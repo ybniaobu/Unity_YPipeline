@@ -61,12 +61,8 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
     float2 screenUV = (float2(id.xy) + float2(0.5, 0.5)) * _TextureSize.xy;
     
     // ------------------------- Get Origin Position -------------------------
-
-    float4 depths = GATHER_RED_TEXTURE2D(_CameraDepthTexture, sampler_PointClamp, screenUV);
-    // float originDepth = GetMedianDepth(depths);
-    float originDepth = Max3(depths.x, depths.y, max(depths.z, depths.w));
     
-    // float originDepth = SampleLinearDepth(screenUV);
+    float originDepth = LoadDepth(id.xy);
     float4 originNDC = GetNDCFromUVAndDepth(screenUV, originDepth);
     float3 originWS = TransformNDCToWorld(originNDC, UNITY_MATRIX_I_VP);
 
@@ -114,14 +110,15 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
         #if UNITY_UV_STARTS_AT_TOP
         uv.y = 1.0f - uv.y;
         #endif
-        
-        float sampledDepth = SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_LinearClamp, uv, 0).r;
+
+        int2 pixelCoord = clamp(uv * _TextureSize.zw, 0, _TextureSize.zw - 1);
+        float sampledDepth = LoadDepth(pixelCoord);
         float linearDepth = GetViewDepthFromDepthTexture(sampledDepth);
 
         // ------------------------- Accumulate Occlusion Factor -------------------------
         
         bool rangeCheck = abs(sampleHCS.w - linearDepth) < radius;
-        float occlusion = (linearDepth < sampleHCS.w) * rangeCheck * intensity;
+        float occlusion = (linearDepth + 0.01 < sampleHCS.w) * rangeCheck * intensity;
         aoFactor += 1.0 - occlusion;
     }
     

@@ -5,14 +5,20 @@
 // SSAO Utility Functions
 // ----------------------------------------------------------------------------------------------------
 
-inline float SampleLinearDepth(float2 screenUV)
-{
-    return SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_LinearClamp, screenUV, 0).r;
-}
+// inline float SampleLinearDepth(float2 screenUV)
+// {
+//     return SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_LinearClamp, screenUV, 0).r;
+// }
 
-inline float GetMedianDepth(float4 depths)
+inline float LoadDepth(int2 pixelCoord)
 {
-    return (max(min(depths.x, depths.y), min(depths.z, depths.w)) + min(max(depths.x, depths.y), max(depths.z, depths.w))) * 0.5f;
+    #ifdef _HALF_RESOLUTION
+        float depth = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, pixelCoord * 2, 0).r;
+    #else
+        float depth = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, pixelCoord, 0).r;
+    #endif
+    
+    return depth;
 }
 
 inline float3 LoadAndDecodeNormal(int2 pixelCoord)
@@ -67,9 +73,9 @@ inline float2 LoadAOandDepth(int2 pixelCoord)
 
 inline float BilateralWeight(float radiusDelta, float depthDelta, float2 sigma)
 {
-    const float depthThreshold = 0.5;
-    // return exp(-radiusDelta * radiusDelta * rcp(2.0 * sigma.x * sigma.x)) * (depthDelta < depthThreshold);
-    return exp(-radiusDelta * radiusDelta * rcp(2.0 * sigma.x * sigma.x));
+    // const float depthThreshold = 0.5;
+    // return exp(-radiusDelta * radiusDelta * rcp(2.0 * sigma.x * sigma.x)) * (depthDelta < sigma.y);
+    return exp(-radiusDelta * radiusDelta * rcp(2.0 * sigma.x * sigma.x) - depthDelta * depthDelta * rcp(0.5 * sigma.y * sigma.y));
 }
 //
 // inline float2 BilateralBlur(float2 pixelCoord, float2 pixelOffset)

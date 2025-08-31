@@ -41,7 +41,7 @@ void InitializeStandardPBRParams(Varyings IN, inout StandardPBRParams standardPB
     #endif
 
     #if _SCREEN_SPACE_AMBIENT_OCCLUSION
-        standardPBRParams.ao = min(standardPBRParams.ao, SAMPLE_TEXTURE2D_LOD(_AmbientOcclusionTexture, sampler_LinearClamp, IN.positionHCS.xy * _CameraBufferSize.xy, 0).r);
+        standardPBRParams.ao = min(standardPBRParams.ao, SAMPLE_TEXTURE2D_LOD(_AmbientOcclusionTexture, sampler_PointClamp, IN.positionHCS.xy * _CameraBufferSize.xy, 0).r);
     #endif
 
     #if _USE_NORMALTEX
