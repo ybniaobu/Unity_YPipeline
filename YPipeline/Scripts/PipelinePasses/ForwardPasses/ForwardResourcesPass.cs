@@ -98,7 +98,7 @@ namespace YPipeline
                 TextureDesc thinGBufferDesc = new TextureDesc(bufferSize.x, bufferSize.y)
                 {
                     format = GraphicsFormat.R8G8B8A8_UNorm,
-                    filterMode = FilterMode.Bilinear,
+                    filterMode = FilterMode.Point,
                     clearBuffer = true,
                     name = "Thin GBuffer"
                 };

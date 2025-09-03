@@ -13,12 +13,10 @@
 inline float LoadDepth(int2 pixelCoord)
 {
     #ifdef _HALF_RESOLUTION
-        float depth = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, pixelCoord * 2, 0).r;
+        return LOAD_TEXTURE2D_LOD(_HalfDepthTexture, pixelCoord, 0).r;
     #else
-        float depth = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, pixelCoord, 0).r;
+        return LOAD_TEXTURE2D_LOD(_CameraDepthTexture, pixelCoord, 0).r;
     #endif
-    
-    return depth;
 }
 
 inline float3 LoadAndDecodeNormal(int2 pixelCoord)

@@ -1,4 +1,5 @@
 #pragma kernel SSAOKernel
+#pragma kernel DepthDownsampleKernel
 #pragma kernel SpatialBlurHorizontalKernel
 #pragma kernel SpatialBlurVerticalKernel
 #pragma kernel TemporalBlurKernel
@@ -12,6 +13,7 @@
 
 RWTexture2D<float2> _OutputTexture;
 Texture2D<float2> _InputTexture;
+Texture2D<float> _HalfDepthTexture;
 Texture2D<float2> _AmbientOcclusionHistory;
 
 TEXTURE2D(_ThinGBuffer);
@@ -94,8 +96,8 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
         // ------------------------- Generate Hemisphere Samples -------------------------
         
         float2 xi = k_Sobol[i + 1];
-        float scale = max(k_Halton[i + 1].y, 0.01);
-        // float scale = max(k_Halton[i + 1].y + _Jitter.w * 0.02, 0.01);
+        // float scale = max(k_Halton[i + 1].y, 0.01);
+        float scale = max(k_Halton[i + 1].y + _Jitter.w * 0.02, 0.01);
         float3 dirTS = GenerateCosineWeightedHemisphereSamples(xi, scale);
         dirTS.xz = mul(rotation, dirTS.xz);
 
@@ -124,6 +126,17 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
     
     aoFactor = saturate(aoFactor / sampleCount);
     _OutputTexture[id.xy] = float2(aoFactor, originDepth);
+}
+
+// ----------------------------------------------------------------------------------------------------
+// Depth Downsample Kernel
+// ----------------------------------------------------------------------------------------------------
+
+[numthreads(8, 8, 1)]
+void DepthDownsampleKernel(uint3 id : SV_DispatchThreadID)
+{
+    int2 pixelCoord = clamp(id.xy, 0, _TextureSize.zw - 1);
+    _OutputTexture[id.xy] = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, pixelCoord * 2, 0).r;
 }
 
 // ----------------------------------------------------------------------------------------------------
