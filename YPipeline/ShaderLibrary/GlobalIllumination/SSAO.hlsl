@@ -71,29 +71,8 @@ inline float2 LoadAOandDepth(int2 pixelCoord)
 
 inline float BilateralWeight(float radiusDelta, float depthDelta, float2 sigma)
 {
-    // const float depthThreshold = 0.5;
-    // return exp(-radiusDelta * radiusDelta * rcp(2.0 * sigma.x * sigma.x)) * (depthDelta < sigma.y);
-    return exp(-radiusDelta * radiusDelta * rcp(2.0 * sigma.x * sigma.x) - depthDelta * depthDelta * rcp(0.5 * sigma.y * sigma.y));
+    return exp2(-radiusDelta * radiusDelta * rcp(2.0 * sigma.x * sigma.x) - depthDelta * depthDelta * rcp(2.0 * sigma.y * sigma.y));
 }
-//
-// inline float2 BilateralBlur(float2 pixelCoord, float2 pixelOffset)
-// {
-//     int radius = int(GetSpatialBlurKernelRadius());
-//     float2 center = LoadAOandDepth(pixelCoord,0);
-//     float weightSum = BilateralWeight(0, 0);
-//     float aoFactor = center.r * weightSum;
-//     
-//     for (int i = -radius; i <= radius && i != 0; i++)
-//     {
-//         float2 sample = LoadAOandDepth(pixelCoord, i * pixelOffset);
-//         float weight = BilateralWeight(i, sample.g - center.g);
-//         aoFactor += sample.r * weight;
-//         weightSum += weight;
-//     }
-//
-//     aoFactor /= weightSum;
-//     return float2(aoFactor, center.g);
-// }
 
 // ----------------------------------------------------------------------------------------------------
 // Temporal Filter
@@ -101,12 +80,11 @@ inline float BilateralWeight(float radiusDelta, float depthDelta, float2 sigma)
 
 float GaussianFilterMiddleColor(in float2 samples[9])
 {
-    // const float weights[9] = { 4.0, 2.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0, 1.0 };
+    const float weights[9] = { 4.0, 2.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0, 1.0 };
     // sigma = 0.8
     // const float weights[9] = { 1.0, 0.4578, 0.4578, 0.4578, 0.4578, 0.2097, 0.2097, 0.2097, 0.2097 };
-    
     // sigma = 0.6
-    const float weights[9] = { 1.0, 0.2493, 0.2493, 0.2493, 0.2493, 0.0625, 0.0625, 0.0625, 0.0625 };
+    // const float weights[9] = { 1.0, 0.2493, 0.2493, 0.2493, 0.2493, 0.0625, 0.0625, 0.0625, 0.0625 };
     
     float weightSum = 4.0;
     float filtered = weightSum * samples[0].r;
@@ -187,7 +165,8 @@ inline float2 TemporalBlur(float2 pixelCoord, float2 screenUV)
     VarianceNeighbourhood(neighbours, prefiltered, 0.5, minMax);
     
     history.r = NeighborhoodClipToFiltered(minMax, prefiltered, history.r);
-    
+
+    // return float2(lerp(prefiltered, history.r, 0.9), neighbours[0].g);
     return float2(lerp(neighbours[0].r, history.r, 0.9), neighbours[0].g);
 }
 

@@ -21,7 +21,6 @@ namespace YPipeline.Editor
         
         // Temporal Filter
         private SerializedDataParameter m_EnableTemporalFilter;
-        private SerializedDataParameter m_BlendFactor;
 
         public override void OnEnable()
         {
@@ -42,7 +41,6 @@ namespace YPipeline.Editor
             
             // Temporal Filter
             m_EnableTemporalFilter = Unpack(o.Find(x => x.enableTemporalFilter));
-            m_BlendFactor = Unpack(o.Find(x => x.blendFactor));
         }
 
         public override void OnInspectorGUI()
@@ -68,7 +66,6 @@ namespace YPipeline.Editor
             EditorGUILayout.LabelField("Temporal Filter", EditorStyles.boldLabel);
             
             PropertyField(m_EnableTemporalFilter, EditorGUIUtility.TrTextContent("Enable"));
-            PropertyField(m_BlendFactor);
         }
     }
 }

@@ -80,7 +80,7 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
 
     // TODO: Temporal Filter
     // float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.w, 0).r) * TWO_PI;
-    float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.w, 0).r + _Jitter.w) * TWO_PI;
+    float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.w, 0).r + _Jitter.z) * TWO_PI;
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
 
     // ------------------------- SSAO Loop -------------------------
@@ -97,7 +97,7 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
         
         float2 xi = k_Sobol[i + 1];
         // float scale = max(k_Halton[i + 1].y, 0.01);
-        float scale = max(k_Halton[i + 1].y + _Jitter.w * 0.02, 0.01);
+        float scale = max(k_Halton[i + 1].y + _Jitter.z * 0.01, 0.01);
         float3 dirTS = GenerateCosineWeightedHemisphereSamples(xi, scale);
         dirTS.xz = mul(rotation, dirTS.xz);
 

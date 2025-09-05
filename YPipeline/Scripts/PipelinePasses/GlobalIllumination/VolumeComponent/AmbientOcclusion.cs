@@ -44,13 +44,10 @@ namespace YPipeline
         public ClampedFloatParameter spatialSigma = new ClampedFloatParameter(2.0f, 0.0f, 5.0f);
         
         [Tooltip("值域标准差 The smoothing parameter for range kernel, lower value achieves a better effect in edge preservation but could introduces false edges.")]
-        public ClampedFloatParameter depthSigma = new ClampedFloatParameter(1.0f, 0.0f, 2.0f);
+        public ClampedFloatParameter depthSigma = new ClampedFloatParameter(0.25f, 0.0f, 1.0f);
         
         // Temporal Filter
         public BoolParameter enableTemporalFilter = new BoolParameter(true, BoolParameter.DisplayType.Checkbox);
-        
-        [Tooltip("历史帧混合系数 Determines how much the history is blended with the current frame")]
-        public ClampedFloatParameter blendFactor = new ClampedFloatParameter(0.9f, 0.8f, 0.975f);
         
         public bool IsActive() => ambientOcclusionMode.value != AmbientOcclusionMode.None;
     }
