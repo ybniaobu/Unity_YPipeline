@@ -11,11 +11,13 @@
 #include "../../../ShaderLibrary/SamplingLibrary.hlsl"
 #include "../../../ShaderLibrary/EncodingLibrary.hlsl"
 
+// --- Local Texture ---
 RWTexture2D<float2> _OutputTexture;
 Texture2D<float2> _InputTexture;
 Texture2D<float> _HalfDepthTexture;
 Texture2D<float2> _AmbientOcclusionHistory;
 
+// --- Global Texture ---
 TEXTURE2D(_ThinGBuffer);
 TEXTURE2D(_CameraDepthTexture);
 TEXTURE2D(_MotionVectorTexture);
@@ -24,20 +26,28 @@ float4 _BlueNoise64_TexelSize;
 SAMPLER(sampler_LinearClamp);
 SAMPLER(sampler_PointClamp);
 
-#include "../../../ShaderLibrary/GlobalIllumination/SSAO.hlsl"
-
+// --- Global Variables ---
 float4 _CameraBufferSize; // x: 1.0 / bufferSize.x, y: 1.0 / bufferSize.y, z: bufferSize.x, w: bufferSize.y
 float4 _Jitter; // Halton (-0.5, 0.5), xy: 1.0 / jitter, zw: jitter
 
+// --- Local Variables ---
 float4 _TextureSize; // x: 1.0 / width, y: 1.0 / height, z: width, w: height
 // SSAO - x: intensity, y: sample count, z: radius
 // HBAO - x: , y: , z: , w:
 // GTAO - x: , y: , z: , w: 
 float4 _AmbientOcclusionParams;
 float4 _AOSpatialBlurParams; // x: kernel radius, y: spatial sigma, z: depth/range sigma
+float4 _AOTemporalBlurParams; // x: Temporal Blur Enabled (1 or 0), y: 
 
-#define MAX_FILTER_RADIUS 6
+// --- Spatial Filter Groupshared Memory ---
+#define MAX_FILTER_RADIUS 8
 groupshared float2 _AOAndDepth[64 + 2 * MAX_FILTER_RADIUS];
+
+// --- Temporal Filter Groupshared Memory ---
+static const uint THREAD_NUM = 8;
+static const uint TILE_BORDER = 1;
+static const uint TILE_SIZE = THREAD_NUM + 2 * TILE_BORDER;
+groupshared float2 _AOZ[TILE_SIZE * TILE_SIZE];
 
 // ----------------------------------------------------------------------------------------------------
 // Input
@@ -46,9 +56,12 @@ groupshared float2 _AOAndDepth[64 + 2 * MAX_FILTER_RADIUS];
 inline float GetSSAOIntensity()             { return _AmbientOcclusionParams.x; }
 inline float GetSSAOSampleCount()           { return _AmbientOcclusionParams.y; }
 inline float GetSSAORadius()                { return _AmbientOcclusionParams.z; }
-inline float GetSSAOReflectionRate()        { return _AmbientOcclusionParams.w; }
 inline float GetSpatialBlurKernelRadius()   { return _AOSpatialBlurParams.x; }
 inline float2 GetSpatialBlurSigma()         { return _AOSpatialBlurParams.yz; }
+inline float IsTemporalBlurEnabled()        { return _AOTemporalBlurParams.x; }
+
+#include "../../../ShaderLibrary/GlobalIllumination/SSAO.hlsl"
+#include "AmbientOcclusionDenoise.hlsl"
 
 // ----------------------------------------------------------------------------------------------------
 // SSAO Kernel
@@ -77,10 +90,8 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
     float3 binormal = normalize(cross(tangent, normalWS)); // B
 
     // ------------------------- Random Rotation -------------------------
-
-    // TODO: Temporal Filter
-    // float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.w, 0).r) * TWO_PI;
-    float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.w, 0).r + _Jitter.z) * TWO_PI;
+    
+    float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.w, 0).r + _Jitter.z * IsTemporalBlurEnabled()) * TWO_PI;
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
 
     // ------------------------- SSAO Loop -------------------------
@@ -96,8 +107,7 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
         // ------------------------- Generate Hemisphere Samples -------------------------
         
         float2 xi = k_Sobol[i + 1];
-        // float scale = max(k_Halton[i + 1].y, 0.01);
-        float scale = max(k_Halton[i + 1].y + _Jitter.z * 0.01, 0.01);
+        float scale = max(k_Halton[i + 1].y + _Jitter.z * 0.01 * IsTemporalBlurEnabled(), 0.01);
         float3 dirTS = GenerateCosineWeightedHemisphereSamples(xi, scale);
         dirTS.xz = mul(rotation, dirTS.xz);
 
@@ -126,119 +136,4 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
     
     aoFactor = saturate(aoFactor / sampleCount);
     _OutputTexture[id.xy] = float2(aoFactor, originDepth);
-}
-
-// ----------------------------------------------------------------------------------------------------
-// Depth Downsample Kernel
-// ----------------------------------------------------------------------------------------------------
-
-[numthreads(8, 8, 1)]
-void DepthDownsampleKernel(uint3 id : SV_DispatchThreadID)
-{
-    int2 pixelCoord = clamp(id.xy, 0, _TextureSize.zw - 1);
-    _OutputTexture[id.xy] = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, pixelCoord * 2, 0).r;
-}
-
-// ----------------------------------------------------------------------------------------------------
-// Filter Kernels
-// ----------------------------------------------------------------------------------------------------
-
-[numthreads(64, 1, 1)]
-void SpatialBlurHorizontalKernel(uint3 id : SV_DispatchThreadID, uint groupIndex : SV_GroupIndex)
-{
-    // ------------------------- Fetch AO & Depth -------------------------
-
-    int2 pixelCoord = clamp(id.xy, 0, _TextureSize.zw - 1);
-    _AOAndDepth[groupIndex + MAX_FILTER_RADIUS] = LoadAOandDepth(pixelCoord);
-
-    if (groupIndex < MAX_FILTER_RADIUS)
-    {
-        int2 extraCoord = pixelCoord - int2(MAX_FILTER_RADIUS, 0);
-        extraCoord = clamp(extraCoord, 0, _TextureSize.zw - 1);
-        _AOAndDepth[groupIndex] = LoadAOandDepth(extraCoord);
-    }
-
-    if (groupIndex >= 64 - MAX_FILTER_RADIUS)
-    {
-        int2 extraCoord = pixelCoord + int2(MAX_FILTER_RADIUS, 0);
-        extraCoord = clamp(extraCoord, 0, _TextureSize.zw - 1);
-        _AOAndDepth[groupIndex + 2 * MAX_FILTER_RADIUS] = LoadAOandDepth(extraCoord);
-    }
-    
-    GroupMemoryBarrierWithGroupSync();
-
-    // ------------------------- Bilateral Blur -------------------------
-
-    float2 middle = _AOAndDepth[groupIndex + MAX_FILTER_RADIUS];
-    float middleDepth = GetViewDepthFromDepthTexture(middle.g);
-    float weightSum = 0.0;
-    float aoFactor = 0.0;
-        
-    int radius = int(GetSpatialBlurKernelRadius());
-    for (int i = -radius; i <= radius; i++)
-    {
-        float2 sample = _AOAndDepth[groupIndex + MAX_FILTER_RADIUS + i];
-        float sampleDepth = GetViewDepthFromDepthTexture(sample.g);
-        float depthDelta = abs(sampleDepth - middleDepth);
-        float weight = BilateralWeight(i, depthDelta, GetSpatialBlurSigma());
-        aoFactor += sample.r * weight;
-        weightSum += weight;
-    }
-    aoFactor /= weightSum;
-    _OutputTexture[id.xy] = float2(aoFactor, middle.g);
-}
-
-[numthreads(1, 64, 1)]
-void SpatialBlurVerticalKernel(uint3 id : SV_DispatchThreadID, uint groupIndex : SV_GroupIndex)
-{
-    // ------------------------- Fetch AO & Depth -------------------------
-    
-    int2 pixelCoord = clamp(id.xy, 0, _TextureSize.zw - 1);
-    _AOAndDepth[groupIndex + MAX_FILTER_RADIUS] = LoadAOandDepth(pixelCoord);
-
-    if (groupIndex < MAX_FILTER_RADIUS)
-    {
-        int2 extraCoord = pixelCoord - int2(0, MAX_FILTER_RADIUS);
-        extraCoord = clamp(extraCoord, 0, _TextureSize.zw - 1);
-        _AOAndDepth[groupIndex] = LoadAOandDepth(extraCoord);
-    }
-
-    if (groupIndex >= 64 - MAX_FILTER_RADIUS)
-    {
-        int2 extraCoord = pixelCoord + int2(0, MAX_FILTER_RADIUS);
-        extraCoord = clamp(extraCoord, 0, _TextureSize.zw - 1);
-        _AOAndDepth[groupIndex + 2 * MAX_FILTER_RADIUS] = LoadAOandDepth(extraCoord);
-    }
-    
-    GroupMemoryBarrierWithGroupSync();
-
-    // ------------------------- Bilateral Blur -------------------------
-
-    float2 middle = _AOAndDepth[groupIndex + MAX_FILTER_RADIUS];
-    float middleDepth = GetViewDepthFromDepthTexture(middle.g);
-    float weightSum = 0.0;
-    float aoFactor = 0.0;
-        
-    int radius = int(GetSpatialBlurKernelRadius());
-    for (int i = -radius; i <= radius; i++)
-    {
-        float2 sample = _AOAndDepth[groupIndex + MAX_FILTER_RADIUS + i];
-        float sampleDepth = GetViewDepthFromDepthTexture(sample.g);
-        float depthDelta = abs(sampleDepth - middleDepth);
-        float weight = BilateralWeight(i, depthDelta, GetSpatialBlurSigma());
-        aoFactor += sample.r * weight;
-        weightSum += weight;
-    }
-    aoFactor /= weightSum;
-    _OutputTexture[id.xy] = float2(aoFactor, middle.g);
-}
-
-[numthreads(8, 8, 1)]
-void TemporalBlurKernel(uint3 id : SV_DispatchThreadID)
-{
-    bool inScreen = all(float2(id.xy) < _TextureSize.zw);
-    if (!inScreen) return;
-
-    float2 screenUV = (float2(id.xy) + float2(0.5, 0.5)) * _TextureSize.xy;
-    _OutputTexture[id.xy] = TemporalBlur(id.xy, screenUV);
 }

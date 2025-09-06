@@ -30,13 +30,13 @@ MonoBehaviour:
     m_Value: 2
   enableSpatialFilter:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 1
   kernelRadius:
     m_OverrideState: 1
     m_Value: 4
   spatialSigma:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0.6
   depthSigma:
     m_OverrideState: 1
     m_Value: 0.25

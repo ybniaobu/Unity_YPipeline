@@ -27,6 +27,7 @@ namespace YPipeline
             
             public Vector4 ambientOcclusionParams;
             public Vector4 aoSpatialBlurParams;
+            public Vector4 aoTemporalBlurParams;
         }
 
         private AmbientOcclusion m_AO;
@@ -65,6 +66,7 @@ namespace YPipeline
                     passData.enableTemporalBlur = m_AO.enableTemporalFilter.value;
                     passData.ambientOcclusionParams = new Vector4(m_AO.intensity.value, m_AO.sampleCount.value, m_AO.radius.value);
                     passData.aoSpatialBlurParams = new Vector4(m_AO.kernelRadius.value, m_AO.spatialSigma.value, m_AO.depthSigma.value);
+                    passData.aoTemporalBlurParams = new Vector4(passData.enableTemporalBlur ? 1 : 0, 0.0f);
                     
                     // Half Depth Texture
                     if (passData.enableHalfResolution)
@@ -84,7 +86,7 @@ namespace YPipeline
                     // Create Ambient Occlusion Texture
                     TextureDesc aoTextureDesc = new TextureDesc(textureSize.x, textureSize.y)
                     {
-                        format = GraphicsFormat.R16_UNorm,
+                        format = GraphicsFormat.R16G16_UNorm,
                         filterMode = FilterMode.Bilinear,
                         clearBuffer = true,
                         clearColor = Color.white,
@@ -127,7 +129,7 @@ namespace YPipeline
                     // Ambient Occlusion History
                     RenderTextureDescriptor aoHistoryDesc = new RenderTextureDescriptor(textureSize.x, textureSize.y)
                     {
-                        graphicsFormat = GraphicsFormat.R16_UNorm,
+                        graphicsFormat = GraphicsFormat.R16G16_UNorm,
                         msaaSamples = 1,
                         mipCount = 0,
                         autoGenerateMips = false,
@@ -157,6 +159,7 @@ namespace YPipeline
                         context.cmd.SetComputeVectorParam(data.cs, "_TextureSize", new Vector4(1f / data.textureSize.x, 1f / data.textureSize.y, data.textureSize.x, data.textureSize.y));
                         context.cmd.SetComputeVectorParam(data.cs, YPipelineShaderIDs.k_AmbientOcclusionParamsID, data.ambientOcclusionParams);
                         context.cmd.SetComputeVectorParam(data.cs, YPipelineShaderIDs.k_AOSpatialBlurParamsID, data.aoSpatialBlurParams);
+                        context.cmd.SetComputeVectorParam(data.cs, YPipelineShaderIDs.k_AOTemporalBlurParamsID, data.aoTemporalBlurParams);
 
                         if (data.enableHalfResolution)
                         {

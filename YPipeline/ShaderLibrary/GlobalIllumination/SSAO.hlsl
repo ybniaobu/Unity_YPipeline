@@ -5,11 +5,6 @@
 // SSAO Utility Functions
 // ----------------------------------------------------------------------------------------------------
 
-// inline float SampleLinearDepth(float2 screenUV)
-// {
-//     return SAMPLE_TEXTURE2D_LOD(_CameraDepthTexture, sampler_LinearClamp, screenUV, 0).r;
-// }
-
 inline float LoadDepth(int2 pixelCoord)
 {
     #ifdef _HALF_RESOLUTION
@@ -78,20 +73,28 @@ inline float BilateralWeight(float radiusDelta, float depthDelta, float2 sigma)
 // Temporal Filter
 // ----------------------------------------------------------------------------------------------------
 
-float GaussianFilterMiddleColor(in float2 samples[9])
+inline void GetNeighbourhoodSamples(in uint tileIDs[9], inout float2 samples[9])
+{
+    UNITY_UNROLL
+    for (int i = 0; i < 9; i++)
+    {
+        samples[i] = _AOZ[tileIDs[i]];
+    }
+}
+
+float FilterMiddleColor(in float2 samples[9])
 {
     const float weights[9] = { 4.0, 2.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0, 1.0 };
-    // sigma = 0.8
-    // const float weights[9] = { 1.0, 0.4578, 0.4578, 0.4578, 0.4578, 0.2097, 0.2097, 0.2097, 0.2097 };
-    // sigma = 0.6
-    // const float weights[9] = { 1.0, 0.2493, 0.2493, 0.2493, 0.2493, 0.0625, 0.0625, 0.0625, 0.0625 };
     
     float weightSum = 4.0;
     float filtered = weightSum * samples[0].r;
+    float middleDepth = GetViewDepthFromDepthTexture(samples[0].g);
 
     for (int i = 0; i < 8; i++)
     {
-        float weight = weights[i + 1];
+        float sampleDepth = GetViewDepthFromDepthTexture(samples[i + 1].g);
+        bool occlusionTest = abs(1 - sampleDepth / middleDepth) < 0.1;
+        float weight = weights[i + 1] * occlusionTest;
         weightSum += weight;
         filtered += weight * samples[i + 1].r;
     }
@@ -99,10 +102,12 @@ float GaussianFilterMiddleColor(in float2 samples[9])
     return filtered;
 }
 
-void VarianceNeighbourhood(in float2 samples[9], float filtered, float gamma, out float2 minMax)
+void VarianceMinMax(in float2 samples[9], float filtered, float gamma, out float2 minMax)
 {
     float m1 = 0;
     float m2 = 0;
+
+    UNITY_UNROLL
     for (int i = 0; i < 9; i++)
     {
         float sampleColor = samples[i].r;
@@ -124,7 +129,7 @@ void VarianceNeighbourhood(in float2 samples[9], float filtered, float gamma, ou
     minMax = float2(neighborMin, neighborMax);
 }
 
-float NeighborhoodClipToFiltered(float2 minMax, float filtered, float history)
+float ClipToFiltered(float2 minMax, float filtered, float history)
 {
     float boxMin = minMax.x;
     float boxMax = minMax.y;
@@ -140,35 +145,5 @@ float NeighborhoodClipToFiltered(float2 minMax, float filtered, float history)
     float historyBlend = saturate(enterIntersect);
     return lerp(history, filtered, historyBlend);
 }
-
-inline float2 TemporalBlur(float2 pixelCoord, float2 screenUV)
-{
-    float2 velocity = SAMPLE_TEXTURE2D_LOD(_MotionVectorTexture, sampler_PointClamp, screenUV, 0).rg;
-    float2 historyUV = screenUV - velocity;
-    float2 history = SAMPLE_TEXTURE2D_LOD(_AmbientOcclusionHistory, sampler_LinearClamp, historyUV, 0);
-
-    float2 neighbours[9];
-    neighbours[0] = LoadAOandDepth(pixelCoord + 0);
-    neighbours[1] = LoadAOandDepth(pixelCoord + int2(0, 1));
-    neighbours[2] = LoadAOandDepth(pixelCoord + int2(1, 0));
-    neighbours[3] = LoadAOandDepth(pixelCoord + int2(0, -1));
-    neighbours[4] = LoadAOandDepth(pixelCoord + int2(-1, 0));
-    neighbours[5] = LoadAOandDepth(pixelCoord + int2(-1, 1));
-    neighbours[6] = LoadAOandDepth(pixelCoord + int2(1, 1));
-    neighbours[7] = LoadAOandDepth(pixelCoord + int2(-1, -1));
-    neighbours[8] = LoadAOandDepth(pixelCoord + int2(1, -1));
-
-    // float prefiltered = neighbours[0].r;
-    float prefiltered = GaussianFilterMiddleColor(neighbours);
-
-    float2 minMax;
-    VarianceNeighbourhood(neighbours, prefiltered, 0.5, minMax);
-    
-    history.r = NeighborhoodClipToFiltered(minMax, prefiltered, history.r);
-
-    // return float2(lerp(prefiltered, history.r, 0.9), neighbours[0].g);
-    return float2(lerp(neighbours[0].r, history.r, 0.9), neighbours[0].g);
-}
-
 
 #endif
