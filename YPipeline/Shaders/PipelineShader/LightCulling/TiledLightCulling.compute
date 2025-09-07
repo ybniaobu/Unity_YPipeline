@@ -1,5 +1,7 @@
 #pragma kernel TiledLightCulling
 
+#pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch
+
 #pragma multi_compile _ _TILE_CULLING_SPLIT_DEPTH
 
 #define THREAD_NUM_X 16 // equal to per tile size

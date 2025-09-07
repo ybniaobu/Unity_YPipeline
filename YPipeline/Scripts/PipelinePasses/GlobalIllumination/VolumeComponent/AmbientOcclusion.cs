@@ -41,13 +41,16 @@ namespace YPipeline
         public ClampedIntParameter kernelRadius = new ClampedIntParameter(4, 2, 8);
         
         [Tooltip("空域标准差 The smoothing parameter for spatial kernel, higher value results in blurrier result.")]
-        public ClampedFloatParameter spatialSigma = new ClampedFloatParameter(2.0f, 0.0f, 5.0f);
+        public ClampedFloatParameter spatialSigma = new ClampedFloatParameter(0.6f, 0.0f, 5.0f);
         
         [Tooltip("值域标准差 The smoothing parameter for range kernel, lower value achieves a better effect in edge preservation but could introduces false edges.")]
         public ClampedFloatParameter depthSigma = new ClampedFloatParameter(0.25f, 0.0f, 0.5f);
         
         // Temporal Filter
         public BoolParameter enableTemporalFilter = new BoolParameter(true, BoolParameter.DisplayType.Checkbox);
+        
+        [Tooltip("Lower value reduces ghosting but produces more noise and flicking, higher value reduces noise but produces more ghosting.")]
+        public ClampedFloatParameter criticalValue = new ClampedFloatParameter(1.0f, 0.5f, 1.5f);
         
         public bool IsActive() => ambientOcclusionMode.value != AmbientOcclusionMode.None;
     }

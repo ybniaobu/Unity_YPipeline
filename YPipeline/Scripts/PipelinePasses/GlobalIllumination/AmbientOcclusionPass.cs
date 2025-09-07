@@ -66,7 +66,7 @@ namespace YPipeline
                     passData.enableTemporalBlur = m_AO.enableTemporalFilter.value;
                     passData.ambientOcclusionParams = new Vector4(m_AO.intensity.value, m_AO.sampleCount.value, m_AO.radius.value);
                     passData.aoSpatialBlurParams = new Vector4(m_AO.kernelRadius.value, m_AO.spatialSigma.value, m_AO.depthSigma.value);
-                    passData.aoTemporalBlurParams = new Vector4(passData.enableTemporalBlur ? 1 : 0, 0.0f);
+                    passData.aoTemporalBlurParams = new Vector4(passData.enableTemporalBlur ? 1 : 0, m_AO.criticalValue.value);
                     
                     // Half Depth Texture
                     if (passData.enableHalfResolution)

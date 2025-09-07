@@ -4,20 +4,21 @@
 #pragma kernel SpatialBlurVerticalKernel
 #pragma kernel TemporalBlurKernel
 
+#pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch
+
 #pragma multi_compile _ _HALF_RESOLUTION
 
 #include "../../../ShaderLibrary/Core/YPipelineCSCore.hlsl"
 #include "../../../ShaderLibrary/RandomLibrary.hlsl"
-#include "../../../ShaderLibrary/SamplingLibrary.hlsl"
 #include "../../../ShaderLibrary/EncodingLibrary.hlsl"
 
-// --- Local Texture ---
+// --- Local Textures ---
 RWTexture2D<float2> _OutputTexture;
 Texture2D<float2> _InputTexture;
 Texture2D<float> _HalfDepthTexture;
 Texture2D<float2> _AmbientOcclusionHistory;
 
-// --- Global Texture ---
+// --- Global Textures & Samplers ---
 TEXTURE2D(_ThinGBuffer);
 TEXTURE2D(_CameraDepthTexture);
 TEXTURE2D(_MotionVectorTexture);
@@ -27,17 +28,17 @@ SAMPLER(sampler_LinearClamp);
 SAMPLER(sampler_PointClamp);
 
 // --- Global Variables ---
-float4 _CameraBufferSize; // x: 1.0 / bufferSize.x, y: 1.0 / bufferSize.y, z: bufferSize.x, w: bufferSize.y
 float4 _Jitter; // Halton (-0.5, 0.5), xy: 1.0 / jitter, zw: jitter
 
 // --- Local Variables ---
 float4 _TextureSize; // x: 1.0 / width, y: 1.0 / height, z: width, w: height
+
 // SSAO - x: intensity, y: sample count, z: radius
 // HBAO - x: , y: , z: , w:
 // GTAO - x: , y: , z: , w: 
 float4 _AmbientOcclusionParams;
 float4 _AOSpatialBlurParams; // x: kernel radius, y: spatial sigma, z: depth/range sigma
-float4 _AOTemporalBlurParams; // x: Temporal Blur Enabled (1 or 0), y: 
+float4 _AOTemporalBlurParams; // x: is temporal blur enabled (1 or 0), y: variance critical value
 
 // --- Spatial Filter Groupshared Memory ---
 #define MAX_FILTER_RADIUS 8
@@ -53,19 +54,65 @@ groupshared float2 _AOZ[TILE_SIZE * TILE_SIZE];
 // Input
 // ----------------------------------------------------------------------------------------------------
 
-inline float GetSSAOIntensity()             { return _AmbientOcclusionParams.x; }
-inline float GetSSAOSampleCount()           { return _AmbientOcclusionParams.y; }
-inline float GetSSAORadius()                { return _AmbientOcclusionParams.z; }
-inline float GetSpatialBlurKernelRadius()   { return _AOSpatialBlurParams.x; }
-inline float2 GetSpatialBlurSigma()         { return _AOSpatialBlurParams.yz; }
-inline float IsTemporalBlurEnabled()        { return _AOTemporalBlurParams.x; }
+inline float GetSSAOIntensity()                 { return _AmbientOcclusionParams.x; }
+inline float GetSSAOSampleCount()               { return _AmbientOcclusionParams.y; }
+inline float GetSSAORadius()                    { return _AmbientOcclusionParams.z; }
+inline float GetSpatialBlurKernelRadius()       { return _AOSpatialBlurParams.x; }
+inline float2 GetSpatialBlurSigma()             { return _AOSpatialBlurParams.yz; }
+inline float IsTemporalBlurEnabled()            { return _AOTemporalBlurParams.x; }
+inline float GetTemporalVarianceCriticalValue() { return _AOTemporalBlurParams.y; }
 
-#include "../../../ShaderLibrary/GlobalIllumination/SSAO.hlsl"
 #include "AmbientOcclusionDenoise.hlsl"
 
 // ----------------------------------------------------------------------------------------------------
-// SSAO Kernel
+// SSAO Utility Functions
 // ----------------------------------------------------------------------------------------------------
+
+inline float LoadDepth(int2 pixelCoord)
+{
+    #ifdef _HALF_RESOLUTION
+    return LOAD_TEXTURE2D_LOD(_HalfDepthTexture, pixelCoord, 0).r;
+    #else
+    return LOAD_TEXTURE2D_LOD(_CameraDepthTexture, pixelCoord, 0).r;
+    #endif
+}
+
+inline float3 LoadAndDecodeNormal(int2 pixelCoord)
+{
+    #ifdef _HALF_RESOLUTION
+    float3 packedNormalWS = LOAD_TEXTURE2D_LOD(_ThinGBuffer, pixelCoord * 2, 0).rgb;
+    #else
+    float3 packedNormalWS = LOAD_TEXTURE2D_LOD(_ThinGBuffer, pixelCoord, 0).rgb;
+    #endif
+    
+    return DecodeNormalFrom888(packedNormalWS);
+}
+
+// ----------------------------------------------------------------------------------------------------
+// SSAO Functions & Kernel
+// ----------------------------------------------------------------------------------------------------
+
+// Left-handed Spherical and Cartesian Coordinate, Coordinate Convention Detail see SamplingLibrary.hlsl
+
+inline float3 GenerateHemisphereSamples(float2 xi, float scale)
+{
+    float phi = PI * (2.0 * xi.x - 1.0);
+    float cosTheta = 1 - xi.y;
+    float sinTheta = sqrt(1 - cosTheta * cosTheta);
+    
+    float r = scale * scale; // distribute more samples closer to the hemisphere origin
+    return float3(r * sinTheta * cos(phi), r * cosTheta, r * sinTheta * sin(phi));
+}
+
+inline float3 GenerateCosineWeightedHemisphereSamples(float2 xi, float scale)
+{
+    float phi = PI * (2.0 * xi.x - 1.0);
+    float cosTheta = sqrt(1 - xi.y);
+    float sinTheta = sqrt(1 - cosTheta * cosTheta);
+    
+    float r = scale * scale; // distribute more samples closer to the hemisphere origin
+    return float3(r * sinTheta * cos(phi), r * cosTheta, r * sinTheta * sin(phi));
+}
 
 [numthreads(8, 8, 1)]
 void SSAOKernel(uint3 id : SV_DispatchThreadID)
@@ -91,7 +138,7 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
 
     // ------------------------- Random Rotation -------------------------
     
-    float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.w, 0).r + _Jitter.z * IsTemporalBlurEnabled()) * TWO_PI;
+    float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.zw, 0).r + _Jitter.z * IsTemporalBlurEnabled()) * TWO_PI;
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
 
     // ------------------------- SSAO Loop -------------------------
@@ -137,3 +184,8 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
     aoFactor = saturate(aoFactor / sampleCount);
     _OutputTexture[id.xy] = float2(aoFactor, originDepth);
 }
+
+// ----------------------------------------------------------------------------------------------------
+// HBAO Functions & Kernel
+// ----------------------------------------------------------------------------------------------------
+
