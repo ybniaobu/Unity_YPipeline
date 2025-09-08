@@ -19,6 +19,49 @@ void DepthDownsampleKernel(uint3 id : SV_DispatchThreadID)
 }
 
 // ----------------------------------------------------------------------------------------------------
+// Upsample Kernel
+// ----------------------------------------------------------------------------------------------------
+
+[numthreads(8, 8, 1)]
+void UpsampleKernel(uint3 id : SV_DispatchThreadID)
+{
+    float2 screenUV = (float2(id.xy) + float2(0.5, 0.5)) * _CameraBufferSize.xy;
+    uint2 pixelCoord = clamp(id.xy, 0, _CameraBufferSize.zw - 1);
+
+    // ------------------------- Fetch Full Resolution Depth & 4 Half Resolution Depths -------------------------
+    
+    float fullDepth = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, pixelCoord, 0).r;
+    fullDepth = GetViewDepthFromDepthTexture(fullDepth);
+    // float4 halfDepths = GATHER_RED_TEXTURE2D(_HalfDepthTexture, sampler_PointClamp, screenUV);
+    float4 halfDepths = GATHER_GREEN_TEXTURE2D(_InputTexture, sampler_PointClamp, screenUV);
+    
+    halfDepths.x = GetViewDepthFromDepthTexture(halfDepths.x);
+    halfDepths.y = GetViewDepthFromDepthTexture(halfDepths.y);
+    halfDepths.z = GetViewDepthFromDepthTexture(halfDepths.z);
+    halfDepths.w = GetViewDepthFromDepthTexture(halfDepths.w);
+    float4 aos = GATHER_RED_TEXTURE2D(_InputTexture, sampler_PointClamp, screenUV);
+
+    // ------------------------- Nearest-Depth Upsample -------------------------
+    
+    float ao;
+    float4 depthRatios = abs(1 - halfDepths / fullDepth);
+    if (all(depthRatios < 0.1)) // Edge Test
+    {
+        ao = SAMPLE_TEXTURE2D_LOD(_InputTexture, sampler_LinearClamp, screenUV, 0).r;
+    }
+    else
+    {
+        ao = aos.x;
+        float4 deltas = abs(halfDepths - fullDepth);
+        ao = lerp(ao, aos.y, deltas.y < deltas.x);
+        ao = lerp(ao, aos.z, deltas.z < deltas.y);
+        ao = lerp(ao, aos.w, deltas.w < deltas.z);
+    }
+    
+    _OutputTexture[id.xy] = float2(ao, 0);
+}
+
+// ----------------------------------------------------------------------------------------------------
 // Spatial Filter Kernels
 // ----------------------------------------------------------------------------------------------------
 
@@ -68,7 +111,8 @@ void SpatialBlurHorizontalKernel(uint3 id : SV_DispatchThreadID, uint groupIndex
     for (int i = -radius; i <= radius; i++)
     {
         float2 sample = _AOAndDepth[groupIndex + MAX_FILTER_RADIUS + i];
-        float depthDelta = abs(sample.g - middle.g);
+        float depthDelta = abs(1 - sample.g / middle.g);
+        // float depthDelta = abs(sample.g - middle.g);
         float weight = BilateralWeight(i, depthDelta, GetSpatialBlurSigma());
         aoFactor += sample.r * weight;
         weightSum += weight;
@@ -118,7 +162,8 @@ void SpatialBlurVerticalKernel(uint3 id : SV_DispatchThreadID, uint groupIndex :
     for (int i = -radius; i <= radius; i++)
     {
         float2 sample = _AOAndDepth[groupIndex + MAX_FILTER_RADIUS + i];
-        float depthDelta = abs(sample.g - middle.g);
+        float depthDelta = abs(1 - sample.g / middle.g);
+        // float depthDelta = abs(sample.g - middle.g);
         float weight = BilateralWeight(i, depthDelta, GetSpatialBlurSigma());
         aoFactor += sample.r * weight;
         weightSum += weight;
