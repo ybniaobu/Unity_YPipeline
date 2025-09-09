@@ -14,7 +14,7 @@ inline float2 LoadAOandDepth(int2 pixelCoord)
 [numthreads(8, 8, 1)]
 void DepthDownsampleKernel(uint3 id : SV_DispatchThreadID)
 {
-    int2 pixelCoord = clamp(id.xy, 0, _TextureSize.zw - 1);
+    uint2 pixelCoord = clamp(id.xy, 0, _TextureSize.zw - 1);
     _OutputTexture[id.xy] = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, pixelCoord * 2, 0).r;
 }
 
@@ -32,31 +32,22 @@ void UpsampleKernel(uint3 id : SV_DispatchThreadID)
     
     float fullDepth = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, pixelCoord, 0).r;
     fullDepth = GetViewDepthFromDepthTexture(fullDepth);
+    
     // float4 halfDepths = GATHER_RED_TEXTURE2D(_HalfDepthTexture, sampler_PointClamp, screenUV);
     float4 halfDepths = GATHER_GREEN_TEXTURE2D(_InputTexture, sampler_PointClamp, screenUV);
-    
     halfDepths.x = GetViewDepthFromDepthTexture(halfDepths.x);
     halfDepths.y = GetViewDepthFromDepthTexture(halfDepths.y);
     halfDepths.z = GetViewDepthFromDepthTexture(halfDepths.z);
     halfDepths.w = GetViewDepthFromDepthTexture(halfDepths.w);
+    
     float4 aos = GATHER_RED_TEXTURE2D(_InputTexture, sampler_PointClamp, screenUV);
 
-    // ------------------------- Nearest-Depth Upsample -------------------------
+    // ------------------------- Depth-Aware Upsample -------------------------
     
-    float ao;
-    float4 depthRatios = abs(1 - halfDepths / fullDepth);
-    if (all(depthRatios < 0.1)) // Edge Test
-    {
-        ao = SAMPLE_TEXTURE2D_LOD(_InputTexture, sampler_LinearClamp, screenUV, 0).r;
-    }
-    else
-    {
-        ao = aos.x;
-        float4 deltas = abs(halfDepths - fullDepth);
-        ao = lerp(ao, aos.y, deltas.y < deltas.x);
-        ao = lerp(ao, aos.z, deltas.z < deltas.y);
-        ao = lerp(ao, aos.w, deltas.w < deltas.z);
-    }
+    bool4 weights = abs(1.0 - halfDepths / fullDepth) < 0.05;
+    float weightSum = weights.x + weights.y + weights.z + weights.w + HALF_MIN;
+    float ao = aos.x * weights.x + aos.y * weights.y + aos.z * weights.z + aos.w * weights.w;
+    ao = lerp(ao / weightSum, 1, all(weights == 0));
     
     _OutputTexture[id.xy] = float2(ao, 0);
 }
@@ -111,8 +102,8 @@ void SpatialBlurHorizontalKernel(uint3 id : SV_DispatchThreadID, uint groupIndex
     for (int i = -radius; i <= radius; i++)
     {
         float2 sample = _AOAndDepth[groupIndex + MAX_FILTER_RADIUS + i];
-        float depthDelta = abs(1 - sample.g / middle.g);
-        // float depthDelta = abs(sample.g - middle.g);
+        // float depthDelta = abs(1 - sample.g / middle.g);
+        float depthDelta = abs(sample.g - middle.g);
         float weight = BilateralWeight(i, depthDelta, GetSpatialBlurSigma());
         aoFactor += sample.r * weight;
         weightSum += weight;
@@ -162,8 +153,8 @@ void SpatialBlurVerticalKernel(uint3 id : SV_DispatchThreadID, uint groupIndex :
     for (int i = -radius; i <= radius; i++)
     {
         float2 sample = _AOAndDepth[groupIndex + MAX_FILTER_RADIUS + i];
-        float depthDelta = abs(1 - sample.g / middle.g);
-        // float depthDelta = abs(sample.g - middle.g);
+        // float depthDelta = abs(1 - sample.g / middle.g);
+        float depthDelta = abs(sample.g - middle.g);
         float weight = BilateralWeight(i, depthDelta, GetSpatialBlurSigma());
         aoFactor += sample.r * weight;
         weightSum += weight;
