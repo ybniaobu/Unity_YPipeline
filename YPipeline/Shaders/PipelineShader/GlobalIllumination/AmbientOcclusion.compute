@@ -127,6 +127,7 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
     // ------------------------- Get Origin Position -------------------------
     
     float originDepth = LoadDepth(id.xy);
+    float originLinearDepth = GetViewDepthFromDepthTexture(originDepth);
     float4 originNDC = GetNDCFromUVAndDepth(screenUV, originDepth);
     float3 originWS = TransformNDCToWorld(originNDC, UNITY_MATRIX_I_VP);
 
@@ -184,7 +185,7 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
     }
     
     aoFactor = saturate(aoFactor / sampleCount);
-    _OutputTexture[id.xy] = float2(aoFactor, originDepth);
+    _OutputTexture[id.xy] = float2(aoFactor, originLinearDepth);
 }
 
 // ----------------------------------------------------------------------------------------------------

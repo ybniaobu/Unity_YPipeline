@@ -35,10 +35,6 @@ void UpsampleKernel(uint3 id : SV_DispatchThreadID)
     
     // float4 halfDepths = GATHER_RED_TEXTURE2D(_HalfDepthTexture, sampler_PointClamp, screenUV);
     float4 halfDepths = GATHER_GREEN_TEXTURE2D(_InputTexture, sampler_PointClamp, screenUV);
-    halfDepths.x = GetViewDepthFromDepthTexture(halfDepths.x);
-    halfDepths.y = GetViewDepthFromDepthTexture(halfDepths.y);
-    halfDepths.z = GetViewDepthFromDepthTexture(halfDepths.z);
-    halfDepths.w = GetViewDepthFromDepthTexture(halfDepths.w);
     
     float4 aos = GATHER_RED_TEXTURE2D(_InputTexture, sampler_PointClamp, screenUV);
 
@@ -49,7 +45,7 @@ void UpsampleKernel(uint3 id : SV_DispatchThreadID)
     float ao = aos.x * weights.x + aos.y * weights.y + aos.z * weights.z + aos.w * weights.w;
     ao = lerp(ao / weightSum, 1, all(weights == 0));
     
-    _OutputTexture[id.xy] = float2(ao, 0);
+    _OutputTexture[id.xy] = float2(ao, fullDepth);
 }
 
 // ----------------------------------------------------------------------------------------------------
@@ -68,8 +64,6 @@ void SpatialBlurHorizontalKernel(uint3 id : SV_DispatchThreadID, uint groupIndex
 
     int2 pixelCoord = clamp(id.xy, 0, _TextureSize.zw - 1);
     float2 aoAndDepth = LoadAOandDepth(pixelCoord);
-    float outDepth = aoAndDepth.g;
-    aoAndDepth.g = GetViewDepthFromDepthTexture(aoAndDepth.g);
     _AOAndDepth[groupIndex + MAX_FILTER_RADIUS] = aoAndDepth;
 
     if (groupIndex < MAX_FILTER_RADIUS)
@@ -77,7 +71,6 @@ void SpatialBlurHorizontalKernel(uint3 id : SV_DispatchThreadID, uint groupIndex
         int2 extraCoord = pixelCoord - int2(MAX_FILTER_RADIUS, 0);
         extraCoord = clamp(extraCoord, 0, _TextureSize.zw - 1);
         float2 extraAOAndDepth = LoadAOandDepth(extraCoord);
-        extraAOAndDepth.g = GetViewDepthFromDepthTexture(extraAOAndDepth.g);
         _AOAndDepth[groupIndex] = extraAOAndDepth;
     }
 
@@ -86,7 +79,6 @@ void SpatialBlurHorizontalKernel(uint3 id : SV_DispatchThreadID, uint groupIndex
         int2 extraCoord = pixelCoord + int2(MAX_FILTER_RADIUS, 0);
         extraCoord = clamp(extraCoord, 0, _TextureSize.zw - 1);
         float2 extraAOAndDepth = LoadAOandDepth(extraCoord);
-        extraAOAndDepth.g = GetViewDepthFromDepthTexture(extraAOAndDepth.g);
         _AOAndDepth[groupIndex + 2 * MAX_FILTER_RADIUS] = extraAOAndDepth;
     }
     
@@ -109,7 +101,7 @@ void SpatialBlurHorizontalKernel(uint3 id : SV_DispatchThreadID, uint groupIndex
         weightSum += weight;
     }
     aoFactor /= weightSum;
-    _OutputTexture[id.xy] = float2(aoFactor, outDepth);
+    _OutputTexture[id.xy] = float2(aoFactor, middle.g);
 }
 
 [numthreads(1, 64, 1)]
@@ -119,8 +111,6 @@ void SpatialBlurVerticalKernel(uint3 id : SV_DispatchThreadID, uint groupIndex :
     
     int2 pixelCoord = clamp(id.xy, 0, _TextureSize.zw - 1);
     float2 aoAndDepth = LoadAOandDepth(pixelCoord);
-    float outDepth = aoAndDepth.g;
-    aoAndDepth.g = GetViewDepthFromDepthTexture(aoAndDepth.g);
     _AOAndDepth[groupIndex + MAX_FILTER_RADIUS] = aoAndDepth;
 
     if (groupIndex < MAX_FILTER_RADIUS)
@@ -128,7 +118,6 @@ void SpatialBlurVerticalKernel(uint3 id : SV_DispatchThreadID, uint groupIndex :
         int2 extraCoord = pixelCoord - int2(0, MAX_FILTER_RADIUS);
         extraCoord = clamp(extraCoord, 0, _TextureSize.zw - 1);
         float2 extraAOAndDepth = LoadAOandDepth(extraCoord);
-        extraAOAndDepth.g = GetViewDepthFromDepthTexture(extraAOAndDepth.g);
         _AOAndDepth[groupIndex] = extraAOAndDepth;
     }
 
@@ -137,7 +126,6 @@ void SpatialBlurVerticalKernel(uint3 id : SV_DispatchThreadID, uint groupIndex :
         int2 extraCoord = pixelCoord + int2(0, MAX_FILTER_RADIUS);
         extraCoord = clamp(extraCoord, 0, _TextureSize.zw - 1);
         float2 extraAOAndDepth = LoadAOandDepth(extraCoord);
-        extraAOAndDepth.g = GetViewDepthFromDepthTexture(extraAOAndDepth.g);
         _AOAndDepth[groupIndex + 2 * MAX_FILTER_RADIUS] = extraAOAndDepth;
     }
     
@@ -160,7 +148,7 @@ void SpatialBlurVerticalKernel(uint3 id : SV_DispatchThreadID, uint groupIndex :
         weightSum += weight;
     }
     aoFactor /= weightSum;
-    _OutputTexture[id.xy] = float2(aoFactor, outDepth);
+    _OutputTexture[id.xy] = float2(aoFactor, middle.g);
 }
 
 // ----------------------------------------------------------------------------------------------------
@@ -203,7 +191,7 @@ float FilterMiddleColor(in float2 samples[9], float middleDepth)
     UNITY_UNROLL
     for (int i = 0; i < 8; i++)
     {
-        float sampleDepth = GetViewDepthFromDepthTexture(samples[i + 1].g);
+        float sampleDepth = samples[i + 1].g;
         bool occlusionTest = abs(1 - sampleDepth / middleDepth) < 0.1;
         float weight = weights[i + 1] * occlusionTest;
         weightSum += weight;
@@ -272,14 +260,14 @@ void TemporalBlurKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV
     float2 minMax = VarianceMinMax(neighbours, GetTemporalVarianceCriticalValue());
     history.r = clamp(history.r, minMax.x, minMax.y);
 
-    float middleDepth = GetViewDepthFromDepthTexture(neighbours[0].g);
+    float middleDepth = neighbours[0].g;
     float prefiltered = FilterMiddleColor(neighbours, middleDepth);
     
-    float historyDepth = GetViewDepthFromDepthTexture(history.g);
+    float historyDepth = history.g;
     bool depthTest = abs(1 - middleDepth / historyDepth) < 0.1;
     float blendFactor = lerp(0, 0.9, depthTest);
     
     blendFactor = lerp(blendFactor, 0, any(abs(historyUV - 0.5) > 0.5));
     
-    _OutputTexture[id.xy] = float2(lerp(prefiltered, history.r, blendFactor), neighbours[0].g);
+    _OutputTexture[id.xy] = float2(lerp(prefiltered, history.r, blendFactor), middleDepth);
 }

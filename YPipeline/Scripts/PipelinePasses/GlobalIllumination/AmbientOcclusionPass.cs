@@ -87,7 +87,7 @@ namespace YPipeline
                     // Create Ambient Occlusion Texture
                     TextureDesc aoTextureDesc = new TextureDesc(bufferSize.x, bufferSize.y)
                     {
-                        format = GraphicsFormat.R16G16_UNorm,
+                        format = GraphicsFormat.R16G16_SFloat,
                         filterMode = FilterMode.Bilinear,
                         clearBuffer = true,
                         clearColor = Color.white,
@@ -101,7 +101,7 @@ namespace YPipeline
                     // Ambient Occlusion Transition Texture
                     TextureDesc transitionDesc0 = new TextureDesc(textureSize.x, textureSize.y)
                     {
-                        format = GraphicsFormat.R16G16_UNorm,
+                        format = GraphicsFormat.R16G16_SFloat,
                         filterMode = FilterMode.Bilinear,
                         clearBuffer = false,
                         enableRandomWrite = true,
@@ -110,7 +110,7 @@ namespace YPipeline
                     
                     TextureDesc transitionDesc1 = new TextureDesc(textureSize.x, textureSize.y)
                     {
-                        format = GraphicsFormat.R16G16_UNorm,
+                        format = GraphicsFormat.R16G16_SFloat,
                         filterMode = FilterMode.Bilinear,
                         clearBuffer = false,
                         enableRandomWrite = true,
@@ -130,7 +130,7 @@ namespace YPipeline
                     // Ambient Occlusion History
                     RenderTextureDescriptor aoHistoryDesc = new RenderTextureDescriptor(textureSize.x, textureSize.y)
                     {
-                        graphicsFormat = GraphicsFormat.R16G16_UNorm,
+                        graphicsFormat = GraphicsFormat.R16G16_SFloat,
                         msaaSamples = 1,
                         mipCount = 0,
                         autoGenerateMips = false,
