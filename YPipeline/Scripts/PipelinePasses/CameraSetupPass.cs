@@ -11,6 +11,8 @@ namespace YPipeline
             public Camera camera;
             public YPipelineCamera yCamera;
 
+            public Vector4 cameraSettings;
+
             public void SetNonBuiltInCameraMatrixShaderVariables(CommandBuffer cmd)
             {
                 bool isProjectionMatrixFlipped = SystemInfo.graphicsUVStartsAtTop;
@@ -83,11 +85,17 @@ namespace YPipeline
                 
                 yCamera.perCameraData.SetPerCameraDataMatrices(viewMatrix, projectionMatrix, jitteredProjectionMatrix);
 
+                float fov = Mathf.Deg2Rad * data.camera.fieldOfView;
+                float cotFov = 1.0f / Mathf.Tan(fov * 0.5f);
+                passData.cameraSettings = new Vector4(fov, cotFov);
+
                 builder.SetRenderFunc((CameraSetupPassData data, RenderGraphContext context) =>
                 {
                     context.cmd.SetupCameraProperties(data.camera);
                     context.cmd.SetViewProjectionMatrices(data.yCamera.perCameraData.viewMatrix, data.yCamera.perCameraData.jitteredProjectionMatrix);
                     data.SetNonBuiltInCameraMatrixShaderVariables(context.cmd);
+                    
+                    context.cmd.SetGlobalVector(YPipelineShaderIDs.k_CameraSettingsID, data.cameraSettings);
                     
                     context.renderContext.ExecuteCommandBuffer(context.cmd);
                     context.cmd.Clear();

@@ -11,6 +11,7 @@ namespace YPipeline
         private class AmbientOcclusionPassData
         {
             public ComputeShader cs;
+            public AmbientOcclusionMode aoMode;
             
             public Vector2Int threadGroupSizes8;
             public Vector2Int threadGroupSizes16;
@@ -59,6 +60,7 @@ namespace YPipeline
                     passData.threadGroupSizes16 = new Vector2Int(threadGroupSizeX, threadGroupSizeY);
 
                     passData.cs = data.asset.pipelineResources.computeShaders.ambientOcclusionCs;
+                    passData.aoMode = m_AO.ambientOcclusionMode.value;
                     builder.ReadTexture(data.ThinGBuffer);
                     builder.ReadTexture(data.CameraDepthTexture);
 
@@ -172,7 +174,24 @@ namespace YPipeline
                         }
                         
                         context.cmd.BeginSample("SSAO Compute Occlusion");
-                        int ssaoKernel = data.cs.FindKernel("SSAOKernel");
+
+                        int ssaoKernel;
+                        switch (data.aoMode)
+                        {
+                            case AmbientOcclusionMode.SSAO:
+                                ssaoKernel = data.cs.FindKernel("SSAOKernel");
+                                break;
+                            case AmbientOcclusionMode.HBAO:
+                                ssaoKernel = data.cs.FindKernel("HBAOKernel");
+                                break;
+                            case AmbientOcclusionMode.GTAO:
+                                ssaoKernel = data.cs.FindKernel("GTAOKernel");
+                                break;
+                            default:
+                                ssaoKernel = data.cs.FindKernel("GTAOKernel");
+                                break;
+                        }
+                        
                         TextureHandle occlusionOutput = enableBlur ? data.transition0 : data.aoTexture;
                         occlusionOutput = data.enableHalfResolution ? data.transition0 : occlusionOutput;
                         context.cmd.SetComputeTextureParam(data.cs, ssaoKernel, "_OutputTexture", occlusionOutput);

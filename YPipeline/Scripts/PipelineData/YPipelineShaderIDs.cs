@@ -109,6 +109,8 @@ namespace YPipeline
         // Common Param IDs
         // ----------------------------------------------------------------------------------------------------
         
+        public static readonly int k_CameraSettingsID = Shader.PropertyToID("_CameraSettings");
+        
         public static readonly int k_BufferSizeID = Shader.PropertyToID("_CameraBufferSize");
         public static readonly int k_JitterID = Shader.PropertyToID("_Jitter");
         public static readonly int k_TimeParams = Shader.PropertyToID("_TimeParams");

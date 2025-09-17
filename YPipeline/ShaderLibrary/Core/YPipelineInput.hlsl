@@ -5,6 +5,8 @@
 // Constant Buffers
 // ----------------------------------------------------------------------------------------------------
 
+float4 _CameraSettings; // x: vertical FOV in radian, y: cot(FOV/2)
+
 float4 _CameraBufferSize; // x: 1.0 / bufferSize.x, y: 1.0 / bufferSize.y, z: bufferSize.x, w: bufferSize.y
 float4 _Jitter; // Halton (-0.5, 0.5), xy: 1.0 / jitter, zw: jitter
 float4 _TimeParams; // x: frameCount, y: 1.0 / frameCount
