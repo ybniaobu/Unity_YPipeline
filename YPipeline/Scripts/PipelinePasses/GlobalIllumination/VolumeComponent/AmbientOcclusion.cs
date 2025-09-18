@@ -28,11 +28,16 @@ namespace YPipeline
         [Tooltip("遮蔽强度 Controls the strength of the ambient occlusion effect. Increase this value to produce darker areas.")]
         public ClampedFloatParameter intensity = new ClampedFloatParameter(1.0f, 0.0f, 2.0f);
         
+        // SSAO
         [Tooltip("采样次数 Increase the amount of samples will produce higher quality results at a cost of lower performance.")]
         public ClampedIntParameter sampleCount = new ClampedIntParameter(12, 4, 32);
         
         [Tooltip("采样半径 Sampling radius. Bigger the radius, wider ambient occlusion will be achieved.")]
-        public ClampedFloatParameter radius = new ClampedFloatParameter(2.0f, 0.0f, 5.0f);
+        public ClampedFloatParameter ssaoRadius = new ClampedFloatParameter(2.0f, 0.0f, 5.0f);
+        
+        // HBAO
+        [Tooltip("采样半径 Sampling radius. Bigger the radius, wider ambient occlusion will be achieved.")]
+        public ClampedFloatParameter hbaoRadius = new ClampedFloatParameter(1.0f, 0.0f, 2.0f);
         
         // Spatial Filter
         public BoolParameter enableSpatialFilter = new BoolParameter(true, BoolParameter.DisplayType.Checkbox);

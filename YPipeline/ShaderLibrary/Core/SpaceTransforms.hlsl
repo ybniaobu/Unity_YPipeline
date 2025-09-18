@@ -66,9 +66,7 @@ float3 TransformNDCToWorld(float4 NDC, float4x4 invViewProjMatrix)
 float3 TransformNDCToView(float4 NDC, float4x4 invProjMatrix)
 {
     float4 positionHVS = mul(invProjMatrix, NDC);
-    positionHVS.xyz /= positionHVS.w;
-    positionHVS.z = -positionHVS.z;
-    return positionHVS.xyz;
+    return positionHVS.xyz / positionHVS.w;
 }
 
 #endif

@@ -67,7 +67,16 @@ namespace YPipeline
                     passData.enableHalfResolution = m_AO.halfResolution.value;
                     passData.enableSpatialBlur = m_AO.enableSpatialFilter.value;
                     passData.enableTemporalBlur = m_AO.enableTemporalFilter.value;
-                    passData.ambientOcclusionParams = new Vector4(m_AO.intensity.value, m_AO.sampleCount.value, m_AO.radius.value);
+
+                    switch (passData.aoMode)
+                    {
+                        case AmbientOcclusionMode.SSAO:
+                            passData.ambientOcclusionParams = new Vector4(m_AO.intensity.value, m_AO.sampleCount.value, m_AO.ssaoRadius.value);
+                            break;
+                        case AmbientOcclusionMode.HBAO:
+                            passData.ambientOcclusionParams = new Vector4(m_AO.intensity.value, m_AO.hbaoRadius.value);
+                            break;
+                    }
                     passData.aoSpatialBlurParams = new Vector4(m_AO.kernelRadius.value, m_AO.spatialSigma.value, m_AO.depthSigma.value);
                     passData.aoTemporalBlurParams = new Vector4(passData.enableTemporalBlur ? 1 : 0, m_AO.criticalValue.value);
                     

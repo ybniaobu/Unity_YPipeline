@@ -19,60 +19,105 @@
 #ifndef YPIPELINE_HBAO_INCLUDED
 #define YPIPELINE_HBAO_INCLUDED
 
-#define DIRECTIONS 8
-#define STEPS 6
-#define NUM_STEPS 6
-#define NUM_DIRECTIONS 8
+#define NUM_DIRECTIONS 4
+#define NUM_STEPS 4
 
 // ----------------------------------------------------------------------------------------------------
 // Utility Functions
 // ----------------------------------------------------------------------------------------------------
 
-// inline float3 FetchEyePos(uint2 uv)
+inline float3 FetchViewPosition(float2 screenUV, float rawDepth)
+{
+    float4 NDC = GetNDCFromUVAndDepth(screenUV, rawDepth);
+    float3 VS = TransformNDCToView(NDC, UNITY_MATRIX_I_P);
+    VS.z = -VS.z;
+    return VS;
+}
+
+inline float3 FetchViewNormal(float3 normalWS)
+{
+    float3 normalVS = TransformWorldToViewNormal(normalWS, true);
+    normalVS.z = -normalVS.z;
+    return normalVS;
+}
+
+// inline float InvLength(float2 v)
 // {
-//     
+//     return rsqrt(dot(v,v));
+// }
+//
+// inline float GetHorizonAngleTan(float3 P, float3 S)
+// {
+//     return (P.y - S.y) * InvLength(S.xz - P.xz);
+// }
+// //
+// inline float GetTangentAngleTan(float3 T)
+// {
+//     return -T.y * InvLength(T.xz);
+// }
+//
+// inline float GetBiasedTangentAngleTan(float3 T)
+// {
+//     return GetTangentAngleTan(T) + g_TanAngleBias;
+// }
+//
+// inline float TanToSin(float x)
+// {
+//     return x * rsqrt(x * x + 1.0f);
 // }
 
-inline float InvLength(float2 v)
-{
-    return rsqrt(dot(v,v));
-}
+// ----------------------------------------------------------------------------------------------------
+// Calculate Ray Steps
+// ----------------------------------------------------------------------------------------------------
 
-inline float GetHorizonAngleTan(float3 P, float3 S)
-{
-    return (P.z - S.z) * InvLength(S.xy - P.xy);
-}
-
-inline float GetTangentAngleTan(float3 T)
-{
-    return -T.z * InvLength(T.xy);
-}
-
-inline float TanToSin(float x)
-{
-    return x * rsqrt(x * x + 1.0f);
-}
-
-void ComputeSteps(inout float2 stepSizeUV, inout float numSteps, float rayRadiusPixel, float dither)
+void ComputeSteps(inout float stepSizeInPixel, inout float numSteps, float rayRadiusPixel)
 {
     // Avoid oversampling if NUM_STEPS is greater than the kernel radius in pixels
     numSteps = min(NUM_STEPS, rayRadiusPixel);
+    stepSizeInPixel = rayRadiusPixel / numSteps;
+}
 
-    // Divide by Ns+1 so that the farthest samples are not fully attenuated
-    float stepSizePixel = rayRadiusPixel / (numSteps + 1);
+// ----------------------------------------------------------------------------------------------------
+// HBAO Main Function
+// ----------------------------------------------------------------------------------------------------
 
-    // // Clamp numSteps if it is greater than the max kernel footprint
-    // float maxNumSteps = GetHBAOMaxPixelRadius() / stepSizePixel;
-    // if (maxNumSteps < numSteps)
-    // {
-    //     // Use dithering to avoid AO discontinuities
-    //     numSteps = floor(maxNumSteps + dither);
-    //     numSteps = max(numSteps, 1);
-    //     stepSizePixel = GetHBAOMaxPixelRadius() / numSteps;
-    // }
+float Falloff(float d2, float radius)
+{
+    return saturate(1.0 - d2 * rcp(radius * radius));
+}
+
+float HorizonOcclusion(float2 dir, float2 pixelDelta, uint2 pixelCoord, float3 P, float3 normalVS, float numSteps, float rand, float radius)
+{
+    float ao = 0;
+    float weightSum = 0;
+
+    // Randomize starting point within the first sample distance
+    pixelCoord += rand * pixelDelta;
+
+    for (float j = 1; j <= numSteps; ++j)
+    {
+        pixelCoord = clamp(pixelCoord, 0, _TextureSize.zw - 1);
+        float2 screenUV = (pixelCoord + 0.5) * _TextureSize.xy;
+        float sDepth = LoadDepth(pixelCoord);
+        float3 S = FetchViewPosition(screenUV, sDepth);
+        float3 H = normalize(S - P);
+        float sinH = -H.z;
+        
+        // float3 H = normalize(S - P);
+        // float cosH = saturate(dot(H, normalVS));
+
+        float sinT = -dot(normalVS, float3(dir.xy, 0));
+        
+        float d2 = Length2(S - P);
+
+        float weight = Falloff(d2, radius);
+        ao += weight * saturate(sinH - sinT);
+        weightSum += weight;
+        
+        pixelCoord += pixelDelta;
+    }
     
-    // Step size in uv space
-    stepSizeUV = stepSizePixel * _TextureSize.xy;
+    return saturate(ao / weightSum);
 }
 
 #endif

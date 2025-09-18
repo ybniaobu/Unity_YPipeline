@@ -6,12 +6,16 @@ namespace YPipeline.Editor
     [CustomEditor(typeof(AmbientOcclusion))]
     public class AmbientOcclusionEditor : VolumeComponentEditor
     {
-        // Screen Space Ambient Occlusion
         private SerializedDataParameter m_AmbientOcclusionMode;
         private SerializedDataParameter m_HalfResolution;
         private SerializedDataParameter m_Intensity;
+        
+        // SSAO
         private SerializedDataParameter m_SampleCount;
-        private SerializedDataParameter m_Radius;
+        private SerializedDataParameter m_SSAORadius;
+        
+        // HBAO
+        private SerializedDataParameter m_HBAORadius;
         
         // Spatial Filter
         private SerializedDataParameter m_EnableSpatialFilter;
@@ -27,12 +31,16 @@ namespace YPipeline.Editor
         {
             var o = new PropertyFetcher<AmbientOcclusion>(serializedObject);
             
-            // Screen Space Ambient Occlusion
             m_AmbientOcclusionMode = Unpack(o.Find(x => x.ambientOcclusionMode));
             m_HalfResolution = Unpack(o.Find(x => x.halfResolution));
             m_Intensity = Unpack(o.Find(x => x.intensity));
+            
+            // SSAO
             m_SampleCount = Unpack(o.Find(x => x.sampleCount));
-            m_Radius = Unpack(o.Find(x => x.radius));
+            m_SSAORadius = Unpack(o.Find(x => x.ssaoRadius));
+            
+            // HBAO
+            m_HBAORadius = Unpack(o.Find(x => x.hbaoRadius));
             
             // Spatial Filter
             m_EnableSpatialFilter = Unpack(o.Find(x => x.enableSpatialFilter));
@@ -53,8 +61,21 @@ namespace YPipeline.Editor
             PropertyField(m_AmbientOcclusionMode);
             PropertyField(m_HalfResolution);
             PropertyField(m_Intensity);
-            PropertyField(m_SampleCount);
-            PropertyField(m_Radius);
+
+            switch (m_AmbientOcclusionMode.value.enumValueIndex)
+            {
+                case (int) AmbientOcclusionMode.None:
+                    break;
+                case (int) AmbientOcclusionMode.SSAO:
+                    PropertyField(m_SampleCount);
+                    PropertyField(m_SSAORadius, EditorGUIUtility.TrTextContent("Radius"));
+                    break;
+                case (int) AmbientOcclusionMode.HBAO:
+                    PropertyField(m_HBAORadius, EditorGUIUtility.TrTextContent("Radius"));
+                    break;
+                default:
+                    break;
+            }
             
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Spatial Filter - Bilateral Blur", EditorStyles.boldLabel);

@@ -25,12 +25,15 @@ MonoBehaviour:
   sampleCount:
     m_OverrideState: 1
     m_Value: 12
-  radius:
+  ssaoRadius:
     m_OverrideState: 1
     m_Value: 2
+  hbaoRadius:
+    m_OverrideState: 1
+    m_Value: 1
   enableSpatialFilter:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 1
   kernelRadius:
     m_OverrideState: 1
     m_Value: 4

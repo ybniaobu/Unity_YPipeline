@@ -38,7 +38,7 @@ float4 _Jitter; // Halton (-0.5, 0.5), xy: 1.0 / jitter, zw: jitter
 float4 _TextureSize; // x: 1.0 / width, y: 1.0 / height, z: width, w: height
 
 // SSAO - x: intensity, y: sample count, z: radius
-// HBAO - x: intensity, y: radius, z: max pixel radius, w: 
+// HBAO - x: intensity, y: radius, z: direction count, w: step count
 // GTAO - x: , y: , z: , w: 
 float4 _AmbientOcclusionParams;
 float4 _AOSpatialBlurParams; // x: kernel radius, y: spatial sigma, z: depth/range sigma
@@ -197,76 +197,61 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
 
 // ----------------------------------------------------------------------------------------------------
 // HBAO Functions & Kernel
+// Modified from: NVIDIA-Direct3D-SDK-11/SSAO11/NVSDK_D3D11_SSAO
 // ----------------------------------------------------------------------------------------------------
 
 #include "../../../ShaderLibrary/GlobalIllumination/HBAO.hlsl"
-
-float ComputeAO(float3 p, float3 n, float3 s)
-{
-    float3 v = s - p;
-    float VoV = dot(v, v);
-    float NoV = dot(n, v) * rsqrt(VoV);
-
-    return saturate(NoV);
-    // return saturate(NoV - _AngleBias) * saturate(Falloff(VoV));
-}
 
 [numthreads(8, 8, 1)]
 void HBAOKernel(uint3 id : SV_DispatchThreadID)
 {
     float2 screenUV = (float2(id.xy) + float2(0.5, 0.5)) * _TextureSize.xy;
+
+    // ------------------------- Fetch Position & Normal -------------------------
     
     float rawDepth = LoadDepth(id.xy);
     float linearDepth = GetViewDepthFromDepthTexture(rawDepth);
-    float4 NDC = GetNDCFromUVAndDepth(screenUV, rawDepth);
-    float3 VS = TransformNDCToView(NDC, UNITY_MATRIX_I_P);
+    float3 P = FetchViewPosition(screenUV, rawDepth);
 
     float3 normalWS = LoadAndDecodeNormal(id.xy);
-    float3 normalVS = TransformWorldToViewNormal(normalWS, true);
-    normalVS.z = -normalVS.z;
+    float3 normalVS = FetchViewNormal(normalWS);
 
-    float rayRadiusInUV = 0.5 * GetSSAORadius() * _CameraSettings.y / VS.z;
-    float rayRadiusInPixel = rayRadiusInUV * _TextureSize.w;
+    // ------------------------- Calculate Ray Radius -------------------------
+
+    float rayRadiusInUV = 0.5 * GetHBAORadius() * _CameraSettings.y / linearDepth;
+    int rayRadiusInPixel = rayRadiusInUV * _TextureSize.w;
+    
     if (rayRadiusInPixel < 1)
     {
         _OutputTexture[id.xy] = float2(1, linearDepth);
         return;
     }
-    
-    float stepSize = rayRadiusInPixel / (STEPS + 1.0);
-    float stepAng = TWO_PI / DIRECTIONS;
 
-    uint index = id.y * _TextureSize.z + id.x;
-    float2 rand = k_Halton[index % 65];
+    // ------------------------- Calculate Ray Steps -------------------------
+
+    float numSteps = 0;
+    float stepSizeInPixel = 0;
+    ComputeSteps(stepSizeInPixel, numSteps, rayRadiusInPixel);
+    
+    // ------------------------- HBAO Loop -------------------------
+    
     float ao = 0;
+    float dirAngle = TWO_PI / NUM_DIRECTIONS;
+    float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.zw, 0).r + _Jitter.z * IsTemporalBlurEnabled()) * TWO_PI;
+    float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
 
     UNITY_UNROLL
-    for (int d = 0; d < DIRECTIONS; ++d)
+    for (int d = 0; d < NUM_DIRECTIONS; ++d)
     {
-        float angle = stepAng * (float(d) + rand.x);
-
-        float cosAng, sinAng;
-        sincos(angle, sinAng, cosAng);
-        float2 direction = float2(cosAng, sinAng);
-
-        float rayPixels = frac(rand.y) * stepSize + 1.0;
-
-        UNITY_UNROLL
-        for (int s = 0; s < STEPS; ++s)
-        {
-            uint2 snappedPixelCoord = round(rayPixels * direction) + id.xy;
-            float tempDepth = LoadDepth(snappedPixelCoord);
-            float2 tempUV = (snappedPixelCoord + 0.5) * _TextureSize.xy;
-            float4 tempNDC = GetNDCFromUVAndDepth(tempUV, tempDepth);
-            float3 tempVS = TransformNDCToView(tempNDC, UNITY_MATRIX_I_P);
-            rayPixels += stepSize;
-            float tempAO = ComputeAO(VS, normalVS, tempVS);
-            ao += tempAO;
-        }
+        float angle = dirAngle * d;
+        float2 dir = mul(rotation, float2(cos(angle), sin(angle)));
+        float2 pixelDelta = dir * stepSizeInPixel;
+        
+        ao += HorizonOcclusion(dir, pixelDelta, id.xy, P, normalVS, numSteps, (d + 1.0 + _Jitter.w * IsTemporalBlurEnabled()) / (NUM_DIRECTIONS + 1.0), GetHBAORadius());
     }
 
-    ao *= rcp(STEPS * DIRECTIONS);
-    ao = 1 - ao;
+    ao *= rcp(NUM_DIRECTIONS) * GetHBAOIntensity();
+    ao = saturate(1 - ao);
     
     _OutputTexture[id.xy] = float2(ao, linearDepth);
 }
