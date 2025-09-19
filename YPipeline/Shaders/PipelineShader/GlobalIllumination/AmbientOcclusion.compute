@@ -210,7 +210,6 @@ void HBAOKernel(uint3 id : SV_DispatchThreadID)
     // ------------------------- Fetch Position & Normal -------------------------
     
     float rawDepth = LoadDepth(id.xy);
-    float linearDepth = GetViewDepthFromDepthTexture(rawDepth);
     float3 P = FetchViewPosition(screenUV, rawDepth);
 
     float3 normalWS = LoadAndDecodeNormal(id.xy);
@@ -218,12 +217,12 @@ void HBAOKernel(uint3 id : SV_DispatchThreadID)
 
     // ------------------------- Calculate Ray Radius -------------------------
 
-    float rayRadiusInUV = 0.5 * GetHBAORadius() * _CameraSettings.y / linearDepth;
+    float rayRadiusInUV = 0.5 * GetHBAORadius() * _CameraSettings.y / P.z;
     int rayRadiusInPixel = rayRadiusInUV * _TextureSize.w;
     
     if (rayRadiusInPixel < 1)
     {
-        _OutputTexture[id.xy] = float2(1, linearDepth);
+        _OutputTexture[id.xy] = float2(1.0, P.z);
         return;
     }
 
@@ -238,20 +237,19 @@ void HBAOKernel(uint3 id : SV_DispatchThreadID)
     float ao = 0;
     float dirAngle = TWO_PI / NUM_DIRECTIONS;
     float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.zw, 0).r + _Jitter.z * IsTemporalBlurEnabled()) * TWO_PI;
-    float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
 
     UNITY_UNROLL
     for (int d = 0; d < NUM_DIRECTIONS; ++d)
     {
-        float angle = dirAngle * d;
-        float2 dir = mul(rotation, float2(cos(angle), sin(angle)));
+        float angle = dirAngle * d + randomRadian;
+        float2 dir = float2(cos(angle), sin(angle));
         float2 pixelDelta = dir * stepSizeInPixel;
         
-        ao += HorizonOcclusion(dir, pixelDelta, id.xy, P, normalVS, numSteps, (d + 1.0 + _Jitter.w * IsTemporalBlurEnabled()) / (NUM_DIRECTIONS + 1.0), GetHBAORadius());
+        ao += HorizonOcclusion(dir, pixelDelta, id.xy, P, normalVS, numSteps, (d + 1.0 + 0.5 *_Jitter.w * IsTemporalBlurEnabled()) / (NUM_DIRECTIONS + 1.0), GetHBAORadius());
     }
 
     ao *= rcp(NUM_DIRECTIONS) * GetHBAOIntensity();
     ao = saturate(1 - ao);
     
-    _OutputTexture[id.xy] = float2(ao, linearDepth);
+    _OutputTexture[id.xy] = float2(ao, P.z);
 }

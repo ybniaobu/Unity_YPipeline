@@ -41,15 +41,15 @@ inline float3 FetchViewNormal(float3 normalWS)
     return normalVS;
 }
 
-// inline float InvLength(float2 v)
-// {
-//     return rsqrt(dot(v,v));
-// }
-//
-// inline float GetHorizonAngleTan(float3 P, float3 S)
-// {
-//     return (P.y - S.y) * InvLength(S.xz - P.xz);
-// }
+inline float InvLength(float2 v)
+{
+    return rsqrt(dot(v,v));
+}
+
+inline float GetHorizonAngleTan(float3 P, float3 S)
+{
+    return (P.z - S.z) * InvLength(S.xy - P.xy);
+}
 // //
 // inline float GetTangentAngleTan(float3 T)
 // {
@@ -61,10 +61,10 @@ inline float3 FetchViewNormal(float3 normalWS)
 //     return GetTangentAngleTan(T) + g_TanAngleBias;
 // }
 //
-// inline float TanToSin(float x)
-// {
-//     return x * rsqrt(x * x + 1.0f);
-// }
+inline float TanToSin(float x)
+{
+    return x * rsqrt(x * x + 1.0f);
+}
 
 // ----------------------------------------------------------------------------------------------------
 // Calculate Ray Steps
@@ -93,31 +93,46 @@ float HorizonOcclusion(float2 dir, float2 pixelDelta, uint2 pixelCoord, float3 P
 
     // Randomize starting point within the first sample distance
     pixelCoord += rand * pixelDelta;
+    float sinT = -dot(normalVS, float3(dir.x, dir.y, 0));
+    float lastSinH = 0;
 
-    for (float j = 1; j <= numSteps; ++j)
+    for (float j = 0; j < numSteps; ++j)
     {
         pixelCoord = clamp(pixelCoord, 0, _TextureSize.zw - 1);
         float2 screenUV = (pixelCoord + 0.5) * _TextureSize.xy;
         float sDepth = LoadDepth(pixelCoord);
         float3 S = FetchViewPosition(screenUV, sDepth);
-        float3 H = normalize(S - P);
-        float sinH = -H.z;
-        
-        // float3 H = normalize(S - P);
-        // float cosH = saturate(dot(H, normalVS));
 
-        float sinT = -dot(normalVS, float3(dir.xy, 0));
-        
         float d2 = Length2(S - P);
+        
+        // // float tanH = GetHorizonAngleTan(P, S);
+        // // float sinH = TanToSin(tanH);
+        // float3 H = normalize(S - P);
+        // float sinH = -H.z;
+        //
+        // if (d2 < radius * radius && (sinH > sinT))
+        // {
+        //     float weight = Falloff(d2, radius);
+        //     ao += weight * (sinH - sinT);
+        //     sinT = sinH;
+        // }
 
-        float weight = Falloff(d2, radius);
-        ao += weight * saturate(sinH - sinT);
-        weightSum += weight;
+        float3 H = normalize(S - P);
+        float sinH = saturate(dot(H, normalVS));
+        
+        if (d2 < radius * radius && sinH >= lastSinH)
+        {
+            float weight = Falloff(d2, radius);
+            ao += weight * (sinH - lastSinH);
+            lastSinH = sinH;
+        }
+        
         
         pixelCoord += pixelDelta;
     }
-    
-    return saturate(ao / weightSum);
+
+    return saturate(ao);
+    // return saturate(ao / weightSum);
 }
 
 #endif

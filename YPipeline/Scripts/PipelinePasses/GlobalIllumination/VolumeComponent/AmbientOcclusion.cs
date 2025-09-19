@@ -6,7 +6,7 @@ namespace YPipeline
 {
     public enum AmbientOcclusionMode
     {
-        None, [InspectorName("SSAO (Not Recommended)")] SSAO, HBAO, GTAO
+        None, SSAO, HBAO, GTAO
     }
     
     [System.Serializable]

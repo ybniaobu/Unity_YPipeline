@@ -56,6 +56,7 @@ namespace YPipeline.Editor
         public override void OnInspectorGUI()
         {
             EditorGUILayout.Space();
+            EditorGUILayout.HelpBox("如果开启了 SSGI，AO 会在 GI 中计算，下面参数都会被 GI 中的参数覆盖", MessageType.Info);
             EditorGUILayout.LabelField("Screen Space Ambient Occlusion", EditorStyles.boldLabel);
             
             PropertyField(m_AmbientOcclusionMode);
