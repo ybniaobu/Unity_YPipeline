@@ -19,9 +19,6 @@
 #ifndef YPIPELINE_HBAO_INCLUDED
 #define YPIPELINE_HBAO_INCLUDED
 
-#define NUM_DIRECTIONS 4
-#define NUM_STEPS 4
-
 // ----------------------------------------------------------------------------------------------------
 // Utility Functions
 // ----------------------------------------------------------------------------------------------------
@@ -41,6 +38,13 @@ inline float3 FetchViewNormal(float3 normalWS)
     return normalVS;
 }
 
+float3 MinDiff(float3 P, float3 Pr, float3 Pl)
+{
+    float3 V1 = Pr - P;
+    float3 V2 = P - Pl;
+    return (Length2(V1) < Length2(V2)) ? V1 : V2;
+}
+
 inline float InvLength(float2 v)
 {
     return rsqrt(dot(v,v));
@@ -50,17 +54,17 @@ inline float GetHorizonAngleTan(float3 P, float3 S)
 {
     return (P.z - S.z) * InvLength(S.xy - P.xy);
 }
-// //
-// inline float GetTangentAngleTan(float3 T)
-// {
-//     return -T.y * InvLength(T.xz);
-// }
-//
+
+inline float GetTangentAngleTan(float3 T)
+{
+    return -T.z * InvLength(T.xy);
+}
+
 // inline float GetBiasedTangentAngleTan(float3 T)
 // {
 //     return GetTangentAngleTan(T) + g_TanAngleBias;
 // }
-//
+
 inline float TanToSin(float x)
 {
     return x * rsqrt(x * x + 1.0f);
@@ -81,58 +85,106 @@ void ComputeSteps(inout float stepSizeInPixel, inout float numSteps, float rayRa
 // HBAO Main Function
 // ----------------------------------------------------------------------------------------------------
 
-float Falloff(float d2, float radius)
+float Falloff(float d2, float r2)
 {
-    return saturate(1.0 - d2 * rcp(radius * radius));
+    return saturate(1.0 - d2 * rcp(r2));
 }
 
-float HorizonOcclusion(float2 dir, float2 pixelDelta, uint2 pixelCoord, float3 P, float3 normalVS, float numSteps, float rand, float radius)
+float HorizonOcclusion(float3 viewDir, float2 dir, float2 pixelDelta, uint2 pixelCoord, float3 P, float3 normalVS, float numSteps, float rand, float radius)
 {
+    float r2 = radius * radius;
+    
     float ao = 0;
-    float weightSum = 0;
 
     // Randomize starting point within the first sample distance
     pixelCoord += rand * pixelDelta;
-    float sinT = -dot(normalVS, float3(dir.x, dir.y, 0));
-    float lastSinH = 0;
 
+    // ---------- 官方代码 ----------
+    // float2 deltaUV = pixelDelta * _TextureSize.xy;
+    // float3 T = deltaUV.x * dPdu + deltaUV.y * dPdv;
+    // float tanT = GetTangentAngleTan(T) + 0.1;
+    // float sinT = TanToSin(tanT);
+    //
+    // for (float j = 0; j < numSteps; ++j)
+    // {
+    //     pixelCoord = clamp(pixelCoord, 0, _TextureSize.zw - 1);
+    //     float2 screenUV = (pixelCoord + 0.5) * _TextureSize.xy;
+    //     float sDepth = LoadDepth(pixelCoord);
+    //     float3 S = FetchViewPosition(screenUV, sDepth);
+    //     float d2 = Length2(S - P);
+    //
+    //     float tanH = GetHorizonAngleTan(P, S);
+    //     
+    //     [branch]
+    //     if ((d2 < r2) && (tanH > tanT))
+    //     {
+    //         float sinH = TanToSin(tanH);
+    //         ao += Falloff(d2, r2) * (sinH - sinT);
+    //
+    //         tanT = tanH;
+    //         sinT = sinH;
+    //     }
+    //     
+    //     pixelCoord += pixelDelta;
+    // }
+
+    // ---------- 改变版 ----------
+    
+    // float2 deltaUV = pixelDelta * _TextureSize.xy;
+    // float3 T = deltaUV.x * dPdu + deltaUV.y * dPdv;
+    // float tanT = GetTangentAngleTan(T);
+    // float sinT = TanToSin(tanT);
+    
+    float3 sliceNormal = normalize(cross(float3(dir, 0), viewDir));
+    float3 T = normalize(cross(normalVS, sliceNormal));
+    float tanT = GetTangentAngleTan(T);
+    float sinT = TanToSin(tanT);
+    float lastSinH = sinT;
+    
     for (float j = 0; j < numSteps; ++j)
     {
         pixelCoord = clamp(pixelCoord, 0, _TextureSize.zw - 1);
         float2 screenUV = (pixelCoord + 0.5) * _TextureSize.xy;
         float sDepth = LoadDepth(pixelCoord);
         float3 S = FetchViewPosition(screenUV, sDepth);
-
         float d2 = Length2(S - P);
+    
+        // float tanH = GetHorizonAngleTan(P, S);
+        // float sinH = TanToSin(tanH);
+    
+        float3 H = (S - P) * rsqrt(d2);
+        float sinH = -H.z;
         
-        // // float tanH = GetHorizonAngleTan(P, S);
-        // // float sinH = TanToSin(tanH);
-        // float3 H = normalize(S - P);
-        // float sinH = -H.z;
-        //
-        // if (d2 < radius * radius && (sinH > sinT))
-        // {
-        //     float weight = Falloff(d2, radius);
-        //     ao += weight * (sinH - sinT);
-        //     sinT = sinH;
-        // }
-
-        float3 H = normalize(S - P);
-        float sinH = saturate(dot(H, normalVS));
-        
-        if (d2 < radius * radius && sinH >= lastSinH)
+        [branch]
+        if (d2 < r2 && sinH > lastSinH)
         {
-            float weight = Falloff(d2, radius);
-            ao += weight * (sinH - lastSinH);
+            ao += Falloff(d2, r2) * (sinH - lastSinH);
             lastSinH = sinH;
         }
-        
         
         pixelCoord += pixelDelta;
     }
 
-    return saturate(ao);
-    // return saturate(ao / weightSum);
+    // ---------- HBAO+ ----------
+    
+    // for (float j = 0; j < numSteps; ++j)
+    // {
+    //     pixelCoord = clamp(pixelCoord, 0, _TextureSize.zw - 1);
+    //     float2 screenUV = (pixelCoord + 0.5) * _TextureSize.xy;
+    //     float sDepth = LoadDepth(pixelCoord);
+    //     float3 S = FetchViewPosition(screenUV, sDepth);
+    //     
+    //     float3 V = S - P;
+    //     float VdotV = dot(V, V);
+    //     float NdotV = dot(normalVS, V) * rsqrt(VdotV);
+    //
+    //     ao += saturate(NdotV) * saturate(Falloff(VdotV, r2));
+    //     
+    //     pixelCoord += pixelDelta;
+    // }
+    // return ao / (int) numSteps;
+    
+    return ao;
 }
 
 #endif

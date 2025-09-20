@@ -196,9 +196,12 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
 }
 
 // ----------------------------------------------------------------------------------------------------
-// HBAO Functions & Kernel
+// HBAO Functions & Kernel (Deprecated 不推荐使用)
 // Modified from: NVIDIA-Direct3D-SDK-11/SSAO11/NVSDK_D3D11_SSAO
 // ----------------------------------------------------------------------------------------------------
+
+#define NUM_DIRECTIONS 4
+#define NUM_STEPS 4
 
 #include "../../../ShaderLibrary/GlobalIllumination/HBAO.hlsl"
 
@@ -211,16 +214,17 @@ void HBAOKernel(uint3 id : SV_DispatchThreadID)
     
     float rawDepth = LoadDepth(id.xy);
     float3 P = FetchViewPosition(screenUV, rawDepth);
+    float3 viewDir = normalize(-P);
 
     float3 normalWS = LoadAndDecodeNormal(id.xy);
     float3 normalVS = FetchViewNormal(normalWS);
 
-    // ------------------------- Calculate Ray Radius -------------------------
+    // ------------------------- Calculate Radius -------------------------
 
-    float rayRadiusInUV = 0.5 * GetHBAORadius() * _CameraSettings.y / P.z;
-    int rayRadiusInPixel = rayRadiusInUV * _TextureSize.w;
+    float radiusInUV = 0.5 * GetHBAORadius() * _CameraSettings.y / P.z;
+    float radiusInPixel = radiusInUV * _TextureSize.w;
     
-    if (rayRadiusInPixel < 1)
+    if (radiusInPixel < 1)
     {
         _OutputTexture[id.xy] = float2(1.0, P.z);
         return;
@@ -228,15 +232,16 @@ void HBAOKernel(uint3 id : SV_DispatchThreadID)
 
     // ------------------------- Calculate Ray Steps -------------------------
 
-    float numSteps = 0;
-    float stepSizeInPixel = 0;
-    ComputeSteps(stepSizeInPixel, numSteps, rayRadiusInPixel);
+    // Avoid oversampling if NUM_STEPS is greater than the kernel radius in pixels
+    float numSteps = min(NUM_STEPS, radiusInPixel);
+    float stepSizeInPixel = radiusInPixel / numSteps;
     
     // ------------------------- HBAO Loop -------------------------
     
     float ao = 0;
     float dirAngle = TWO_PI / NUM_DIRECTIONS;
-    float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.zw, 0).r + _Jitter.z * IsTemporalBlurEnabled()) * TWO_PI;
+    float noise = LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.zw, 0).r;
+    float randomRadian = (noise + _Jitter.w * IsTemporalBlurEnabled()) * TWO_PI;
 
     UNITY_UNROLL
     for (int d = 0; d < NUM_DIRECTIONS; ++d)
@@ -244,8 +249,9 @@ void HBAOKernel(uint3 id : SV_DispatchThreadID)
         float angle = dirAngle * d + randomRadian;
         float2 dir = float2(cos(angle), sin(angle));
         float2 pixelDelta = dir * stepSizeInPixel;
+        float rand = (d + 1.0 + _Jitter.w * IsTemporalBlurEnabled()) / (NUM_DIRECTIONS + 1.0);
         
-        ao += HorizonOcclusion(dir, pixelDelta, id.xy, P, normalVS, numSteps, (d + 1.0 + 0.5 *_Jitter.w * IsTemporalBlurEnabled()) / (NUM_DIRECTIONS + 1.0), GetHBAORadius());
+        ao += HorizonOcclusion(viewDir, dir, pixelDelta, id.xy, P, normalVS, numSteps, rand, GetHBAORadius());
     }
 
     ao *= rcp(NUM_DIRECTIONS) * GetHBAOIntensity();

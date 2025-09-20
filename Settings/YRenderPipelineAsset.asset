@@ -21,7 +21,7 @@ MonoBehaviour:
   fxaaMode: 0
   enableSplitDepth: 1
   shadowMode: 1
-  maxShadowDistance: 100
+  maxShadowDistance: 200
   distanceFade: 0.05
   cascadeCount: 4
   spiltRatio1: 0.1
