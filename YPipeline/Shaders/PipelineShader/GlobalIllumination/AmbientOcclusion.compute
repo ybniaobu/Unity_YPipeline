@@ -64,7 +64,8 @@ inline float GetSSAORadius()                    { return _AmbientOcclusionParams
 
 inline float GetHBAOIntensity()                 { return _AmbientOcclusionParams.x; }
 inline float GetHBAORadius()                    { return _AmbientOcclusionParams.y; }
-inline float GetHBAOMaxPixelRadius()            { return _AmbientOcclusionParams.z; }
+inline float GetHBAODirectionCount()            { return _AmbientOcclusionParams.z; }
+inline float GetHBAOStepCount()                 { return _AmbientOcclusionParams.w; }
 
 inline float GetSpatialBlurKernelRadius()       { return _AOSpatialBlurParams.x; }
 inline float2 GetSpatialBlurSigma()             { return _AOSpatialBlurParams.yz; }
@@ -203,7 +204,25 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
 #define NUM_DIRECTIONS 4
 #define NUM_STEPS 4
 
-#include "../../../ShaderLibrary/GlobalIllumination/HBAO.hlsl"
+inline float3 FetchViewPosition(float2 screenUV, float rawDepth)
+{
+    float4 NDC = GetNDCFromUVAndDepth(screenUV, rawDepth);
+    float3 VS = TransformNDCToView(NDC, UNITY_MATRIX_I_P);
+    VS.z = -VS.z;
+    return VS;
+}
+
+inline float3 FetchViewNormal(float3 normalWS)
+{
+    float3 normalVS = TransformWorldToViewNormal(normalWS, true);
+    normalVS.z = -normalVS.z;
+    return normalVS;
+}
+
+inline float Falloff(float d2, float r2)
+{
+    return saturate(1.0 - d2 * rcp(r2));
+}
 
 [numthreads(8, 8, 1)]
 void HBAOKernel(uint3 id : SV_DispatchThreadID)
@@ -230,7 +249,7 @@ void HBAOKernel(uint3 id : SV_DispatchThreadID)
         return;
     }
 
-    // ------------------------- Calculate Ray Steps -------------------------
+    // ------------------------- Calculate Step Size -------------------------
 
     // Avoid oversampling if NUM_STEPS is greater than the kernel radius in pixels
     float numSteps = min(NUM_STEPS, radiusInPixel);
@@ -246,16 +265,54 @@ void HBAOKernel(uint3 id : SV_DispatchThreadID)
     UNITY_UNROLL
     for (int d = 0; d < NUM_DIRECTIONS; ++d)
     {
+        // ------------------------- Randomize Direction -------------------------
+        
         float angle = dirAngle * d + randomRadian;
         float2 dir = float2(cos(angle), sin(angle));
         float2 pixelDelta = dir * stepSizeInPixel;
-        float rand = (d + 1.0 + _Jitter.w * IsTemporalBlurEnabled()) / (NUM_DIRECTIONS + 1.0);
+
+        // ------------------------- Apply Random Offset -------------------------
         
-        ao += HorizonOcclusion(viewDir, dir, pixelDelta, id.xy, P, normalVS, numSteps, rand, GetHBAORadius());
+        float rand = (d + 1.0 + _Jitter.w * IsTemporalBlurEnabled()) / (NUM_DIRECTIONS + 1.0);
+        float2 sampleCoord = id.xy + rand * pixelDelta;
+
+        // ------------------------- Calculate SinT -------------------------
+        
+        float3 sliceNormal = normalize(cross(float3(dir, 0), viewDir));
+        float3 T = normalize(cross(normalVS, sliceNormal));
+        float sinT = -T.z;
+        float lastSinH = sinT;
+
+        float r2 = GetHBAORadius() * GetHBAORadius();
+        
+        for (float j = 0; j < numSteps; ++j)
+        {
+            // ------------------------- Fetch Sample Position -------------------------
+            
+            sampleCoord = clamp(sampleCoord, 0, _TextureSize.zw - 1);
+            float2 sampleUV = (sampleCoord + 0.5) * _TextureSize.xy;
+            float sDepth = LoadDepth(sampleCoord);
+            float3 S = FetchViewPosition(sampleUV, sDepth);
+            float d2 = Length2(S - P);
+
+            // ------------------------- Calculate SinH -------------------------
+            
+            float3 H = (S - P) * rsqrt(d2);
+            float sinH = -H.z;
+
+            // ------------------------- Per-Sample Attenuation -------------------------
+            
+            [branch]
+            if (d2 < r2 && sinH > lastSinH)
+            {
+                ao += Falloff(d2, r2) * (sinH - lastSinH);
+                lastSinH = sinH;
+            }
+        
+            sampleCoord += pixelDelta;
+        }
     }
 
-    ao *= rcp(NUM_DIRECTIONS) * GetHBAOIntensity();
-    ao = saturate(1 - ao);
-    
+    ao = saturate(1 - ao * rcp(NUM_DIRECTIONS) * GetHBAOIntensity());
     _OutputTexture[id.xy] = float2(ao, P.z);
 }

@@ -37,7 +37,7 @@ namespace YPipeline
         
         // HBAO
         [Tooltip("采样半径 Sampling radius. Bigger the radius, wider ambient occlusion will be achieved.")]
-        public ClampedFloatParameter hbaoRadius = new ClampedFloatParameter(1.0f, 0.0f, 2.0f);
+        public ClampedFloatParameter hbaoRadius = new ClampedFloatParameter(1.0f, 0.0f, 4.0f);
         
         // Spatial Filter
         public BoolParameter enableSpatialFilter = new BoolParameter(true, BoolParameter.DisplayType.Checkbox);
