@@ -6,7 +6,7 @@ namespace YPipeline
 {
     public enum AmbientOcclusionMode
     {
-        None, SSAO, [InspectorName("HBAO(Not Recommended)")] HBAO, GTAO
+        None, SSAO, GTAO
     }
     
     [System.Serializable]
@@ -35,9 +35,15 @@ namespace YPipeline
         [Tooltip("采样半径 Sampling radius. Bigger the radius, wider ambient occlusion will be achieved.")]
         public ClampedFloatParameter ssaoRadius = new ClampedFloatParameter(2.0f, 0.0f, 5.0f);
         
-        // HBAO
+        // GTAO
         [Tooltip("采样半径 Sampling radius. Bigger the radius, wider ambient occlusion will be achieved.")]
-        public ClampedFloatParameter hbaoRadius = new ClampedFloatParameter(1.0f, 0.0f, 4.0f);
+        public ClampedFloatParameter gtaoRadius = new ClampedFloatParameter(2.0f, 0.0f, 4.0f);
+        
+        [Tooltip("")]
+        public ClampedIntParameter directionCount = new ClampedIntParameter(4, 2, 8);
+        
+        [Tooltip("步进步数 Number of steps to take along the slice during horizon search")]
+        public ClampedIntParameter stepCount = new ClampedIntParameter(6, 4, 12);
         
         // Spatial Filter
         public BoolParameter enableSpatialFilter = new BoolParameter(true, BoolParameter.DisplayType.Checkbox);

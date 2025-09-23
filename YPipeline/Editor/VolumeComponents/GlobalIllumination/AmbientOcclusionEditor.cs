@@ -14,8 +14,10 @@ namespace YPipeline.Editor
         private SerializedDataParameter m_SampleCount;
         private SerializedDataParameter m_SSAORadius;
         
-        // HBAO
-        private SerializedDataParameter m_HBAORadius;
+        // GTAO
+        private SerializedDataParameter m_GTAORadius;
+        private SerializedDataParameter m_DirectionCount;
+        private SerializedDataParameter m_StepCount;
         
         // Spatial Filter
         private SerializedDataParameter m_EnableSpatialFilter;
@@ -39,8 +41,10 @@ namespace YPipeline.Editor
             m_SampleCount = Unpack(o.Find(x => x.sampleCount));
             m_SSAORadius = Unpack(o.Find(x => x.ssaoRadius));
             
-            // HBAO
-            m_HBAORadius = Unpack(o.Find(x => x.hbaoRadius));
+            // GTAO
+            m_GTAORadius = Unpack(o.Find(x => x.gtaoRadius));
+            m_DirectionCount = Unpack(o.Find(x => x.directionCount));
+            m_StepCount = Unpack(o.Find(x => x.stepCount));
             
             // Spatial Filter
             m_EnableSpatialFilter = Unpack(o.Find(x => x.enableSpatialFilter));
@@ -71,8 +75,10 @@ namespace YPipeline.Editor
                     PropertyField(m_SampleCount);
                     PropertyField(m_SSAORadius, EditorGUIUtility.TrTextContent("Radius"));
                     break;
-                case (int) AmbientOcclusionMode.HBAO:
-                    PropertyField(m_HBAORadius, EditorGUIUtility.TrTextContent("Radius"));
+                case (int) AmbientOcclusionMode.GTAO:
+                    PropertyField(m_GTAORadius, EditorGUIUtility.TrTextContent("Radius"));
+                    PropertyField(m_DirectionCount);
+                    PropertyField(m_StepCount);
                     break;
                 default:
                     break;
