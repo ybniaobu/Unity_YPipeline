@@ -15,7 +15,7 @@ MonoBehaviour:
   active: 1
   ambientOcclusionMode:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 2
   halfResolution:
     m_OverrideState: 1
     m_Value: 1
@@ -24,19 +24,19 @@ MonoBehaviour:
     m_Value: 1
   sampleCount:
     m_OverrideState: 1
-    m_Value: 12
+    m_Value: 16
   ssaoRadius:
     m_OverrideState: 1
     m_Value: 2
   gtaoRadius:
     m_OverrideState: 1
-    m_Value: 2
+    m_Value: 1
   directionCount:
     m_OverrideState: 1
     m_Value: 4
   stepCount:
     m_OverrideState: 1
-    m_Value: 8
+    m_Value: 4
   enableSpatialFilter:
     m_OverrideState: 1
     m_Value: 0
@@ -128,7 +128,7 @@ MonoBehaviour:
     m_Value: 0.5
   exposure:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: -1
   saturation:
     m_OverrideState: 1
     m_Value: 1
@@ -793,7 +793,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f021eeae69254c388de6f3da8e71b2a8, type: 3}
   m_Name: Vignette
   m_EditorClassIdentifier: 
-  active: 0
+  active: 1
   color:
     m_OverrideState: 1
     m_Value: {r: 0, g: 0, b: 0, a: 1}

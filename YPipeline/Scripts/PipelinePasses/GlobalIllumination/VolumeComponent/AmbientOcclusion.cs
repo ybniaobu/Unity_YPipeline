@@ -37,7 +37,7 @@ namespace YPipeline
         
         // GTAO
         [Tooltip("采样半径 Sampling radius. Bigger the radius, wider ambient occlusion will be achieved.")]
-        public ClampedFloatParameter gtaoRadius = new ClampedFloatParameter(2.0f, 0.0f, 4.0f);
+        public ClampedFloatParameter gtaoRadius = new ClampedFloatParameter(1.0f, 0.0f, 4.0f);
         
         [Tooltip("")]
         public ClampedIntParameter directionCount = new ClampedIntParameter(4, 2, 8);
