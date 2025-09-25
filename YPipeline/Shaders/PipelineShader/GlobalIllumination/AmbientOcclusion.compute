@@ -103,21 +103,6 @@ float3 LoadAndDecodeNormal(int2 pixelCoord)
     return DecodeNormalFrom888(packedNormalWS);
 }
 
-float3 FetchViewPosition(float2 screenUV, float rawDepth)
-{
-    float4 NDC = GetNDCFromUVAndDepth(screenUV, rawDepth);
-    float3 VS = TransformNDCToView(NDC, UNITY_MATRIX_I_P);
-    VS.z = -VS.z;
-    return VS;
-}
-
-float3 FetchViewNormal(float3 normalWS)
-{
-    float3 normalVS = TransformWorldToViewNormal(normalWS, true);
-    normalVS.z = -normalVS.z;
-    return normalVS;
-}
-
 // ----------------------------------------------------------------------------------------------------
 // SSAO Functions & Kernel
 // ----------------------------------------------------------------------------------------------------
@@ -147,21 +132,25 @@ float3 GenerateCosineWeightedHemisphereSamples(float2 xi, float scale)
 [numthreads(8, 8, 1)]
 void SSAOKernel(uint3 id : SV_DispatchThreadID)
 {
-    bool inScreen = all(float2(id.xy) < _TextureSize.zw);
-    if (!inScreen) return;
-
-    float2 screenUV = (float2(id.xy) + float2(0.5, 0.5)) * _TextureSize.xy;
+    uint2 pixelCoord = clamp(id.xy, 0, _TextureSize.zw - 1);
+    float2 screenUV = (float2(pixelCoord) + float2(0.5, 0.5)) * _TextureSize.xy;
     
     // ------------------------- Get Origin Position -------------------------
     
-    float originDepth = LoadDepth(id.xy);
+    float originDepth = LoadDepth(pixelCoord);
     float originLinearDepth = GetViewDepthFromDepthTexture(originDepth);
     float4 originNDC = GetNDCFromUVAndDepth(screenUV, originDepth);
     float3 originWS = TransformNDCToWorld(originNDC, UNITY_MATRIX_I_VP);
 
+    if (originDepth < 1e-7)
+    {
+        _OutputTexture[id.xy] = float2(1.0, originLinearDepth);
+        return;
+    }
+
     // ------------------------- Get Normal & Build Left-Handed TBN -------------------------
     
-    float3 normalWS = LoadAndDecodeNormal(id.xy); // N
+    float3 normalWS = LoadAndDecodeNormal(pixelCoord); // N
 
     float3 up = abs(normalWS.y) > 0.999 ? float3(0, 0, 1) : float3(0, 1, 0);
     float3 tangent = normalize(cross(up, normalWS)); // T
@@ -201,8 +190,8 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
         uv.y = 1.0f - uv.y;
         #endif
 
-        int2 pixelCoord = clamp(uv * _TextureSize.zw, 0, _TextureSize.zw - 1);
-        float sampledDepth = LoadDepth(pixelCoord);
+        int2 samplePixelCoord = clamp(uv * _TextureSize.zw, 0, _TextureSize.zw - 1);
+        float sampledDepth = LoadDepth(samplePixelCoord);
         float linearDepth = GetViewDepthFromDepthTexture(sampledDepth);
 
         // ------------------------- Accumulate Occlusion Factor -------------------------
@@ -223,13 +212,28 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
 #define GTAO_NUM_DIRECTIONS GetGTAODirectionCount() 
 #define GTAO_NUM_STEPS GetGTAOStepCount()
 
-float IntegrateArc_UniformWeight(float2 h)
+float3 FetchViewPosition(float2 screenUV, float rawDepth)
+{
+    float4 NDC = GetNDCFromUVAndDepth(screenUV, rawDepth);
+    float3 VS = TransformNDCToView(NDC, UNITY_MATRIX_I_P);
+    VS.z = -VS.z;
+    return VS;
+}
+
+float3 FetchViewNormal(float3 normalWS)
+{
+    float3 normalVS = TransformWorldToViewNormal(normalWS, true);
+    normalVS.z = -normalVS.z;
+    return normalVS;
+}
+
+float IntegrateArcUniformWeight(float2 h)
 {
     float2 arc = 1 - cos(h);
     return arc.x + arc.y;
 }
 
-float IntegrateArc_CosWeight(float2 h, float n)
+float IntegrateArcCosWeight(float2 h, float n)
 {
     float2 arc = -cos(2 * h - n) + cos(n) + 2 * h * sin(n);
     return 0.25 * (arc.x + arc.y);
@@ -238,52 +242,60 @@ float IntegrateArc_CosWeight(float2 h, float n)
 [numthreads(8, 8, 1)]
 void GTAOKernel(uint3 id : SV_DispatchThreadID)
 {
-    float2 screenUV = (float2(id.xy) + float2(0.5, 0.5)) * _TextureSize.xy;
+    uint2 pixelCoord = clamp(id.xy, 0, _TextureSize.zw - 1);
+    float2 screenUV = (float2(pixelCoord) + float2(0.5, 0.5)) * _TextureSize.xy;
 
     // ------------------------- Fetch Position & Normal -------------------------
     
-    float rawDepth = LoadDepth(id.xy);
+    float rawDepth = LoadDepth(pixelCoord);
     float3 P = FetchViewPosition(screenUV, rawDepth);
-    float3 viewDir = normalize(-P);
+    float3 V = normalize(-P);
 
-    if (rawDepth < 1e-7)
+    float3 normalWS = LoadAndDecodeNormal(pixelCoord);
+    float3 normalVS = FetchViewNormal(normalWS);
+
+    // ------------------------- Calculate Radius & Step Size -------------------------
+    
+    float radiusInUV = 0.5 * GetGTAORadius() * _CameraSettings.y / P.z;
+    float radiusInPixel = radiusInUV * _TextureSize.w;
+
+    if (radiusInPixel < 1 || rawDepth < 1e-7)
     {
-        _OutputTexture[id.xy] = float2(1, P.z);
+        _OutputTexture[id.xy] = float2(1.0, P.z);
         return;
     }
 
-    float3 normalWS = LoadAndDecodeNormal(id.xy);
-    float3 normalVS = FetchViewNormal(normalWS);
+    // ------------------------- Calculate Step Size -------------------------
 
-    // ------------------------- Calculate Diameter & Step Size -------------------------
-    
-    float radiusInUV = 0.5 * GetHBAORadius() * _CameraSettings.y / P.z;
-    float radiusInPixel = max(radiusInUV * _TextureSize.w, GTAO_NUM_STEPS);
-    float stepSizeInPixel = radiusInPixel / GTAO_NUM_STEPS;
+    // Avoid oversampling if NUM_STEPS is greater than the kernel radius in pixels
+    float numSteps = min(GTAO_NUM_STEPS, radiusInPixel);
+    float stepSizeInPixel = radiusInPixel / numSteps;
 
-    float dirAngle = PI / GTAO_NUM_DIRECTIONS;
+    // ------------------------- Direction Loop -------------------------
+
     float noise = LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.zw, 0).r;
-    // float noise = frac(52.9829189 * frac(dot(id.xy, half2( 0.06711056, 0.00583715))));
     float randomRadian = (noise + _Jitter.w * IsTemporalBlurEnabled()) * TWO_PI;
-
+    float dirAngle = PI / GTAO_NUM_DIRECTIONS;
     float ao = 0;
     
-    UNITY_LOOP
     for (int d = 0; d < GTAO_NUM_DIRECTIONS; d++)
     {
+        // ------------------------- Randomize Direction -------------------------
+        
         float angle = dirAngle * d + randomRadian;
         float3 dir = float3(cos(angle), sin(angle), 0);
         float2 pixelDelta = dir.xy * stepSizeInPixel;
+
+        // ------------------------- Slice Loop -------------------------
         
         float2 cosH;
         float2 heuristicCosH = 0;
         float2 count;
-        float2 lastCosH = -1;
+        float2 lastCosH = -1.0;
 
         float rand = (d + 1.0 + _Jitter.z * IsTemporalBlurEnabled()) / ( GTAO_NUM_DIRECTIONS + 1.0);
-
-        UNITY_LOOP
-        for (int s = 0; s < GTAO_NUM_STEPS; s++)
+        
+        for (int s = 0; s < numSteps; s++)
         {
             // ------------------------- Apply Random Offset -------------------------
             
@@ -297,8 +309,8 @@ void GTAOKernel(uint3 id : SV_DispatchThreadID)
             float3 sh2 = FetchViewPosition(sampleUV.zw, sh2Depth) - P; // H2
             float2 length2 = float2(dot(sh1, sh1), dot(sh2, sh2));
 
-            float2 falloff = saturate(length2 / GetGTAORadius() / GetGTAORadius());
-            cosH = float2(dot(sh1, viewDir), dot(sh2, viewDir)) * rsqrt(length2);
+            float2 falloff = (length2 / GetGTAORadius() / GetGTAORadius());
+            cosH = float2(dot(sh1, V), dot(sh2, V)) * rsqrt(length2);
 
             // cosH.x = falloff.x < 1 ? cosH.x : heuristicCosH.x;
             // cosH.y = falloff.y < 1 ? cosH.y : heuristicCosH.y;
@@ -307,31 +319,40 @@ void GTAOKernel(uint3 id : SV_DispatchThreadID)
             // heuristicCosH.y = cosH.y < heuristicCosH.y ? 0.75 * heuristicCosH.y + 0.25 * cosH.y : cosH.y;
             // heuristicCosH = max(cosH, lastCosH);
 
+            // ------------------------- 算术平均 -------------------------
             // cosH = lerp(cosH, 0, falloff < 1);
             cosH.x = falloff.x < 1 ? cosH.x : 0;
             cosH.y = falloff.y < 1 ? cosH.y : 0;
             count.x += falloff.x < 1 ? 1 : 0;
             count.y += falloff.y < 1 ? 1 : 0;
             heuristicCosH += cosH;
+            // ------------------------- 算术平均 -------------------------
+
+
+            // heuristicCosH = max(cosH, lastCosH);
             lastCosH = cosH;
         }
+
+        // ------------------------- 算术平均 -------------------------
         // heuristicCosH /= count;
         heuristicCosH.x = count.x == 0 ? -1 : heuristicCosH.x / count.x;
         heuristicCosH.y = count.y == 0 ? -1 : heuristicCosH.y / count.y;
+        heuristicCosH = clamp(heuristicCosH, -1.0, 1.0);
+        // ------------------------- 算术平均 -------------------------
 
-        float3 sliceNormal = normalize(cross(dir, viewDir));
+        float3 sliceNormal = normalize(cross(dir, V));
         float3 tangent = cross(normalVS, sliceNormal);
         float3 projectedNormal = normalVS - sliceNormal * dot(normalVS, sliceNormal);
         float projectedNormalLength = length(projectedNormal);
 
-        float cosn = dot(normalize(projectedNormal), viewDir);
-        float n = -sign(dot(viewDir, tangent)) * acos(cosn);
+        float cosn = dot(normalize(projectedNormal), V);
+        float n = -sign(dot(V, tangent)) * acos(cosn);
 
-        float2 h = acos(clamp(heuristicCosH, -1.0, 1.0));
+        float2 h = acos(heuristicCosH);
         h.x = n + max(-h.x - n, -HALF_PI); // H1
         h.y = n + min(h.y - n, HALF_PI); // H2
 
-        ao += projectedNormalLength * IntegrateArc_CosWeight(h, n);
+        ao += projectedNormalLength * IntegrateArcCosWeight(h, n);
     }
 
     ao = saturate(PositivePow(ao / GTAO_NUM_DIRECTIONS, GetGTAOIntensity()));
@@ -354,15 +375,16 @@ inline float Falloff(float d2, float r2)
 [numthreads(8, 8, 1)]
 void HBAOKernel(uint3 id : SV_DispatchThreadID)
 {
-    float2 screenUV = (float2(id.xy) + float2(0.5, 0.5)) * _TextureSize.xy;
+    uint2 pixelCoord = clamp(id.xy, 0, _TextureSize.zw - 1);
+    float2 screenUV = (float2(pixelCoord) + float2(0.5, 0.5)) * _TextureSize.xy;
 
     // ------------------------- Fetch Position & Normal -------------------------
     
-    float rawDepth = LoadDepth(id.xy);
+    float rawDepth = LoadDepth(pixelCoord);
     float3 P = FetchViewPosition(screenUV, rawDepth);
-    float3 viewDir = normalize(-P);
+    float3 V = normalize(-P);
 
-    float3 normalWS = LoadAndDecodeNormal(id.xy);
+    float3 normalWS = LoadAndDecodeNormal(pixelCoord);
     float3 normalVS = FetchViewNormal(normalWS);
 
     // ------------------------- Calculate Radius -------------------------
@@ -370,7 +392,7 @@ void HBAOKernel(uint3 id : SV_DispatchThreadID)
     float radiusInUV = 0.5 * GetHBAORadius() * _CameraSettings.y / P.z;
     float radiusInPixel = radiusInUV * _TextureSize.w;
     
-    if (radiusInPixel < 1)
+    if (radiusInPixel < 1 || rawDepth < 1e-7)
     {
         _OutputTexture[id.xy] = float2(1.0, P.z);
         return;
@@ -388,8 +410,7 @@ void HBAOKernel(uint3 id : SV_DispatchThreadID)
     float dirAngle = TWO_PI / HBAO_NUM_DIRECTIONS;
     float noise = LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.zw, 0).r;
     float randomRadian = (noise + _Jitter.w * IsTemporalBlurEnabled()) * TWO_PI;
-
-    UNITY_UNROLL
+    
     for (int d = 0; d < HBAO_NUM_DIRECTIONS; ++d)
     {
         // ------------------------- Randomize Direction -------------------------
@@ -405,7 +426,7 @@ void HBAOKernel(uint3 id : SV_DispatchThreadID)
 
         // ------------------------- Calculate SinT -------------------------
         
-        float3 sliceNormal = normalize(cross(float3(dir, 0), viewDir));
+        float3 sliceNormal = normalize(cross(float3(dir, 0), V));
         float3 T = normalize(cross(normalVS, sliceNormal));
         float sinT = -T.z;
         float lastSinH = sinT;
