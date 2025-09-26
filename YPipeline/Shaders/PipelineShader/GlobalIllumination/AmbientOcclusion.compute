@@ -33,6 +33,7 @@ SAMPLER(sampler_PointClamp);
 float4 _CameraSettings; // x: vertical FOV in radian, y: cot(FOV/2)
 float4 _CameraBufferSize; // x: 1.0 / bufferSize.x, y: 1.0 / bufferSize.y, z: bufferSize.x, w: bufferSize.y
 float4 _Jitter; // Halton (-0.5, 0.5), xy: 1.0 / jitter, zw: jitter
+float4 _TimeParams; // x: frameCount, y: 1.0 / frameCount
 
 // --- Local Variables ---
 float4 _TextureSize; // x: 1.0 / width, y: 1.0 / height, z: width, w: height
@@ -259,7 +260,7 @@ void GTAOKernel(uint3 id : SV_DispatchThreadID)
     float radiusInUV = 0.5 * GetGTAORadius() * _CameraSettings.y / P.z;
     float radiusInPixel = radiusInUV * _TextureSize.w;
 
-    if (radiusInPixel < 1 || rawDepth < 1e-7)
+    if (radiusInPixel < 1)
     {
         _OutputTexture[id.xy] = float2(1.0, P.z);
         return;
@@ -271,12 +272,17 @@ void GTAOKernel(uint3 id : SV_DispatchThreadID)
     float numSteps = min(GTAO_NUM_STEPS, radiusInPixel);
     float stepSizeInPixel = radiusInPixel / numSteps;
 
+    // ------------------------- Noise -------------------------
+    
+    float2 noise = LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.zw, 0).rg;
+    float randomRadian = (noise.r + _Jitter.w * IsTemporalBlurEnabled()) * TWO_PI;
+    float randomOffset = frac(noise.g + _Jitter.z * IsTemporalBlurEnabled());
+
     // ------------------------- Direction Loop -------------------------
 
-    float noise = LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.zw, 0).r;
-    float randomRadian = (noise + _Jitter.w * IsTemporalBlurEnabled()) * TWO_PI;
-    float dirAngle = PI / GTAO_NUM_DIRECTIONS;
     float ao = 0;
+    float dirAngle = PI / GTAO_NUM_DIRECTIONS;
+    float r2 = GetGTAORadius() * GetGTAORadius();
     
     for (int d = 0; d < GTAO_NUM_DIRECTIONS; d++)
     {
@@ -289,18 +295,16 @@ void GTAOKernel(uint3 id : SV_DispatchThreadID)
         // ------------------------- Slice Loop -------------------------
         
         float2 cosH;
-        float2 heuristicCosH = 0;
-        float2 count;
-        float2 lastCosH = -1.0;
-
-        float rand = (d + 1.0 + _Jitter.z * IsTemporalBlurEnabled()) / ( GTAO_NUM_DIRECTIONS + 1.0);
+        float2 maxCosH = -1.0; // cos(pi)
         
         for (int s = 0; s < numSteps; s++)
         {
             // ------------------------- Apply Random Offset -------------------------
             
-            float2 offset = (rand + s) * pixelDelta;
+            float2 offset = (randomOffset + s) * pixelDelta;
             float4 sampleCoord = clamp(id.xyxy + float4(-offset, offset), 0, _TextureSize.zwzw - 1);
+
+            // ------------------------- Calculate CosH -------------------------
 
             float4 sampleUV = (sampleCoord + 0.5) * _TextureSize.xyxy;
             float sh1Depth = LoadDepth(sampleCoord.xy);
@@ -308,47 +312,41 @@ void GTAOKernel(uint3 id : SV_DispatchThreadID)
             float3 sh1 = FetchViewPosition(sampleUV.xy, sh1Depth) - P; // H1
             float3 sh2 = FetchViewPosition(sampleUV.zw, sh2Depth) - P; // H2
             float2 length2 = float2(dot(sh1, sh1), dot(sh2, sh2));
-
-            float2 falloff = (length2 / GetGTAORadius() / GetGTAORadius());
             cosH = float2(dot(sh1, V), dot(sh2, V)) * rsqrt(length2);
 
-            // cosH.x = falloff.x < 1 ? cosH.x : heuristicCosH.x;
-            // cosH.y = falloff.y < 1 ? cosH.y : heuristicCosH.y;
-            //
-            // heuristicCosH.x = cosH.x < heuristicCosH.x ? 0.75 * heuristicCosH.x + 0.25 * cosH.x : cosH.x;
-            // heuristicCosH.y = cosH.y < heuristicCosH.y ? 0.75 * heuristicCosH.y + 0.25 * cosH.y : cosH.y;
-            // heuristicCosH = max(cosH, lastCosH);
+            // ------------------------- MAX -------------------------
+            
+            // // maxCosH.x = length2.x < r2 ? max(cosH.x, maxCosH.x) : maxCosH.x;
+            // // maxCosH.y = length2.y < r2 ? max(cosH.y, maxCosH.y) : maxCosH.y;
+            // maxCosH = lerp(maxCosH, max(cosH, maxCosH), length2 < r2);
+            
+            // ------------------------- Thickness Heuristic -------------------------
 
-            // ------------------------- 算术平均 -------------------------
-            // cosH = lerp(cosH, 0, falloff < 1);
-            cosH.x = falloff.x < 1 ? cosH.x : 0;
-            cosH.y = falloff.y < 1 ? cosH.y : 0;
-            count.x += falloff.x < 1 ? 1 : 0;
-            count.y += falloff.y < 1 ? 1 : 0;
-            heuristicCosH += cosH;
-            // ------------------------- 算术平均 -------------------------
-
-
-            // heuristicCosH = max(cosH, lastCosH);
-            lastCosH = cosH;
+            float2 falloff = 1.0 - saturate(length2 / r2);
+            if (length2.x < r2)
+            {
+                maxCosH.x = (cosH.x > maxCosH.x) ? max(cosH.x, maxCosH.x) : lerp(maxCosH.x, cosH.x, 0.1f);
+            }
+            if (length2.y < r2)
+            {
+                maxCosH.y = (cosH.y > maxCosH.y) ? max(cosH.y, maxCosH.y) : lerp(maxCosH.y, cosH.y, 0.1f);
+            }
         }
 
-        // ------------------------- 算术平均 -------------------------
-        // heuristicCosH /= count;
-        heuristicCosH.x = count.x == 0 ? -1 : heuristicCosH.x / count.x;
-        heuristicCosH.y = count.y == 0 ? -1 : heuristicCosH.y / count.y;
-        heuristicCosH = clamp(heuristicCosH, -1.0, 1.0);
-        // ------------------------- 算术平均 -------------------------
-
+        // ------------------------- Normal Projection -------------------------
+        
         float3 sliceNormal = normalize(cross(dir, V));
         float3 tangent = cross(normalVS, sliceNormal);
         float3 projectedNormal = normalVS - sliceNormal * dot(normalVS, sliceNormal);
         float projectedNormalLength = length(projectedNormal);
 
+        // ------------------------- Calculate AO  -------------------------
+        
         float cosn = dot(normalize(projectedNormal), V);
         float n = -sign(dot(V, tangent)) * acos(cosn);
-
-        float2 h = acos(heuristicCosH);
+        
+        maxCosH = clamp(maxCosH, -1.0, 1.0);
+        float2 h = acos(maxCosH);
         h.x = n + max(-h.x - n, -HALF_PI); // H1
         h.y = n + min(h.y - n, HALF_PI); // H2
 
@@ -392,7 +390,7 @@ void HBAOKernel(uint3 id : SV_DispatchThreadID)
     float radiusInUV = 0.5 * GetHBAORadius() * _CameraSettings.y / P.z;
     float radiusInPixel = radiusInUV * _TextureSize.w;
     
-    if (radiusInPixel < 1 || rawDepth < 1e-7)
+    if (radiusInPixel < 1)
     {
         _OutputTexture[id.xy] = float2(1.0, P.z);
         return;
@@ -410,6 +408,7 @@ void HBAOKernel(uint3 id : SV_DispatchThreadID)
     float dirAngle = TWO_PI / HBAO_NUM_DIRECTIONS;
     float noise = LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.zw, 0).r;
     float randomRadian = (noise + _Jitter.w * IsTemporalBlurEnabled()) * TWO_PI;
+    float r2 = GetHBAORadius() * GetHBAORadius();
     
     for (int d = 0; d < HBAO_NUM_DIRECTIONS; ++d)
     {
@@ -430,8 +429,6 @@ void HBAOKernel(uint3 id : SV_DispatchThreadID)
         float3 T = normalize(cross(normalVS, sliceNormal));
         float sinT = -T.z;
         float lastSinH = sinT;
-
-        float r2 = GetHBAORadius() * GetHBAORadius();
         
         for (float j = 0; j < numSteps; ++j)
         {

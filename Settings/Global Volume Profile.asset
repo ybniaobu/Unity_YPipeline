@@ -24,13 +24,13 @@ MonoBehaviour:
     m_Value: 1
   sampleCount:
     m_OverrideState: 1
-    m_Value: 16
+    m_Value: 12
   ssaoRadius:
     m_OverrideState: 1
     m_Value: 2
   gtaoRadius:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0.5
   directionCount:
     m_OverrideState: 1
     m_Value: 4
@@ -45,7 +45,7 @@ MonoBehaviour:
     m_Value: 4
   spatialSigma:
     m_OverrideState: 1
-    m_Value: 0.6
+    m_Value: 2
   depthSigma:
     m_OverrideState: 1
     m_Value: 0.25
