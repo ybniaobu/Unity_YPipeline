@@ -302,7 +302,7 @@ void GTAOKernel(uint3 id : SV_DispatchThreadID)
             // ------------------------- Apply Random Offset -------------------------
             
             float2 offset = (randomOffset + s) * pixelDelta;
-            float4 sampleCoord = clamp(id.xyxy + float4(-offset, offset), 0, _TextureSize.zwzw - 1);
+            int4 sampleCoord = clamp(id.xyxy + int4(-offset, offset), 0, _TextureSize.zwzw - 1);
 
             // ------------------------- Calculate CosH -------------------------
 
@@ -421,7 +421,7 @@ void HBAOKernel(uint3 id : SV_DispatchThreadID)
         // ------------------------- Apply Random Offset -------------------------
         
         float rand = (d + 1.0 + _Jitter.w * IsTemporalBlurEnabled()) / (HBAO_NUM_DIRECTIONS + 1.0);
-        float2 sampleCoord = id.xy + rand * pixelDelta;
+        int2 sampleCoord = id.xy + rand * pixelDelta;
 
         // ------------------------- Calculate SinT -------------------------
         
