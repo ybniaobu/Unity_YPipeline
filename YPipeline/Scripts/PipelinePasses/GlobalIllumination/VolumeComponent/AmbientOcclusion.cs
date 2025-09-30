@@ -43,7 +43,7 @@ namespace YPipeline
         public ClampedIntParameter directionCount = new ClampedIntParameter(2, 1, 8);
         
         [Tooltip("步进步数 Number of steps to take along the slice during horizon search")]
-        public ClampedIntParameter stepCount = new ClampedIntParameter(8, 2, 12);
+        public ClampedIntParameter stepCount = new ClampedIntParameter(8, 4, 12);
         
         // Spatial Filter
         public BoolParameter enableSpatialFilter = new BoolParameter(false, BoolParameter.DisplayType.Checkbox);

@@ -228,6 +228,20 @@ float3 FetchViewNormal(float3 normalWS)
     return normalVS;
 }
 
+float GTAOFastAcos(float x)
+{
+    float res = -0.156583 * abs(x) + HALF_PI;
+    res *= sqrt(1.0 - abs(x));
+    return x >= 0 ? res : PI - res;
+}
+
+float2 GTAOFastAcos(float2 x)
+{
+    float2 res = -0.156583 * abs(x) + HALF_PI;
+    res *= sqrt(1.0 - abs(x));
+    return x >= 0 ? res : PI - res;
+}
+
 float IntegrateArcUniformWeight(float2 h)
 {
     float2 arc = 1 - cos(h);
@@ -258,9 +272,9 @@ void GTAOKernel(uint3 id : SV_DispatchThreadID)
     // ------------------------- Calculate Radius & Step Size -------------------------
     
     float radiusInUV = 0.5 * GetGTAORadius() * _CameraSettings.y / P.z;
-    float radiusInPixel = radiusInUV * _TextureSize.w;
+    float radiusInPixel = min(radiusInUV * _TextureSize.w, 0.2 * _TextureSize.w);
 
-    if (radiusInPixel < 1)
+    if (radiusInPixel < 1 || rawDepth < 1e-7)
     {
         _OutputTexture[id.xy] = float2(1.0, P.z);
         return;
@@ -275,8 +289,8 @@ void GTAOKernel(uint3 id : SV_DispatchThreadID)
     // ------------------------- Noise -------------------------
     
     float2 noise = LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.zw, 0).rg;
-    float randomRadian = (noise.r + _Jitter.w * IsTemporalBlurEnabled()) * TWO_PI;
-    float randomOffset = frac(noise.g + _Jitter.z * IsTemporalBlurEnabled());
+    float randomRadian = (noise.r + _Jitter.z * IsTemporalBlurEnabled()) * TWO_PI;
+    float randomOffset = frac(noise.g + _Jitter.w * IsTemporalBlurEnabled());
 
     // ------------------------- Direction Loop -------------------------
 
@@ -314,22 +328,22 @@ void GTAOKernel(uint3 id : SV_DispatchThreadID)
             float2 length2 = float2(dot(sh1, sh1), dot(sh2, sh2));
             cosH = float2(dot(sh1, V), dot(sh2, V)) * rsqrt(length2);
 
-            // ------------------------- MAX -------------------------
+            // ------------------------- Max Horizon Angle -------------------------
             
-            // // maxCosH.x = length2.x < r2 ? max(cosH.x, maxCosH.x) : maxCosH.x;
-            // // maxCosH.y = length2.y < r2 ? max(cosH.y, maxCosH.y) : maxCosH.y;
             // maxCosH = lerp(maxCosH, max(cosH, maxCosH), length2 < r2);
             
             // ------------------------- Thickness Heuristic -------------------------
 
-            float2 falloff = 1.0 - saturate(length2 / r2);
+            float2 falloff = saturate(1.0 - length2 * rcp(r2));
             if (length2.x < r2)
             {
-                maxCosH.x = (cosH.x > maxCosH.x) ? max(cosH.x, maxCosH.x) : lerp(maxCosH.x, cosH.x, 0.1f);
+                // maxCosH.x = (cosH.x > maxCosH.x) ? max(cosH.x, maxCosH.x) : lerp(maxCosH.x, cosH.x, 0.1);
+                maxCosH.x = (cosH.x > maxCosH.x) ? lerp(maxCosH.x, cosH.x, falloff.x) : lerp(maxCosH.x, cosH.x, 0.05);
             }
             if (length2.y < r2)
             {
-                maxCosH.y = (cosH.y > maxCosH.y) ? max(cosH.y, maxCosH.y) : lerp(maxCosH.y, cosH.y, 0.1f);
+                // maxCosH.y = (cosH.y > maxCosH.y) ? max(cosH.y, maxCosH.y) : lerp(maxCosH.y, cosH.y, 0.1);
+                maxCosH.y = (cosH.y > maxCosH.y) ? lerp(maxCosH.y, cosH.y, falloff.y) : lerp(maxCosH.y, cosH.y, 0.05);
             }
         }
 
@@ -342,11 +356,10 @@ void GTAOKernel(uint3 id : SV_DispatchThreadID)
 
         // ------------------------- Calculate AO  -------------------------
         
-        float cosn = dot(normalize(projectedNormal), V);
-        float n = -sign(dot(V, tangent)) * acos(cosn);
+        float cosN = dot(projectedNormal / projectedNormalLength, V);
+        float n = -sign(dot(V, tangent)) * GTAOFastAcos(cosN);
         
-        maxCosH = clamp(maxCosH, -1.0, 1.0);
-        float2 h = acos(maxCosH);
+        float2 h = GTAOFastAcos(maxCosH);
         h.x = n + max(-h.x - n, -HALF_PI); // H1
         h.y = n + min(h.y - n, HALF_PI); // H2
 
@@ -358,7 +371,7 @@ void GTAOKernel(uint3 id : SV_DispatchThreadID)
 }
 
 // ----------------------------------------------------------------------------------------------------
-// HBAO Functions & Kernel (Deprecated 不推荐使用)
+// HBAO Functions & Kernel (Deprecated)
 // Modified from: NVIDIA-Direct3D-SDK-11/SSAO11/NVSDK_D3D11_SSAO
 // ----------------------------------------------------------------------------------------------------
 
@@ -388,9 +401,9 @@ void HBAOKernel(uint3 id : SV_DispatchThreadID)
     // ------------------------- Calculate Radius -------------------------
 
     float radiusInUV = 0.5 * GetHBAORadius() * _CameraSettings.y / P.z;
-    float radiusInPixel = radiusInUV * _TextureSize.w;
+    float radiusInPixel = min(radiusInUV * _TextureSize.w, 0.2 * _TextureSize.w);
     
-    if (radiusInPixel < 1)
+    if (radiusInPixel < 1 || rawDepth < 1e-7)
     {
         _OutputTexture[id.xy] = float2(1.0, P.z);
         return;
