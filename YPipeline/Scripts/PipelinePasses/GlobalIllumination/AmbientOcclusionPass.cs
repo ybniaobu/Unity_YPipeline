@@ -71,13 +71,16 @@ namespace YPipeline
                     switch (passData.aoMode)
                     {
                         case AmbientOcclusionMode.SSAO:
-                            passData.ambientOcclusionParams = new Vector4(m_AO.intensity.value, m_AO.sampleCount.value, m_AO.ssaoRadius.value);
+                            passData.ambientOcclusionParams = new Vector4(m_AO.ssaoIntensity.value, m_AO.sampleCount.value, m_AO.ssaoRadius.value);
+                            break;
+                        case AmbientOcclusionMode.HBAO:
+                            passData.ambientOcclusionParams = new Vector4(m_AO.hbaoIntensity.value, m_AO.hbaoRadius.value, m_AO.hbaoDirectionCount.value, m_AO.hbaoStepCount.value);
                             break;
                         case AmbientOcclusionMode.GTAO:
-                            passData.ambientOcclusionParams = new Vector4(m_AO.intensity.value, m_AO.gtaoRadius.value, m_AO.directionCount.value, m_AO.stepCount.value);
+                            passData.ambientOcclusionParams = new Vector4(m_AO.gtaoIntensity.value, m_AO.gtaoRadius.value, m_AO.gtaoDirectionCount.value, m_AO.gtaoStepCount.value);
                             break;
                         default:
-                            passData.ambientOcclusionParams = new Vector4(m_AO.intensity.value, m_AO.gtaoRadius.value, m_AO.directionCount.value, m_AO.stepCount.value);
+                            passData.ambientOcclusionParams = new Vector4(m_AO.gtaoIntensity.value, m_AO.gtaoRadius.value, m_AO.gtaoDirectionCount.value, m_AO.gtaoStepCount.value);
                             break;
                     }
                     passData.aoSpatialBlurParams = new Vector4(m_AO.kernelRadius.value, m_AO.spatialSigma.value, m_AO.depthSigma.value);
@@ -192,6 +195,9 @@ namespace YPipeline
                         {
                             case AmbientOcclusionMode.SSAO:
                                 ssaoKernel = data.cs.FindKernel("SSAOKernel");
+                                break;
+                            case AmbientOcclusionMode.HBAO:
+                                ssaoKernel = data.cs.FindKernel("HBAOKernel");
                                 break;
                             case AmbientOcclusionMode.GTAO:
                                 ssaoKernel = data.cs.FindKernel("GTAOKernel");

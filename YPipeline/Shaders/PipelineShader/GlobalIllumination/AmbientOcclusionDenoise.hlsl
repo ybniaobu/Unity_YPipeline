@@ -192,7 +192,7 @@ float FilterMiddleColor(in float2 samples[9], float middleDepth)
     for (int i = 0; i < 8; i++)
     {
         float sampleDepth = samples[i + 1].g;
-        bool occlusionTest = abs(1 - sampleDepth / middleDepth) < 0.1;
+        bool occlusionTest = abs(1 - sampleDepth / middleDepth) < 0.05;
         float weight = weights[i + 1] * occlusionTest;
         weightSum += weight;
         filtered += weight * samples[i + 1].r;
@@ -202,7 +202,7 @@ float FilterMiddleColor(in float2 samples[9], float middleDepth)
     return filtered;
 }
 
-float2 VarianceMinMax(in float2 samples[9], float gamma)
+float2 VarianceMinMax(in float2 samples[9], float gamma, float prefiltered)
 {
     float m1 = 0;
     float m2 = 0;
@@ -222,6 +222,9 @@ float2 VarianceMinMax(in float2 samples[9], float gamma)
     float sigma = sqrt(abs(m2 - m1 * m1)); // standard deviation
     float neighborMin = m1 - gamma * sigma;
     float neighborMax = m1 + gamma * sigma;
+
+    neighborMin = min(neighborMin, prefiltered);
+    neighborMax = max(neighborMax, prefiltered);
 
     return float2(neighborMin, neighborMax);
 }
@@ -245,24 +248,30 @@ void TemporalBlurKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV
 
     // ------------------------- Temporal Blur -------------------------
 
+    // Reprojection
     float2 screenUV = (float2(id.xy) + float2(0.5, 0.5)) * _TextureSize.xy;
     float2 velocity = SAMPLE_TEXTURE2D_LOD(_MotionVectorTexture, sampler_PointClamp, screenUV, 0).rg;
     float2 historyUV = screenUV - velocity;
     float2 history = SAMPLE_TEXTURE2D_LOD(_AmbientOcclusionHistory, sampler_LinearClamp, historyUV, 0);
 
+    // Neighbourhood
     uint2 middleTileID = groupThreadId.xy + TILE_BORDER;
     uint tileIDs[9];
     GetNeighbourhoodTileIDs(middleTileID, tileIDs);
-
     float2 neighbours[9];
     GetNeighbourhoodSamples(tileIDs, neighbours);
-    
-    float2 minMax = VarianceMinMax(neighbours, GetTemporalVarianceCriticalValue());
-    history.r = clamp(history.r, minMax.x, minMax.y);
 
+    // prefilter
     float middleDepth = neighbours[0].g;
     float prefiltered = FilterMiddleColor(neighbours, middleDepth);
-    
+
+    // Variance Clamping
+    float gamma = GetTemporalVarianceCriticalValue();
+    gamma = lerp(gamma, max(gamma - 0.75, 0.1), saturate(sqrt(max(velocity.x, velocity.y)) * 10.0));
+    float2 minMax = VarianceMinMax(neighbours, gamma, prefiltered);
+    history.r = clamp(history.r, minMax.x, minMax.y);
+
+    // Adaptive Blending Factor
     float historyDepth = history.g;
     bool depthTest = abs(1 - middleDepth / historyDepth) < 0.1;
     float blendFactor = lerp(0, 0.9, depthTest);

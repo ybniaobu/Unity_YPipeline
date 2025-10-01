@@ -15,11 +15,11 @@ MonoBehaviour:
   active: 1
   ambientOcclusionMode:
     m_OverrideState: 1
-    m_Value: 2
+    m_Value: 3
   halfResolution:
     m_OverrideState: 1
     m_Value: 1
-  intensity:
+  ssaoIntensity:
     m_OverrideState: 1
     m_Value: 1
   sampleCount:
@@ -28,15 +28,30 @@ MonoBehaviour:
   ssaoRadius:
     m_OverrideState: 1
     m_Value: 2
-  gtaoRadius:
+  hbaoIntensity:
     m_OverrideState: 1
     m_Value: 1
-  directionCount:
+  hbaoRadius:
     m_OverrideState: 1
-    m_Value: 2
-  stepCount:
+    m_Value: 0.75
+  hbaoDirectionCount:
     m_OverrideState: 1
-    m_Value: 8
+    m_Value: 4
+  hbaoStepCount:
+    m_OverrideState: 1
+    m_Value: 4
+  gtaoIntensity:
+    m_OverrideState: 1
+    m_Value: 1
+  gtaoRadius:
+    m_OverrideState: 1
+    m_Value: 0.75
+  gtaoDirectionCount:
+    m_OverrideState: 1
+    m_Value: 3
+  gtaoStepCount:
+    m_OverrideState: 1
+    m_Value: 4
   enableSpatialFilter:
     m_OverrideState: 1
     m_Value: 0

@@ -6,7 +6,7 @@ namespace YPipeline
 {
     public enum AmbientOcclusionMode
     {
-        None, SSAO, GTAO
+        None, SSAO, HBAO, GTAO
     }
     
     [System.Serializable]
@@ -25,25 +25,41 @@ namespace YPipeline
         [Tooltip("是否使用半分辨率 If this option is set to true, the effect runs at half resolution. This will increases performance significantly, but also decreases quality.")]
         public BoolParameter halfResolution = new BoolParameter(true);
         
-        [Tooltip("遮蔽强度 Controls the strength of the ambient occlusion effect. Increase this value to produce darker areas.")]
-        public ClampedFloatParameter intensity = new ClampedFloatParameter(1.0f, 0.0f, 2.0f);
-        
         // SSAO
+        [Tooltip("遮蔽强度 Controls the strength of the ambient occlusion effect. Increase this value to produce darker areas.")]
+        public ClampedFloatParameter ssaoIntensity = new ClampedFloatParameter(1.0f, 0.0f, 2.0f);
+        
         [Tooltip("采样次数 Increase the amount of samples will produce higher quality results at a cost of lower performance.")]
         public ClampedIntParameter sampleCount = new ClampedIntParameter(12, 4, 32);
         
         [Tooltip("采样半径 Sampling radius. Bigger the radius, wider ambient occlusion will be achieved.")]
         public ClampedFloatParameter ssaoRadius = new ClampedFloatParameter(2.0f, 0.0f, 5.0f);
         
-        // GTAO
+        // HBAO
+        [Tooltip("遮蔽强度 Controls the strength of the ambient occlusion effect. Increase this value to produce darker areas.")]
+        public ClampedFloatParameter hbaoIntensity = new ClampedFloatParameter(1.0f, 0.0f, 2.0f);
+        
         [Tooltip("采样半径 Sampling radius. Bigger the radius, wider ambient occlusion will be achieved.")]
-        public ClampedFloatParameter gtaoRadius = new ClampedFloatParameter(1.0f, 0.0f, 4.0f);
+        public ClampedFloatParameter hbaoRadius = new ClampedFloatParameter(0.75f, 0.0f, 4.0f);
         
-        [Tooltip("")]
-        public ClampedIntParameter directionCount = new ClampedIntParameter(2, 1, 8);
+        [Tooltip("步进方向数 Number of directions on the AO hemisphere.")]
+        public ClampedIntParameter hbaoDirectionCount = new ClampedIntParameter(4, 2, 8);
         
-        [Tooltip("步进步数 Number of steps to take along the slice during horizon search")]
-        public ClampedIntParameter stepCount = new ClampedIntParameter(8, 4, 12);
+        [Tooltip("步进步数 Number of steps during horizon search.")]
+        public ClampedIntParameter hbaoStepCount = new ClampedIntParameter(4, 2, 8);
+        
+        // GTAO
+        [Tooltip("遮蔽强度 Controls the strength of the ambient occlusion effect. Increase this value to produce darker areas.")]
+        public ClampedFloatParameter gtaoIntensity = new ClampedFloatParameter(0.75f, 0.0f, 2.0f);
+        
+        [Tooltip("采样半径 Sampling radius. Bigger the radius, wider ambient occlusion will be achieved.")]
+        public ClampedFloatParameter gtaoRadius = new ClampedFloatParameter(0.75f, 0.0f, 4.0f);
+        
+        [Tooltip("步进方向数 Number of directions on the AO hemisphere.")]
+        public ClampedIntParameter gtaoDirectionCount = new ClampedIntParameter(3, 1, 6);
+        
+        [Tooltip("步进步数 Number of steps during horizon search.")]
+        public ClampedIntParameter gtaoStepCount = new ClampedIntParameter(4, 2, 12);
         
         // Spatial Filter
         public BoolParameter enableSpatialFilter = new BoolParameter(false, BoolParameter.DisplayType.Checkbox);
