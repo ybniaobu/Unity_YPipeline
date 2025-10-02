@@ -77,6 +77,12 @@ namespace YPipeline.Editor
             EditorGUILayout.LabelField("Screen Space Ambient Occlusion", EditorStyles.boldLabel);
             
             PropertyField(m_AmbientOcclusionMode);
+            
+            if (m_AmbientOcclusionMode.value.enumValueIndex == (int) AmbientOcclusionMode.GTAO)
+            {
+                EditorGUILayout.HelpBox("注：目前 GTAO 在着色时未使用 Multiple Bounces，并且未实现 Specular Occlusion。", MessageType.Info);
+            }
+            
             PropertyField(m_HalfResolution);
 
             switch (m_AmbientOcclusionMode.value.enumValueIndex)

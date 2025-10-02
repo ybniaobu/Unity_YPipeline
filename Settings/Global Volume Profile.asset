@@ -15,7 +15,7 @@ MonoBehaviour:
   active: 1
   ambientOcclusionMode:
     m_OverrideState: 1
-    m_Value: 3
+    m_Value: 1
   halfResolution:
     m_OverrideState: 1
     m_Value: 1
@@ -42,10 +42,10 @@ MonoBehaviour:
     m_Value: 4
   gtaoIntensity:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0.75
   gtaoRadius:
     m_OverrideState: 1
-    m_Value: 0.75
+    m_Value: 0.6
   gtaoDirectionCount:
     m_OverrideState: 1
     m_Value: 3
@@ -60,7 +60,7 @@ MonoBehaviour:
     m_Value: 4
   spatialSigma:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 2
   depthSigma:
     m_OverrideState: 1
     m_Value: 0.25
