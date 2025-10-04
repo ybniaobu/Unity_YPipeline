@@ -14,9 +14,10 @@ namespace YPipeline
     {
         private YPipelineData m_Data;
         private GameCameraRenderer m_GameCameraRenderer;
+        private ReflectionCameraRenderer m_ReflectionCameraRenderer;
         
 #if UNITY_EDITOR
-        private SceneCameraRenderer m_SceneCameraRenderer;
+        private PreviewCameraRenderer m_PreviewCameraRenderer;
 #endif
         
         public YRenderPipeline(YRenderPipelineAsset asset)
@@ -33,11 +34,12 @@ namespace YPipeline
             VolumeManager.instance.Initialize(null, asset.globalVolumeProfile);
 
             m_GameCameraRenderer = CameraRenderer.Create<GameCameraRenderer>(ref m_Data);
+            m_ReflectionCameraRenderer = CameraRenderer.Create<ReflectionCameraRenderer>(ref m_Data);
             
 #if UNITY_EDITOR
-            m_SceneCameraRenderer = CameraRenderer.Create<SceneCameraRenderer>(ref m_Data);
+            m_PreviewCameraRenderer = CameraRenderer.Create<PreviewCameraRenderer>(ref m_Data);
             InitializeLightmapper();
-            EditorPrefs.SetInt("SceneViewFPS", 30);
+            EditorPrefs.SetInt("SceneViewFPS", 60);
 #endif
             
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -56,20 +58,37 @@ namespace YPipeline
                 BeginCameraRendering(context, camera);
                 m_Data.camera = camera;
                 m_Data.cmd = CommandBufferPool.Get();
+                VolumeManager.instance.Update(camera.transform, 1);
                 
 #if UNITY_EDITOR
                 // 待修改
                 if (camera.cameraType == CameraType.Reflection || camera.cameraType == CameraType.Preview)
                     ScriptableRenderContext.EmitGeometryForCamera(camera);
 
-                if (m_Data.camera.cameraType == CameraType.SceneView) 
+                if (camera.cameraType == CameraType.SceneView) 
                 {
                     ScriptableRenderContext.EmitWorldGeometryForSceneView(m_Data.camera);
                 }
 #endif
-                VolumeManager.instance.Update(camera.transform, 1);
-                
-                m_GameCameraRenderer.Render(ref m_Data);
+
+                switch (camera.cameraType)
+                {
+                    case CameraType.SceneView: 
+                        m_GameCameraRenderer.Render(ref m_Data);
+                        break;
+                    case CameraType.Preview:
+                        m_PreviewCameraRenderer.Render(ref m_Data);
+                        break;
+                    case CameraType.Reflection:  // TODO：反射探针不能用 depth prepass 渲染，效果不好 ！！！！！！！！！！！！！！
+                        m_GameCameraRenderer.Render(ref m_Data);
+                        break;
+                    case CameraType.Game:
+                        m_GameCameraRenderer.Render(ref m_Data);
+                        break;
+                    default:
+                        m_GameCameraRenderer.Render(ref m_Data);
+                        break;
+                }
                 EndCameraRendering(context, camera);
                 
                 m_Data.context.ExecuteCommandBuffer(m_Data.cmd);
