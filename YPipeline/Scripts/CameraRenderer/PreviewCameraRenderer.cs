@@ -25,14 +25,12 @@ namespace YPipeline
             m_CameraPipelineNodes.Add(PipelinePass.Create<SkyboxPass>());
             m_CameraPipelineNodes.Add(PipelinePass.Create<CopyColorPass>());
             m_CameraPipelineNodes.Add(PipelinePass.Create<TransparencyPass>());
-            m_CameraPipelineNodes.Add(PipelinePass.Create<PostProcessingPass>());
+            m_CameraPipelineNodes.Add(PipelinePass.Create<PreviewFinalPass>());
         }
 
         public override void Render(ref YPipelineData data)
         {
             base.Render(ref data);
-            
-            // TODO：反射探针不能用 depth prepass 渲染，效果不好 ！！！！！！！！！！！！！！
             
             RenderGraphParameters renderGraphParams = new RenderGraphParameters()
             {

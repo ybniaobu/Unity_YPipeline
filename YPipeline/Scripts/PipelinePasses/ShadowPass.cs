@@ -253,7 +253,7 @@ namespace YPipeline
                     }
                     context.cmd.EndSample("Sun Light Shadows");
                     
-                     context.cmd.BeginSample("Point Light Shadows");
+                    context.cmd.BeginSample("Point Light Shadows");
                     if (data.shadowingPointLightCount > 0)
                     {
                         context.cmd.SetGlobalFloat(YPipelineShaderIDs.k_ShadowPancakingID, 0.0f);
@@ -269,11 +269,11 @@ namespace YPipeline
                             }
                         }
                         context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_PointLightShadowMapID, data.pointLightShadowMap);
-                        context.cmd.SetBufferData(data.pointLightShadowBuffer, data.pointLightsShadowData, 0, 0, data.shadowingPointLightCount);
-                        context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_PointLightShadowDataID, data.pointLightShadowBuffer);
-                        context.cmd.SetBufferData(data.pointLightShadowMatricesBuffer, data.pointLightShadowMatrices, 0, 0, data.shadowingPointLightCount * 6);
-                        context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_PointLightShadowMatricesID, data.pointLightShadowMatricesBuffer);
                     }
+                    context.cmd.SetBufferData(data.pointLightShadowBuffer, data.pointLightsShadowData, 0, 0, data.shadowingPointLightCount);
+                    context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_PointLightShadowDataID, data.pointLightShadowBuffer);
+                    context.cmd.SetBufferData(data.pointLightShadowMatricesBuffer, data.pointLightShadowMatrices, 0, 0, data.shadowingPointLightCount * 6);
+                    context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_PointLightShadowMatricesID, data.pointLightShadowMatricesBuffer);
                     context.cmd.EndSample("Point Light Shadows");
                     
                     context.cmd.BeginSample("Spot Light Shadows");
@@ -287,13 +287,12 @@ namespace YPipeline
                             context.cmd.ClearRenderTarget(true, false, Color.clear);
                             context.cmd.DrawRendererList(data.spotLightShadowRendererList[i]);
                         }
-                        
                         context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_SpotLightShadowMapID, data.spotLightShadowMap);
-                        context.cmd.SetBufferData(data.spotLightShadowBuffer, data.spotLightsShadowData, 0, 0, data.shadowingSpotLightCount);
-                        context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_SpotLightShadowDataID, data.spotLightShadowBuffer);
-                        context.cmd.SetBufferData(data.spotLightShadowMatricesBuffer, data.spotLightShadowMatrices, 0, 0, data.shadowingSpotLightCount);
-                        context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_SpotLightShadowMatricesID, data.spotLightShadowMatricesBuffer);
                     }
+                    context.cmd.SetBufferData(data.spotLightShadowBuffer, data.spotLightsShadowData, 0, 0, data.shadowingSpotLightCount);
+                    context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_SpotLightShadowDataID, data.spotLightShadowBuffer);
+                    context.cmd.SetBufferData(data.spotLightShadowMatricesBuffer, data.spotLightShadowMatrices, 0, 0, data.shadowingSpotLightCount);
+                    context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_SpotLightShadowMatricesID, data.spotLightShadowMatricesBuffer);
                     context.cmd.EndSample("Spot Light Shadows");
                     
                     context.cmd.SetViewProjectionMatrices(data.viewMatrix, data.projectionMatrix);
