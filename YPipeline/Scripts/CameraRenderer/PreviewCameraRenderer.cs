@@ -11,21 +11,10 @@ namespace YPipeline
         {
             m_CameraPipelineNodes.Clear();
             m_CameraPipelineNodes.Add(PipelinePass.Create<CullingPass>());
-            m_CameraPipelineNodes.Add(PipelinePass.Create<PreviewLightSetupPass>());
-            m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardResourcesPass>());
-            m_CameraPipelineNodes.Add(PipelinePass.Create<CameraSetupPass>());
-            m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardThinGBufferPass>());
-            m_CameraPipelineNodes.Add(PipelinePass.Create<CopyDepthPass>());
-            m_CameraPipelineNodes.Add(PipelinePass.Create<MotionVectorPass>());
-            m_CameraPipelineNodes.Add(PipelinePass.Create<ShadowPass>());
-            m_CameraPipelineNodes.Add(PipelinePass.Create<AmbientOcclusionPass>());
-            m_CameraPipelineNodes.Add(PipelinePass.Create<TiledLightCullingPass>());
-            m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardGeometryPass>());
-            m_CameraPipelineNodes.Add(PipelinePass.Create<ErrorMaterialPass>());
-            m_CameraPipelineNodes.Add(PipelinePass.Create<SkyboxPass>());
-            m_CameraPipelineNodes.Add(PipelinePass.Create<CopyColorPass>());
-            m_CameraPipelineNodes.Add(PipelinePass.Create<TransparencyPass>());
-            m_CameraPipelineNodes.Add(PipelinePass.Create<PreviewFinalPass>());
+            m_CameraPipelineNodes.Add(PipelinePass.Create<PreviewSetupPass>());
+            m_CameraPipelineNodes.Add(PipelinePass.Create<PreviewDrawPass>());
+            // m_CameraPipelineNodes.Add(PipelinePass.Create<CopyColorPass>()); // 绘制透明物体可能需要用到 color texture，之后可能需要添加
+            m_CameraPipelineNodes.Add(PipelinePass.Create<PreviewFinalPass>()); // 是否加个 FXAA
         }
 
         public override void Render(ref YPipelineData data)
