@@ -258,8 +258,8 @@ namespace YPipeline
                             context.cmd.SetComputeTextureParam(data.cs, upsampleKernel, "_InputTexture", upsampleInput);
                             context.cmd.SetComputeTextureParam(data.cs, upsampleKernel, "_OutputTexture", data.aoTexture);
                             // context.cmd.SetComputeTextureParam(data.cs, upsampleKernel,"_HalfDepthTexture", data.halfDepth);
-                            int threadGroupSize = Mathf.CeilToInt(data.textureSize.x * 2.0f / 8.0f);
-                            context.cmd.DispatchCompute(data.cs, upsampleKernel, threadGroupSize, threadGroupSize, 1);
+                            Vector2Int threadGroupSize = new Vector2Int(Mathf.CeilToInt( data.textureSize.x * 2.0f / 8.0f), Mathf.CeilToInt( data.textureSize.y * 2.0f / 8.0f));
+                            context.cmd.DispatchCompute(data.cs, upsampleKernel, threadGroupSize.x, threadGroupSize.y, 1);
                             context.cmd.EndSample("SSAO Upsample");
                         }
                         
