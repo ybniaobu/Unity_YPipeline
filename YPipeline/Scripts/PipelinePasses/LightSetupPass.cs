@@ -78,7 +78,7 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<LightSetupPassData>("Set Global Light Data", out var passData))
+            using (var builder = data.renderGraph.AddUnsafePass<LightSetupPassData>("Set Global Light Data", out var passData))
             {
                 RecordLightsData(ref data);
                 
@@ -98,12 +98,11 @@ namespace YPipeline
                     target = GraphicsBuffer.Target.Structured,
                     name = "Punctual Lights Data"
                 });
-                passData.punctualLightsBuffer = builder.WriteBuffer(data.PunctualLightBufferHandle);
+                passData.punctualLightsBuffer = builder.UseBuffer(data.PunctualLightBufferHandle, AccessFlags.Write);
                 
                 builder.AllowPassCulling(false);
-                builder.AllowRendererListCulling(false);
 
-                builder.SetRenderFunc((LightSetupPassData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((LightSetupPassData data, UnsafeGraphContext context) =>
                 {
                     // Sun Light Data
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_SunLightColorID, data.sunLightData.sunLightColor);
@@ -120,14 +119,8 @@ namespace YPipeline
                     
                     // Punctual Light Data
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_PunctualLightCountID, new Vector4(data.punctualLightCount, 0));
-                    if (data.punctualLightCount > 0)
-                    {
-                        context.cmd.SetBufferData(data.punctualLightsBuffer, data.punctualLightsData, 0, 0, data.punctualLightCount);
-                        context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_PunctualLightDataID, data.punctualLightsBuffer);
-                    }
-                    
-                    context.renderContext.ExecuteCommandBuffer(context.cmd);
-                    context.cmd.Clear();
+                    context.cmd.SetBufferData(data.punctualLightsBuffer, data.punctualLightsData, 0, 0, data.punctualLightCount);
+                    context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_PunctualLightDataID, data.punctualLightsBuffer);
                 });
             }
         }

@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
+using UnityEngine.Rendering.RenderGraphModule.Util;
 
 namespace YPipeline
 {
@@ -19,24 +20,24 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<CopyColorPassData>("Copy Color", out var passData))
+            // 注意 CopyTexture 的兼容问题，看情况是否改为 AddBlitPass。
+            using (var builder = data.renderGraph.AddUnsafePass<CopyColorPassData>("Copy Color", out var passData))
             {
-                passData.colorAttachment = builder.ReadTexture(data.CameraColorAttachment);
-                passData.colorTexture = builder.WriteTexture(data.CameraColorTexture);
+                passData.colorAttachment = data.CameraColorAttachment;
+                builder.UseTexture(data.CameraColorAttachment, AccessFlags.Read);
+                passData.colorTexture = data.CameraColorTexture;
+                builder.UseTexture(data.CameraColorTexture, AccessFlags.Write);
                 
+                builder.SetGlobalTextureAfterPass(data.CameraColorTexture, YPipelineShaderIDs.k_ColorTextureID);
                 builder.AllowPassCulling(false);
-                builder.AllowRendererListCulling(false);
                 
-                builder.SetRenderFunc((CopyColorPassData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((CopyColorPassData data, UnsafeGraphContext context) =>
                 {
-                    bool copyTextureSupported = SystemInfo.copyTextureSupport > CopyTextureSupport.None;
-                    if (copyTextureSupported) context.cmd.CopyTexture(data.colorAttachment, data.colorTexture);
-                    else BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.colorTexture);
+                    // bool copyTextureSupported = SystemInfo.copyTextureSupport > CopyTextureSupport.None;
+                    // if (copyTextureSupported) context.cmd.CopyTexture(data.colorAttachment, data.colorTexture);
+                    // else BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.colorTexture);
                     
-                    context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_ColorTextureID, data.colorTexture);
-                    
-                    context.renderContext.ExecuteCommandBuffer(context.cmd);
-                    context.cmd.Clear();
+                    context.cmd.CopyTexture(data.colorAttachment, data.colorTexture);
                 });
             }
         }

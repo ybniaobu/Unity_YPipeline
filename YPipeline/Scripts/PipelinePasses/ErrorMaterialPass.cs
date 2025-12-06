@@ -10,8 +10,6 @@ namespace YPipeline
 #if UNITY_EDITOR
         private class ErrorMaterialPassData
         {
-            public TextureHandle colorAttachment;
-            public TextureHandle depthAttachment;
             public RendererListHandle rendererList;
         }
         
@@ -22,7 +20,7 @@ namespace YPipeline
         public override void OnRecord(ref YPipelineData data)
         {
 #if UNITY_EDITOR
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<ErrorMaterialPassData>("Draw Error Material", out var passData))
+            using (var builder = data.renderGraph.AddRasterRenderPass<ErrorMaterialPassData>("Draw Error Material", out var passData))
             {
                 if (m_ErrorMaterial == null)
                 {
@@ -39,14 +37,12 @@ namespace YPipeline
                 passData.rendererList = data.renderGraph.CreateRendererList(rendererListDesc);
                 builder.UseRendererList(passData.rendererList);
                 
-                passData.colorAttachment = builder.UseColorBuffer(data.CameraColorAttachment, 0);
-                passData.depthAttachment = builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.Read);
+                builder.SetRenderAttachment(data.CameraColorAttachment, 0);
+                builder.SetRenderAttachmentDepth(data.CameraDepthAttachment, AccessFlags.Read);
                 
-                builder.SetRenderFunc((ErrorMaterialPassData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((ErrorMaterialPassData data, RasterGraphContext context) =>
                 {
                     context.cmd.DrawRendererList(data.rendererList);
-                    context.renderContext.ExecuteCommandBuffer(context.cmd);
-                    context.cmd.Clear();
                 });
             }
 #endif

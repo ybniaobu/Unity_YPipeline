@@ -50,12 +50,10 @@ namespace YPipeline
         protected override void Render(ScriptableRenderContext context, List<Camera> cameras)
         {
             using var profilingScope = new ProfilingScope(ProfilingSampler.Get(YPipelineProfileIDs.YPipelineTotal));
-            BeginContextRendering(context, cameras);
             m_Data.context = context;
             
             foreach(Camera camera in cameras)
             {
-                BeginCameraRendering(context, camera);
                 m_Data.camera = camera;
                 m_Data.cmd = CommandBufferPool.Get();
                 VolumeManager.instance.Update(camera.transform, 1);
@@ -78,6 +76,7 @@ namespace YPipeline
                         break;
                     case CameraType.Preview:
                         m_PreviewCameraRenderer.Render(ref m_Data);
+                        // m_GameCameraRenderer.Render(ref m_Data);
                         break;
                     case CameraType.Reflection:  // TODO：反射探针不能用 depth prepass 渲染，效果不好 ！！！！！！！！！！！！！！
                         m_GameCameraRenderer.Render(ref m_Data);
@@ -89,7 +88,6 @@ namespace YPipeline
                         m_GameCameraRenderer.Render(ref m_Data);
                         break;
                 }
-                EndCameraRendering(context, camera);
                 
                 m_Data.context.ExecuteCommandBuffer(m_Data.cmd);
                 m_Data.cmd.Clear();
@@ -98,7 +96,6 @@ namespace YPipeline
             }
             
             m_Data.renderGraph.EndFrame();
-            EndContextRendering(context, cameras);
         }
         
         protected override void Dispose(bool disposing) 

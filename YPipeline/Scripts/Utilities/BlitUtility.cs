@@ -6,7 +6,7 @@ namespace YPipeline
 {
     public static class BlitUtility
     {
-        private static readonly int k_BlitTextureId = Shader.PropertyToID("_BlitTexture");
+        public static readonly int k_BlitTextureId = Shader.PropertyToID("_BlitTexture");
         
         // ----------------------------------------------------------------------------------------------------
         // Materials
@@ -66,6 +66,13 @@ namespace YPipeline
             cmd.DrawProcedural(Matrix4x4.identity, CopyMaterial, 0, MeshTopology.Triangles, 3);
         }
         
+        public static void BlitTexture(UnsafeCommandBuffer cmd, TextureHandle source, TextureHandle destination)
+        {
+            CopyMaterial.SetTexture(k_BlitTextureId, source);
+            cmd.SetRenderTarget(destination, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            cmd.DrawProcedural(Matrix4x4.identity, CopyMaterial, 0, MeshTopology.Triangles, 3);
+        }
+        
         public static void BlitGlobalTexture(CommandBuffer cmd, TextureHandle source, TextureHandle destination, Material material, int pass)
         {
             cmd.SetGlobalTexture(k_BlitTextureId, source);
@@ -73,7 +80,21 @@ namespace YPipeline
             cmd.DrawProcedural(Matrix4x4.identity, material, pass, MeshTopology.Triangles, 3);
         }
         
+        public static void BlitGlobalTexture(UnsafeCommandBuffer cmd, TextureHandle source, TextureHandle destination, Material material, int pass)
+        {
+            cmd.SetGlobalTexture(k_BlitTextureId, source);
+            cmd.SetRenderTarget(destination, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            cmd.DrawProcedural(Matrix4x4.identity, material, pass, MeshTopology.Triangles, 3);
+        }
+        
         public static void BlitTexture(CommandBuffer cmd, TextureHandle source, TextureHandle destination, Material material, int pass)
+        {
+            material.SetTexture(k_BlitTextureId, source);
+            cmd.SetRenderTarget(destination, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            cmd.DrawProcedural(Matrix4x4.identity, material, pass, MeshTopology.Triangles, 3);
+        }
+        
+        public static void BlitTexture(UnsafeCommandBuffer cmd, TextureHandle source, TextureHandle destination, Material material, int pass)
         {
             material.SetTexture(k_BlitTextureId, source);
             cmd.SetRenderTarget(destination, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
@@ -103,6 +124,14 @@ namespace YPipeline
         }
 
         public static void CopyDepth(CommandBuffer cmd, TextureHandle source, TextureHandle destination)
+        {
+            //cmd.SetGlobalTexture(k_BlitTextureId, source);
+            CopyDepthMaterial.SetTexture(k_BlitTextureId, source);
+            cmd.SetRenderTarget(destination, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
+            cmd.DrawProcedural(Matrix4x4.identity, CopyDepthMaterial, 0, MeshTopology.Triangles, 3);
+        }
+        
+        public static void CopyDepth(UnsafeCommandBuffer cmd, TextureHandle source, TextureHandle destination)
         {
             //cmd.SetGlobalTexture(k_BlitTextureId, source);
             CopyDepthMaterial.SetTexture(k_BlitTextureId, source);

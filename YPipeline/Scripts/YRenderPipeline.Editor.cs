@@ -47,7 +47,7 @@ namespace YPipeline
                         lightData.Init(ref rectangleLight);
                         break;
                     default:
-                        lightData.InitNoBake(light.GetInstanceID());
+                        lightData.InitNoBake(light.GetEntityId());
                         break;
                 }
                 

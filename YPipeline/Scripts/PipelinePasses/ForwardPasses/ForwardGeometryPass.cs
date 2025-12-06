@@ -9,9 +9,6 @@ namespace YPipeline
     {
         private class ForwardGeometryPassData
         {
-            public TextureHandle colorAttachment;
-            public TextureHandle depthAttachment;
-            
             public RendererListHandle opaqueRendererList;
             public RendererListHandle alphaTestRendererList;
         }
@@ -25,7 +22,7 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<ForwardGeometryPassData>("Draw Opaque & AlphaTest", out var passData))
+            using (var builder = data.renderGraph.AddRasterRenderPass<ForwardGeometryPassData>("Draw Opaque & AlphaTest", out var passData))
             {
                 RendererListDesc opaqueRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_ForwardOpaqueShaderTagIds, data.cullingResults, data.camera)
                 {
@@ -46,25 +43,24 @@ namespace YPipeline
                 builder.UseRendererList(passData.opaqueRendererList);
                 builder.UseRendererList(passData.alphaTestRendererList);
 
-                passData.colorAttachment = builder.UseColorBuffer(data.CameraColorAttachment, 0);
-                passData.depthAttachment = builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.Read);
+                builder.SetRenderAttachment(data.CameraColorAttachment, 0, AccessFlags.Write);
+                builder.SetRenderAttachmentDepth(data.CameraDepthAttachment, AccessFlags.Read);
 
-                if (data.isAmbientOcclusionTextureCreated) builder.ReadTexture(data.AmbientOcclusionTexture);
-                if (data.isSunLightShadowMapCreated) builder.ReadTexture(data.SunLightShadowMap);
-                if (data.isPointLightShadowMapCreated) builder.ReadTexture(data.PointLightShadowMap);
-                if (data.isSpotLightShadowMapCreated) builder.ReadTexture(data.SpotLightShadowMap);
+                if (data.isAmbientOcclusionTextureCreated) builder.UseTexture(data.AmbientOcclusionTexture, AccessFlags.Read);
+                if (data.isSunLightShadowMapCreated) builder.UseTexture(data.SunLightShadowMap, AccessFlags.Read);
+                if (data.isPointLightShadowMapCreated) builder.UseTexture(data.PointLightShadowMap, AccessFlags.Read);
+                if (data.isSpotLightShadowMapCreated) builder.UseTexture(data.SpotLightShadowMap, AccessFlags.Read);
 
-                builder.ReadBuffer(data.PunctualLightBufferHandle);
-                builder.ReadBuffer(data.PointLightShadowBufferHandle);
-                builder.ReadBuffer(data.PointLightShadowMatricesBufferHandle);
-                builder.ReadBuffer(data.SpotLightShadowBufferHandle);
-                builder.ReadBuffer(data.SpotLightShadowMatricesBufferHandle);
-                builder.ReadBuffer(data.TilesLightIndicesBufferHandle);
+                builder.UseBuffer(data.PunctualLightBufferHandle, AccessFlags.Read);
+                builder.UseBuffer(data.PointLightShadowBufferHandle, AccessFlags.Read);
+                builder.UseBuffer(data.PointLightShadowMatricesBufferHandle, AccessFlags.Read);
+                builder.UseBuffer(data.SpotLightShadowBufferHandle, AccessFlags.Read);
+                builder.UseBuffer(data.SpotLightShadowMatricesBufferHandle, AccessFlags.Read);
+                builder.UseBuffer(data.TilesLightIndicesBufferHandle, AccessFlags.Read);
                
                 builder.AllowPassCulling(false);
-                builder.AllowRendererListCulling(false);
 
-                builder.SetRenderFunc((ForwardGeometryPassData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((ForwardGeometryPassData data, RasterGraphContext context) =>
                 {
                     // context.cmd.SetRenderTarget(data.colorAttachment, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
                     //     data.depthAttachment, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
@@ -76,9 +72,6 @@ namespace YPipeline
                     context.cmd.BeginSample("Draw AlphaTest");
                     context.cmd.DrawRendererList(data.alphaTestRendererList);
                     context.cmd.EndSample("Draw AlphaTest");
-                    
-                    context.renderContext.ExecuteCommandBuffer(context.cmd);
-                    context.cmd.Clear();
                 });
             }
         }

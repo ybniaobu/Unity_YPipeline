@@ -15,6 +15,7 @@ namespace YPipeline
         {
             public TextureHandle depthAttachment;
             public TextureHandle cameraDepthTarget;
+            public TextureHandle cameraColorTarget;
             
             public RendererListHandle preGizmosRendererList;
             public RendererListHandle postGizmosRendererList;
@@ -29,25 +30,27 @@ namespace YPipeline
         {
             if (Handles.ShouldRenderGizmos())
             {
-                using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<GizmosPassData>("Gizmos (Editor)", out var passData))
+                using (var builder = data.renderGraph.AddUnsafePass<GizmosPassData>("Gizmos (Editor)", out var passData))
                 {
                     passData.depthAttachment = data.CameraDepthAttachment;
+                    passData.cameraColorTarget = data.CameraColorTarget;
                     passData.cameraDepthTarget = data.CameraDepthTarget;
-                    builder.ReadTexture(passData.depthAttachment);
-                    builder.WriteTexture(passData.cameraDepthTarget);
+                    builder.UseTexture(passData.depthAttachment, AccessFlags.Read);
+                    builder.UseTexture(passData.cameraDepthTarget, AccessFlags.Write);
                     
                     passData.preGizmosRendererList = data.renderGraph.CreateGizmoRendererList(data.camera, GizmoSubset.PreImageEffects);
                     builder.UseRendererList(passData.preGizmosRendererList);
                     passData.postGizmosRendererList = data.renderGraph.CreateGizmoRendererList(data.camera, GizmoSubset.PostImageEffects);
                     builder.UseRendererList(passData.postGizmosRendererList);
                     
-                    builder.SetRenderFunc((GizmosPassData data, RenderGraphContext context) =>
+                    builder.SetRenderFunc((GizmosPassData data, UnsafeGraphContext context) =>
                     {
                         BlitUtility.CopyDepth(context.cmd, data.depthAttachment, data.cameraDepthTarget);
+                        
+                        context.cmd.SetRenderTarget(data.cameraColorTarget, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
+                            data.cameraDepthTarget, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
                         context.cmd.DrawRendererList(data.preGizmosRendererList);
                         context.cmd.DrawRendererList(data.postGizmosRendererList);
-                        context.renderContext.ExecuteCommandBuffer(context.cmd);
-                        context.cmd.Clear();
                     });
                 }
             }

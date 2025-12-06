@@ -12,9 +12,6 @@ namespace YPipeline
     {
         private class FinalPassData
         {
-            public TextureHandle cameraDepthTarget;
-            public TextureHandle cameraColorTarget;
-            
             public RendererListHandle preGizmosRendererList;
             public RendererListHandle postGizmosRendererList;
         }
@@ -31,10 +28,11 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<FinalPassData>("Preview Final", out var passData))
+#if UNITY_EDITOR
+            using (var builder = data.renderGraph.AddUnsafePass<FinalPassData>("Preview Final", out var passData))
             {
-                passData.cameraColorTarget = builder.ReadTexture(data.CameraColorTarget);
-                passData.cameraDepthTarget = builder.ReadTexture(data.CameraDepthTarget);
+                builder.SetRenderAttachment(data.CameraColorTarget, 0, AccessFlags.Write);
+                builder.SetRenderAttachmentDepth(data.CameraDepthTarget, AccessFlags.Read);
                 
                 passData.preGizmosRendererList = data.renderGraph.CreateGizmoRendererList(data.camera, GizmoSubset.PreImageEffects);
                 builder.UseRendererList(passData.preGizmosRendererList);
@@ -43,16 +41,13 @@ namespace YPipeline
                 
                 builder.AllowPassCulling(false);
                 
-                builder.SetRenderFunc((FinalPassData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((FinalPassData data, UnsafeGraphContext context) =>
                 {
                     if (Handles.ShouldRenderGizmos()) context.cmd.DrawRendererList(data.preGizmosRendererList);
-                    // BlitUtility.CopyDepth(context.cmd, data.depthAttachment, data.cameraDepthTarget);
-                    // BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.cameraColorTarget);
                     if (Handles.ShouldRenderGizmos()) context.cmd.DrawRendererList(data.postGizmosRendererList);
-                    context.renderContext.ExecuteCommandBuffer(context.cmd);
-                    context.cmd.Clear();
                 });
             }
+#endif
         }
     }
 }

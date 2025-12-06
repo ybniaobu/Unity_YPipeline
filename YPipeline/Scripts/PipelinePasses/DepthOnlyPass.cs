@@ -9,8 +9,6 @@ namespace YPipeline
     {
         private class DepthOnlyPassData
         {
-            public TextureHandle depthAttachment;
-            
             public RendererListHandle opaqueRendererList;
             public RendererListHandle alphaTestRendererList;
         }
@@ -19,7 +17,7 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<DepthOnlyPassData>("Depth PrePass", out var passData))
+            using (var builder = data.renderGraph.AddRasterRenderPass<DepthOnlyPassData>("Depth PrePass", out var passData))
             {
                 RendererListDesc opaqueRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_DepthShaderTagId, data.cullingResults, data.camera)
                 {
@@ -40,19 +38,16 @@ namespace YPipeline
                 builder.UseRendererList(passData.opaqueRendererList);
                 builder.UseRendererList(passData.alphaTestRendererList);
 
-                passData.depthAttachment = builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.Write);
+                builder.SetRenderAttachmentDepth(data.CameraDepthAttachment, AccessFlags.ReadWrite);
                 
                 builder.AllowPassCulling(false);
-                builder.AllowRendererListCulling(false);
 
-                builder.SetRenderFunc((DepthOnlyPassData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((DepthOnlyPassData data, RasterGraphContext context) =>
                 {
                     // context.cmd.SetRenderTarget(data.depthAttachment, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store);
                     
                     context.cmd.DrawRendererList(data.opaqueRendererList);
                     context.cmd.DrawRendererList(data.alphaTestRendererList);
-                    context.renderContext.ExecuteCommandBuffer(context.cmd);
-                    context.cmd.Clear();
                 });
             }
         }

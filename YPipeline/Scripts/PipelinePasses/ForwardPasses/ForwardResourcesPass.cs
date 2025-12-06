@@ -9,9 +9,6 @@ namespace YPipeline
     {
         private class ForwardResourcesPassData
         {
-            public TextureHandle envBRDFLut;
-            public TextureHandle blueNoise64;
-            
             // Global Constant Buffer Variables
             public Vector2Int bufferSize;
             public Vector4 jitter;
@@ -30,7 +27,8 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<ForwardResourcesPassData>("Set Global Resources", out var passData))
+            // TODO：m_EnvBRDFLut、m_BlueNoise64 初始化一次，并使用 SetGlobalTextureAfterPass
+            using (var builder = data.renderGraph.AddUnsafePass<ForwardResourcesPassData>("Set Global Resources", out var passData))
             {
                 ImportBackBuffers(ref data);
                 
@@ -43,16 +41,18 @@ namespace YPipeline
                     m_EnvBRDFLut?.Release();
                     m_EnvBRDFLut = RTHandles.Alloc(data.asset.pipelineResources.textures.environmentBRDFLut);
                 }
-                passData.envBRDFLut = data.renderGraph.ImportTexture(m_EnvBRDFLut);
-                builder.ReadTexture(passData.envBRDFLut);
+                TextureHandle envBRDFLut = data.renderGraph.ImportTexture(m_EnvBRDFLut);
+                builder.UseTexture(envBRDFLut, AccessFlags.Read);
+                builder.SetGlobalTextureAfterPass(envBRDFLut, YPipelineShaderIDs.k_EnvBRDFLutID);
 
                 if (m_BlueNoise64 == null || m_BlueNoise64.externalTexture != data.asset.pipelineResources.textures.blueNoise64)
                 {
                     m_BlueNoise64?.Release();
                     m_BlueNoise64 = RTHandles.Alloc(data.asset.pipelineResources.textures.blueNoise64);
                 }
-                passData.blueNoise64 = data.renderGraph.ImportTexture(m_BlueNoise64);
-                builder.ReadTexture(passData.blueNoise64);
+                TextureHandle blueNoise64 = data.renderGraph.ImportTexture(m_BlueNoise64);
+                builder.UseTexture(blueNoise64, AccessFlags.Read);
+                builder.SetGlobalTextureAfterPass(blueNoise64, YPipelineShaderIDs.k_BlueNoise64ID);
                 
                 // ----------------------------------------------------------------------------------------------------
                 // Buffers
@@ -122,18 +122,13 @@ namespace YPipeline
                 
                 builder.AllowPassCulling(false);
                 
-                builder.SetRenderFunc((ForwardResourcesPassData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((ForwardResourcesPassData data, UnsafeGraphContext context) =>
                 {
-                    context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_EnvBRDFLutID, data.envBRDFLut);
-                    context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_BlueNoise64ID, data.blueNoise64);
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_BufferSizeID, new Vector4(1f / data.bufferSize.x, 1f / data.bufferSize.y, data.bufferSize.x, data.bufferSize.y));
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_JitterID, data.jitter);
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_TimeParams,data.timeParams);
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_CascadeSettingsID, data.cascadeSettings);
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_ShadowMapSizesID, data.shadowMapSizes);
-                    
-                    context.renderContext.ExecuteCommandBuffer(context.cmd);
-                    context.cmd.Clear();
                 });
             }
         }

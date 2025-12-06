@@ -10,8 +10,6 @@ namespace YPipeline
         private class ColorGradingLutPassData
         {
             public Material material;
-
-            public TextureHandle colorGradingLut;
             
             public Vector4 colorGradingLUTParams;
             
@@ -74,7 +72,7 @@ namespace YPipeline
             m_LiftGammaGain = stack.GetComponent<LiftGammaGain>();
             m_ToneMapping = stack.GetComponent<ToneMapping>();
 
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<ColorGradingLutPassData>("Color Grading Lut", out var passData))
+            using (var builder = data.renderGraph.AddRasterRenderPass<ColorGradingLutPassData>("Color Grading Lut", out var passData))
             {
                 passData.material = ColorGradingLutMaterial;
                 
@@ -90,7 +88,7 @@ namespace YPipeline
                     name = "Color Grading Baked Lut"
                 };
                 data.ColorGradingLutTexture = data.renderGraph.CreateTexture(desc);
-                passData.colorGradingLut = builder.WriteTexture(data.ColorGradingLutTexture);
+                builder.SetRenderAttachment(data.ColorGradingLutTexture, 0, AccessFlags.Write);
                 
                 passData.colorGradingLUTParams = new Vector4(lutHeight, 0.5f / lutWidth, 0.5f / lutHeight, lutHeight / (lutHeight - 1.0f));
                 
@@ -166,7 +164,7 @@ namespace YPipeline
                 }
                 passData.toneMappingPass = toneMappingPass;
 
-                builder.SetRenderFunc((ColorGradingLutPassData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((ColorGradingLutPassData data, RasterGraphContext context) =>
                 {
                     // Lut
                     data.material.SetVector(YPipelineShaderIDs.k_ColorGradingLUTParamsID, data.colorGradingLUTParams);
@@ -201,7 +199,7 @@ namespace YPipeline
                     if (data.toneMappingPass <= 4) data.material.SetVector(YPipelineShaderIDs.k_ToneMappingParamsID, data.toneMappingParams);
                     
                     // Blit
-                    BlitUtility.DrawTexture(context.cmd, data.colorGradingLut, data.material, data.toneMappingPass);
+                    context.cmd.DrawProcedural(Matrix4x4.identity, data.material, data.toneMappingPass, MeshTopology.Triangles, 3);
                 });
             }
         }

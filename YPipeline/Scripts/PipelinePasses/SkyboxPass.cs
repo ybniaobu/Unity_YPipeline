@@ -23,22 +23,19 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<SkyboxPassData>("Draw Skybox", out var passData))
+            using (var builder = data.renderGraph.AddRasterRenderPass<SkyboxPassData>("Draw Skybox", out var passData))
             {
                 passData.skyboxRendererList = data.renderGraph.CreateSkyboxRendererList(data.camera);
                 builder.UseRendererList(passData.skyboxRendererList);
                 
-                builder.UseColorBuffer(data.CameraColorAttachment, 0);
-                builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.Read);
+                builder.SetRenderAttachment(data.CameraColorAttachment, 0, AccessFlags.Write);
+                builder.SetRenderAttachmentDepth(data.CameraDepthAttachment, AccessFlags.Read);
                 
                 builder.AllowPassCulling(false);
-                builder.AllowRendererListCulling(false);
 
-                builder.SetRenderFunc((SkyboxPassData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((SkyboxPassData data, RasterGraphContext context) =>
                 {
                     context.cmd.DrawRendererList(data.skyboxRendererList);
-                    context.renderContext.ExecuteCommandBuffer(context.cmd);
-                    context.cmd.Clear();
                 });
             }
         }

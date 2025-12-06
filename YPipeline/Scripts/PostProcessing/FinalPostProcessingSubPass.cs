@@ -9,9 +9,7 @@ namespace YPipeline
         private class FinalPostPassData
         {
             public Material material;
-            
             public TextureHandle finalTexture;
-            public TextureHandle cameraColorTarget;
                 
             public bool isFXAAEnabled;
             public bool isFXAAQualityEnabled;
@@ -55,11 +53,12 @@ namespace YPipeline
             var stack = VolumeManager.instance.stack;
             m_FilmGrain = stack.GetComponent<FilmGrain>();
             
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<FinalPostPassData>("Final Post Processing", out var passData))
+            using (var builder = data.renderGraph.AddRasterRenderPass<FinalPostPassData>("Final Post Processing", out var passData))
             {
                 passData.material = FinalPostProcessingMaterial;
-                passData.finalTexture = builder.ReadTexture(data.CameraFinalTexture);
-                passData.cameraColorTarget = builder.WriteTexture(data.CameraColorTarget);
+                passData.finalTexture = data.CameraFinalTexture;
+                builder.UseTexture(data.CameraFinalTexture, AccessFlags.Read);
+                builder.SetRenderAttachment(data.CameraColorTarget, 0, AccessFlags.Write);
                 
                 passData.isFXAAEnabled = data.asset.antiAliasingMode == AntiAliasingMode.FXAA;
                 passData.isFXAAQualityEnabled = data.asset.fxaaMode == FXAAMode.Quality;
@@ -88,7 +87,7 @@ namespace YPipeline
                     }
                     
                     passData.filmGrainTexture = data.renderGraph.ImportTexture(m_FilmGrainTexture);
-                    builder.ReadTexture(passData.filmGrainTexture);
+                    builder.UseTexture(passData.filmGrainTexture, AccessFlags.Read);
                     
                     float uvScaleX = data.camera.pixelWidth / (float) m_FilmGrainTexture.externalTexture.width;
                     float uvScaleY = data.camera.pixelHeight / (float) m_FilmGrainTexture.externalTexture.height;
@@ -103,7 +102,7 @@ namespace YPipeline
                     m_FilmGrainTexture?.Release();
                 }
                 
-                builder.SetRenderFunc((FinalPostPassData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((FinalPostPassData data, RasterGraphContext context) =>
                 {
                     CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_FXAAQuality, data.isFXAAEnabled && data.isFXAAQualityEnabled);
                     CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_FXAAConsole, data.isFXAAEnabled && !data.isFXAAQualityEnabled);
@@ -116,7 +115,9 @@ namespace YPipeline
                         data.material.SetTexture(YPipelineShaderIDs.k_FilmGrainTexID, data.filmGrainTexture);
                     }
                     
-                    BlitUtility.BlitTexture(context.cmd, data.finalTexture, data.cameraColorTarget, data.cameraPixelRect, data.material, 0);
+                    data.material.SetTexture(BlitUtility.k_BlitTextureId, data.finalTexture);
+                    context.cmd.SetViewport(data.cameraPixelRect);
+                    context.cmd.DrawProcedural(Matrix4x4.identity, data.material, 0, MeshTopology.Triangles, 3);
                 });
             }
         }

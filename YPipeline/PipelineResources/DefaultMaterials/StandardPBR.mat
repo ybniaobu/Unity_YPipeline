@@ -92,6 +92,7 @@ Material:
     m_Floats:
     - _AOScale: 0
     - _AddPrecomputedVelocity: 0
+    - _BlendOp: 0
     - _BumpScale: 1
     - _Clipping: 0
     - _Cull: 2
@@ -101,6 +102,7 @@ Material:
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
+    - _Instancing: 0
     - _Metallic: 0
     - _MetallicScale: 0
     - _Mode: 0
@@ -118,6 +120,7 @@ Material:
     - _UseMetallicTex: 0
     - _UseNormalTex: 0
     - _UseRoughnessTex: 0
+    - _ZTest: 4
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}

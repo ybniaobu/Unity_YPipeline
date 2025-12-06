@@ -45,13 +45,16 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<PostProcessingPassData>("Disable Post Processing (Editor Preview)", out var passData))
+            using (var builder = data.renderGraph.AddUnsafePass<PostProcessingPassData>("Disable Post Processing (Editor Preview)", out var passData))
             {
                 passData.cameraType = data.camera.cameraType;
-                passData.colorAttachment = builder.ReadTexture(data.CameraColorAttachment);
-                passData.cameraColorTarget = builder.WriteTexture(data.CameraColorTarget);
+
+                passData.colorAttachment = data.CameraColorAttachment;
+                builder.UseTexture(data.CameraColorAttachment, AccessFlags.Read);
+                passData.cameraColorTarget = data.CameraColorTarget;
+                builder.UseTexture(data.CameraColorTarget, AccessFlags.Write);
                 
-                builder.SetRenderFunc((PostProcessingPassData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((PostProcessingPassData data, UnsafeGraphContext context) =>
                 {
 #if UNITY_EDITOR
                     // disable post-processing in material preview and reflection probe preview
@@ -67,8 +70,6 @@ namespace YPipeline
                         BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.cameraColorTarget);
                     }
 #endif
-                    context.renderContext.ExecuteCommandBuffer(context.cmd);
-                    context.cmd.Clear();
                 });
             }
             

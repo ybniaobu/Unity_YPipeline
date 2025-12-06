@@ -142,7 +142,9 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<ShadowPassData>("Render Shadow Maps", out var passData))
+            // TODO: RasterRenderPass 无法 SetRenderTarget，URP 是将直接光和间接光的阴影贴图分开进行的。
+            
+            using (var builder = data.renderGraph.AddUnsafePass<ShadowPassData>("Render Shadow Maps", out var passData))
             {
                 m_CullingInfoPerLight = new NativeArray<LightShadowCasterCullingInfo>(data.cullingResults.visibleLights.Length, Allocator.Temp);
                 m_ShadowSplitDataPerLight = new NativeArray<ShadowSplitData>(m_CullingInfoPerLight.Length * 6, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
@@ -189,7 +191,7 @@ namespace YPipeline
                     target = GraphicsBuffer.Target.Structured,
                     name = "Point Lights Shadows Data"
                 });
-                passData.pointLightShadowBuffer = builder.WriteBuffer(data.PointLightShadowBufferHandle);
+                passData.pointLightShadowBuffer = builder.UseBuffer(data.PointLightShadowBufferHandle, AccessFlags.Write);
                 
                 data.PointLightShadowMatricesBufferHandle = data.renderGraph.CreateBuffer(new BufferDesc()
                 {
@@ -198,7 +200,7 @@ namespace YPipeline
                     target = GraphicsBuffer.Target.Structured,
                     name = "Point Lights Shadow Matrices Data"
                 });
-                passData.pointLightShadowMatricesBuffer = builder.WriteBuffer(data.PointLightShadowMatricesBufferHandle);
+                passData.pointLightShadowMatricesBuffer = builder.UseBuffer(data.PointLightShadowMatricesBufferHandle, AccessFlags.Write);
                 
                 data.SpotLightShadowBufferHandle = data.renderGraph.CreateBuffer(new BufferDesc()
                 {
@@ -207,7 +209,7 @@ namespace YPipeline
                     target = GraphicsBuffer.Target.Structured,
                     name = "Spot Lights Shadows Data"
                 });
-                passData.spotLightShadowBuffer = builder.WriteBuffer(data.SpotLightShadowBufferHandle);
+                passData.spotLightShadowBuffer = builder.UseBuffer(data.SpotLightShadowBufferHandle, AccessFlags.Write);
                 
                 data.SpotLightShadowMatricesBufferHandle = data.renderGraph.CreateBuffer(new BufferDesc()
                 {
@@ -216,12 +218,11 @@ namespace YPipeline
                     target = GraphicsBuffer.Target.Structured,
                     name = "Spot Lights Shadow Matrices Data"
                 });
-                passData.spotLightShadowMatricesBuffer = builder.WriteBuffer(data.SpotLightShadowMatricesBufferHandle);
+                passData.spotLightShadowMatricesBuffer = builder.UseBuffer(data.SpotLightShadowMatricesBufferHandle, AccessFlags.Write);
                 
                 builder.AllowPassCulling(false);
-                builder.AllowRendererListCulling(false);
                 
-                builder.SetRenderFunc((ShadowPassData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((ShadowPassData data, UnsafeGraphContext context) =>
                 {
                     if (data.isPCSSEnabled)
                     {
@@ -246,7 +247,6 @@ namespace YPipeline
                             context.cmd.DrawRendererList(data.sunLightShadowRendererList[i]);
                         }
                         
-                        context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_SunLightShadowMapID, data.sunLightShadowMap);
                         context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_CascadeCullingSpheresID, data.sunLightShadowData.cascadeCullingSpheres);
                         context.cmd.SetGlobalMatrixArray(YPipelineShaderIDs.k_SunLightShadowMatricesID, data.sunLightShadowData.sunLightShadowMatrices);
                         context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_SunLightDepthParamsID, data.sunLightShadowData.sunLightDepthParams);
@@ -268,7 +268,6 @@ namespace YPipeline
                                 context.cmd.DrawRendererList(data.pointLightShadowRendererList[cubeIndex]);
                             }
                         }
-                        context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_PointLightShadowMapID, data.pointLightShadowMap);
                     }
                     context.cmd.SetBufferData(data.pointLightShadowBuffer, data.pointLightsShadowData, 0, 0, data.shadowingPointLightCount);
                     context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_PointLightShadowDataID, data.pointLightShadowBuffer);
@@ -287,7 +286,6 @@ namespace YPipeline
                             context.cmd.ClearRenderTarget(true, false, Color.clear);
                             context.cmd.DrawRendererList(data.spotLightShadowRendererList[i]);
                         }
-                        context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_SpotLightShadowMapID, data.spotLightShadowMap);
                     }
                     context.cmd.SetBufferData(data.spotLightShadowBuffer, data.spotLightsShadowData, 0, 0, data.shadowingSpotLightCount);
                     context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_SpotLightShadowDataID, data.spotLightShadowBuffer);
@@ -296,13 +294,11 @@ namespace YPipeline
                     context.cmd.EndSample("Spot Light Shadows");
                     
                     context.cmd.SetViewProjectionMatrices(data.viewMatrix, data.projectionMatrix);
-                    context.renderContext.ExecuteCommandBuffer(context.cmd);
-                    context.cmd.Clear();
                 });
             }
         }
 
-        private void CreateSunLightShadowMap(ref YPipelineData data, RenderGraphBuilder builder, ShadowPassData passData)
+        private void CreateSunLightShadowMap(ref YPipelineData data, IUnsafeRenderGraphBuilder builder, ShadowPassData passData)
         {
             data.isSunLightShadowMapCreated = false;
             if (data.lightsData.shadowingSunLightCount > 0)
@@ -323,7 +319,9 @@ namespace YPipeline
                 };
 
                 data.SunLightShadowMap = data.renderGraph.CreateTexture(desc);
-                passData.sunLightShadowMap = builder.WriteTexture(data.SunLightShadowMap);
+                passData.sunLightShadowMap = data.SunLightShadowMap;
+                builder.UseTexture(data.SunLightShadowMap, AccessFlags.Write);
+                builder.SetGlobalTextureAfterPass(data.SunLightShadowMap, YPipelineShaderIDs.k_SunLightShadowMapID);
                 data.isSunLightShadowMapCreated = true;
 
                 int visibleLightIndex = data.lightsData.sunLightIndex;
@@ -357,7 +355,7 @@ namespace YPipeline
             }
         }
 
-        private void CreateSpotLightShadowMap(ref YPipelineData data, RenderGraphBuilder builder, ShadowPassData passData)
+        private void CreateSpotLightShadowMap(ref YPipelineData data, IUnsafeRenderGraphBuilder builder, ShadowPassData passData)
         {
             data.isSpotLightShadowMapCreated = false;
             if (data.lightsData.shadowingSpotLightCount > 0)
@@ -379,7 +377,9 @@ namespace YPipeline
                 };
                 
                 data.SpotLightShadowMap = data.renderGraph.CreateTexture(desc);
-                passData.spotLightShadowMap = builder.WriteTexture(data.SpotLightShadowMap);
+                passData.spotLightShadowMap = data.SpotLightShadowMap;
+                builder.UseTexture(data.SpotLightShadowMap, AccessFlags.Write);
+                builder.SetGlobalTextureAfterPass(data.SpotLightShadowMap, YPipelineShaderIDs.k_SpotLightShadowMapID);
                 data.isSpotLightShadowMapCreated = true;
                 
                 for (int i = 0; i < data.lightsData.shadowingSpotLightCount; i++)
@@ -408,7 +408,7 @@ namespace YPipeline
             }
         }
 
-        private void CreatePointLightShadowMap(ref YPipelineData data, RenderGraphBuilder builder, ShadowPassData passData)
+        private void CreatePointLightShadowMap(ref YPipelineData data, IUnsafeRenderGraphBuilder builder, ShadowPassData passData)
         {
             data.isPointLightShadowMapCreated = false;
             if (data.lightsData.shadowingPointLightCount > 0)
@@ -430,7 +430,9 @@ namespace YPipeline
                 };
                 
                 data.PointLightShadowMap = data.renderGraph.CreateTexture(desc);
-                passData.pointLightShadowMap = builder.WriteTexture(data.PointLightShadowMap);
+                passData.pointLightShadowMap = data.PointLightShadowMap;
+                builder.UseTexture(data.PointLightShadowMap, AccessFlags.Write);
+                builder.SetGlobalTextureAfterPass(data.PointLightShadowMap, YPipelineShaderIDs.k_PointLightShadowMapID);
                 data.isPointLightShadowMapCreated = true;
                 
                 for (int i = 0; i < data.lightsData.shadowingPointLightCount; i++)

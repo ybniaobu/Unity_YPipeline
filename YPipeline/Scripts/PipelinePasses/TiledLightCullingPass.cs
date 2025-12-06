@@ -54,7 +54,7 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<TiledLightCullingPassData>("Tiled Based Light Culling", out var passData))
+            using (var builder = data.renderGraph.AddComputePass<TiledLightCullingPassData>("Tiled Based Light Culling", out var passData))
             {
                 passData.cs = data.asset.pipelineResources.computeShaders.tiledLightCullingCs;
                 passData.punctualLightCount = data.lightsData.punctualLightCount;
@@ -74,8 +74,8 @@ namespace YPipeline
                     name = "Light Culling Input Buffer"
                 });
                 
-                builder.ReadTexture(data.CameraDepthTexture);
-                builder.ReadBuffer(data.PunctualLightBufferHandle);
+                builder.UseTexture(data.CameraDepthTexture, AccessFlags.Read);
+                builder.UseBuffer(data.PunctualLightBufferHandle, AccessFlags.Read);
                 
                 // Tile Params
                 float pixelToTileX = data.BufferSize.x / (float) YPipelineLightsData.k_TileSize;
@@ -100,13 +100,17 @@ namespace YPipeline
                     name = "Tiled Light Indices Buffer"
                 });
                 
-                passData.tilesLightIndicesBuffer = builder.WriteBuffer(data.TilesLightIndicesBufferHandle);
+                passData.tilesLightIndicesBuffer = builder.UseBuffer(data.TilesLightIndicesBufferHandle, AccessFlags.Write);
                 
                 builder.AllowPassCulling(false);
                 
-                builder.SetRenderFunc((TiledLightCullingPassData data, RenderGraphContext context) =>
+                // TODO: 好好了解一下这个东西
+                builder.AllowGlobalStateModification(true);
+                
+                builder.SetRenderFunc((TiledLightCullingPassData data, ComputeGraphContext context) =>
                 {
-                    CoreUtils.SetKeyword(context.cmd, data.cs, YPipelineKeywords.k_TileCullingSplitDepth, data.enableSplitDepth);
+                    // LocalKeyword splitDepth = new LocalKeyword(data.cs, YPipelineKeywords.k_TileCullingSplitDepth);
+                    CoreUtils.SetKeyword(data.cs, YPipelineKeywords.k_TileCullingSplitDepth, data.enableSplitDepth);
                     
                     int kernel = data.cs.FindKernel("TiledLightCulling");
                     context.cmd.SetBufferData(data.lightInputInfosBuffer, data.lightInputInfos, 0, 0, data.punctualLightCount);
@@ -118,9 +122,6 @@ namespace YPipeline
                     
                     context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_TilesLightIndicesBufferID, data.tilesLightIndicesBuffer);
                     context.cmd.DispatchCompute(data.cs, kernel, data.tileCountXY.x, data.tileCountXY.y, 1);
-                    
-                    context.renderContext.ExecuteCommandBuffer(context.cmd);
-                    context.cmd.Clear();
                 });
             }
         }

@@ -25,8 +25,19 @@ namespace YPipeline
             
             // Light Setup
             public SunLightConstantBuffer sunLightData = new SunLightConstantBuffer();
-            public BufferHandle punctualLightsBuffer;
-            public PunctualLightStructuredBuffer[] punctualLightsData = new PunctualLightStructuredBuffer[YPipelineLightsData.k_MaxPunctualLightCount];
+            // public BufferHandle punctualLightsBuffer;
+            // public PunctualLightStructuredBuffer[] punctualLightsData = new PunctualLightStructuredBuffer[YPipelineLightsData.k_MaxPunctualLightCount];
+            //
+            // public BufferHandle tilesLightIndicesBuffer;
+            //
+            // public PointLightShadowStructuredBuffer[] pointLightsShadowData = new PointLightShadowStructuredBuffer[YPipelineLightsData.k_MaxShadowingPointLightCount];
+            // public BufferHandle pointLightShadowBuffer;
+            // public Matrix4x4[] pointLightShadowMatrices = new Matrix4x4[YPipelineLightsData.k_MaxShadowingPointLightCount * 6];
+            // public BufferHandle pointLightShadowMatricesBuffer;
+            // public SpotLightShadowStructuredBuffer[] spotLightsShadowData = new SpotLightShadowStructuredBuffer[YPipelineLightsData.k_MaxShadowingSpotLightCount];
+            // public BufferHandle spotLightShadowBuffer;
+            // public Matrix4x4[] spotLightShadowMatrices = new Matrix4x4[YPipelineLightsData.k_MaxShadowingSpotLightCount];
+            // public BufferHandle spotLightShadowMatricesBuffer;
         }
         
         private RTHandle m_CameraColorTarget;
@@ -64,10 +75,58 @@ namespace YPipeline
             public Vector4 punctualLightDirections;
             public Vector4 punctualLightParams;
         }
+        
+        // [StructLayout(LayoutKind.Sequential)]
+        // struct PointLightShadowStructuredBuffer
+        // {
+        //     public Vector4 pointLightShadowColors;
+        //     public Vector4 pointLightPenumbraColors;
+        //     public Vector4 pointLightShadowBias;
+        //     public Vector4 pointLightShadowParams;
+        //     public Vector4 pointLightShadowParams2;
+        //     public Vector4 pointLightDepthParams;
+        //
+        //     public void Setup(YPipelineLightsData lightsData, int index)
+        //     {
+        //         if (lightsData.shadowingPointLightCount > 0)
+        //         {
+        //             pointLightShadowColors = lightsData.pointLightShadowColors[index];
+        //             pointLightPenumbraColors = lightsData.pointLightPenumbraColors[index];
+        //             pointLightShadowBias = lightsData.pointLightShadowBias[index];
+        //             pointLightShadowParams = lightsData.pointLightShadowParams[index];
+        //             pointLightShadowParams2 = lightsData.pointLightShadowParams2[index];
+        //             pointLightDepthParams = lightsData.pointLightDepthParams[index];
+        //         }
+        //     }
+        // }
+        //
+        // [StructLayout(LayoutKind.Sequential)]
+        // struct SpotLightShadowStructuredBuffer
+        // {
+        //     public Vector4 spotLightShadowColors;
+        //     public Vector4 spotLightPenumbraColors;
+        //     public Vector4 spotLightShadowBias;
+        //     public Vector4 spotLightShadowParams;
+        //     public Vector4 spotLightShadowParams2;
+        //     public Vector4 spotLightDepthParams;
+        //
+        //     public void Setup(YPipelineLightsData lightsData, int index)
+        //     {
+        //         if (lightsData.shadowingSpotLightCount > 0)
+        //         {
+        //             spotLightShadowColors = lightsData.spotLightShadowColors[index];
+        //             spotLightPenumbraColors = lightsData.spotLightPenumbraColors[index];
+        //             spotLightShadowBias = lightsData.spotLightShadowBias[index];
+        //             spotLightShadowParams = lightsData.spotLightShadowParams[index];
+        //             spotLightShadowParams2 = lightsData.spotLightShadowParams2[index];
+        //             spotLightDepthParams = lightsData.spotLightDepthParams[index];
+        //         }
+        //     }
+        // }
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<SetupPassData>("Preview Resource & Light Setup", out var passData))
+            using (var builder = data.renderGraph.AddUnsafePass<SetupPassData>("Preview Resource & Light Setup", out var passData))
             {
                 passData.camera = data.camera;
                 
@@ -83,29 +142,67 @@ namespace YPipeline
                     m_EnvBRDFLut = RTHandles.Alloc(data.asset.pipelineResources.textures.environmentBRDFLut);
                 }
                 passData.envBRDFLut = data.renderGraph.ImportTexture(m_EnvBRDFLut);
-                builder.ReadTexture(passData.envBRDFLut);
+                builder.UseTexture(passData.envBRDFLut, AccessFlags.Read);
                 
                 // ----------------------------------------------------------------------------------------------------
-                // Setup Light Data
+                // Setup Light & Shadow Data
                 // ----------------------------------------------------------------------------------------------------
                 
                 RecordLightsData(ref data);
                 
                 passData.sunLightData.Setup(data.lightsData);
                 
-                data.PunctualLightBufferHandle = data.renderGraph.CreateBuffer(new BufferDesc()
-                {
-                    count = YPipelineLightsData.k_MaxPunctualLightCount,
-                    stride = 16 * 4,
-                    target = GraphicsBuffer.Target.Structured,
-                    name = "Punctual Lights Data"
-                });
-                passData.punctualLightsBuffer = builder.WriteBuffer(data.PunctualLightBufferHandle);
+                // // Punctual Light Data
+                // data.PunctualLightBufferHandle = data.renderGraph.CreateBuffer(new BufferDesc()
+                // {
+                //     count = YPipelineLightsData.k_MaxPunctualLightCount,
+                //     stride = 16 * 4,
+                //     target = GraphicsBuffer.Target.Structured,
+                //     name = "Punctual Lights Data"
+                // });
+                // passData.punctualLightsBuffer = builder.UseBuffer(data.PunctualLightBufferHandle, AccessFlags.Write);
+                //
+                // // Shadow Buffer
+                // data.PointLightShadowBufferHandle = data.renderGraph.CreateBuffer(new BufferDesc()
+                // {
+                //     count = YPipelineLightsData.k_MaxShadowingPointLightCount,
+                //     stride = 16 * 6,
+                //     target = GraphicsBuffer.Target.Structured,
+                //     name = "Point Lights Shadows Data"
+                // });
+                // passData.pointLightShadowBuffer = builder.UseBuffer(data.PointLightShadowBufferHandle, AccessFlags.Write);
+                //
+                // data.PointLightShadowMatricesBufferHandle = data.renderGraph.CreateBuffer(new BufferDesc()
+                // {
+                //     count = YPipelineLightsData.k_MaxShadowingPointLightCount * 6,
+                //     stride = 16 * 4,
+                //     target = GraphicsBuffer.Target.Structured,
+                //     name = "Point Lights Shadow Matrices Data"
+                // });
+                // passData.pointLightShadowMatricesBuffer = builder.UseBuffer(data.PointLightShadowMatricesBufferHandle, AccessFlags.Write);
+                //
+                // data.SpotLightShadowBufferHandle = data.renderGraph.CreateBuffer(new BufferDesc()
+                // {
+                //     count = YPipelineLightsData.k_MaxShadowingSpotLightCount,
+                //     stride = 16 * 6,
+                //     target = GraphicsBuffer.Target.Structured,
+                //     name = "Spot Lights Shadows Data"
+                // });
+                // passData.spotLightShadowBuffer = builder.UseBuffer(data.SpotLightShadowBufferHandle, AccessFlags.Write);
+                //
+                // data.SpotLightShadowMatricesBufferHandle = data.renderGraph.CreateBuffer(new BufferDesc()
+                // {
+                //     count = YPipelineLightsData.k_MaxShadowingSpotLightCount,
+                //     stride = 16 * 4,
+                //     target = GraphicsBuffer.Target.Structured,
+                //     name = "Spot Lights Shadow Matrices Data"
+                // });
+                // passData.spotLightShadowMatricesBuffer = builder.UseBuffer(data.SpotLightShadowMatricesBufferHandle, AccessFlags.Write);
                 
                 builder.AllowPassCulling(false);
-                builder.AllowRendererListCulling(false);
+                builder.AllowGlobalStateModification(true);
 
-                builder.SetRenderFunc((SetupPassData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((SetupPassData data, UnsafeGraphContext context) =>
                 {
                     context.cmd.SetupCameraProperties(data.camera);
                     
@@ -115,10 +212,18 @@ namespace YPipeline
                     
                     // Punctual Light Data
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_PunctualLightCountID, new Vector4(0, 0));
-                    context.cmd.SetBufferData(data.punctualLightsBuffer, data.punctualLightsData);
-                    context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_PunctualLightDataID, data.punctualLightsBuffer);
-                    context.renderContext.ExecuteCommandBuffer(context.cmd);
-                    context.cmd.Clear();
+                    // context.cmd.SetBufferData(data.punctualLightsBuffer, data.punctualLightsData, 0, 0,0 );
+                    // context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_PunctualLightDataID, data.punctualLightsBuffer);
+                    //
+                    // // Shadow Buffer
+                    // context.cmd.SetBufferData(data.pointLightShadowBuffer, data.pointLightsShadowData, 0, 0, 0);
+                    // context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_PointLightShadowDataID, data.pointLightShadowBuffer);
+                    // context.cmd.SetBufferData(data.pointLightShadowMatricesBuffer, data.pointLightShadowMatrices, 0, 0, 0);
+                    // context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_PointLightShadowMatricesID, data.pointLightShadowMatricesBuffer);
+                    // context.cmd.SetBufferData(data.spotLightShadowBuffer, data.spotLightsShadowData, 0, 0, 0);
+                    // context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_SpotLightShadowDataID, data.spotLightShadowBuffer);
+                    // context.cmd.SetBufferData(data.spotLightShadowMatricesBuffer, data.spotLightShadowMatrices, 0, 0, 0);
+                    // context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_SpotLightShadowMatricesID, data.spotLightShadowMatricesBuffer);
                 });
             }
         }

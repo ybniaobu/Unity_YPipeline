@@ -23,7 +23,7 @@ namespace YPipeline
             
             RenderGraphParameters renderGraphParams = new RenderGraphParameters()
             {
-                executionName = "YPipeline",
+                // executionId = data.camera.GetEntityId(),
                 scriptableRenderContext = data.context,
                 commandBuffer = data.cmd,
                 currentFrameIndex = Time.frameCount,

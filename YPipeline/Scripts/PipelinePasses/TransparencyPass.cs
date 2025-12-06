@@ -9,9 +9,6 @@ namespace YPipeline
     {
         private class TransparencyPassData
         {
-            public TextureHandle colorAttachment;
-            public TextureHandle depthAttachment;
-            
             public RendererListHandle transparencyRendererList;
         }
         
@@ -27,7 +24,7 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<TransparencyPassData>("Draw Transparency", out var passData))
+            using (var builder = data.renderGraph.AddRasterRenderPass<TransparencyPassData>("Draw Transparency", out var passData))
             {
                 RendererListDesc transparencyRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_ForwardTransparencyShaderTagIds, data.cullingResults, data.camera)
                 {
@@ -39,18 +36,15 @@ namespace YPipeline
                 passData.transparencyRendererList = data.renderGraph.CreateRendererList(transparencyRendererListDesc);
                 builder.UseRendererList(passData.transparencyRendererList);
                 
-                builder.ReadTexture(data.CameraColorTexture);
-                builder.ReadTexture(data.CameraDepthTexture);
-                passData.colorAttachment = builder.UseColorBuffer(data.CameraColorAttachment, 0);
-                passData.depthAttachment = builder.UseDepthBuffer(data.CameraDepthAttachment, DepthAccess.Read);
+                builder.UseTexture(data.CameraColorTexture, AccessFlags.Read);
+                builder.UseTexture(data.CameraDepthTexture, AccessFlags.Read);
+                builder.SetRenderAttachment(data.CameraColorAttachment, 0, AccessFlags.Write);
+                builder.SetRenderAttachmentDepth(data.CameraDepthAttachment, AccessFlags.Read);
                 builder.AllowPassCulling(false);
-                builder.AllowRendererListCulling(false);
 
-                builder.SetRenderFunc((TransparencyPassData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((TransparencyPassData data, RasterGraphContext context) =>
                 {
                     context.cmd.DrawRendererList(data.transparencyRendererList);
-                    context.renderContext.ExecuteCommandBuffer(context.cmd);
-                    context.cmd.Clear();
                 });
             }
         }

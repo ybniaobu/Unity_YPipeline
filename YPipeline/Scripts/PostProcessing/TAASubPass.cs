@@ -65,14 +65,17 @@ namespace YPipeline
                 var stack = VolumeManager.instance.stack;
                 m_TAA = stack.GetComponent<TAA>();
                 
-                using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<TAAPassData>("TAA", out var passData))
+                // TODO: 暂时使用 UnsafePass，因为 ComputePass 无法 Copy；
+                using (var builder = data.renderGraph.AddUnsafePass<TAAPassData>("TAA", out var passData))
                 {
                     passData.material = TAAMaterial;
                     passData.isFirstFrame = Time.frameCount == 1;
-                    
-                    passData.colorAttachment = builder.ReadTexture(data.CameraColorAttachment);
-                    passData.motionVectorTexture = builder.ReadTexture(data.MotionVectorTexture);
-                    builder.ReadTexture(data.CameraDepthTexture);
+
+                    passData.colorAttachment = data.CameraColorAttachment;
+                    builder.UseTexture(data.CameraColorAttachment, AccessFlags.Read);
+                    passData.motionVectorTexture = data.MotionVectorTexture;
+                    builder.UseTexture(data.MotionVectorTexture, AccessFlags.Read);
+                    builder.UseTexture(data.CameraDepthTexture, AccessFlags.Read);
                     
                     // Record shader variables & keywords
                     passData.taaParams = new Vector4(m_TAA.historyBlendFactor.value, m_TAA.varianceCriticalValue.value, 
@@ -101,7 +104,8 @@ namespace YPipeline
                     passData.isTAAHistoryReset = yCamera.perCameraData.IsTAAHistoryReset;
                     yCamera.perCameraData.IsTAAHistoryReset = false;
                     data.TAAHistory = data.renderGraph.ImportTexture(taaHistory);
-                    passData.taaHistory = builder.ReadWriteTexture(data.TAAHistory);
+                    passData.taaHistory = data.TAAHistory;
+                    builder.UseTexture(data.TAAHistory, AccessFlags.ReadWrite);
 
                     // Create TAA target
                     TextureDesc taaTargetDesc = new TextureDesc(taaHistoryDesc)
@@ -113,11 +117,12 @@ namespace YPipeline
                     };
                     
                     data.TAATarget = data.renderGraph.CreateTexture(taaTargetDesc);
-                    passData.taaTarget = builder.WriteTexture(data.TAATarget);
+                    passData.taaTarget = data.TAATarget;
+                    builder.UseTexture(data.TAATarget, AccessFlags.Write);
                     
                     builder.AllowPassCulling(false);
                 
-                    builder.SetRenderFunc((TAAPassData data, RenderGraphContext context) =>
+                    builder.SetRenderFunc((TAAPassData data, UnsafeGraphContext context) =>
                     {
                         context.cmd.BeginSample("TAABlendHistory");
                         data.material.SetVector(YPipelineShaderIDs.k_TAAParamsID, data.taaParams);
@@ -136,13 +141,12 @@ namespace YPipeline
                         context.cmd.EndSample("TAABlendHistory");
                         
                         context.cmd.BeginSample("TAACopyHistory");
-                        bool copyTextureSupported = SystemInfo.copyTextureSupport > CopyTextureSupport.None;
-                        if (copyTextureSupported) context.cmd.CopyTexture(data.taaTarget, data.taaHistory);
-                        else BlitUtility.BlitTexture(context.cmd, data.taaTarget, data.taaHistory);
+                        // bool copyTextureSupported = SystemInfo.copyTextureSupport > CopyTextureSupport.None;
+                        // if (copyTextureSupported) context.cmd.CopyTexture(data.taaTarget, data.taaHistory);
+                        // else BlitUtility.BlitTexture(context.cmd, data.taaTarget, data.taaHistory);
+
+                        context.cmd.CopyTexture(data.taaTarget, data.taaHistory);
                         context.cmd.EndSample("TAACopyHistory");
-                        
-                        context.renderContext.ExecuteCommandBuffer(context.cmd);
-                        context.cmd.Clear();
                     });
                 }
             }

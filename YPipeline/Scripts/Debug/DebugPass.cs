@@ -22,16 +22,18 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<DebugPassData>("Debug (Editor)", out var passData))
+            using (var builder = data.renderGraph.AddRasterRenderPass<DebugPassData>("Debug (Editor)", out var passData))
             {
                 // Light Culling Debug
                 passData.lightCullingDebugMaterial = data.debugSettings.lightingDebugSettings.lightCullingDebugMaterial;
                 passData.showLightTiles = data.debugSettings.lightingDebugSettings.showLightTiles;
                 passData.tileOpacity = data.debugSettings.lightingDebugSettings.tileOpacity;
                 
+                builder.SetRenderAttachment(data.CameraColorAttachment, 0, AccessFlags.Write);
+                
                 builder.AllowPassCulling(true);
                 
-                builder.SetRenderFunc((DebugPassData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((DebugPassData data, RasterGraphContext context) =>
                 {
                     // Light Culling Debug
                     if (data.showLightTiles)
@@ -39,9 +41,6 @@ namespace YPipeline
                         data.lightCullingDebugMaterial.SetFloat(LightingDebugSettings.k_TilesDebugOpacityID, data.tileOpacity);
                         context.cmd.DrawProcedural(Matrix4x4.identity, data.lightCullingDebugMaterial, 0, MeshTopology.Triangles, 3);
                     }
-                    
-                    context.renderContext.ExecuteCommandBuffer(context.cmd);
-                    context.cmd.Clear();
                 });
             }
         }

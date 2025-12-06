@@ -13,7 +13,7 @@ namespace YPipeline
 
             public Vector4 cameraSettings;
 
-            public void SetNonBuiltInCameraMatrixShaderVariables(CommandBuffer cmd)
+            public void SetNonBuiltInCameraMatrixShaderVariables(UnsafeCommandBuffer cmd)
             {
                 bool isProjectionMatrixFlipped = SystemInfo.graphicsUVStartsAtTop;
 
@@ -57,7 +57,7 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<CameraSetupPassData>("Setup Camera Properties", out var passData))
+            using (var builder = data.renderGraph.AddUnsafePass<CameraSetupPassData>("Setup Camera Properties", out var passData))
             {
                 passData.camera = data.camera;
                 YPipelineCamera yCamera = data.camera.GetYPipelineCamera();
@@ -89,16 +89,15 @@ namespace YPipeline
                 float cotFov = 1.0f / Mathf.Tan(fov * 0.5f);
                 passData.cameraSettings = new Vector4(fov, cotFov);
 
-                builder.SetRenderFunc((CameraSetupPassData data, RenderGraphContext context) =>
+                builder.AllowPassCulling(false);
+
+                builder.SetRenderFunc((CameraSetupPassData data, UnsafeGraphContext context) =>
                 {
                     context.cmd.SetupCameraProperties(data.camera);
                     context.cmd.SetViewProjectionMatrices(data.yCamera.perCameraData.viewMatrix, data.yCamera.perCameraData.jitteredProjectionMatrix);
                     data.SetNonBuiltInCameraMatrixShaderVariables(context.cmd);
                     
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_CameraSettingsID, data.cameraSettings);
-                    
-                    context.renderContext.ExecuteCommandBuffer(context.cmd);
-                    context.cmd.Clear();
                 });
             }
         }

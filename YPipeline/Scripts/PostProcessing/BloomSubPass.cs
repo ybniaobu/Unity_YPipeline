@@ -56,7 +56,8 @@ namespace YPipeline
             var stack = VolumeManager.instance.stack;
             m_Bloom = stack.GetComponent<Bloom>();
 
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<BloomPassData>("Bloom", out var passData, ProfilingSampler.Get(YPipelineProfileIDs.Bloom)))
+            // TODO：看看 URP 怎么 RasterPass 的。
+            using (var builder = data.renderGraph.AddUnsafePass<BloomPassData>("Bloom", out var passData, ProfilingSampler.Get(YPipelineProfileIDs.Bloom)))
             {
                 passData.material = BloomMaterial;
                 passData.isBloomEnabled = m_Bloom.IsActive();
@@ -88,11 +89,13 @@ namespace YPipeline
                     // Texture Recording
                     if (data.asset.antiAliasingMode == AntiAliasingMode.TAA)
                     {
-                        passData.inputTexture = builder.ReadTexture(data.TAATarget);
+                        passData.inputTexture = data.TAATarget;
+                        builder.UseTexture(data.TAATarget, AccessFlags.Read);
                     }
                     else
                     {
-                        passData.inputTexture = builder.ReadTexture(data.CameraColorAttachment);
+                        passData.inputTexture = data.CameraColorAttachment;
+                        builder.UseTexture(data.CameraColorAttachment, AccessFlags.Read);
                     }
                     
                     DefaultFormat format = data.asset.enableHDRColorBuffer ? DefaultFormat.HDR : DefaultFormat.LDR;
@@ -103,7 +106,8 @@ namespace YPipeline
                         name = "Bloom Texture"
                     };
                     data.BloomTexture = data.renderGraph.CreateTexture(bloomTextureDesc);
-                    passData.bloomTexture = builder.WriteTexture(data.BloomTexture);
+                    passData.bloomTexture = data.BloomTexture;
+                    builder.UseTexture(data.BloomTexture, AccessFlags.Write);
 
                     TextureDesc bloomPrefilteredTextureDesc = new TextureDesc(width, height)
                     {
@@ -146,7 +150,7 @@ namespace YPipeline
                     passData.bloomMode = m_Bloom.mode.value;
                 }
 
-                builder.SetRenderFunc((BloomPassData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((BloomPassData data, UnsafeGraphContext context) =>
                 {
                     if (data.isBloomEnabled)
                     {
@@ -183,9 +187,6 @@ namespace YPipeline
                             lastDst = data.bloomPyramidUpTextures[i];
                         }
                         context.cmd.EndSample("Upsample");
-                        
-                        context.renderContext.ExecuteCommandBuffer(context.cmd);
-                        context.cmd.Clear();
                     }
                 });
 

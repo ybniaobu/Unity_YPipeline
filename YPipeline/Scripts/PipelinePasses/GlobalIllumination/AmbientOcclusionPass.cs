@@ -46,7 +46,8 @@ namespace YPipeline
             
             if (data.isAmbientOcclusionTextureCreated)
             {
-                using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<AmbientOcclusionPassData>("Ambient Occlusion", out var passData))
+                // TODO：暂时使用 UnsafePass，因为 ComputePass 无法 Copy；
+                using (var builder = data.renderGraph.AddUnsafePass<AmbientOcclusionPassData>("Ambient Occlusion", out var passData))
                 {
                     int halfResolution = m_AO.halfResolution.value ? 2 : 1;
                     Vector2Int bufferSize = data.BufferSize;
@@ -61,8 +62,8 @@ namespace YPipeline
 
                     passData.cs = data.asset.pipelineResources.computeShaders.ambientOcclusionCs;
                     passData.aoMode = m_AO.ambientOcclusionMode.value;
-                    builder.ReadTexture(data.ThinGBuffer);
-                    builder.ReadTexture(data.CameraDepthTexture);
+                    builder.UseTexture(data.ThinGBuffer, AccessFlags.Read);
+                    builder.UseTexture(data.CameraDepthTexture, AccessFlags.Read);
 
                     passData.enableHalfResolution = m_AO.halfResolution.value;
                     passData.enableSpatialBlur = m_AO.enableSpatialFilter.value;
@@ -113,7 +114,8 @@ namespace YPipeline
                     };
 
                     data.AmbientOcclusionTexture = data.renderGraph.CreateTexture(aoTextureDesc);
-                    passData.aoTexture = builder.WriteTexture(data.AmbientOcclusionTexture);
+                    passData.aoTexture = data.AmbientOcclusionTexture;
+                    builder.UseTexture(data.AmbientOcclusionTexture, AccessFlags.Write);
                     
                     // Ambient Occlusion Transition Texture
                     TextureDesc transitionDesc0 = new TextureDesc(textureSize.x, textureSize.y)
@@ -158,9 +160,9 @@ namespace YPipeline
                         RTHandle aoHistory = yCamera.perCameraData.GetAOHistory(ref aoHistoryDesc);
                         yCamera.perCameraData.IsAOHistoryReset = false;
                         passData.aoHistory = data.renderGraph.ImportTexture(aoHistory);
-                        builder.ReadWriteTexture(passData.aoHistory);
+                        builder.UseTexture(passData.aoHistory, AccessFlags.ReadWrite);
 
-                        builder.ReadTexture(data.MotionVectorTexture);
+                        builder.UseTexture(data.MotionVectorTexture, AccessFlags.Read);
                     }
                     else
                     {
@@ -168,12 +170,13 @@ namespace YPipeline
                     }
                     
                     builder.AllowPassCulling(false);
-                    builder.AllowRendererListCulling(false);
 
-                    builder.SetRenderFunc((AmbientOcclusionPassData data, RenderGraphContext context) =>
+                    builder.SetRenderFunc((AmbientOcclusionPassData data, UnsafeGraphContext context) =>
                     {
                         bool enableBlur = data.enableSpatialBlur || data.enableTemporalBlur;
-                        CoreUtils.SetKeyword(context.cmd, data.cs, "_HALF_RESOLUTION", data.enableHalfResolution);
+
+                        LocalKeyword halfResKeyword = new LocalKeyword(data.cs, "_HALF_RESOLUTION");
+                        context.cmd.SetKeyword(data.cs, halfResKeyword, data.enableHalfResolution);
                         context.cmd.SetComputeVectorParam(data.cs, "_TextureSize", new Vector4(1f / data.textureSize.x, 1f / data.textureSize.y, data.textureSize.x, data.textureSize.y));
                         context.cmd.SetComputeVectorParam(data.cs, YPipelineShaderIDs.k_AmbientOcclusionParamsID, data.ambientOcclusionParams);
                         context.cmd.SetComputeVectorParam(data.cs, YPipelineShaderIDs.k_AOSpatialBlurParamsID, data.aoSpatialBlurParams);
@@ -243,9 +246,8 @@ namespace YPipeline
                             context.cmd.SetComputeTextureParam(data.cs, temporalBlurKernel, "_OutputTexture", temporalBlurOutput);
                             context.cmd.DispatchCompute(data.cs, temporalBlurKernel, data.threadGroupSizes8.x, data.threadGroupSizes8.y, 1);
                             
-                            bool copyTextureSupported = SystemInfo.copyTextureSupport > CopyTextureSupport.None;
-                            if (copyTextureSupported) context.cmd.CopyTexture(temporalBlurOutput, data.aoHistory);
-                            else BlitUtility.BlitTexture(context.cmd, temporalBlurOutput, data.aoHistory);
+                            // CopyTexture 可能会有平台问题。
+                            context.cmd.CopyTexture(temporalBlurOutput, data.aoHistory);
                             
                             context.cmd.EndSample("SSAO Temporal Blur");
                         }
@@ -264,8 +266,6 @@ namespace YPipeline
                         }
                         
                         context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_AmbientOcclusionTextureID, data.aoTexture);
-                        context.renderContext.ExecuteCommandBuffer(context.cmd);
-                        context.cmd.Clear();
                     });
                 }
             }

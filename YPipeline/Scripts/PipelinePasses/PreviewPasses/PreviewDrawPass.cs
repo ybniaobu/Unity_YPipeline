@@ -9,9 +9,6 @@ namespace YPipeline
     {
         private class DrawPassData
         {
-            public TextureHandle colorTarget;
-            public TextureHandle depthTarget;
-            
             public RendererListHandle opaqueRendererList;
             public RendererListHandle alphaTestRendererList;
             public RendererListHandle errorRendererList;
@@ -30,7 +27,7 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<DrawPassData>("Preview Draw", out var passData))
+            using (var builder = data.renderGraph.AddRasterRenderPass<DrawPassData>("Preview Draw", out var passData))
             {
                 var stateBlock = new RenderStateBlock(RenderStateMask.Depth);
                 stateBlock.depthState = new DepthState(true, CompareFunction.LessEqual);
@@ -88,29 +85,25 @@ namespace YPipeline
                 passData.transparencyRendererList = data.renderGraph.CreateRendererList(transparencyRendererListDesc);
                 builder.UseRendererList(passData.transparencyRendererList);
                 
-                // Use Color & Depth Buffer
-                passData.colorTarget = builder.UseColorBuffer(data.CameraColorTarget, 0);
-                passData.depthTarget = builder.UseDepthBuffer(data.CameraDepthTarget, DepthAccess.Write);
+                // Set Color & Depth Buffer
+                builder.SetRenderAttachment(data.CameraColorTarget, 0, AccessFlags.Write);
+                builder.SetRenderAttachmentDepth(data.CameraDepthTarget, AccessFlags.Write);
                 
-                builder.ReadBuffer(data.PunctualLightBufferHandle);
+                // builder.UseBuffer(data.PunctualLightBufferHandle, AccessFlags.Read);
                 
                 builder.AllowPassCulling(false);
-                builder.AllowRendererListCulling(false);
 
-                builder.SetRenderFunc((DrawPassData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((DrawPassData data, RasterGraphContext context) =>
                 {
                     // context.cmd.SetRenderTarget(data.colorAttachment, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
                     //     data.depthAttachment, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
-                    context.cmd.ClearRenderTarget(true, true, Color.clear);
+                    // context.cmd.ClearRenderTarget(true, true, Color.clear);
                     
                     context.cmd.DrawRendererList(data.opaqueRendererList);
                     context.cmd.DrawRendererList(data.alphaTestRendererList);
                     context.cmd.DrawRendererList(data.errorRendererList);
                     context.cmd.DrawRendererList(data.skyboxRendererList);
                     context.cmd.DrawRendererList(data.transparencyRendererList);
-                    
-                    context.renderContext.ExecuteCommandBuffer(context.cmd);
-                    context.cmd.Clear();
                 });
             }
         }

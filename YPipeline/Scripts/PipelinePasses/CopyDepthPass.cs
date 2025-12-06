@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
+using UnityEngine.Rendering.RenderGraphModule.Util;
 
 namespace YPipeline
 {
@@ -16,24 +17,24 @@ namespace YPipeline
         
         public override void OnRecord(ref YPipelineData data)
         {
-            using (RenderGraphBuilder builder = data.renderGraph.AddRenderPass<CopyDepthPassData>("Copy Depth", out var passData))
+            // 当前版本 AddCopyPass 无法复制深度格式贴图，暂时使用 UnsafePass
+            using (var builder = data.renderGraph.AddUnsafePass<CopyDepthPassData>("Copy Depth", out var passData))
             {
-                passData.depthAttachment = builder.ReadTexture(data.CameraDepthAttachment);
-                passData.depthTexture = builder.WriteTexture(data.CameraDepthTexture);
+                passData.depthAttachment = data.CameraDepthAttachment;
+                builder.UseTexture(data.CameraDepthAttachment, AccessFlags.Read);
+                passData.depthTexture = data.CameraDepthTexture;
+                builder.UseTexture(data.CameraDepthTexture, AccessFlags.Write);
                 
+                builder.SetGlobalTextureAfterPass(data.CameraDepthTexture, YPipelineShaderIDs.k_DepthTextureID);
                 builder.AllowPassCulling(false);
-                builder.AllowRendererListCulling(false);
                 
-                builder.SetRenderFunc((CopyDepthPassData data, RenderGraphContext context) =>
+                builder.SetRenderFunc((CopyDepthPassData data, UnsafeGraphContext context) =>
                 {
-                    bool copyTextureSupported = SystemInfo.copyTextureSupport > CopyTextureSupport.None;
-                    if (copyTextureSupported) context.cmd.CopyTexture(data.depthAttachment, data.depthTexture);
-                    else BlitUtility.CopyDepth(context.cmd, data.depthAttachment, data.depthTexture);
+                    // bool copyTextureSupported = SystemInfo.copyTextureSupport > CopyTextureSupport.None;
+                    // if (copyTextureSupported) context.cmd.CopyTexture(data.depthAttachment, data.depthTexture);
+                    // else BlitUtility.CopyDepth(context.cmd, data.depthAttachment, data.depthTexture);
                     
-                    context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_DepthTextureID, data.depthTexture);
-                    
-                    context.renderContext.ExecuteCommandBuffer(context.cmd);
-                    context.cmd.Clear();
+                    context.cmd.CopyTexture(data.depthAttachment, data.depthTexture);
                 });
             }
         }
