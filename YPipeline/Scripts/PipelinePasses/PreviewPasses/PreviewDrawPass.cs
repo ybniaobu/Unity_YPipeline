@@ -22,7 +22,9 @@ namespace YPipeline
 
         protected override void OnDispose()
         {
-            //DestroyImmediate(this);
+            base.OnDispose();
+            Object.Destroy(m_ErrorMaterial);
+            m_ErrorMaterial = null;
         }
 
         public override void OnRecord(ref YPipelineData data)
@@ -35,7 +37,7 @@ namespace YPipeline
                 // opaque & alphaTest
                 RendererListDesc opaqueRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_ForwardOpaqueShaderTagIds, data.cullingResults, data.camera)
                 {
-                    rendererConfiguration = PerObjectData.ReflectionProbes | PerObjectData.Lightmaps | PerObjectData.LightProbe,
+                    rendererConfiguration = PerObjectData.ReflectionProbes | PerObjectData.LightProbe,
                     renderQueueRange = new RenderQueueRange(2000, 2449),
                     sortingCriteria = SortingCriteria.OptimizeStateChanges,
                     stateBlock = stateBlock
@@ -43,7 +45,7 @@ namespace YPipeline
                 
                 RendererListDesc alphaTestRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_ForwardOpaqueShaderTagIds, data.cullingResults, data.camera)
                 {
-                    rendererConfiguration = PerObjectData.ReflectionProbes | PerObjectData.Lightmaps | PerObjectData.LightProbe,
+                    rendererConfiguration = PerObjectData.ReflectionProbes | PerObjectData.LightProbe,
                     renderQueueRange = new RenderQueueRange(2450, 2499),
                     sortingCriteria = SortingCriteria.OptimizeStateChanges,
                     stateBlock = stateBlock
@@ -77,7 +79,7 @@ namespace YPipeline
                 // Transparency
                 RendererListDesc transparencyRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_ForwardTransparencyShaderTagIds, data.cullingResults, data.camera)
                 {
-                    rendererConfiguration = PerObjectData.ReflectionProbes | PerObjectData.Lightmaps | PerObjectData.LightProbe,
+                    rendererConfiguration = PerObjectData.ReflectionProbes | PerObjectData.LightProbe,
                     renderQueueRange = RenderQueueRange.transparent,
                     sortingCriteria = SortingCriteria.CommonTransparent,
                 };
@@ -87,9 +89,13 @@ namespace YPipeline
                 
                 // Set Color & Depth Buffer
                 builder.SetRenderAttachment(data.CameraColorTarget, 0, AccessFlags.Write);
-                builder.SetRenderAttachmentDepth(data.CameraDepthTarget, AccessFlags.Write);
+                builder.SetRenderAttachmentDepth(data.CameraDepthTarget, AccessFlags.ReadWrite);
                 
-                // builder.UseBuffer(data.PunctualLightBufferHandle, AccessFlags.Read);
+                builder.UseBuffer(data.PunctualLightBufferHandle, AccessFlags.Read);
+                builder.UseBuffer(data.PointLightShadowBufferHandle, AccessFlags.Read);
+                builder.UseBuffer(data.PointLightShadowMatricesBufferHandle, AccessFlags.Read);
+                builder.UseBuffer(data.SpotLightShadowBufferHandle, AccessFlags.Read);
+                builder.UseBuffer(data.SpotLightShadowMatricesBufferHandle, AccessFlags.Read);
                 
                 builder.AllowPassCulling(false);
 

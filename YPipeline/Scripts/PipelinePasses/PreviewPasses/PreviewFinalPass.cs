@@ -16,15 +16,9 @@ namespace YPipeline
             public RendererListHandle postGizmosRendererList;
         }
         
-        protected override void Initialize()
-        {
-            
-        }
+        protected override void Initialize() { }
         
-        protected override void OnDispose()
-        {
-            //DestroyImmediate(this);
-        }
+        protected override void OnDispose() { }
 
         public override void OnRecord(ref YPipelineData data)
         {

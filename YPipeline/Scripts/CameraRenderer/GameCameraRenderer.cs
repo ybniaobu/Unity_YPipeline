@@ -18,23 +18,34 @@ namespace YPipeline
             
             RenderGraphParameters renderGraphParams = new RenderGraphParameters()
             {
-                // executionId = data.camera.GetEntityId(),
+                executionId = data.camera.GetEntityId(),
+                generateDebugData = true,
                 scriptableRenderContext = data.context,
                 commandBuffer = data.cmd,
                 currentFrameIndex = Time.frameCount,
+                renderTextureUVOriginStrategy = RenderTextureUVOriginStrategy.BottomLeft,
                 rendererListCulling = true
             };
             
-            // using (new ProfilingScope(data.cmd, ProfilingSampler.Get(YPipelineProfileIDs.Test)))
+            try
             {
                 data.renderGraph.BeginRecording(renderGraphParams);
-
+                
                 PipelinePass.Record(m_CameraPipelineNodes, ref data);
-
+                
                 data.renderGraph.EndRecordingAndExecute();
             }
+            catch (Exception e)
+            {
+                if (data.renderGraph.ResetGraphAndLogException(e))
+                    throw;
+            }
         }
-        
-        // TODO: Dispose 函数！！！！！！！！！！！！！！！
+
+        public override void Dispose()
+        {
+            base.Dispose();
+            PipelinePass.Dispose(m_CameraPipelineNodes);
+        }
     }
 }

@@ -6,10 +6,10 @@ namespace YPipeline
 {
     public class CullingPass : PipelinePass
     {
-        private class CullingPassData
-        {
-            
-        }
+        // private class CullingPassData
+        // {
+        //     
+        // }
         
         protected override void Initialize() { }
 
