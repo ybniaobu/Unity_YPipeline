@@ -11,17 +11,11 @@ namespace YPipeline
             public RendererListHandle skyboxRendererList;
         }
         
-        protected override void Initialize()
-        {
-            
-        }
+        protected override void Initialize() { }
         
-        protected override void OnDispose()
-        {
-            //DestroyImmediate(this);
-        }
+        protected override void OnDispose() { }
 
-        public override void OnRecord(ref YPipelineData data)
+        protected override void OnRecord(ref YPipelineData data)
         {
             using (var builder = data.renderGraph.AddRasterRenderPass<SkyboxPassData>("Draw Skybox", out var passData))
             {

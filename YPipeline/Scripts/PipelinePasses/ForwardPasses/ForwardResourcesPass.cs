@@ -25,7 +25,20 @@ namespace YPipeline
             
         protected override void Initialize() { }
 
-        public override void OnRecord(ref YPipelineData data)
+        protected override void OnDispose()
+        {
+            RTHandles.Release(m_CameraColorTarget);
+            RTHandles.Release(m_CameraDepthTarget);
+            m_CameraColorTarget = null;
+            m_CameraDepthTarget = null;
+            
+            RTHandles.Release(m_EnvBRDFLut);
+            RTHandles.Release(m_BlueNoise64);
+            m_EnvBRDFLut = null;
+            m_BlueNoise64 = null;
+        }
+
+        protected override void OnRecord(ref YPipelineData data)
         {
             // TODO：m_EnvBRDFLut、m_BlueNoise64 初始化一次，并使用 SetGlobalTextureAfterPass
             using (var builder = data.renderGraph.AddUnsafePass<ForwardResourcesPassData>("Set Global Resources", out var passData))

@@ -23,7 +23,7 @@ namespace YPipeline
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(Camera))]
-    [ExecuteAlways]
+    [ExecuteAlways] // NOTE: This is required to get calls to OnDestroy() always. Graphics resources are released in OnDestroy().
     public class YPipelineCamera : MonoBehaviour, ISerializationCallbackReceiver
     {
         public Camera Camera => GetComponent<Camera>();

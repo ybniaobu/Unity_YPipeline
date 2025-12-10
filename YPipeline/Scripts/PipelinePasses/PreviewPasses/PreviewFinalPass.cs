@@ -20,7 +20,7 @@ namespace YPipeline
         
         protected override void OnDispose() { }
 
-        public override void OnRecord(ref YPipelineData data)
+        protected override void OnRecord(ref YPipelineData data)
         {
 #if UNITY_EDITOR
             using (var builder = data.renderGraph.AddUnsafePass<FinalPassData>("Preview Final", out var passData))

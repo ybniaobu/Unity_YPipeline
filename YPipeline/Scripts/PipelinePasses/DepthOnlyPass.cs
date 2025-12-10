@@ -14,8 +14,10 @@ namespace YPipeline
         }
 
         protected override void Initialize() { }
+        
+        protected override void OnDispose() { }
 
-        public override void OnRecord(ref YPipelineData data)
+        protected override void OnRecord(ref YPipelineData data)
         {
             using (var builder = data.renderGraph.AddRasterRenderPass<DepthOnlyPassData>("Depth PrePass", out var passData))
             {

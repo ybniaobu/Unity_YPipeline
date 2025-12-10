@@ -47,7 +47,19 @@ namespace YPipeline
         {
             m_Random = new System.Random();
         }
-        
+
+        public override void OnDispose()
+        {
+            m_Random = null;
+            m_FilmGrain = null;
+            
+            RTHandles.Release(m_FilmGrainTexture);
+            m_FilmGrainTexture = null;
+            
+            CoreUtils.Destroy(m_FinalPostProcessingMaterial);
+            m_FinalPostProcessingMaterial = null;
+        }
+
         public override void OnRecord(ref YPipelineData data)
         {
             var stack = VolumeManager.instance.stack;

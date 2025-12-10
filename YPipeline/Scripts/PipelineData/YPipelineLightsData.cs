@@ -1,10 +1,11 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 
 namespace YPipeline
 {
-    public class YPipelineLightsData
+    public class YPipelineLightsData : IDisposable
     {
         // ----------------------------------------------------------------------------------------------------
         // Constants
@@ -73,7 +74,59 @@ namespace YPipeline
         public Vector4[] spotLightDepthParams = new Vector4[k_MaxShadowingSpotLightCount]; // x: (f + n) / (f - n), y: -2 * f * n / (f - n); [if UNITY_REVERSED_Z] x: (f + n) / (n - f), y: -2 * f * n / (n - f)
         
         // ----------------------------------------------------------------------------------------------------
-        // Properties
+        // Standard Dispose Pattern
         // ----------------------------------------------------------------------------------------------------
+        
+        private bool m_Disposed = false;
+        
+        ~YPipelineLightsData()
+        {
+            Dispose(false);
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        
+        private void Dispose(bool disposing)
+        {
+            if (!m_Disposed)
+            {
+                if (disposing)
+                {
+                    //Dispose managed resources
+                    cascadeCullingSpheres = null;
+                    sunLightShadowMatrices = null;
+                    sunLightDepthParams = null;
+                    
+                    shadowingPointLightIndices = null;
+                    shadowingSpotLightIndices = null;
+                    
+                    punctualLightColors = null;
+                    punctualLightPositions = null;
+                    punctualLightDirections = null;
+                    punctualLightParams = null;
+                    
+                    pointLightShadowColors = null;
+                    pointLightPenumbraColors = null;
+                    pointLightShadowBias = null;
+                    pointLightShadowParams = null;
+                    pointLightShadowParams2 = null;
+                    pointLightDepthParams = null;
+                    
+                    spotLightShadowColors = null;
+                    spotLightPenumbraColors = null;
+                    spotLightShadowBias = null;
+                    spotLightShadowParams = null;
+                    spotLightShadowParams2 = null;
+                    spotLightDepthParams = null;
+                }
+                //Dispose unmanaged resources
+                
+            }
+            m_Disposed = true;
+        }
     }
 }

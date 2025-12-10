@@ -93,11 +93,26 @@ namespace YPipeline
             }
         }
         
-        protected override void Initialize()
+        protected override void Initialize() { }
+
+        public override void OnDispose()
         {
+            m_ChromaticAberration = null;
+            m_Bloom = null;
+            m_Vignette = null;
+            m_LookupTable = null;
             
+            RTHandles.Release(m_SpectralLut);
+            RTHandles.Release(m_ExtraLut);
+            m_SpectralLut = null;
+            m_ExtraLut = null;
+            
+            CoreUtils.Destroy(m_UberPostProcessingMaterial);
+            m_UberPostProcessingMaterial = null;
+            CoreUtils.Destroy(m_InternalSpectralLut);
+            m_InternalSpectralLut = null;
         }
-        
+
         public override void OnRecord(ref YPipelineData data)
         {
             var stack = VolumeManager.instance.stack;

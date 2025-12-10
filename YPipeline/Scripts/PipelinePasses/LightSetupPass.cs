@@ -20,8 +20,6 @@ namespace YPipeline
             public PunctualLightStructuredBuffer[] punctualLightsData = new PunctualLightStructuredBuffer[YPipelineLightsData.k_MaxPunctualLightCount];
         }
         
-        protected override void Initialize() { }
-        
         private struct SunLightConstantBuffer
         {
             public Vector4 sunLightColor;
@@ -75,8 +73,12 @@ namespace YPipeline
                 }
             }
         }
+        
+        protected override void Initialize() { }
+        
+        protected override void OnDispose() { }
 
-        public override void OnRecord(ref YPipelineData data)
+        protected override void OnRecord(ref YPipelineData data)
         {
             using (var builder = data.renderGraph.AddUnsafePass<LightSetupPassData>("Set Global Light Data", out var passData))
             {

@@ -34,13 +34,6 @@ namespace YPipeline
             public BufferHandle spotLightShadowMatricesBuffer;
         }
         
-        private RTHandle m_CameraColorTarget;
-        private RTHandle m_CameraDepthTarget;
-        
-        private RTHandle m_EnvBRDFLut;
-        
-        protected override void Initialize() { }
-        
         private struct SunLightConstantBuffer
         {
             public Vector4 sunLightColor;
@@ -71,7 +64,7 @@ namespace YPipeline
         }
         
         [StructLayout(LayoutKind.Sequential)]
-        struct PointLightShadowStructuredBuffer
+        private struct PointLightShadowStructuredBuffer
         {
             public Vector4 pointLightShadowColors;
             public Vector4 pointLightPenumbraColors;
@@ -95,7 +88,7 @@ namespace YPipeline
         }
         
         [StructLayout(LayoutKind.Sequential)]
-        struct SpotLightShadowStructuredBuffer
+        private struct SpotLightShadowStructuredBuffer
         {
             public Vector4 spotLightShadowColors;
             public Vector4 spotLightPenumbraColors;
@@ -118,6 +111,13 @@ namespace YPipeline
             }
         }
         
+        private RTHandle m_CameraColorTarget;
+        private RTHandle m_CameraDepthTarget;
+        
+        private RTHandle m_EnvBRDFLut;
+        
+        protected override void Initialize() { }
+        
         protected override void OnDispose()
         {
             base.OnDispose();
@@ -129,7 +129,7 @@ namespace YPipeline
             m_EnvBRDFLut = null;
         }
 
-        public override void OnRecord(ref YPipelineData data)
+        protected override void OnRecord(ref YPipelineData data)
         {
             using (var builder = data.renderGraph.AddUnsafePass<SetupPassData>("Preview Resource & Light Setup", out var passData))
             {

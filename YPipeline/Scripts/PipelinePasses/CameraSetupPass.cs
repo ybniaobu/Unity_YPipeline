@@ -55,7 +55,12 @@ namespace YPipeline
         
         protected override void Initialize() { }
 
-        public override void OnRecord(ref YPipelineData data)
+        protected override void OnDispose()
+        {
+            m_TAA = null;
+        }
+
+        protected override void OnRecord(ref YPipelineData data)
         {
             using (var builder = data.renderGraph.AddUnsafePass<CameraSetupPassData>("Setup Camera Properties", out var passData))
             {

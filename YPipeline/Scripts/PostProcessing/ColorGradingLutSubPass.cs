@@ -59,11 +59,19 @@ namespace YPipeline
             }
         }
         
-        protected override void Initialize()
+        protected override void Initialize() { }
+
+        public override void OnDispose()
         {
+            m_GlobalColorCorrections = null;
+            m_ShadowsMidtonesHighlights = null;
+            m_LiftGammaGain = null;
+            m_ToneMapping = null;
             
+            CoreUtils.Destroy(m_ColorGradingLutMaterial);
+            m_ColorGradingLutMaterial = null;
         }
-        
+
         public override void OnRecord(ref YPipelineData data)
         {
             var stack = VolumeManager.instance.stack;

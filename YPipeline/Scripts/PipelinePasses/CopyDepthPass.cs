@@ -15,7 +15,9 @@ namespace YPipeline
 
         protected override void Initialize() { }
         
-        public override void OnRecord(ref YPipelineData data)
+        protected override void OnDispose() { }
+        
+        protected override void OnRecord(ref YPipelineData data)
         {
             // 当前版本 AddCopyPass 无法复制深度格式贴图，暂时使用 UnsafePass
             using (var builder = data.renderGraph.AddUnsafePass<CopyDepthPassData>("Copy Depth", out var passData))

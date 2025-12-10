@@ -16,6 +16,8 @@ namespace YPipeline
 
         protected abstract void Initialize();
 
+        public abstract void OnDispose();
+
         public abstract void OnRecord(ref YPipelineData data);
     }
 }

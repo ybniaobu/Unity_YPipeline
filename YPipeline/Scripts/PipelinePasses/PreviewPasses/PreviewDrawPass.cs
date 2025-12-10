@@ -23,11 +23,11 @@ namespace YPipeline
         protected override void OnDispose()
         {
             base.OnDispose();
-            Object.Destroy(m_ErrorMaterial);
+            CoreUtils.Destroy(m_ErrorMaterial);
             m_ErrorMaterial = null;
         }
 
-        public override void OnRecord(ref YPipelineData data)
+        protected override void OnRecord(ref YPipelineData data)
         {
             using (var builder = data.renderGraph.AddRasterRenderPass<DrawPassData>("Preview Draw", out var passData))
             {

@@ -35,7 +35,12 @@ namespace YPipeline
         
         protected override void Initialize() { }
 
-        public override void OnRecord(ref YPipelineData data)
+        protected override void OnDispose()
+        {
+            m_AO = null;
+        }
+
+        protected override void OnRecord(ref YPipelineData data)
         {
             var stack = VolumeManager.instance.stack;
             m_AO = stack.GetComponent<AmbientOcclusion>();

@@ -2,13 +2,10 @@
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 
-#if UNITY_EDITOR
 using UnityEditor;
-#endif
 
 namespace YPipeline
 {
-#if UNITY_EDITOR
     public class GizmosPass : PipelinePass
     {
         private class GizmosPassData
@@ -21,12 +18,11 @@ namespace YPipeline
             public RendererListHandle postGizmosRendererList;
         }
         
-        protected override void Initialize()
-        {
-            
-        }
+        protected override void Initialize() { }
+        
+        protected override void OnDispose() { }
 
-        public override void OnRecord(ref YPipelineData data)
+        protected override void OnRecord(ref YPipelineData data)
         {
             if (Handles.ShouldRenderGizmos())
             {
@@ -56,5 +52,4 @@ namespace YPipeline
             }
         }
     }
-#endif
 }

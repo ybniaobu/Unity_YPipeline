@@ -4,46 +4,42 @@ using UnityEngine.Rendering.RenderGraphModule;
 
 namespace YPipeline
 {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
     public class DebugPass : PipelinePass
     {
         private class DebugPassData
         {
             // Light Culling Debug
             public Material lightCullingDebugMaterial;
-            public bool showLightTiles;
             public float tileOpacity;
         }
 
-        protected override void Initialize()
-        {
-            
-        }
+        protected override void Initialize() { }
+        
+        protected override void OnDispose() { }
 
-        public override void OnRecord(ref YPipelineData data)
+        protected override void OnRecord(ref YPipelineData data)
         {
-            using (var builder = data.renderGraph.AddRasterRenderPass<DebugPassData>("Debug (Editor)", out var passData))
+            if (data.debugSettings.lightingDebugSettings.showLightTiles)
             {
-                // Light Culling Debug
-                passData.lightCullingDebugMaterial = data.debugSettings.lightingDebugSettings.lightCullingDebugMaterial;
-                passData.showLightTiles = data.debugSettings.lightingDebugSettings.showLightTiles;
-                passData.tileOpacity = data.debugSettings.lightingDebugSettings.tileOpacity;
-                
-                builder.SetRenderAttachment(data.CameraColorAttachment, 0, AccessFlags.Write);
-                
-                builder.AllowPassCulling(true);
-                
-                builder.SetRenderFunc((DebugPassData data, RasterGraphContext context) =>
+                using (var builder = data.renderGraph.AddRasterRenderPass<DebugPassData>("Debug (Editor)", out var passData))
                 {
                     // Light Culling Debug
-                    if (data.showLightTiles)
+                    passData.lightCullingDebugMaterial =
+                        data.debugSettings.lightingDebugSettings.lightCullingDebugMaterial;
+                    passData.tileOpacity = data.debugSettings.lightingDebugSettings.tileOpacity;
+
+                    builder.SetRenderAttachment(data.CameraColorTarget, 0, AccessFlags.Write);
+
+                    builder.AllowPassCulling(false);
+
+                    builder.SetRenderFunc((DebugPassData data, RasterGraphContext context) =>
                     {
+                        // Light Culling Debug
                         data.lightCullingDebugMaterial.SetFloat(LightingDebugSettings.k_TilesDebugOpacityID, data.tileOpacity);
                         context.cmd.DrawProcedural(Matrix4x4.identity, data.lightCullingDebugMaterial, 0, MeshTopology.Triangles, 3);
-                    }
-                });
+                    });
+                }
             }
         }
     }
-#endif
 }

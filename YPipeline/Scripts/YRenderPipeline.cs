@@ -90,29 +90,32 @@ namespace YPipeline
                 }
                 
                 m_Data.context.ExecuteCommandBuffer(m_Data.cmd);
-                m_Data.cmd.Clear();
                 m_Data.context.Submit();
+                m_Data.cmd.Clear();
                 CommandBufferPool.Release(m_Data.cmd);
+                m_Data.cmd = null;
             }
             
             m_Data.renderGraph.EndFrame();
         }
         
-        protected override void Dispose(bool disposing) 
+        protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
-            VolumeManager.instance.Deinitialize();
-            m_Data.renderGraph?.Cleanup();
-            m_Data.renderGraph = null;
-            
             
 #if UNITY_EDITOR
             UnityEngine.Experimental.GlobalIllumination.Lightmapping.ResetDelegate();
+            m_PreviewCameraRenderer.Dispose();
+            m_PreviewCameraRenderer = null;
 #endif
             
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            m_Data.debugSettings.Dispose();
-#endif
+            VolumeManager.instance.Deinitialize();
+            m_Data.Dispose();
+            
+            m_GameCameraRenderer.Dispose();
+            m_GameCameraRenderer = null;
+            m_ReflectionCameraRenderer.Dispose();
+            m_ReflectionCameraRenderer = null;
         }
     }
 }

@@ -46,9 +46,14 @@ namespace YPipeline
             }
         }
 
-        protected override void Initialize()
+        protected override void Initialize() { }
+
+        public override void OnDispose()
         {
+            m_Bloom = null;
             
+            CoreUtils.Destroy(m_BloomMaterial);
+            m_BloomMaterial = null;
         }
 
         public override void OnRecord(ref YPipelineData data)

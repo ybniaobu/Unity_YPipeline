@@ -13,12 +13,11 @@ namespace YPipeline
             public TextureHandle colorTexture;
         }
 
-        protected override void Initialize()
-        {
-            
-        }
+        protected override void Initialize() { }
+        
+        protected override void OnDispose() { }
 
-        public override void OnRecord(ref YPipelineData data)
+        protected override void OnRecord(ref YPipelineData data)
         {
             // 注意 CopyTexture 的兼容问题，看情况是否改为 AddBlitPass。
             using (var builder = data.renderGraph.AddUnsafePass<CopyColorPassData>("Copy Color", out var passData))

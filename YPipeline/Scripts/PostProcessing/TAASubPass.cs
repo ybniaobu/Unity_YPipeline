@@ -50,6 +50,14 @@ namespace YPipeline
 
         protected override void Initialize() { }
 
+        public override void OnDispose()
+        {
+            m_TAA = null;
+            
+            CoreUtils.Destroy(m_TAAMaterial);
+            m_TAAMaterial = null;
+        }
+
         public override void OnRecord(ref YPipelineData data)
         {
             bool isTAAEnabled = data.asset.antiAliasingMode == AntiAliasingMode.TAA;

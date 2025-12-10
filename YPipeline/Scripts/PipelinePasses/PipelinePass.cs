@@ -27,7 +27,7 @@ namespace YPipeline
         /// Recording pipeline pass to the render graph. 
         /// </summary>
         /// <param name="data">YPipelineData</param>
-        public virtual void OnRecord(ref YPipelineData data) { }
+        protected virtual void OnRecord(ref YPipelineData data) { }
 
         public static void Record(List<PipelinePass> cameraPipelinePasses, ref YPipelineData data)
         {

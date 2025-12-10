@@ -37,14 +37,27 @@ namespace YPipeline
             
             m_Sampler = new ProfilingSampler("Post Processing");
         }
-        
+
         protected override void OnDispose()
         {
-            //DestroyImmediate(this);
+            m_Sampler = null;
+            
+            m_TAASubPass.OnDispose();
+            m_BloomSubPass.OnDispose();
+            m_ColorGradingLutSubPass.OnDispose();
+            m_UberPostProcessingSubPass.OnDispose();
+            m_FinalPostProcessingSubPass.OnDispose();
+            
+            m_TAASubPass = null;
+            m_BloomSubPass = null;
+            m_ColorGradingLutSubPass = null;
+            m_UberPostProcessingSubPass = null;
+            m_FinalPostProcessingSubPass = null;
         }
 
-        public override void OnRecord(ref YPipelineData data)
+        protected override void OnRecord(ref YPipelineData data)
         {
+#if UNITY_EDITOR
             using (var builder = data.renderGraph.AddUnsafePass<PostProcessingPassData>("Disable Post Processing (Editor Preview)", out var passData))
             {
                 passData.cameraType = data.camera.cameraType;
@@ -56,7 +69,6 @@ namespace YPipeline
                 
                 builder.SetRenderFunc((PostProcessingPassData data, UnsafeGraphContext context) =>
                 {
-#if UNITY_EDITOR
                     // disable post-processing in material preview and reflection probe preview
                     if (data.cameraType > CameraType.SceneView)
                     {
@@ -69,12 +81,10 @@ namespace YPipeline
                     {
                         BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.cameraColorTarget);
                     }
-#endif
                 });
             }
             
             // TODO: 更改到 SceneCameraRenderer 内
-#if UNITY_EDITOR
             if (data.camera.cameraType > CameraType.SceneView || data.camera.cameraType == CameraType.SceneView && !SceneView.currentDrawingSceneView.sceneViewState.showImageEffects)
             {
                 return;

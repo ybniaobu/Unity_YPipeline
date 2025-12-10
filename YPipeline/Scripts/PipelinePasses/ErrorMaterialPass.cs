@@ -7,19 +7,23 @@ namespace YPipeline
 {
     public class ErrorMaterialPass : PipelinePass
     {
-#if UNITY_EDITOR
         private class ErrorMaterialPassData
         {
             public RendererListHandle rendererList;
         }
         
         private Material m_ErrorMaterial;
-#endif
+        
         protected override void Initialize() { }
 
-        public override void OnRecord(ref YPipelineData data)
+        protected override void OnDispose()
         {
-#if UNITY_EDITOR
+            CoreUtils.Destroy(m_ErrorMaterial);
+            m_ErrorMaterial = null;
+        }
+
+        protected override void OnRecord(ref YPipelineData data)
+        {
             using (var builder = data.renderGraph.AddRasterRenderPass<ErrorMaterialPassData>("Draw Error Material", out var passData))
             {
                 if (m_ErrorMaterial == null)
@@ -45,7 +49,6 @@ namespace YPipeline
                     context.cmd.DrawRendererList(data.rendererList);
                 });
             }
-#endif
         }
     }
 }

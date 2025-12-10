@@ -33,7 +33,13 @@ namespace YPipeline
         
         protected override void Initialize() { }
 
-        public override void OnRecord(ref YPipelineData data)
+        protected override void OnDispose()
+        {
+            CoreUtils.Destroy(m_CameraMotionVectorMaterial);
+            m_CameraMotionVectorMaterial = null;
+        }
+
+        protected override void OnRecord(ref YPipelineData data)
         {
             using (var builder = data.renderGraph.AddRasterRenderPass<MotionVectorPassData>("Camera & Object Motion Vector", out var passData))
             {

@@ -130,17 +130,11 @@ namespace YPipeline
         private NativeArray<LightShadowCasterCullingInfo> m_CullingInfoPerLight;
         private NativeArray<ShadowSplitData> m_ShadowSplitDataPerLight;
         
-        protected override void Initialize()
-        {
-
-        }
+        protected override void Initialize() { }
         
-        protected override void OnDispose()
-        {
-            //DestroyImmediate(this);
-        }
+        protected override void OnDispose() { }
 
-        public override void OnRecord(ref YPipelineData data)
+        protected override void OnRecord(ref YPipelineData data)
         {
             // TODO: RasterRenderPass 无法 SetRenderTarget，URP 是将直接光和间接光的阴影贴图分开进行的。
             

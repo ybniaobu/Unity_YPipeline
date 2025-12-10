@@ -13,7 +13,7 @@ namespace YPipeline
         
         protected override void Initialize() { }
 
-        public override void OnRecord(ref YPipelineData data)
+        protected override void OnRecord(ref YPipelineData data)
         {
             data.camera.TryGetCullingParameters(out ScriptableCullingParameters cullingParameters);
             cullingParameters.shadowDistance = Mathf.Min(data.asset.maxShadowDistance, data.camera.farClipPlane);

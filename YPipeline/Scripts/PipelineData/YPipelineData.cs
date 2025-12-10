@@ -70,5 +70,54 @@ namespace YPipeline
         public BufferHandle SpotLightShadowMatricesBufferHandle { set; get; }
         
         public BufferHandle TilesLightIndicesBufferHandle { set; get; }
+        
+        // ----------------------------------------------------------------------------------------------------
+        // Methods
+        // ----------------------------------------------------------------------------------------------------
+
+        public void Dispose()
+        {
+            asset = null;
+            renderGraph?.Cleanup();
+            renderGraph = null;
+            camera = null;
+            lightsData.Dispose();
+            lightsData = null;
+            
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            debugSettings.Dispose();
+            debugSettings = null;
+#endif
+
+            SunLightShadowMap = TextureHandle.nullHandle;
+            SpotLightShadowMap = TextureHandle.nullHandle;
+            PointLightShadowMap =  TextureHandle.nullHandle;
+            
+            CameraColorTarget = TextureHandle.nullHandle;
+            CameraDepthTarget = TextureHandle.nullHandle;
+            CameraColorAttachment = TextureHandle.nullHandle;
+            CameraDepthAttachment = TextureHandle.nullHandle;
+            CameraColorTexture = TextureHandle.nullHandle;
+            CameraDepthTexture = TextureHandle.nullHandle;
+            ThinGBuffer  = TextureHandle.nullHandle;
+            MotionVectorTexture = TextureHandle.nullHandle;
+            AmbientOcclusionTexture = TextureHandle.nullHandle;
+            TAATarget  = TextureHandle.nullHandle;
+            BloomTexture = TextureHandle.nullHandle;
+            ColorGradingLutTexture = TextureHandle.nullHandle;
+            CameraFinalTexture = TextureHandle.nullHandle;
+                
+            TAAHistory = TextureHandle.nullHandle;
+            EnvBRDFLut = TextureHandle.nullHandle;
+            BlueNoise256 = TextureHandle.nullHandle;
+            
+            PunctualLightBufferHandle = BufferHandle.nullHandle;
+            PointLightShadowBufferHandle = BufferHandle.nullHandle;
+            PointLightShadowMatricesBufferHandle = BufferHandle.nullHandle;
+            SpotLightShadowBufferHandle = BufferHandle.nullHandle;
+            SpotLightShadowMatricesBufferHandle = BufferHandle.nullHandle;
+            
+            TilesLightIndicesBufferHandle = BufferHandle.nullHandle;
+        }
     }
 }
