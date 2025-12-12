@@ -83,10 +83,10 @@ namespace YPipeline
                 {
                     if (m_FilmGrain.type.value != FilmGrainKinds.Custom)
                     {
-                        if (m_FilmGrainTexture == null || m_FilmGrainTexture.externalTexture != data.asset.pipelineResources.textures.filmGrainTex[(int)m_FilmGrain.type.value])
+                        if (m_FilmGrainTexture == null || m_FilmGrainTexture.externalTexture != data.runtimeResources.FilmGrainTex[(int)m_FilmGrain.type.value])
                         {
                             m_FilmGrainTexture?.Release();
-                            m_FilmGrainTexture = RTHandles.Alloc(data.asset.pipelineResources.textures.filmGrainTex[(int)m_FilmGrain.type.value]);
+                            m_FilmGrainTexture = RTHandles.Alloc(data.runtimeResources.FilmGrainTex[(int)m_FilmGrain.type.value]);
                         }
                     }
                     else

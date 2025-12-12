@@ -11,6 +11,7 @@ namespace YPipeline
         // ----------------------------------------------------------------------------------------------------
         
         public YRenderPipelineAsset asset;
+        public YPipelineRuntimeResources runtimeResources;
         public RenderGraph renderGraph;
         public ScriptableRenderContext context;
         public Camera camera;
@@ -78,6 +79,7 @@ namespace YPipeline
         public void Dispose()
         {
             asset = null;
+            runtimeResources = null;
             renderGraph?.Cleanup();
             renderGraph = null;
             camera = null;

@@ -49,19 +49,19 @@ namespace YPipeline
                 // Imported texture resources
                 // ----------------------------------------------------------------------------------------------------
                 
-                if (m_EnvBRDFLut == null || m_EnvBRDFLut.externalTexture != data.asset.pipelineResources.textures.environmentBRDFLut)
+                if (m_EnvBRDFLut == null || m_EnvBRDFLut.externalTexture != data.runtimeResources.EnvironmentBRDFLut)
                 {
                     m_EnvBRDFLut?.Release();
-                    m_EnvBRDFLut = RTHandles.Alloc(data.asset.pipelineResources.textures.environmentBRDFLut);
+                    m_EnvBRDFLut = RTHandles.Alloc(data.runtimeResources.EnvironmentBRDFLut);
                 }
                 TextureHandle envBRDFLut = data.renderGraph.ImportTexture(m_EnvBRDFLut);
                 builder.UseTexture(envBRDFLut, AccessFlags.Read);
                 builder.SetGlobalTextureAfterPass(envBRDFLut, YPipelineShaderIDs.k_EnvBRDFLutID);
 
-                if (m_BlueNoise64 == null || m_BlueNoise64.externalTexture != data.asset.pipelineResources.textures.blueNoise64)
+                if (m_BlueNoise64 == null || m_BlueNoise64.externalTexture != data.runtimeResources.BlueNoise64)
                 {
                     m_BlueNoise64?.Release();
-                    m_BlueNoise64 = RTHandles.Alloc(data.asset.pipelineResources.textures.blueNoise64);
+                    m_BlueNoise64 = RTHandles.Alloc(data.runtimeResources.BlueNoise64);
                 }
                 TextureHandle blueNoise64 = data.renderGraph.ImportTexture(m_BlueNoise64);
                 builder.UseTexture(blueNoise64, AccessFlags.Read);

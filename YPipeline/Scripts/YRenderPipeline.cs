@@ -24,6 +24,7 @@ namespace YPipeline
         {
             m_Data = new YPipelineData();
             m_Data.asset = asset;
+            m_Data.runtimeResources = GraphicsSettings.GetRenderPipelineSettings<YPipelineRuntimeResources>();
             m_Data.renderGraph = new RenderGraph("YPipeline Render Graph");
             m_Data.lightsData = new YPipelineLightsData();
             

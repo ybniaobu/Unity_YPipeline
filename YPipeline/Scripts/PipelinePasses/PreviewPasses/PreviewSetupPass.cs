@@ -143,10 +143,10 @@ namespace YPipeline
                 passData.bufferSize = bufferSize;
                 ImportBackBuffers(ref data);
                 
-                if (m_EnvBRDFLut == null || m_EnvBRDFLut.externalTexture != data.asset.pipelineResources.textures.environmentBRDFLut)
+                if (m_EnvBRDFLut == null || m_EnvBRDFLut.externalTexture != data.runtimeResources.EnvironmentBRDFLut)
                 {
                     m_EnvBRDFLut?.Release();
-                    m_EnvBRDFLut = RTHandles.Alloc(data.asset.pipelineResources.textures.environmentBRDFLut);
+                    m_EnvBRDFLut = RTHandles.Alloc(data.runtimeResources.EnvironmentBRDFLut);
                 }
                 TextureHandle envBRDFLut = data.renderGraph.ImportTexture(m_EnvBRDFLut);
                 builder.UseTexture(envBRDFLut, AccessFlags.Read);

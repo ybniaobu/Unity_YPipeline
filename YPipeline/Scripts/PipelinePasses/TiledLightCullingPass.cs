@@ -58,7 +58,7 @@ namespace YPipeline
         {
             using (var builder = data.renderGraph.AddComputePass<TiledLightCullingPassData>("Tiled Based Light Culling", out var passData))
             {
-                passData.cs = data.asset.pipelineResources.computeShaders.tiledLightCullingCs;
+                passData.cs = data.runtimeResources.TiledLightCullingCS;
                 passData.punctualLightCount = data.lightsData.punctualLightCount;
                 passData.enableSplitDepth = data.asset.enableSplitDepth;
                 

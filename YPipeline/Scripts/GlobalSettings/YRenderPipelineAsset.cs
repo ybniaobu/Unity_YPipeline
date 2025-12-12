@@ -47,23 +47,37 @@ namespace YPipeline
         // ----------------------------------------------------------------------------------------------------
         
         public override string renderPipelineShaderTag => string.Empty;
-        public override Shader defaultShader => Shader.Find("YPipeline/Shading Models/Standard PBR");
-
-        public override Material defaultMaterial => pipelineResources.defaultMaterials.standardPBR;
-
+        
+        public override Shader defaultShader => 
+            GraphicsSettings.TryGetRenderPipelineSettings<YPipelineRuntimeResources>(out var resources) ? 
+                resources.DefaultPBRShader : null;
+        
+#if UNITY_EDITOR
+        private YPipelineEditorResources EditorResources => GraphicsSettings.GetRenderPipelineSettings<YPipelineEditorResources>();
+        
+        public override Material defaultMaterial => EditorResources?.DefaultPBRMaterial;
+        
+#endif
         protected override RenderPipeline CreatePipeline()
         {
             return new YRenderPipeline(this);
         }
-        
+
+        protected override void EnsureGlobalSettings()
+        {
+            base.EnsureGlobalSettings();
+#if UNITY_EDITOR
+            YPipelineGlobalSettings.Ensure();
+#endif
+        }
+
+
         // ----------------------------------------------------------------------------------------------------
         // 渲染配置
         // ----------------------------------------------------------------------------------------------------
         
         // TODO：参考 HDRP 的 Asset
         [Header("Rendering Settings")]
-        public YPipelineResources pipelineResources;
-        
         public RenderPath renderPath = RenderPath.TiledBasedForward;
         
         public bool enableHDRColorBuffer = true;

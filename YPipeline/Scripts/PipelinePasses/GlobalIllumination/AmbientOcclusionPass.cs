@@ -65,7 +65,7 @@ namespace YPipeline
                     threadGroupSizeY = Mathf.CeilToInt(textureSize.y / 16.0f);
                     passData.threadGroupSizes16 = new Vector2Int(threadGroupSizeX, threadGroupSizeY);
 
-                    passData.cs = data.asset.pipelineResources.computeShaders.ambientOcclusionCs;
+                    passData.cs = data.runtimeResources.AmbientOcclusionCS;
                     passData.aoMode = m_AO.ambientOcclusionMode.value;
                     builder.UseTexture(data.ThinGBuffer, AccessFlags.Read);
                     builder.UseTexture(data.CameraDepthTexture, AccessFlags.Read);
