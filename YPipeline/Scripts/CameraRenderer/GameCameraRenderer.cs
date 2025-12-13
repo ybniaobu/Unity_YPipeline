@@ -14,6 +14,11 @@ namespace YPipeline
             {
                 case RenderPath.TiledBasedForward: 
                     m_CameraPipelineNodes.Add(PipelinePass.Create<CullingPass>());
+                    
+                    // TODO：这里增加一个 Pass，类似 CullingPass 不使用 renderGraph，
+                    // TODO：将 LightSetupPass、ShadowPass 的准备工作放进来，参考 urp 的 RenderSingleCamera
+                    // TODO：主要是为了解决 context.CullShadowCasters 问题
+                    
                     m_CameraPipelineNodes.Add(PipelinePass.Create<LightSetupPass>());
                     m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardResourcesPass>());
                     m_CameraPipelineNodes.Add(PipelinePass.Create<CameraSetupPass>());

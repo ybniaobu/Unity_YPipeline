@@ -19,6 +19,8 @@ namespace YPipeline
 #if UNITY_EDITOR
         private PreviewCameraRenderer m_PreviewCameraRenderer;
 #endif
+        // Store locally the value on the instance due as the Render Pipeline Asset data might change before the disposal of the asset, making some APV Resources leak.
+        private bool m_APVIsEnabled = false;
         
         public YRenderPipeline(YRenderPipelineAsset asset)
         {
@@ -46,6 +48,25 @@ namespace YPipeline
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             m_Data.debugSettings = new DebugSettings();
 #endif
+            
+            // APV
+            m_APVIsEnabled = asset != null && asset.supportProbeVolume;
+            SupportedRenderingFeatures.active.overridesLightProbeSystem = m_APVIsEnabled;
+            SupportedRenderingFeatures.active.skyOcclusion = m_APVIsEnabled;
+            if (m_APVIsEnabled)
+            {
+                ProbeVolumeSystemParameters apvParams = new ProbeVolumeSystemParameters()
+                {
+                    memoryBudget = asset.probeVolumeMemoryBudget,
+                    blendingMemoryBudget = asset.probeVolumeBlendingMemoryBudget,
+                    shBands = asset.probeVolumeSHBands,
+                    supportGPUStreaming = asset.supportProbeVolumeGPUStreaming,
+                    supportDiskStreaming = asset.supportProbeVolumeDiskStreaming,
+                    supportScenarios = asset.supportProbeVolumeScenarios,
+                    supportScenarioBlending = asset.supportProbeVolumeScenarioBlending,
+                };
+                ProbeReferenceVolume.instance.Initialize(apvParams);
+            }
         }
 
         protected override void Render(ScriptableRenderContext context, List<Camera> cameras)
@@ -58,17 +79,6 @@ namespace YPipeline
                 m_Data.camera = camera;
                 m_Data.cmd = CommandBufferPool.Get();
                 VolumeManager.instance.Update(camera.transform, 1);
-                
-#if UNITY_EDITOR
-                // 待修改
-                if (camera.cameraType == CameraType.Reflection || camera.cameraType == CameraType.Preview)
-                    ScriptableRenderContext.EmitGeometryForCamera(camera);
-
-                if (camera.cameraType == CameraType.SceneView) 
-                {
-                    ScriptableRenderContext.EmitWorldGeometryForSceneView(m_Data.camera);
-                }
-#endif
 
                 switch (camera.cameraType)
                 {
@@ -103,6 +113,7 @@ namespace YPipeline
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
+            if (m_APVIsEnabled) ProbeReferenceVolume.instance.Cleanup();
             
 #if UNITY_EDITOR
             UnityEngine.Experimental.GlobalIllumination.Lightmapping.ResetDelegate();

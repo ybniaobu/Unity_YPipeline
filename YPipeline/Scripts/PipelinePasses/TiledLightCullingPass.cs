@@ -105,8 +105,6 @@ namespace YPipeline
                 passData.tilesLightIndicesBuffer = builder.UseBuffer(data.TilesLightIndicesBufferHandle, AccessFlags.Write);
                 
                 builder.AllowPassCulling(false);
-                
-                // TODO: 好好了解一下这个东西
                 builder.AllowGlobalStateModification(true);
                 
                 builder.SetRenderFunc((TiledLightCullingPassData data, ComputeGraphContext context) =>

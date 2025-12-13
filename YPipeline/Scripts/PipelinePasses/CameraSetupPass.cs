@@ -13,7 +13,7 @@ namespace YPipeline
 
             public Vector4 cameraSettings;
 
-            public void SetNonBuiltInCameraMatrixShaderVariables(UnsafeCommandBuffer cmd)
+            public void SetNonBuiltInCameraMatrixShaderVariables(RasterCommandBuffer cmd)
             {
                 bool isProjectionMatrixFlipped = SystemInfo.graphicsUVStartsAtTop;
 
@@ -62,7 +62,7 @@ namespace YPipeline
 
         protected override void OnRecord(ref YPipelineData data)
         {
-            using (var builder = data.renderGraph.AddUnsafePass<CameraSetupPassData>("Setup Camera Properties", out var passData))
+            using (var builder = data.renderGraph.AddRasterRenderPass<CameraSetupPassData>("Setup Camera Properties", out var passData))
             {
                 passData.camera = data.camera;
                 YPipelineCamera yCamera = data.camera.GetYPipelineCamera();
@@ -95,8 +95,9 @@ namespace YPipeline
                 passData.cameraSettings = new Vector4(fov, cotFov);
 
                 builder.AllowPassCulling(false);
+                builder.AllowGlobalStateModification(true);
 
-                builder.SetRenderFunc((CameraSetupPassData data, UnsafeGraphContext context) =>
+                builder.SetRenderFunc((CameraSetupPassData data, RasterGraphContext context) =>
                 {
                     context.cmd.SetupCameraProperties(data.camera);
                     context.cmd.SetViewProjectionMatrices(data.yCamera.perCameraData.viewMatrix, data.yCamera.perCameraData.jitteredProjectionMatrix);

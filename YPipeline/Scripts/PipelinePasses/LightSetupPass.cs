@@ -82,6 +82,7 @@ namespace YPipeline
         {
             using (var builder = data.renderGraph.AddUnsafePass<LightSetupPassData>("Set Global Light Data", out var passData))
             {
+                // TODO: 记录数据写在 renderGraph 前，和改 Shadow Pass 一起做（即解决 Point Light 问题时）！！！！！！！！！！！！
                 RecordLightsData(ref data);
                 
                 passData.sunLightData.Setup(data.lightsData);

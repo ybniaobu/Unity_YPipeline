@@ -40,8 +40,8 @@ namespace YPipeline
 
         protected override void OnRecord(ref YPipelineData data)
         {
-            // TODO：m_EnvBRDFLut、m_BlueNoise64 初始化一次，并使用 SetGlobalTextureAfterPass
-            using (var builder = data.renderGraph.AddUnsafePass<ForwardResourcesPassData>("Set Global Resources", out var passData))
+            // TODO：m_EnvBRDFLut、m_BlueNoise64 初始化一次
+            using (var builder = data.renderGraph.AddRasterRenderPass<ForwardResourcesPassData>("Set Global Resources", out var passData))
             {
                 ImportBackBuffers(ref data);
                 
@@ -134,8 +134,9 @@ namespace YPipeline
                 passData.shadowMapSizes = new Vector4((int) data.asset.sunLightShadowMapSize, (int) data.asset.spotLightShadowMapSize, (int) data.asset.pointLightShadowMapSize);
                 
                 builder.AllowPassCulling(false);
+                builder.AllowGlobalStateModification(true);
                 
-                builder.SetRenderFunc((ForwardResourcesPassData data, UnsafeGraphContext context) =>
+                builder.SetRenderFunc((ForwardResourcesPassData data, RasterGraphContext context) =>
                 {
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_BufferSizeID, new Vector4(1f / data.bufferSize.x, 1f / data.bufferSize.y, data.bufferSize.x, data.bufferSize.y));
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_JitterID, data.jitter);

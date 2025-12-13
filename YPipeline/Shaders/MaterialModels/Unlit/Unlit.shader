@@ -24,6 +24,7 @@ Shader "YPipeline/Shading Models/Unlit"
         [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull Mode", Float) = 2
     	
     	[HideInInspector] _AddPrecomputedVelocity("_AddPrecomputedVelocity", Float) = 0.0
+    	[HideInInspector] _MaterialID ("Material ID", Float) = 0 // See YPipeline.MaterialID, 0 is unlit.
     }
     
     SubShader

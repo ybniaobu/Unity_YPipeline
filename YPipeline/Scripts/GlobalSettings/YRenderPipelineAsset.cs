@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Serialization;
 
 namespace YPipeline
@@ -40,12 +41,13 @@ namespace YPipeline
     }
     
     [CreateAssetMenu(menuName = "YPipeline/YRenderPipelineAsset")]
-    public class YRenderPipelineAsset : RenderPipelineAsset<YRenderPipeline>
+    public class YRenderPipelineAsset : RenderPipelineAsset<YRenderPipeline>, IProbeVolumeEnabledRenderPipeline, IRenderGraphEnabledRenderPipeline
     {
         // ----------------------------------------------------------------------------------------------------
         // RenderPipelineAsset
         // ----------------------------------------------------------------------------------------------------
         
+        // RenderPipelineAsset<YRenderPipeline>
         public override string renderPipelineShaderTag => string.Empty;
         
         public override Shader defaultShader => 
@@ -70,10 +72,19 @@ namespace YPipeline
             YPipelineGlobalSettings.Ensure();
 #endif
         }
+        
+        // IRenderGraphEnabledRenderPipeline
+        public bool isImmediateModeSupported => false;
+        
+        // IProbeVolumeEnabledRenderPipeline
+        public ProbeVolumeSHBands maxSHBands => probeVolumeSHBands;
+        public bool supportProbeVolume => true;
+        [Obsolete("This property is no longer necessary. #from(2023.3)")]
+        public ProbeVolumeSceneData probeVolumeSceneData => null;
 
 
         // ----------------------------------------------------------------------------------------------------
-        // 渲染配置
+        // 渲染配置 Rendering Settings
         // ----------------------------------------------------------------------------------------------------
         
         // TODO：参考 HDRP 的 Asset
@@ -91,15 +102,26 @@ namespace YPipeline
         public FXAAMode fxaaMode = FXAAMode.Quality;
         
         // ----------------------------------------------------------------------------------------------------
-        // 光照配置
+        // 光照配置 Lighting Settings
         // ----------------------------------------------------------------------------------------------------
+        
+        // Light Culling
         
         [Header("Lighting Settings")]
         [Tooltip("Enable light 2.5D culling, which splits depth into cells to better handle depth discontinuities")]
         public bool enableSplitDepth = true;
         
+        // APV
+        public ProbeVolumeSHBands probeVolumeSHBands = ProbeVolumeSHBands.SphericalHarmonicsL1;
+        public ProbeVolumeTextureMemoryBudget probeVolumeMemoryBudget = ProbeVolumeTextureMemoryBudget.MemoryBudgetMedium;
+        public ProbeVolumeBlendingTextureMemoryBudget probeVolumeBlendingMemoryBudget = ProbeVolumeBlendingTextureMemoryBudget.MemoryBudgetMedium;
+        public bool supportProbeVolumeGPUStreaming = false;
+        public bool supportProbeVolumeDiskStreaming = false;
+        public bool supportProbeVolumeScenarios = false;
+        public bool supportProbeVolumeScenarioBlending = false;
+        
         // ----------------------------------------------------------------------------------------------------
-        // 阴影配置
+        // 阴影配置 Shadow Settings
         // ----------------------------------------------------------------------------------------------------
         
         [Header("Shadow Settings")]
@@ -122,7 +144,7 @@ namespace YPipeline
         public ResolutionSize pointLightShadowMapSize = ResolutionSize._1024;
         
         // ----------------------------------------------------------------------------------------------------
-        // 后处理配置
+        // 后处理配置 Post Processing Settings
         // ----------------------------------------------------------------------------------------------------
         
         [Header("Post Processing Settings")]

@@ -121,6 +121,7 @@ namespace YPipeline
                     data.AmbientOcclusionTexture = data.renderGraph.CreateTexture(aoTextureDesc);
                     passData.aoTexture = data.AmbientOcclusionTexture;
                     builder.UseTexture(data.AmbientOcclusionTexture, AccessFlags.Write);
+                    builder.SetGlobalTextureAfterPass(data.AmbientOcclusionTexture, YPipelineShaderIDs.k_AmbientOcclusionTextureID);
                     
                     // Ambient Occlusion Transition Texture
                     TextureDesc transitionDesc0 = new TextureDesc(textureSize.x, textureSize.y)
@@ -269,8 +270,6 @@ namespace YPipeline
                             context.cmd.DispatchCompute(data.cs, upsampleKernel, threadGroupSize.x, threadGroupSize.y, 1);
                             context.cmd.EndSample("SSAO Upsample");
                         }
-                        
-                        context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_AmbientOcclusionTextureID, data.aoTexture);
                     });
                 }
             }

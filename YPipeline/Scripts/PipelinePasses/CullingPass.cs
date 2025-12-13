@@ -15,20 +15,32 @@ namespace YPipeline
 
         protected override void OnRecord(ref YPipelineData data)
         {
+            // Setup Culling Parameters
             data.camera.TryGetCullingParameters(out ScriptableCullingParameters cullingParameters);
             cullingParameters.shadowDistance = Mathf.Min(data.asset.maxShadowDistance, data.camera.farClipPlane);
+            cullingParameters.maximumVisibleLights = YPipelineLightsData.k_MaxPunctualLightCount + 1;
+            // TODO：实现了 Reflection Probe 的 tile/cluster culling 就需要取消掉 
+            // cullingParameters.cullingOptions |= CullingOptions.DisablePerObjectCulling;
+            
+            // Emit scene view UI
+#if UNITY_EDITOR
+            if (data.camera.cameraType == CameraType.Reflection || data.camera.cameraType == CameraType.Preview)
+                ScriptableRenderContext.EmitGeometryForCamera(data.camera);
+
+            if (data.camera.cameraType == CameraType.SceneView) 
+            {
+                ScriptableRenderContext.EmitWorldGeometryForSceneView(data.camera);
+            }
+#endif
+            // APV
+            
+            
+            // Cull
             data.cullingResults = data.context.Cull(ref cullingParameters);
             
-            // TODO：Culling 是否需要放在 RenderGraph 记录前，以便更早进行 Culling？？观察一下 URP 和 HDRP。
-            // using (var builder = data.renderGraph.AddUnsafePass<CullingPassData>("Culling", out var passData))
-            // {
-            //     data.camera.TryGetCullingParameters(out ScriptableCullingParameters cullingParameters);
-            //     cullingParameters.shadowDistance = Mathf.Min(data.asset.maxShadowDistance, data.camera.farClipPlane);
-            //     data.cullingResults = data.context.Cull(ref cullingParameters);
-            //     
-            //     builder.AllowPassCulling(false);
-            //     builder.SetRenderFunc((CullingPassData data, UnsafeGraphContext context) => { });
-            // }
+            data.context.ExecuteCommandBuffer(data.cmd);
+            data.context.Submit();
+            data.cmd.Clear();
         }
     }
 }

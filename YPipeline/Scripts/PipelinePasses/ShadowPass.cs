@@ -152,6 +152,7 @@ namespace YPipeline
                 passData.shadowingPointLightCount = data.lightsData.shadowingPointLightCount;
                 passData.shadowingSpotLightCount = data.lightsData.shadowingSpotLightCount;
                 
+                // TODO: 记录数据写在 renderGraph 前（参考 urp 的 RenderSingleCamera），解决 Point Light 问题时一同解决！！！！！！！！！！！！！！！
                 // Shadow Culling & Shadow Map Creation & Renderer List Preparation
                 CreateSunLightShadowMap(ref data, builder, passData);
                 CreateSpotLightShadowMap(ref data, builder, passData);
@@ -159,6 +160,7 @@ namespace YPipeline
                 
                 if (passData.shadowingSunLightCount + passData.shadowingPointLightCount + passData.shadowingSpotLightCount > 0)
                 {
+                    // TODO：这里执行可能有点晚，参考 URP、HDRP
                     data.context.CullShadowCasters(data.cullingResults, new ShadowCastersCullingInfos
                     {
                         perLightInfos = m_CullingInfoPerLight,
