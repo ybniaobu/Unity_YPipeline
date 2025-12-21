@@ -12,7 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6d090269ab8a8eb40a3f24edb1024efa, type: 3}
   m_Name: YRenderPipelineAsset
   m_EditorClassIdentifier: 
-  pipelineResources: {fileID: 11400000, guid: 908eb47731a80fb45a32453593164179, type: 2}
   renderPath: 0
   enableHDRColorBuffer: 1
   enableSRPBatcher: 1
@@ -20,6 +19,13 @@ MonoBehaviour:
   antiAliasingMode: 2
   fxaaMode: 0
   enableSplitDepth: 1
+  probeVolumeSHBands: 1
+  probeVolumeMemoryBudget: 1024
+  probeVolumeBlendingMemoryBudget: 256
+  supportProbeVolumeGPUStreaming: 1
+  supportProbeVolumeDiskStreaming: 0
+  supportProbeVolumeScenarios: 1
+  supportProbeVolumeScenarioBlending: 1
   shadowMode: 1
   maxShadowDistance: 200
   distanceFade: 0.05
@@ -28,7 +34,7 @@ MonoBehaviour:
   spiltRatio2: 0.2
   spiltRatio3: 0.5
   cascadeEdgeFade: 0.05
-  sunLightShadowMapSize: 4096
+  sunLightShadowMapSize: 2048
   spotLightShadowMapSize: 2048
   pointLightShadowMapSize: 1024
   globalVolumeProfile: {fileID: 11400000, guid: eb8647ca7eb7e324fa7d7b19a82bc4f5,

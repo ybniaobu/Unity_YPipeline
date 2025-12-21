@@ -12,12 +12,18 @@ namespace YPipeline
     {
         private class LightSetupPassData
         {
+            // Direct Light：Sun Light, Punctual Light
             public bool isSunLightShadowing;
             public SunLightConstantBuffer sunLightData = new SunLightConstantBuffer();
 
             public BufferHandle punctualLightsBuffer;
             public int punctualLightCount;
             public PunctualLightStructuredBuffer[] punctualLightsData = new PunctualLightStructuredBuffer[YPipelineLightsData.k_MaxPunctualLightCount];
+            
+            // APV
+            public bool isProbeVolumeL1Enabled;
+            public bool isProbeVolumeL2Enabled;
+            public bool isTAAEnabled;
         }
         
         private struct SunLightConstantBuffer
@@ -85,6 +91,7 @@ namespace YPipeline
                 // TODO: 记录数据写在 renderGraph 前，和改 Shadow Pass 一起做（即解决 Point Light 问题时）！！！！！！！！！！！！
                 RecordLightsData(ref data);
                 
+                // Direct Light：Sun Light, Punctual Light
                 passData.sunLightData.Setup(data.lightsData);
                 for (int i = 0; i < data.lightsData.punctualLightCount; i++)
                 {
@@ -102,6 +109,11 @@ namespace YPipeline
                     name = "Punctual Lights Data"
                 });
                 passData.punctualLightsBuffer = builder.UseBuffer(data.PunctualLightBufferHandle, AccessFlags.Write);
+                
+                // APV
+                passData.isProbeVolumeL1Enabled = data.isAPVEnabled && data.asset.probeVolumeSHBands == ProbeVolumeSHBands.SphericalHarmonicsL1;
+                passData.isProbeVolumeL2Enabled = data.isAPVEnabled && data.asset.probeVolumeSHBands == ProbeVolumeSHBands.SphericalHarmonicsL2;
+                passData.isTAAEnabled = data.asset.antiAliasingMode == AntiAliasingMode.TAA;
                 
                 builder.AllowPassCulling(false);
 
@@ -124,6 +136,17 @@ namespace YPipeline
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_PunctualLightCountID, new Vector4(data.punctualLightCount, 0));
                     context.cmd.SetBufferData(data.punctualLightsBuffer, data.punctualLightsData, 0, 0, data.punctualLightCount);
                     context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_PunctualLightDataID, data.punctualLightsBuffer);
+                    
+                    // APV
+                    var stack = VolumeManager.instance.stack;
+                    bool enableProbeVolumes = ProbeReferenceVolume.instance.UpdateShaderVariablesProbeVolumes(
+                        CommandBufferHelpers.GetNativeCommandBuffer(context.cmd),
+                        stack.GetComponent<ProbeVolumesOptions>(),
+                        data.isTAAEnabled ? Time.frameCount : 0,
+                        false);
+                    
+                    CoreUtils.SetKeyword(context.cmd, YPipelineKeywords.k_ProbeVolumeL1, data.isProbeVolumeL1Enabled && enableProbeVolumes);
+                    CoreUtils.SetKeyword(context.cmd, YPipelineKeywords.k_ProbeVolumeL2, data.isProbeVolumeL2Enabled && enableProbeVolumes);
                 });
             }
         }

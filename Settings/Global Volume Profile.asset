@@ -33,7 +33,7 @@ MonoBehaviour:
     m_Value: 1
   hbaoRadius:
     m_OverrideState: 1
-    m_Value: 2
+    m_Value: 1.5
   hbaoDirectionCount:
     m_OverrideState: 1
     m_Value: 4
@@ -51,7 +51,7 @@ MonoBehaviour:
     m_Value: 3
   gtaoStepCount:
     m_OverrideState: 1
-    m_Value: 4
+    m_Value: 3
   enableSpatialFilter:
     m_OverrideState: 1
     m_Value: 0
@@ -143,7 +143,7 @@ MonoBehaviour:
     m_Value: 0.5
   exposure:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 2
   saturation:
     m_OverrideState: 1
     m_Value: 1
@@ -468,16 +468,16 @@ MonoBehaviour:
   active: 1
   normalBias:
     m_OverrideState: 1
-    m_Value: 0.05
+    m_Value: 0.501
   viewBias:
     m_OverrideState: 1
-    m_Value: 0.1
+    m_Value: 0
   scaleBiasWithMinProbeDistance:
     m_OverrideState: 1
     m_Value: 0
   samplingNoise:
     m_OverrideState: 1
-    m_Value: 0.1
+    m_Value: 1
   animateSamplingNoise:
     m_OverrideState: 1
     m_Value: 1
@@ -855,7 +855,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f021eeae69254c388de6f3da8e71b2a8, type: 3}
   m_Name: Vignette
   m_EditorClassIdentifier: 
-  active: 1
+  active: 0
   color:
     m_OverrideState: 1
     m_Value: {r: 0, g: 0, b: 0, a: 1}

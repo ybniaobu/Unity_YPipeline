@@ -13,6 +13,10 @@ CBUFFER_START(UnityPerDraw)
     float4 unity_LODFade;
     float4 unity_WorldTransformParams;
 
+    // Render Layer block feature
+    // Only the first channel (x) contains valid data and the float must be reinterpreted using asuint() to extract the original 32 bits values.
+    float4 unity_RenderingLayer;
+
     // Occlusion Probes
     // float4 unity_ProbesOcclusion;
 
@@ -110,5 +114,14 @@ SAMPLER(samplerunity_Lightmap);
 
 TEXTURECUBE(unity_SpecCube0);
 SAMPLER(samplerunity_SpecCube0);
+
+// ----------------------------------------------------------------------------------------------------
+// Functions
+// ----------------------------------------------------------------------------------------------------
+
+inline uint GetRenderingLayer()
+{
+    return asuint(unity_RenderingLayer.x);
+}
 
 #endif

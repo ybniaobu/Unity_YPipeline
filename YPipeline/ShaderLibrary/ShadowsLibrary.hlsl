@@ -212,7 +212,7 @@ float ApplyPCF_CubeArray(float index, float faceIndex, TEXTURECUBE_ARRAY_SHADOW(
 // Shadow Attenuation Functions -- PCF
 // ----------------------------------------------------------------------------------------------------
 
-float3 GetSunLightShadowAttenuation_PCF(float3 positionWS, float3 normalWS, float3 L, float3 positionHCS)
+float3 GetSunLightShadowAttenuation_PCF(float3 positionWS, float3 normalWS, float3 L, float2 pixelCoord)
 {
     float cascadeIndex = ComputeCascadeIndex(positionWS);
     if (cascadeIndex >= GetSunLightCascadeCount()) return 1.0;
@@ -229,9 +229,9 @@ float3 GetSunLightShadowAttenuation_PCF(float3 positionWS, float3 normalWS, floa
     float3 positionSS = TransformWorldToSunLightShadowCoord(positionWS_Bias, cascadeIndex);
 
     #ifdef _TAA
-        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, positionHCS.xy % _BlueNoise64_TexelSize.w, 0).r + _Jitter.w * ROTATION_JITTER_SCALE) * TWO_PI;
+        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, pixelCoord % _BlueNoise64_TexelSize.w, 0).r + _Jitter.w * ROTATION_JITTER_SCALE) * TWO_PI;
     #else
-        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, positionHCS.xy % _BlueNoise64_TexelSize.w, 0).r) * TWO_PI;
+        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, pixelCoord % _BlueNoise64_TexelSize.w, 0).r) * TWO_PI;
     #endif
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
     
@@ -240,7 +240,7 @@ float3 GetSunLightShadowAttenuation_PCF(float3 positionWS, float3 normalWS, floa
     return lerp(1.0, shadowColor, shadowStrength * shadowFade);
 }
 
-float3 GetSpotLightShadowAttenuation_PCF(int lightIndex, float3 positionWS, float3 normalWS, float3 L, float linearDepth, float3 positionHCS)
+float3 GetSpotLightShadowAttenuation_PCF(int lightIndex, float3 positionWS, float3 normalWS, float3 L, float linearDepth, float2 pixelCoord)
 {
     float shadowingSpotLightIndex = GetShadowingLightIndex(lightIndex);
     float shadowStrength = GetSpotLightShadowStrength(shadowingSpotLightIndex);
@@ -255,9 +255,9 @@ float3 GetSpotLightShadowAttenuation_PCF(int lightIndex, float3 positionWS, floa
     float3 positionSS = TransformWorldToSpotLightShadowCoord(positionWS_Bias, shadowingSpotLightIndex);
 
     #ifdef _TAA
-        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, positionHCS.xy % _BlueNoise64_TexelSize.w, 0).r + _Jitter.w * ROTATION_JITTER_SCALE) * TWO_PI;
+        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, pixelCoord % _BlueNoise64_TexelSize.w, 0).r + _Jitter.w * ROTATION_JITTER_SCALE) * TWO_PI;
     #else
-        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, positionHCS.xy % _BlueNoise64_TexelSize.w, 0).r) * TWO_PI;
+        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, pixelCoord % _BlueNoise64_TexelSize.w, 0).r) * TWO_PI;
     #endif
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
     
@@ -266,7 +266,7 @@ float3 GetSpotLightShadowAttenuation_PCF(int lightIndex, float3 positionWS, floa
     return lerp(1.0, shadowColor, shadowStrength * distanceFade);
 }
 
-float3 GetPointLightShadowAttenuation_PCF(int lightIndex, float faceIndex, float3 positionWS, float3 normalWS, float3 L, float linearDepth, float3 positionHCS)
+float3 GetPointLightShadowAttenuation_PCF(int lightIndex, float faceIndex, float3 positionWS, float3 normalWS, float3 L, float linearDepth, float2 pixelCoord)
 {
     float shadowingPointLightIndex = GetShadowingLightIndex(lightIndex);
     float shadowStrength = GetPointLightShadowStrength(shadowingPointLightIndex);
@@ -282,9 +282,9 @@ float3 GetPointLightShadowAttenuation_PCF(int lightIndex, float faceIndex, float
     float3 positionSS = TransformWorldToPointLightShadowCoord(positionWS_Bias, shadowingPointLightIndex, faceIndex);
 
     #ifdef _TAA
-        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, positionHCS.xy % _BlueNoise64_TexelSize.w, 0).r + _Jitter.w * ROTATION_JITTER_SCALE) * TWO_PI;
+        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, pixelCoord % _BlueNoise64_TexelSize.w, 0).r + _Jitter.w * ROTATION_JITTER_SCALE) * TWO_PI;
     #else
-        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, positionHCS.xy % _BlueNoise64_TexelSize.w, 0).r) * TWO_PI;
+        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, pixelCoord % _BlueNoise64_TexelSize.w, 0).r) * TWO_PI;
     #endif
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
     
@@ -390,7 +390,7 @@ float3 ComputeAverageBlockerDepth_CubeArray(float index, float faceIndex, TEXTUR
 // Shadow Attenuation Functions -- PCSS
 // ----------------------------------------------------------------------------------------------------
 
-float3 GetSunLightShadowAttenuation_PCSS(float3 positionWS, float3 normalWS, float3 L, float3 positionHCS)
+float3 GetSunLightShadowAttenuation_PCSS(float3 positionWS, float3 normalWS, float3 L, float2 pixelCoord)
 {
     float cascadeIndex = ComputeCascadeIndex(positionWS);
     if (cascadeIndex >= GetSunLightCascadeCount()) return 1.0;
@@ -407,9 +407,9 @@ float3 GetSunLightShadowAttenuation_PCSS(float3 positionWS, float3 normalWS, flo
     float3 positionSS_Search = TransformWorldToSunLightShadowCoord(positionWS_SearchBias, cascadeIndex);
     
     #ifdef _TAA
-        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, positionHCS.xy % _BlueNoise64_TexelSize.w, 0).r + _Jitter.w * ROTATION_JITTER_SCALE) * TWO_PI;
+        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, pixelCoord % _BlueNoise64_TexelSize.w, 0).r + _Jitter.w * ROTATION_JITTER_SCALE) * TWO_PI;
     #else
-        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, positionHCS.xy % _BlueNoise64_TexelSize.w, 0).r) * TWO_PI;
+        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, pixelCoord % _BlueNoise64_TexelSize.w, 0).r) * TWO_PI;
     #endif
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
 
@@ -434,7 +434,7 @@ float3 GetSunLightShadowAttenuation_PCSS(float3 positionWS, float3 normalWS, flo
     return lerp(1.0, shadowColor, shadowStrength * shadowFade);
 }
 
-float3 GetSpotLightShadowAttenuation_PCSS(int lightIndex, float3 positionWS, float3 normalWS, float3 L, float linearDepth, float3 positionHCS)
+float3 GetSpotLightShadowAttenuation_PCSS(int lightIndex, float3 positionWS, float3 normalWS, float3 L, float linearDepth, float2 pixelCoord)
 {
     float shadowingSpotLightIndex = GetShadowingLightIndex(lightIndex);
     float shadowStrength = GetSpotLightShadowStrength(shadowingSpotLightIndex);
@@ -448,9 +448,9 @@ float3 GetSpotLightShadowAttenuation_PCSS(int lightIndex, float3 positionWS, flo
     float3 positionSS_Search = TransformWorldToSpotLightShadowCoord(positionWS_SearchBias, shadowingSpotLightIndex);
     
     #ifdef _TAA
-        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, positionHCS.xy % _BlueNoise64_TexelSize.w, 0).r + _Jitter.w * ROTATION_JITTER_SCALE) * TWO_PI;
+        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, pixelCoord % _BlueNoise64_TexelSize.w, 0).r + _Jitter.w * ROTATION_JITTER_SCALE) * TWO_PI;
     #else
-        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, positionHCS.xy % _BlueNoise64_TexelSize.w, 0).r) * TWO_PI;
+        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, pixelCoord % _BlueNoise64_TexelSize.w, 0).r) * TWO_PI;
     #endif
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
     
@@ -474,7 +474,7 @@ float3 GetSpotLightShadowAttenuation_PCSS(int lightIndex, float3 positionWS, flo
     return lerp(1.0, shadowColor, shadowStrength * distanceFade);
 }
 
-float3 GetPointLightShadowAttenuation_PCSS(int lightIndex, float faceIndex, float3 positionWS, float3 normalWS, float3 L, float linearDepth, float3 positionHCS)
+float3 GetPointLightShadowAttenuation_PCSS(int lightIndex, float faceIndex, float3 positionWS, float3 normalWS, float3 L, float linearDepth, float2 pixelCoord)
 {
     float shadowingPointLightIndex = GetShadowingLightIndex(lightIndex);
     float shadowStrength = GetPointLightShadowStrength(shadowingPointLightIndex);
@@ -489,9 +489,9 @@ float3 GetPointLightShadowAttenuation_PCSS(int lightIndex, float faceIndex, floa
     float3 positionSS_Search = TransformWorldToPointLightShadowCoord(positionWS_SearchBias, shadowingPointLightIndex, faceIndex);
 
     #ifdef _TAA
-        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, positionHCS.xy % _BlueNoise64_TexelSize.w, 0).r + _Jitter.w * ROTATION_JITTER_SCALE) * TWO_PI;
+        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, pixelCoord % _BlueNoise64_TexelSize.w, 0).r + _Jitter.w * ROTATION_JITTER_SCALE) * TWO_PI;
     #else
-        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, positionHCS.xy % _BlueNoise64_TexelSize.w, 0).r) * TWO_PI;
+        float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, pixelCoord % _BlueNoise64_TexelSize.w, 0).r) * TWO_PI;
     #endif
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
     

@@ -220,16 +220,8 @@ namespace YPipeline
                 
                 builder.SetRenderFunc((ShadowPassData data, UnsafeGraphContext context) =>
                 {
-                    if (data.isPCSSEnabled)
-                    {
-                        CoreUtils.SetKeyword(context.cmd, YPipelineKeywords.k_ShadowPCSS, true);
-                        CoreUtils.SetKeyword(context.cmd, YPipelineKeywords.k_ShadowPCF, false);
-                    }
-                    else
-                    {
-                        CoreUtils.SetKeyword(context.cmd, YPipelineKeywords.k_ShadowPCSS, false);
-                        CoreUtils.SetKeyword(context.cmd, YPipelineKeywords.k_ShadowPCF, true);
-                    }
+                    CoreUtils.SetKeyword(context.cmd, YPipelineKeywords.k_ShadowPCSS, data.isPCSSEnabled);
+                    CoreUtils.SetKeyword(context.cmd, YPipelineKeywords.k_ShadowPCF, !data.isPCSSEnabled);
                     
                     context.cmd.BeginSample("Sun Light Shadows");
                     if (data.shadowingSunLightCount > 0)
@@ -335,7 +327,7 @@ namespace YPipeline
                     data.cullingResults.ComputeDirectionalShadowMatricesAndCullingPrimitives(visibleLightIndex, i, cascadeCount, data.asset.SpiltRatios
                         , size, data.lightsData.sunLightNearPlaneOffset + 0.8f, out Matrix4x4 viewMatrix, out Matrix4x4 projectionMatrix, out ShadowSplitData splitData);
 
-                    //splitData.shadowCascadeBlendCullingFactor = 1f;
+                    splitData.shadowCascadeBlendCullingFactor = 1f;
                     m_ShadowSplitDataPerLight[splitOffset + i] = splitData;
                     //shadowDrawingSettings.splitData = splitData;
                 

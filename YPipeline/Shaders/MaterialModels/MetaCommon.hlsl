@@ -27,8 +27,8 @@ Varyings MetaVert(Attributes IN)
 float4 MetaFrag(Varyings IN) : SV_TARGET
 {
     UnityMetaParams meta = (UnityMetaParams) 0.0;
-    meta.albedo = SAMPLE_TEXTURE2D(_BaseTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).rgb * _BaseColor.rgb;
-    meta.emission = SAMPLE_TEXTURE2D(_EmissionTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).rgb * _EmissionColor.rgb;
+    meta.albedo = SAMPLE_TEXTURE2D(_BaseTex, sampler_BaseTex, IN.uv).rgb * _BaseColor.rgb;
+    meta.emission = SAMPLE_TEXTURE2D(_EmissionTex, sampler_EmissionTex, IN.uv).rgb * _EmissionColor.rgb;
     return TransportMetaColor(meta);
 }
 

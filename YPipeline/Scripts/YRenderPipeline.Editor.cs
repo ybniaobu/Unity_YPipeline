@@ -43,6 +43,8 @@ namespace YPipeline
                     case LightType.Rectangle:
                         RectangleLight rectangleLight = new RectangleLight();
                         LightmapperUtils.Extract(light, ref rectangleLight);
+                        rectangleLight.color.intensity /= Mathf.PI;
+                        rectangleLight.indirectColor.intensity /= Mathf.PI;
                         rectangleLight.mode = LightMode.Baked;
                         lightData.Init(ref rectangleLight);
                         break;

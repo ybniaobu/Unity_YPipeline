@@ -41,7 +41,7 @@ float4 ThinGBufferFrag(Varyings IN, out float depth: SV_DEPTH) : SV_TARGET
     UNITY_SETUP_INSTANCE_ID(IN);
     
     float4 baseColor = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _BaseColor);
-    float4 albedo = SAMPLE_TEXTURE2D(_BaseTex, sampler_Trilinear_Repeat_BaseTex, IN.uv) * baseColor;
+    float4 albedo = SAMPLE_TEXTURE2D(_BaseTex, sampler_BaseTex, IN.uv) * baseColor;
 
     #if defined(_CLIPPING)
         clip(albedo.a - UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Cutoff));
@@ -55,7 +55,7 @@ float4 ThinGBufferFrag(Varyings IN, out float depth: SV_DEPTH) : SV_TARGET
     #endif
 
     #if _USE_ROUGHNESSTEX
-        float roughness = SAMPLE_TEXTURE2D(_RoughnessTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).r;
+        float roughness = SAMPLE_TEXTURE2D(_RoughnessTex, sampler_RoughnessTex, IN.uv).r;
         roughness *= pow(10, _RoughnessScale);
         roughness = saturate(roughness);
     #else
@@ -63,12 +63,12 @@ float4 ThinGBufferFrag(Varyings IN, out float depth: SV_DEPTH) : SV_TARGET
     #endif
 
     #if _USE_HYBRIDTEX
-        float4 hybrid = SAMPLE_TEXTURE2D(_HybridTex, sampler_Trilinear_Repeat_BaseTex, IN.uv).rgba;
+        float4 hybrid = SAMPLE_TEXTURE2D(_HybridTex, sampler_HybridTex, IN.uv).rgba;
         roughness = saturate(hybrid.r * pow(10, _RoughnessScale));
     #endif
 
     #if _USE_NORMALTEX
-        float4 packedNormal = SAMPLE_TEXTURE2D(_NormalTex, sampler_Trilinear_Repeat_BaseTex, IN.uv);
+        float4 packedNormal = SAMPLE_TEXTURE2D(_NormalTex, sampler_NormalTex, IN.uv);
         float3 normalTS = UnpackNormalScale(packedNormal, _NormalIntensity);
         float3 n = normalize(IN.normalWS);
         float3 t = normalize(IN.tangentWS.xyz);

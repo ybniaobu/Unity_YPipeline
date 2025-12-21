@@ -33,7 +33,7 @@ namespace YPipeline
             }
 #endif
             // APV
-            
+            SetupAPV(ref data);
             
             // Cull
             data.cullingResults = data.context.Cull(ref cullingParameters);
@@ -41,6 +41,28 @@ namespace YPipeline
             data.context.ExecuteCommandBuffer(data.cmd);
             data.context.Submit();
             data.cmd.Clear();
+        }
+        
+        private void SetupAPV(ref YPipelineData data)
+        {
+            if (ProbeReferenceVolume.instance.isInitialized)
+            {
+                var stack = VolumeManager.instance.stack;
+                ProbeVolumesOptions apvOptions = stack.GetComponent<ProbeVolumesOptions>();
+                
+                ProbeReferenceVolume.instance.PerformPendingOperations();
+                if (data.camera.cameraType != CameraType.Reflection && data.camera.cameraType != CameraType.Preview)
+                {
+                    ProbeReferenceVolume.instance.UpdateCellStreaming(data.cmd, data.camera, apvOptions);
+                }
+                
+                ProbeReferenceVolume.instance.BindAPVRuntimeResources(data.cmd, true);
+                
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                // Must be called before culling because it emits intermediate renderers via Graphics.DrawInstanced.
+                ProbeReferenceVolume.instance.RenderDebug(data.camera, apvOptions, Texture2D.whiteTexture);
+#endif
+            }
         }
     }
 }

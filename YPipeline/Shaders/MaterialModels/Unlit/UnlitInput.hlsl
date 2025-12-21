@@ -8,7 +8,7 @@ UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
     UNITY_DEFINE_INSTANCED_PROP(float, _Cutoff)
 UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
-TEXTURE2D(_BaseTex);     SAMPLER(sampler_Trilinear_Repeat_BaseTex);
-TEXTURE2D(_EmissionTex);
+TEXTURE2D(_BaseTex);        SAMPLER(sampler_BaseTex);
+TEXTURE2D(_EmissionTex);    SAMPLER(sampler_EmissionTex);
 
 #endif

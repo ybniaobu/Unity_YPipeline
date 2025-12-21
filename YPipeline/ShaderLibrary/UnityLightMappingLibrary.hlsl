@@ -7,16 +7,6 @@
 // Light Map
 // ----------------------------------------------------------------------------------------------------
 
-#if defined(LIGHTMAP_ON)
-    #define LIGHTMAP_UV(index)                      float2 lightMapUV : TEXCOORD##index;
-    #define TRANSFER_LIGHTMAP_UV(IN, OUT)           OUT.lightMapUV = IN.lightMapUV * unity_LightmapST.xy + unity_LightmapST.zw;
-    #define LIGHTMAP_UV_FRAGMENT(IN)                IN.lightMapUV
-#else
-    #define LIGHTMAP_UV(index)
-    #define TRANSFER_LIGHTMAP_UV(IN, OUT)
-    #define LIGHTMAP_UV_FRAGMENT(IN)                float2(0.0, 0.0)
-#endif
-
 float3 SampleLightMap(float2 lightMapUV)
 {
     // #if defined(LIGHTMAP_ON)
@@ -29,7 +19,7 @@ float3 SampleLightMap(float2 lightMapUV)
     return SampleSingleLightmap(unity_Lightmap, samplerunity_Lightmap, lightMapUV, float4(1, 1, 0, 0), true);
 }
 
-float3 CalculateLightMap_Diffuse(float2 lightMapUV, in StandardPBRParams standardPBRParams, float envBRDF_Diffuse)
+float3 CalculateLightMap(float2 lightMapUV, in StandardPBRParams standardPBRParams, float envBRDF_Diffuse)
 {
     float3 irradiance = SampleLightMap(lightMapUV);
     float3 envBRDFDiffuse = standardPBRParams.albedo * envBRDF_Diffuse;

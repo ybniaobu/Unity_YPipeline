@@ -19,23 +19,42 @@ namespace YPipeline
 #if UNITY_EDITOR
         private PreviewCameraRenderer m_PreviewCameraRenderer;
 #endif
-        // Store locally the value on the instance due as the Render Pipeline Asset data might change before the disposal of the asset, making some APV Resources leak.
-        private bool m_APVIsEnabled = false;
         
         public YRenderPipeline(YRenderPipelineAsset asset)
         {
+            // YPipeline Data
             m_Data = new YPipelineData();
             m_Data.asset = asset;
             m_Data.runtimeResources = GraphicsSettings.GetRenderPipelineSettings<YPipelineRuntimeResources>();
             m_Data.renderGraph = new RenderGraph("YPipeline Render Graph");
             m_Data.lightsData = new YPipelineLightsData();
             
+            // Supported Rendering Features
+#if UNITY_EDITOR
+            SupportedRenderingFeatures.active.overridesRealtimeReflectionProbes = true;
+            SupportedRenderingFeatures.active.overridesShadowmask = true;
+            
+            SupportedRenderingFeatures.active.reflectionProbeModes = SupportedRenderingFeatures.ReflectionProbeModes.Rotation;
+
+            SupportedRenderingFeatures.active.enlighten = false;
+            SupportedRenderingFeatures.active.mixedLightingModes = SupportedRenderingFeatures.LightmapMixedBakeModes.IndirectOnly;
+            SupportedRenderingFeatures.active.defaultMixedLightingModes = SupportedRenderingFeatures.LightmapMixedBakeModes.IndirectOnly;
+            SupportedRenderingFeatures.active.lightmapBakeTypes = LightmapBakeType.Baked | LightmapBakeType.Mixed | LightmapBakeType.Realtime;
+            SupportedRenderingFeatures.active.lightmapsModes = LightmapsMode.NonDirectional;
+            SupportedRenderingFeatures.active.overridesFog = true;
+            SupportedRenderingFeatures.active.overridesOtherLightingSettings = true;
+            
+            SupportedRenderingFeatures.active.receiveShadows = false;
+            SupportedRenderingFeatures.active.lightProbeProxyVolumes = false;
+#endif
+            // Graphics Settings
             GraphicsSettings.useScriptableRenderPipelineBatching = asset.enableSRPBatcher;
             GraphicsSettings.lightsUseLinearIntensity = true;
             
             RTHandles.Initialize(Screen.width, Screen.height);
             VolumeManager.instance.Initialize(null, asset.globalVolumeProfile);
 
+            // Camera Renderer
             m_GameCameraRenderer = CameraRenderer.Create<GameCameraRenderer>(ref m_Data);
             m_ReflectionCameraRenderer = CameraRenderer.Create<ReflectionCameraRenderer>(ref m_Data);
             
@@ -44,16 +63,16 @@ namespace YPipeline
             InitializeLightmapper();
             EditorPrefs.SetInt("SceneViewFPS", 60);
 #endif
-            
+            // Debug
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             m_Data.debugSettings = new DebugSettings();
 #endif
             
             // APV
-            m_APVIsEnabled = asset != null && asset.supportProbeVolume;
-            SupportedRenderingFeatures.active.overridesLightProbeSystem = m_APVIsEnabled;
-            SupportedRenderingFeatures.active.skyOcclusion = m_APVIsEnabled;
-            if (m_APVIsEnabled)
+            m_Data.isAPVEnabled = asset != null && asset.supportProbeVolume;
+            SupportedRenderingFeatures.active.overridesLightProbeSystem = m_Data.isAPVEnabled;
+            SupportedRenderingFeatures.active.skyOcclusion = m_Data.isAPVEnabled;
+            if (m_Data.isAPVEnabled)
             {
                 ProbeVolumeSystemParameters apvParams = new ProbeVolumeSystemParameters()
                 {
@@ -66,7 +85,29 @@ namespace YPipeline
                     supportScenarioBlending = asset.supportProbeVolumeScenarioBlending,
                 };
                 ProbeReferenceVolume.instance.Initialize(apvParams);
+                ProbeReferenceVolume.instance.SetEnableStateFromSRP(true);
+                ProbeReferenceVolume.instance.SetVertexSamplingEnabled(false);
             }
+        }
+        
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            if (m_Data.isAPVEnabled) ProbeReferenceVolume.instance.Cleanup();
+            
+#if UNITY_EDITOR
+            UnityEngine.Experimental.GlobalIllumination.Lightmapping.ResetDelegate();
+            m_PreviewCameraRenderer.Dispose();
+            m_PreviewCameraRenderer = null;
+#endif
+            
+            VolumeManager.instance.Deinitialize();
+            m_Data.Dispose();
+            
+            m_GameCameraRenderer.Dispose();
+            m_GameCameraRenderer = null;
+            m_ReflectionCameraRenderer.Dispose();
+            m_ReflectionCameraRenderer = null;
         }
 
         protected override void Render(ScriptableRenderContext context, List<Camera> cameras)
@@ -108,26 +149,6 @@ namespace YPipeline
             }
             
             m_Data.renderGraph.EndFrame();
-        }
-        
-        protected override void Dispose(bool disposing)
-        {
-            base.Dispose(disposing);
-            if (m_APVIsEnabled) ProbeReferenceVolume.instance.Cleanup();
-            
-#if UNITY_EDITOR
-            UnityEngine.Experimental.GlobalIllumination.Lightmapping.ResetDelegate();
-            m_PreviewCameraRenderer.Dispose();
-            m_PreviewCameraRenderer = null;
-#endif
-            
-            VolumeManager.instance.Deinitialize();
-            m_Data.Dispose();
-            
-            m_GameCameraRenderer.Dispose();
-            m_GameCameraRenderer = null;
-            m_ReflectionCameraRenderer.Dispose();
-            m_ReflectionCameraRenderer = null;
         }
     }
 }

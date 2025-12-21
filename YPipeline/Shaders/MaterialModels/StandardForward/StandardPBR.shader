@@ -62,15 +62,18 @@
             #pragma vertex StandardPBRVert
             #pragma fragment StandardPBRFrag
             
+            // Material Keywords
             #pragma shader_feature_local_fragment _USE_HYBRIDTEX
             #pragma shader_feature_local_fragment _USE_NORMALTEX
-            #pragma shader_feature_local_fragment _CLIPPING
             
-            #pragma multi_compile _ LIGHTMAP_ON
+            // YPipeline keywords
             #pragma multi_compile _SHADOW_PCF _SHADOW_PCSS
             #pragma multi_compile _ _SCREEN_SPACE_AMBIENT_OCCLUSION
             #pragma multi_compile _ _TAA
 
+            // Unity defined keywords
+            #pragma multi_compile _ LIGHTMAP_ON
+            #pragma multi_compile _ PROBE_VOLUMES_L1 PROBE_VOLUMES_L2
             #pragma multi_compile _ LOD_FADE_CROSSFADE
 
             #include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
@@ -95,8 +98,10 @@
 			#pragma vertex ShadowCasterVert
 			#pragma fragment ShadowCasterFrag
 
+			// Material Keywords
 			#pragma shader_feature_local_fragment _CLIPPING
 
+			// Unity defined keywords
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
 
 			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
@@ -121,8 +126,10 @@
 			#pragma vertex DepthVert
 			#pragma fragment DepthFrag
 
+			// Material Keywords
 			#pragma shader_feature_local_fragment _CLIPPING
 
+			// Unity defined keywords
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
 
 			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
@@ -146,10 +153,12 @@
 			#pragma vertex ThinGBufferVert
 			#pragma fragment ThinGBufferFrag
 
+			// Material Keywords
 			#pragma shader_feature_local_fragment _USE_HYBRIDTEX
             #pragma shader_feature_local_fragment _USE_NORMALTEX
 			#pragma shader_feature_local_fragment _CLIPPING
 
+			// Unity defined keywords
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
 
 			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
@@ -202,9 +211,11 @@
             #pragma vertex MotionVectorVert
 			#pragma fragment MotionVectorFrag
 
+            // Material Keywords
             #pragma shader_feature_local_fragment _CLIPPING
             #pragma shader_feature_local_vertex _ADD_PRECOMPUTED_VELOCITY
 
+            // Unity defined keywords
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
 
             #include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"

@@ -33,6 +33,9 @@ namespace YPipeline
         // Buffer and Texture Handles
         // ----------------------------------------------------------------------------------------------------
         
+        // Store locally the value on the instance due as the Render Pipeline Asset data might change before the disposal of the asset, making some APV Resources leak.
+        public bool isAPVEnabled;
+        
         public TextureHandle SunLightShadowMap { set; get; }
         public bool isSunLightShadowMapCreated;
         public TextureHandle SpotLightShadowMap { set; get; }

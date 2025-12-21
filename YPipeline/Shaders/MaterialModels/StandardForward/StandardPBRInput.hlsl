@@ -15,9 +15,9 @@ CBUFFER_START(UnityPerMaterial)
     float _Cutoff;
 CBUFFER_END
 
-Texture2D _BaseTex;             SamplerState sampler_Trilinear_Repeat_BaseTex;
-Texture2D _EmissionTex;
-Texture2D _HybridTex;
-Texture2D _NormalTex;
+Texture2D _BaseTex;             SamplerState sampler_BaseTex;
+Texture2D _EmissionTex;         SamplerState sampler_EmissionTex;
+Texture2D _HybridTex;           SamplerState sampler_HybridTex;
+Texture2D _NormalTex;           SamplerState sampler_NormalTex;
 
 #endif

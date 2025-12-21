@@ -244,6 +244,11 @@ namespace YPipeline
         // Global Illumination Related Keywords
         // ----------------------------------------------------------------------------------------------------
         
+        // Unity APV
+        public const string k_ProbeVolumeL1 = "PROBE_VOLUMES_L1";
+        public const string k_ProbeVolumeL2 = "PROBE_VOLUMES_L2";
+        
+        // SSAO
         public const string k_ScreenSpaceAmbientOcclusion = "_SCREEN_SPACE_AMBIENT_OCCLUSION";
         
         // ----------------------------------------------------------------------------------------------------
