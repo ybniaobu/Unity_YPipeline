@@ -195,6 +195,10 @@ TEXTURE2D(_AmbientOcclusionTexture);
 TEXTURE2D(_BlueNoise64);
 float4 _BlueNoise64_TexelSize;
 
+// STBN
+TEXTURE2D(_STBN128Scalar);
+float4 _STBN128Scalar_TexelSize;
+
 // General Samplers
 SAMPLER(sampler_PointRepeat);
 SAMPLER(sampler_PointClamp);

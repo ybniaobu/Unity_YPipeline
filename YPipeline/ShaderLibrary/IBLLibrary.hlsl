@@ -9,7 +9,7 @@
 // Spherical Harmonics(SH)
 // ----------------------------------------------------------------------------------------------------
 
-float3 SampleSH(float3 N)
+float3 SampleSphericalHarmonics(float3 N)
 {
     float3 L0L1;
     float4 vA = float4(N, 1.0);
@@ -46,7 +46,7 @@ float3 SampleEnvLut(Texture2D envLut, SamplerState envLutSampler, float NoV, flo
 
 float3 CalculateIBL_Diffuse(in StandardPBRParams standardPBRParams, float envBRDF_Diffuse)
 {
-    float3 irradiance = SampleSH(standardPBRParams.N);
+    float3 irradiance = SampleSphericalHarmonics(standardPBRParams.N);
     float3 envBRDFDiffuse = standardPBRParams.albedo * envBRDF_Diffuse;
     float Kd = 1.0 - standardPBRParams.metallic;
     float3 IBLDiffuse = irradiance * envBRDFDiffuse * Kd * standardPBRParams.ao;

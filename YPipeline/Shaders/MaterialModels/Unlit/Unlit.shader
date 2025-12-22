@@ -171,7 +171,7 @@ Shader "YPipeline/Shading Models/Unlit"
 
 			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "UnlitInput.hlsl"
-			#include "../MetaCommon.hlsl"
+			#include "UnlitMetaPass.hlsl"
 			ENDHLSL
 		}
 

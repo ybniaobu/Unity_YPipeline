@@ -56,13 +56,13 @@ namespace YPipeline
         }
         
         
-        [SerializeField]
-        private Texture2D m_BlueNoise32;
-        public Texture2D BlueNoise32
-        {
-            get => m_BlueNoise32;
-            set => this.SetValueAndNotify(ref m_BlueNoise32, value, nameof(m_BlueNoise32));
-        }
+        // [SerializeField]
+        // private Texture2D m_BlueNoise32;
+        // public Texture2D BlueNoise32
+        // {
+        //     get => m_BlueNoise32;
+        //     set => this.SetValueAndNotify(ref m_BlueNoise32, value, nameof(m_BlueNoise32));
+        // }
         
         [SerializeField] [ResourcePath("YPipeline/PipelineResources/Textures/BlueNoise/BlueNoise64.png")]
         private Texture2D m_BlueNoise64;

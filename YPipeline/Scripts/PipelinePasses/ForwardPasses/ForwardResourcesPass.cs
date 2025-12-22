@@ -22,6 +22,7 @@ namespace YPipeline
         
         private RTHandle m_EnvBRDFLut;
         private RTHandle m_BlueNoise64;
+        private RTHandle m_STBN128Scalar;
             
         protected override void Initialize() { }
 
@@ -36,6 +37,7 @@ namespace YPipeline
             RTHandles.Release(m_BlueNoise64);
             m_EnvBRDFLut = null;
             m_BlueNoise64 = null;
+            m_STBN128Scalar = null;
         }
 
         protected override void OnRecord(ref YPipelineData data)
@@ -66,6 +68,15 @@ namespace YPipeline
                 TextureHandle blueNoise64 = data.renderGraph.ImportTexture(m_BlueNoise64);
                 builder.UseTexture(blueNoise64, AccessFlags.Read);
                 builder.SetGlobalTextureAfterPass(blueNoise64, YPipelineShaderIDs.k_BlueNoise64ID);
+
+                if (m_STBN128Scalar == null || m_STBN128Scalar.externalTexture != data.runtimeResources.STBN128Scale3)
+                {
+                    m_STBN128Scalar?.Release();
+                    m_STBN128Scalar = RTHandles.Alloc(data.runtimeResources.STBN128Scale3);
+                }
+                TextureHandle stbn128 = data.renderGraph.ImportTexture(m_STBN128Scalar);
+                builder.UseTexture(stbn128, AccessFlags.Read);
+                builder.SetGlobalTextureAfterPass(stbn128, YPipelineShaderIDs.k_STBN128ScalarID);
                 
                 // ----------------------------------------------------------------------------------------------------
                 // Buffers

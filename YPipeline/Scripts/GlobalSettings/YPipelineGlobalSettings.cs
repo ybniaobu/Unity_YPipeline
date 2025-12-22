@@ -33,7 +33,7 @@ namespace YPipeline
             {
                 if (currentInstance != null)
                 {
-                    AssetDatabase.SaveAssetIfDirty(currentInstance);
+                    // AssetDatabase.SaveAssetIfDirty(currentInstance);
                 }
                 return currentInstance;
             }

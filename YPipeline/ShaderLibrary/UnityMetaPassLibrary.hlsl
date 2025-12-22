@@ -20,10 +20,20 @@ CBUFFER_END
 float unity_OneOverOutputBoost;
 float unity_MaxOutputValue;
 
-float4 TransformMetaPosition(float3 positionOS, float2 lightMapUV)
+float4 TransformMetaPosition(float3 positionOS, float2 lightMapUV, float2 dynamicLightMapUV)
 {
-    positionOS.xy = lightMapUV * unity_LightmapST.xy + unity_LightmapST.zw;
-    positionOS.z = positionOS.z > 0.0 ? FLT_MIN : 0.0;
+    if (unity_MetaVertexControl.x)
+    {
+        positionOS.xy = lightMapUV * unity_LightmapST.xy + unity_LightmapST.zw;
+        positionOS.z = positionOS.z > 0.0 ? FLT_MIN : 0.0;
+    }
+    
+    if (unity_MetaFragmentControl.y)
+    {
+        positionOS.xy = dynamicLightMapUV * unity_DynamicLightmapST.xy + unity_DynamicLightmapST.zw;
+        positionOS.z = positionOS.z > 0.0 ? FLT_MIN : 0.0;
+    }
+    
     return TransformWorldToHClip(positionOS);
 }
 
