@@ -19,11 +19,6 @@ namespace YPipeline
             public BufferHandle punctualLightsBuffer;
             public int punctualLightCount;
             public PunctualLightStructuredBuffer[] punctualLightsData = new PunctualLightStructuredBuffer[YPipelineLightsData.k_MaxPunctualLightCount];
-            
-            // APV
-            public bool isProbeVolumeL1Enabled;
-            public bool isProbeVolumeL2Enabled;
-            public bool isTAAEnabled;
         }
         
         private struct SunLightConstantBuffer
@@ -88,9 +83,6 @@ namespace YPipeline
         {
             using (var builder = data.renderGraph.AddUnsafePass<LightSetupPassData>("Set Global Light Data", out var passData))
             {
-                // TODO: 记录数据写在 renderGraph 前，和改 Shadow Pass 一起做（即解决 Point Light 问题时）！！！！！！！！！！！！
-                RecordLightsData(ref data);
-                
                 // Direct Light：Sun Light, Punctual Light
                 passData.sunLightData.Setup(data.lightsData);
                 for (int i = 0; i < data.lightsData.punctualLightCount; i++)
@@ -109,11 +101,6 @@ namespace YPipeline
                     name = "Punctual Lights Data"
                 });
                 passData.punctualLightsBuffer = builder.UseBuffer(data.PunctualLightBufferHandle, AccessFlags.Write);
-                
-                // APV
-                passData.isProbeVolumeL1Enabled = data.isAPVEnabled && data.asset.probeVolumeSHBands == ProbeVolumeSHBands.SphericalHarmonicsL1;
-                passData.isProbeVolumeL2Enabled = data.isAPVEnabled && data.asset.probeVolumeSHBands == ProbeVolumeSHBands.SphericalHarmonicsL2;
-                passData.isTAAEnabled = data.asset.antiAliasingMode == AntiAliasingMode.TAA;
                 
                 builder.AllowPassCulling(false);
 
@@ -136,127 +123,8 @@ namespace YPipeline
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_PunctualLightCountID, new Vector4(data.punctualLightCount, 0));
                     context.cmd.SetBufferData(data.punctualLightsBuffer, data.punctualLightsData, 0, 0, data.punctualLightCount);
                     context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_PunctualLightDataID, data.punctualLightsBuffer);
-                    
-                    // APV
-                    var stack = VolumeManager.instance.stack;
-                    bool enableProbeVolumes = ProbeReferenceVolume.instance.UpdateShaderVariablesProbeVolumes(
-                        CommandBufferHelpers.GetNativeCommandBuffer(context.cmd),
-                        stack.GetComponent<ProbeVolumesOptions>(),
-                        data.isTAAEnabled ? Time.frameCount : 0,
-                        false);
-                    
-                    CoreUtils.SetKeyword(context.cmd, YPipelineKeywords.k_ProbeVolumeL1, data.isProbeVolumeL1Enabled && enableProbeVolumes);
-                    CoreUtils.SetKeyword(context.cmd, YPipelineKeywords.k_ProbeVolumeL2, data.isProbeVolumeL2Enabled && enableProbeVolumes);
                 });
             }
-        }
-
-        private void RecordLightsData(ref YPipelineData data)
-        {
-            NativeArray<VisibleLight> visibleLights = data.cullingResults.visibleLights;
-            int sunLightCount = 0;
-            int shadowingSunLightCount = 0;
-            int punctualLightCount = 0;
-            int shadowingSpotLightCount = 0;
-            int shadowingPointLightCount = 0;
-
-            for (int i = 0; i < visibleLights.Length; i++)
-            {
-                VisibleLight visibleLight = visibleLights[i];
-                Light light = visibleLight.light;
-                YPipelineLight yLight = light.GetYPipelineLight();
-
-                if (visibleLight.lightType == LightType.Directional)
-                {
-                    if (sunLightCount >= YPipelineLightsData.k_MaxDirectionalLightCount) continue;
-                
-                    data.lightsData.sunLightIndex = i;
-                    data.lightsData.sunLightNearPlaneOffset = light.shadowNearPlane;
-                    data.lightsData.sunLightColor = visibleLight.finalColor;
-                    data.lightsData.sunLightDirection = -visibleLight.localToWorldMatrix.GetColumn(2);
-                    data.lightsData.sunLightDirection.w = 0; // Used to determine whether sun light is shadowing (should calculate shadow attenuation)
-                
-                    if (light.shadows != LightShadows.None && light.shadowStrength > 0f && data.cullingResults.GetShadowCasterBounds(i, out Bounds outBounds))
-                    {
-                        data.lightsData.sunLightDirection.w = 1;
-                        data.lightsData.sunLightShadowColor = yLight.shadowTint;
-                        data.lightsData.sunLightShadowColor.w = light.shadowStrength;
-                        data.lightsData.sunLightPenumbraColor = yLight.penumbraTint;
-                        data.lightsData.sunLightShadowBias = new Vector4(yLight.depthBias, yLight.slopeScaledDepthBias, yLight.normalBias, yLight.slopeScaledNormalBias);
-                        data.lightsData.sunLightShadowParams = data.asset.shadowMode == ShadowMode.PCSS ? new Vector4(Mathf.Pow(10,yLight.penumbraScale), yLight.filterSampleNumber) : new Vector4(yLight.penumbraWidth, yLight.sampleNumber);
-                        data.lightsData.sunLightShadowParams2 = new Vector4(yLight.lightSize, Mathf.Pow(10,yLight.blockerSearchAreaSizeScale), yLight.blockerSearchSampleNumber, yLight.minPenumbraWidth);
-                        shadowingSunLightCount++;
-                    }
-                    sunLightCount++;
-                }
-                else if (visibleLight.lightType == LightType.Point)
-                {
-                    if (punctualLightCount >= YPipelineLightsData.k_MaxPunctualLightCount) continue;
-                
-                    data.lightsData.punctualLightColors[punctualLightCount] = visibleLight.finalColor;
-                    data.lightsData.punctualLightColors[punctualLightCount].w = 1;
-                    data.lightsData.punctualLightPositions[punctualLightCount] = visibleLight.localToWorldMatrix.GetColumn(3);
-                    data.lightsData.punctualLightPositions[punctualLightCount].w = -1; // when w is -1, light should skip shadow calculation
-                    data.lightsData.punctualLightDirections[punctualLightCount] = Vector4.zero;
-                    data.lightsData.punctualLightParams[punctualLightCount] = new Vector4(visibleLight.range, yLight.rangeAttenuationScale, 0.0f, 0.0f);
-                    
-                    bool isPointLightShadowing = light.shadows != LightShadows.None && light.shadowStrength > 0f && shadowingPointLightCount < YPipelineLightsData.k_MaxShadowingPointLightCount;
-                
-                    if (isPointLightShadowing && data.cullingResults.GetShadowCasterBounds(i, out Bounds outBounds))
-                    {
-                        data.lightsData.shadowingPointLightIndices[shadowingPointLightCount] = i;
-                        data.lightsData.punctualLightPositions[punctualLightCount].w = shadowingPointLightCount;
-                        data.lightsData.pointLightShadowColors[shadowingPointLightCount] = yLight.shadowTint;
-                        data.lightsData.pointLightShadowColors[shadowingPointLightCount].w = light.shadowStrength;
-                        data.lightsData.pointLightPenumbraColors[shadowingPointLightCount] = yLight.penumbraTint;
-                        data.lightsData.pointLightShadowBias[shadowingPointLightCount] = new Vector4(yLight.depthBias, yLight.slopeScaledDepthBias, yLight.normalBias, yLight.slopeScaledNormalBias);
-                        Vector4 shadowParams = data.asset.shadowMode == ShadowMode.PCSS ? new Vector4(Mathf.Pow(10,yLight.penumbraScale), yLight.filterSampleNumber) : new Vector4(yLight.penumbraWidth, yLight.sampleNumber);
-                        data.lightsData.pointLightShadowParams[shadowingPointLightCount] = shadowParams;
-                        data.lightsData.pointLightShadowParams2[shadowingPointLightCount] = new Vector4(yLight.lightSize, Mathf.Pow(10,yLight.blockerSearchAreaSizeScale), yLight.blockerSearchSampleNumber, yLight.minPenumbraWidth);
-                        shadowingPointLightCount++;
-                    }
-                    punctualLightCount++;
-                }
-                else if (visibleLight.lightType == LightType.Spot)
-                {
-                    if (punctualLightCount >= YPipelineLightsData.k_MaxPunctualLightCount) continue;
-                
-                    data.lightsData.punctualLightColors[punctualLightCount] = visibleLight.finalColor;
-                    data.lightsData.punctualLightColors[punctualLightCount].w = 2;
-                    data.lightsData.punctualLightPositions[punctualLightCount] = visibleLight.localToWorldMatrix.GetColumn(3);
-                    data.lightsData.punctualLightPositions[punctualLightCount].w = -1; // when w is -1, light should skip shadow calculation
-                    data.lightsData.punctualLightDirections[punctualLightCount] = -visibleLight.localToWorldMatrix.GetColumn(2);
-                    
-                    float cosInnerAngle = Mathf.Cos(Mathf.Deg2Rad * 0.5f * light.innerSpotAngle);
-                    float cosOuterAngle = Mathf.Cos(Mathf.Deg2Rad * 0.5f * visibleLight.spotAngle);
-                    float invAngleRange = 1.0f / Mathf.Max(cosInnerAngle - cosOuterAngle, 0.0001f);
-                    data.lightsData.punctualLightParams[punctualLightCount] = new Vector4(visibleLight.range, yLight.rangeAttenuationScale, invAngleRange, cosOuterAngle);
-
-                    bool isSpotLightShadowing = light.shadows != LightShadows.None && light.shadowStrength > 0f && shadowingSpotLightCount < YPipelineLightsData.k_MaxShadowingSpotLightCount;
-                
-                    if (isSpotLightShadowing && data.cullingResults.GetShadowCasterBounds(i, out Bounds outBounds))
-                    {
-                        data.lightsData.shadowingSpotLightIndices[shadowingSpotLightCount] = i;
-                        data.lightsData.punctualLightPositions[punctualLightCount].w = shadowingSpotLightCount;
-                        data.lightsData.spotLightShadowColors[shadowingSpotLightCount] = yLight.shadowTint;
-                        data.lightsData.spotLightShadowColors[shadowingSpotLightCount].w = light.shadowStrength;
-                        data.lightsData.spotLightPenumbraColors[shadowingSpotLightCount] = yLight.penumbraTint;
-                        data.lightsData.spotLightShadowBias[shadowingSpotLightCount] = new Vector4(yLight.depthBias, yLight.slopeScaledDepthBias, yLight.normalBias, yLight.slopeScaledNormalBias);
-                        Vector4 shadowParams = data.asset.shadowMode == ShadowMode.PCSS ? new Vector4(Mathf.Pow(10,yLight.penumbraScale), yLight.filterSampleNumber) : new Vector4(yLight.penumbraWidth, yLight.sampleNumber);
-                        data.lightsData.spotLightShadowParams[shadowingSpotLightCount] = shadowParams;
-                        data.lightsData.spotLightShadowParams2[shadowingSpotLightCount] = new Vector4(yLight.lightSize, Mathf.Pow(10,yLight.blockerSearchAreaSizeScale), yLight.blockerSearchSampleNumber, yLight.minPenumbraWidth);
-                        shadowingSpotLightCount++;
-                    }
-                    punctualLightCount++;
-                }
-            }
-
-            data.lightsData.cascadeCount = data.asset.cascadeCount;
-            data.lightsData.sunLightCount = sunLightCount;
-            data.lightsData.shadowingSunLightCount = shadowingSunLightCount;
-            data.lightsData.punctualLightCount = punctualLightCount;
-            data.lightsData.shadowingSpotLightCount = shadowingSpotLightCount;
-            data.lightsData.shadowingPointLightCount = shadowingPointLightCount;
         }
     }
 }

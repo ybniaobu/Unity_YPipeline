@@ -33,7 +33,6 @@ Shader "YPipeline/Particles/Unlit"
     {
         Tags
         {
-            "RenderType" = "Opaque"
             "IgnoreProjector" = "True"
             "PreviewType" = "Plane"
         }

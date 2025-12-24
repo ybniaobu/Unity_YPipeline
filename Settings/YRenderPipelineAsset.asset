@@ -27,7 +27,7 @@ MonoBehaviour:
   supportProbeVolumeScenarios: 1
   supportProbeVolumeScenarioBlending: 1
   shadowMode: 1
-  maxShadowDistance: 200
+  maxShadowDistance: 100
   distanceFade: 0.05
   cascadeCount: 4
   spiltRatio1: 0.05

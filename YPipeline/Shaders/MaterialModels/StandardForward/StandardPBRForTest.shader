@@ -58,7 +58,6 @@ Shader "YPipeline/Shading Models/Standard PBR(Separated Texture)"
             
             Tags { "LightMode" = "YPipelineForward" }
             
-            Blend One Zero
             ZWrite Off
             ZTest Equal
             Cull [_Cull]
@@ -82,7 +81,6 @@ Shader "YPipeline/Shading Models/Standard PBR(Separated Texture)"
             // Unity defined keywords
             #pragma multi_compile _ LIGHTMAP_ON
             #pragma multi_compile _ PROBE_VOLUMES_L1 PROBE_VOLUMES_L2
-            #pragma multi_compile _ LOD_FADE_CROSSFADE
 
             #include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "StandardPBRForTestInput.hlsl"

@@ -23,34 +23,34 @@ namespace YPipeline
             // Sun Light Shadow
             public int cascadeCount;
             public int shadowingSunLightCount;
-            public Matrix4x4[] sunLightViewMatrices = new Matrix4x4[YPipelineLightsData.k_MaxCascadeCount];
-            public Matrix4x4[] sunLightProjectionMatrices = new Matrix4x4[YPipelineLightsData.k_MaxCascadeCount];
+            public Matrix4x4[] sunLightViewMatrices;
+            public Matrix4x4[] sunLightProjectionMatrices;
 
             public SunLightShadowConstantBuffer sunLightShadowData = new SunLightShadowConstantBuffer();
             public RendererListHandle[] sunLightShadowRendererList = new RendererListHandle[YPipelineLightsData.k_MaxCascadeCount];
             
             // Point Light Shadow
             public int shadowingPointLightCount;
-            public Matrix4x4[] pointLightViewMatrices = new Matrix4x4[YPipelineLightsData.k_MaxShadowingPointLightCount * 6];
-            public Matrix4x4[] pointLightProjectionMatrices = new Matrix4x4[YPipelineLightsData.k_MaxShadowingPointLightCount * 6];
+            public Matrix4x4[] pointLightViewMatrices;
+            public Matrix4x4[] pointLightProjectionMatrices;
             
             public PointLightShadowStructuredBuffer[] pointLightsShadowData = new PointLightShadowStructuredBuffer[YPipelineLightsData.k_MaxShadowingPointLightCount];
             public RendererListHandle[] pointLightShadowRendererList = new RendererListHandle[YPipelineLightsData.k_MaxShadowingPointLightCount * 6];
             public BufferHandle pointLightShadowBuffer;
             
-            public Matrix4x4[] pointLightShadowMatrices = new Matrix4x4[YPipelineLightsData.k_MaxShadowingPointLightCount * 6];
+            public Matrix4x4[] pointLightShadowMatrices;
             public BufferHandle pointLightShadowMatricesBuffer;
             
             // Spot Light Shadow
             public int shadowingSpotLightCount;
-            public Matrix4x4[] spotLightViewMatrices = new Matrix4x4[YPipelineLightsData.k_MaxShadowingSpotLightCount];
-            public Matrix4x4[] spotLightProjectionMatrices = new Matrix4x4[YPipelineLightsData.k_MaxShadowingSpotLightCount];
+            public Matrix4x4[] spotLightViewMatrices;
+            public Matrix4x4[] spotLightProjectionMatrices;
 
             public SpotLightShadowStructuredBuffer[] spotLightsShadowData = new SpotLightShadowStructuredBuffer[YPipelineLightsData.k_MaxShadowingSpotLightCount];
             public RendererListHandle[] spotLightShadowRendererList = new RendererListHandle[YPipelineLightsData.k_MaxShadowingSpotLightCount];
             public BufferHandle spotLightShadowBuffer;
             
-            public Matrix4x4[] spotLightShadowMatrices = new Matrix4x4[YPipelineLightsData.k_MaxShadowingSpotLightCount];
+            public Matrix4x4[] spotLightShadowMatrices;
             public BufferHandle spotLightShadowMatricesBuffer;
         }
         
@@ -147,26 +147,11 @@ namespace YPipeline
                 passData.viewMatrix = yCamera.perCameraData.viewMatrix;
                 passData.projectionMatrix = yCamera.perCameraData.jitteredProjectionMatrix;
                 passData.isPCSSEnabled = data.asset.shadowMode == ShadowMode.PCSS;
-                passData.cascadeCount = data.lightsData.cascadeCount;
-                passData.shadowingSunLightCount = data.lightsData.shadowingSunLightCount;
-                passData.shadowingPointLightCount = data.lightsData.shadowingPointLightCount;
-                passData.shadowingSpotLightCount = data.lightsData.shadowingSpotLightCount;
                 
-                // TODO: 记录数据写在 renderGraph 前（参考 urp 的 RenderSingleCamera），解决 Point Light 问题时一同解决！！！！！！！！！！！！！！！
                 // Shadow Culling & Shadow Map Creation & Renderer List Preparation
                 CreateSunLightShadowMap(ref data, builder, passData);
                 CreateSpotLightShadowMap(ref data, builder, passData);
                 CreatePointLightShadowMap(ref data, builder, passData);
-                
-                if (passData.shadowingSunLightCount + passData.shadowingPointLightCount + passData.shadowingSpotLightCount > 0)
-                {
-                    // TODO：这里执行可能有点晚，参考 URP、HDRP
-                    data.context.CullShadowCasters(data.cullingResults, new ShadowCastersCullingInfos
-                    {
-                        perLightInfos = m_CullingInfoPerLight,
-                        splitBuffer = m_ShadowSplitDataPerLight
-                    });
-                }
                 
                 // Buffers Preparation
                 passData.sunLightShadowData.Setup(data.lightsData);
@@ -289,16 +274,23 @@ namespace YPipeline
         private void CreateSunLightShadowMap(ref YPipelineData data, IUnsafeRenderGraphBuilder builder, ShadowPassData passData)
         {
             data.isSunLightShadowMapCreated = false;
-            if (data.lightsData.shadowingSunLightCount > 0)
+            int shadowingSunLightCount = data.lightsData.shadowingSunLightCount;
+            passData.shadowingSunLightCount = shadowingSunLightCount;
+            int cascadeCount = data.lightsData.cascadeCount;
+            passData.cascadeCount = cascadeCount;
+            
+            passData.sunLightViewMatrices = data.lightsData.sunLightViewMatrices;
+            passData.sunLightProjectionMatrices = data.lightsData.sunLightProjectionMatrices;
+            
+            if (shadowingSunLightCount > 0)
             {
                 int size = (int) data.asset.sunLightShadowMapSize;
-
                 TextureDesc desc = new TextureDesc(size,size)
                 {
                     colorFormat = SystemInfo.GetGraphicsFormat(DefaultFormat.Shadow),
                     depthBufferBits = DepthBits.Depth16, // DepthBits.Depth32
                     dimension = TextureDimension.Tex2DArray,
-                    slices = data.lightsData.shadowingSunLightCount * data.lightsData.cascadeCount,
+                    slices = shadowingSunLightCount * cascadeCount,
                     filterMode = FilterMode.Bilinear,
                     isShadowMap = true,
                     clearBuffer = false,
@@ -313,30 +305,10 @@ namespace YPipeline
                 data.isSunLightShadowMapCreated = true;
 
                 int visibleLightIndex = data.lightsData.sunLightIndex;
-                int cascadeCount = data.lightsData.cascadeCount;
                 ShadowDrawingSettings shadowDrawingSettings = new ShadowDrawingSettings(data.cullingResults, visibleLightIndex);
-                int splitOffset = visibleLightIndex * 6;
-                m_CullingInfoPerLight[visibleLightIndex] = new LightShadowCasterCullingInfo
-                {
-                    projectionType = BatchCullingProjectionType.Orthographic,
-                    splitRange = new RangeInt(splitOffset, cascadeCount)
-                };
             
                 for (int i = 0; i < cascadeCount; i++)
                 {
-                    data.cullingResults.ComputeDirectionalShadowMatricesAndCullingPrimitives(visibleLightIndex, i, cascadeCount, data.asset.SpiltRatios
-                        , size, data.lightsData.sunLightNearPlaneOffset + 0.8f, out Matrix4x4 viewMatrix, out Matrix4x4 projectionMatrix, out ShadowSplitData splitData);
-
-                    splitData.shadowCascadeBlendCullingFactor = 1f;
-                    m_ShadowSplitDataPerLight[splitOffset + i] = splitData;
-                    //shadowDrawingSettings.splitData = splitData;
-                
-                    data.lightsData.cascadeCullingSpheres[i] = splitData.cullingSphere;
-                    data.lightsData.sunLightShadowMatrices[i] = ShadowUtility.GetWorldToLightScreenMatrix(projectionMatrix * viewMatrix);
-                    data.lightsData.sunLightDepthParams[i] = SystemInfo.usesReversedZBuffer ? new Vector4(-projectionMatrix.m22, -projectionMatrix.m23) : new Vector4(projectionMatrix.m22, projectionMatrix.m23);
-                    
-                    passData.sunLightViewMatrices[i] = viewMatrix;
-                    passData.sunLightProjectionMatrices[i] = projectionMatrix;
                     passData.sunLightShadowRendererList[i] = data.renderGraph.CreateShadowRendererList(ref shadowDrawingSettings);
                     builder.UseRendererList(passData.sunLightShadowRendererList[i]);
                 }
@@ -346,16 +318,22 @@ namespace YPipeline
         private void CreateSpotLightShadowMap(ref YPipelineData data, IUnsafeRenderGraphBuilder builder, ShadowPassData passData)
         {
             data.isSpotLightShadowMapCreated = false;
-            if (data.lightsData.shadowingSpotLightCount > 0)
+            int shadowingSpotLightCount = data.lightsData.shadowingSpotLightCount;
+            passData.shadowingSpotLightCount = shadowingSpotLightCount;
+            
+            passData.spotLightShadowMatrices = data.lightsData.spotLightShadowMatrices;
+            passData.spotLightViewMatrices = data.lightsData.spotLightViewMatrices;
+            passData.spotLightProjectionMatrices = data.lightsData.spotLightProjectionMatrices;
+            
+            if (shadowingSpotLightCount > 0)
             {
                 int size = (int) data.asset.spotLightShadowMapSize;
-
                 TextureDesc desc = new TextureDesc(size,size)
                 {
                     colorFormat = SystemInfo.GetGraphicsFormat(DefaultFormat.Shadow),
                     depthBufferBits = DepthBits.Depth16,
                     dimension = TextureDimension.Tex2DArray,
-                    slices = data.lightsData.shadowingSpotLightCount,
+                    slices = shadowingSpotLightCount,
                     filterMode = FilterMode.Bilinear,
                     isShadowMap = true,
                     clearBuffer = false,
@@ -370,26 +348,10 @@ namespace YPipeline
                 builder.SetGlobalTextureAfterPass(data.SpotLightShadowMap, YPipelineShaderIDs.k_SpotLightShadowMapID);
                 data.isSpotLightShadowMapCreated = true;
                 
-                for (int i = 0; i < data.lightsData.shadowingSpotLightCount; i++)
+                for (int i = 0; i < shadowingSpotLightCount; i++)
                 {
                     int visibleLightIndex = data.lightsData.shadowingSpotLightIndices[i];
                     ShadowDrawingSettings shadowDrawingSettings = new ShadowDrawingSettings(data.cullingResults, visibleLightIndex);
-                    data.cullingResults.ComputeSpotShadowMatricesAndCullingPrimitives(visibleLightIndex, out Matrix4x4 viewMatrix, out Matrix4x4 projectionMatrix, out ShadowSplitData splitData);
-                    
-                    int splitOffset = visibleLightIndex * 6;
-                    m_ShadowSplitDataPerLight[splitOffset] = splitData;
-                    m_CullingInfoPerLight[visibleLightIndex] = new LightShadowCasterCullingInfo
-                    {
-                        projectionType = BatchCullingProjectionType.Perspective,
-                        splitRange = new RangeInt(splitOffset, 1)
-                    };
-                    //shadowDrawingSettings.splitData = splitData;
-                    
-                    passData.spotLightShadowMatrices[i] = ShadowUtility.GetWorldToLightScreenMatrix(projectionMatrix * viewMatrix);
-                    data.lightsData.spotLightDepthParams[i] = SystemInfo.usesReversedZBuffer ? new Vector4(-projectionMatrix.m22, -projectionMatrix.m23) : new Vector4(projectionMatrix.m22, projectionMatrix.m23);
-                    
-                    passData.spotLightViewMatrices[i] = viewMatrix;
-                    passData.spotLightProjectionMatrices[i] = projectionMatrix;
                     passData.spotLightShadowRendererList[i] = data.renderGraph.CreateShadowRendererList(ref shadowDrawingSettings);
                     builder.UseRendererList(passData.spotLightShadowRendererList[i]);
                 }
@@ -399,16 +361,22 @@ namespace YPipeline
         private void CreatePointLightShadowMap(ref YPipelineData data, IUnsafeRenderGraphBuilder builder, ShadowPassData passData)
         {
             data.isPointLightShadowMapCreated = false;
-            if (data.lightsData.shadowingPointLightCount > 0)
+            int shadowingPointLightCount = data.lightsData.shadowingPointLightCount;
+            passData.shadowingPointLightCount = shadowingPointLightCount;
+            
+            passData.pointLightShadowMatrices = data.lightsData.pointLightShadowMatrices;
+            passData.pointLightViewMatrices = data.lightsData.pointLightViewMatrices;
+            passData.pointLightProjectionMatrices = data.lightsData.pointLightProjectionMatrices;
+            
+            if (shadowingPointLightCount > 0)
             {
                 int size = (int) data.asset.pointLightShadowMapSize;
-
                 TextureDesc desc = new TextureDesc(size,size)
                 {
                     colorFormat = SystemInfo.GetGraphicsFormat(DefaultFormat.Shadow),
                     depthBufferBits = DepthBits.Depth16,
                     dimension = TextureDimension.CubeArray,
-                    slices = data.lightsData.shadowingPointLightCount * 6,
+                    slices = shadowingPointLightCount * 6,
                     filterMode = FilterMode.Bilinear,
                     isShadowMap = true,
                     clearBuffer = false,
@@ -423,36 +391,13 @@ namespace YPipeline
                 builder.SetGlobalTextureAfterPass(data.PointLightShadowMap, YPipelineShaderIDs.k_PointLightShadowMapID);
                 data.isPointLightShadowMapCreated = true;
                 
-                for (int i = 0; i < data.lightsData.shadowingPointLightCount; i++)
+                for (int i = 0; i < shadowingPointLightCount; i++)
                 {
                     int visibleLightIndex = data.lightsData.shadowingPointLightIndices[i];
                     ShadowDrawingSettings shadowDrawingSettings = new ShadowDrawingSettings(data.cullingResults, visibleLightIndex);
-                    int splitOffset = visibleLightIndex * 6;
-                    m_CullingInfoPerLight[visibleLightIndex] = new LightShadowCasterCullingInfo
-                    {
-                        projectionType = BatchCullingProjectionType.Perspective,
-                        splitRange = new RangeInt(splitOffset, 6)
-                    };
 
                     for (int j = 0; j < 6; j++)
                     {
-                        data.cullingResults.ComputePointShadowMatricesAndCullingPrimitives(visibleLightIndex, (CubemapFace) j, 0.0f, out Matrix4x4 viewMatrix, out Matrix4x4 projectionMatrix, out ShadowSplitData splitData);
-                        
-                        m_ShadowSplitDataPerLight[splitOffset + j] = splitData;
-                        //shadowDrawingSettings.splitData = splitData;
-                        
-                        // TODO: 解决 ComputePointShadowMatricesAndCullingPrimitives 导致的正面剔除（winding order）的问题
-                        // viewMatrix.m11 = -viewMatrix.m11;
-                        // viewMatrix.m12 = -viewMatrix.m12;
-                        // viewMatrix.m13 = -viewMatrix.m13;
-                        
-                        // projectionMatrix.m11 = -projectionMatrix.m11;
-                        
-                        passData.pointLightShadowMatrices[i * 6 + j] = ShadowUtility.GetWorldToLightScreenMatrix(projectionMatrix * viewMatrix);
-                        data.lightsData.pointLightDepthParams[i] = SystemInfo.usesReversedZBuffer ? new Vector4(-projectionMatrix.m22, -projectionMatrix.m23) : new Vector4(projectionMatrix.m22, projectionMatrix.m23);
-                        
-                        passData.pointLightViewMatrices[i * 6 + j] = viewMatrix;
-                        passData.pointLightProjectionMatrices[i * 6 + j] = projectionMatrix;
                         passData.pointLightShadowRendererList[i * 6 + j] = data.renderGraph.CreateShadowRendererList(ref shadowDrawingSettings);
                         builder.UseRendererList(passData.pointLightShadowRendererList[i * 6 + j]);
                     }

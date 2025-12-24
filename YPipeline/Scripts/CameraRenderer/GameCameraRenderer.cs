@@ -10,15 +10,13 @@ namespace YPipeline
         protected override void Initialize(ref YPipelineData data)
         {
             m_CameraPipelineNodes.Clear();
+            
+            m_CameraPipelineNodes.Add(PipelinePass.Create<CullingPass>());
+            m_CameraPipelineNodes.Add(PipelinePass.Create<LightCollectPass>());
+            
             switch (data.asset.renderPath)
             {
                 case RenderPath.TiledBasedForward: 
-                    m_CameraPipelineNodes.Add(PipelinePass.Create<CullingPass>());
-                    // TODO：这个 Pass，类似 CullingPass 不使用 renderGraph，
-                    // TODO：将 LightSetupPass、ShadowPass 的准备工作放进来，参考 urp 的 RenderSingleCamera
-                    // TODO：主要是为了解决 context.CullShadowCasters 问题
-                    m_CameraPipelineNodes.Add(PipelinePass.Create<LightDataRecordPass>());
-                    
                     m_CameraPipelineNodes.Add(PipelinePass.Create<LightSetupPass>());
                     m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardResourcesPass>());
                     m_CameraPipelineNodes.Add(PipelinePass.Create<CameraSetupPass>());
@@ -45,9 +43,6 @@ namespace YPipeline
 #endif
                     break;
                 case RenderPath.TiledBasedDeferred:
-                    
-                    break;
-                case RenderPath.ClusteredBasedForward:
                     
                     break;
             }

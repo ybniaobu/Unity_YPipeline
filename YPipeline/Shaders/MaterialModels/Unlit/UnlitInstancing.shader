@@ -32,8 +32,7 @@
         {
         	Name "Unlit Opaque"
             Tags { "LightMode" = "YPipelineForward" }
-            
-            Blend One Zero
+	        
             ZWrite Off
             ZTest Equal
             Cull [_Cull]
@@ -43,10 +42,6 @@
             
             #pragma vertex UnlitInstancingVert
             #pragma fragment UnlitOpaqueFrag
-
-            #pragma shader_feature_local_fragment _CLIPPING
-
-            #pragma multi_compile _ LOD_FADE_CROSSFADE
 
             #pragma multi_compile_instancing
 

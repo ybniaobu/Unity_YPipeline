@@ -41,8 +41,10 @@ namespace YPipeline
         public Vector4 sunLightShadowParams2; // x: light diameter, y: blocker search area size z: blocker search sample number, w: min penumbra(filter) width
         
         public Vector4[] cascadeCullingSpheres = new Vector4[k_MaxCascadeCount]; // xyz: culling sphere center, w: culling sphere radius
-        public Matrix4x4[] sunLightShadowMatrices = new Matrix4x4[k_MaxCascadeCount];
         public Vector4[] sunLightDepthParams = new Vector4[k_MaxCascadeCount]; // x: (f + n) / (f - n), y: -2 * f * n / (f - n); [if UNITY_REVERSED_Z] x: (f + n) / (n - f), y: -2 * f * n / (n - f)
+        public Matrix4x4[] sunLightShadowMatrices = new Matrix4x4[k_MaxCascadeCount];
+        public Matrix4x4[] sunLightViewMatrices = new Matrix4x4[k_MaxCascadeCount];
+        public Matrix4x4[] sunLightProjectionMatrices = new Matrix4x4[k_MaxCascadeCount];
         
         // ----------------------------------------------------------------------------------------------------
         // Punctual Lights
@@ -65,6 +67,9 @@ namespace YPipeline
         public Vector4[] pointLightShadowParams = new Vector4[k_MaxShadowingPointLightCount]; // x: penumbra(filter) width or scale, y: filter sample number
         public Vector4[] pointLightShadowParams2 = new Vector4[k_MaxShadowingPointLightCount]; // x: light diameter, y: blocker search scale z: blocker search sample number, w: min penumbra(filter) width
         public Vector4[] pointLightDepthParams = new Vector4[k_MaxShadowingPointLightCount]; // x: (f + n) / (f - n), y: -2 * f * n / (f - n); [if UNITY_REVERSED_Z] x: (f + n) / (n - f), y: -2 * f * n / (n - f)
+        public Matrix4x4[] pointLightShadowMatrices = new Matrix4x4[k_MaxShadowingPointLightCount * 6];
+        public Matrix4x4[] pointLightViewMatrices = new Matrix4x4[k_MaxShadowingPointLightCount * 6];
+        public Matrix4x4[] pointLightProjectionMatrices = new Matrix4x4[k_MaxShadowingPointLightCount * 6];
         
         public Vector4[] spotLightShadowColors = new Vector4[k_MaxShadowingSpotLightCount]; // xyz: shadow color, w: shadow strength
         public Vector4[] spotLightPenumbraColors = new Vector4[k_MaxShadowingSpotLightCount]; // xyz: penumbra color
@@ -72,6 +77,9 @@ namespace YPipeline
         public Vector4[] spotLightShadowParams = new Vector4[k_MaxShadowingSpotLightCount]; // x: penumbra(filter) width or scale, y: filter sample number
         public Vector4[] spotLightShadowParams2 = new Vector4[k_MaxShadowingSpotLightCount]; // x: light diameter, y: blocker search scale z: blocker search sample number, w: min penumbra(filter) width
         public Vector4[] spotLightDepthParams = new Vector4[k_MaxShadowingSpotLightCount]; // x: (f + n) / (f - n), y: -2 * f * n / (f - n); [if UNITY_REVERSED_Z] x: (f + n) / (n - f), y: -2 * f * n / (n - f)
+        public Matrix4x4[] spotLightShadowMatrices = new Matrix4x4[k_MaxShadowingSpotLightCount];
+        public Matrix4x4[] spotLightViewMatrices = new Matrix4x4[k_MaxShadowingSpotLightCount];
+        public Matrix4x4[] spotLightProjectionMatrices = new Matrix4x4[k_MaxShadowingSpotLightCount];
         
         // ----------------------------------------------------------------------------------------------------
         // Standard Dispose Pattern
@@ -100,6 +108,8 @@ namespace YPipeline
                     cascadeCullingSpheres = null;
                     sunLightShadowMatrices = null;
                     sunLightDepthParams = null;
+                    sunLightViewMatrices = null;
+                    sunLightProjectionMatrices = null;
                     
                     shadowingPointLightIndices = null;
                     shadowingSpotLightIndices = null;
@@ -115,6 +125,9 @@ namespace YPipeline
                     pointLightShadowParams = null;
                     pointLightShadowParams2 = null;
                     pointLightDepthParams = null;
+                    pointLightShadowMatrices = null;
+                    pointLightViewMatrices = null;
+                    pointLightProjectionMatrices = null;
                     
                     spotLightShadowColors = null;
                     spotLightPenumbraColors = null;
@@ -122,6 +135,9 @@ namespace YPipeline
                     spotLightShadowParams = null;
                     spotLightShadowParams2 = null;
                     spotLightDepthParams = null;
+                    spotLightShadowMatrices = null;
+                    spotLightViewMatrices = null;
+                    spotLightProjectionMatrices = null;
                 }
                 //Dispose unmanaged resources
                 

@@ -6,12 +6,9 @@ namespace YPipeline
 {
     public class CullingPass : PipelinePass
     {
-        // private class CullingPassData
-        // {
-        //     
-        // }
-        
         protected override void Initialize() { }
+        
+        protected override void OnDispose() { }
 
         protected override void OnRecord(ref YPipelineData data)
         {
@@ -19,6 +16,7 @@ namespace YPipeline
             data.camera.TryGetCullingParameters(out ScriptableCullingParameters cullingParameters);
             cullingParameters.shadowDistance = Mathf.Min(data.asset.maxShadowDistance, data.camera.farClipPlane);
             cullingParameters.maximumVisibleLights = YPipelineLightsData.k_MaxPunctualLightCount + 1;
+            cullingParameters.conservativeEnclosingSphere = true;
             // TODO：实现了 Reflection Probe 的 tile/cluster culling 就需要取消掉 
             // cullingParameters.cullingOptions |= CullingOptions.DisablePerObjectCulling;
             
@@ -39,7 +37,7 @@ namespace YPipeline
             data.cullingResults = data.context.Cull(ref cullingParameters);
             
             data.context.ExecuteCommandBuffer(data.cmd);
-            data.context.Submit();
+            // data.context.Submit(); // LightCollectPass 中提交
             data.cmd.Clear();
         }
         
@@ -62,6 +60,14 @@ namespace YPipeline
                 // Must be called before culling because it emits intermediate renderers via Graphics.DrawInstanced.
                 ProbeReferenceVolume.instance.RenderDebug(data.camera, apvOptions, Texture2D.whiteTexture);
 #endif
+                
+                bool isProbeVolumeL1Enabled = data.asset.probeVolumeSHBands == ProbeVolumeSHBands.SphericalHarmonicsL1;
+                bool isProbeVolumeL2Enabled = data.asset.probeVolumeSHBands == ProbeVolumeSHBands.SphericalHarmonicsL2;
+                bool isTAAEnabled = data.asset.antiAliasingMode == AntiAliasingMode.TAA;
+                
+                bool enableProbeVolumes = ProbeReferenceVolume.instance.UpdateShaderVariablesProbeVolumes(data.cmd, apvOptions, isTAAEnabled ? Time.frameCount : 0, false);
+                CoreUtils.SetKeyword(data.cmd, YPipelineKeywords.k_ProbeVolumeL1, isProbeVolumeL1Enabled && enableProbeVolumes);
+                CoreUtils.SetKeyword(data.cmd, YPipelineKeywords.k_ProbeVolumeL2, isProbeVolumeL2Enabled && enableProbeVolumes);
             }
         }
     }

@@ -88,6 +88,23 @@ Varyings StandardPBRVert(Attributes IN)
 
 float4 StandardPBRFrag(Varyings IN) : SV_TARGET
 {
+    // ------------------------- Clipping -------------------------
+    
+    #if defined(_CLIPPING)
+        clip(standardPBRParams.alpha - _Cutoff);
+    #endif
+    
+    // ------------------------- LOD Fade -------------------------
+    
+    #if defined(LOD_FADE_CROSSFADE)
+        float dither = InterleavedGradientNoise(IN.positionHCS.xy, 0);
+        float isNextLodLevel = step(unity_LODFade.x, 0);
+        dither = lerp(-dither, dither, isNextLodLevel);
+        clip(unity_LODFade.x + dither);
+    #endif
+    
+    // ------------------------- PBR Parameters -------------------------
+    
     RenderingEquationContent renderingEquationContent = (RenderingEquationContent) 0;
     
     GeometryParams geometryParams = (GeometryParams) 0;

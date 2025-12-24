@@ -9,7 +9,7 @@ namespace YPipeline
 {
     public enum RenderPath
     {
-        TiledBasedForward, TiledBasedDeferred, ClusteredBasedForward
+        TiledBasedForward, TiledBasedDeferred, // ClusteredBasedForward, ClusteredBasedDeferred
     }
 
     public enum Quality

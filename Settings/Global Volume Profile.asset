@@ -143,7 +143,7 @@ MonoBehaviour:
     m_Value: 0.5
   exposure:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: -2
   saturation:
     m_OverrideState: 1
     m_Value: 1
@@ -657,7 +657,7 @@ MonoBehaviour:
     m_Value: 2
   aCESMode:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0
   aGXMode:
     m_OverrideState: 1
     m_Value: 0
@@ -720,7 +720,7 @@ MonoBehaviour:
   active: 0
   texture:
     m_OverrideState: 1
-    m_Value: {fileID: 2800000, guid: 120c734e9ca7c2d4981b809a933e0d37, type: 3}
+    m_Value: {fileID: 2800000, guid: c75d3e3a813a6d442b82a7be40da99fe, type: 3}
     dimension: 1
   contribution:
     m_OverrideState: 1
