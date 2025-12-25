@@ -6,7 +6,7 @@ namespace YPipeline
 {
     public class CullingPass : PipelinePass
     {
-        protected override void Initialize() { }
+        protected override void Initialize(ref YPipelineData data) { }
         
         protected override void OnDispose() { }
 

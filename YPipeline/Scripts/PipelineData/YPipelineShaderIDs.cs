@@ -56,10 +56,13 @@ namespace YPipeline
         public static readonly int k_FinalTextureID = Shader.PropertyToID("_CameraFinalTexture");
         
         // Forward
-        public static readonly int k_ThinGBufferID = Shader.PropertyToID("_ThinGBuffer"); // R8G8B8A8_UNorm Normal、Roughness
+        public static readonly int k_ThinGBufferID = Shader.PropertyToID("_ThinGBuffer");
         
         // Deferred
-        
+        public static readonly int k_GBuffer0ID = Shader.PropertyToID("_GBuffer0");
+        public static readonly int k_GBuffer1ID = Shader.PropertyToID("_GBuffer1");
+        public static readonly int k_GBuffer2ID = Shader.PropertyToID("_GBuffer2");
+        public static readonly int k_GBuffer3ID = Shader.PropertyToID("_GBuffer3");
         
         // ----------------------------------------------------------------------------------------------------
         // Common Resource Textures IDs
@@ -230,10 +233,11 @@ namespace YPipeline
 
     public static class YPipelineKeywords
     {
+        public const string k_DeferredRendering = "_DEFERRED_RENDERING";
+        
         // ----------------------------------------------------------------------------------------------------
         // Lighting And Shadows Related Keywords
         // ----------------------------------------------------------------------------------------------------
-        
         
         // public const string k_ShadowMaskDistance = "_SHADOW_MASK_DISTANCE";
         // public const string k_ShadowMaskNormal = "_SHADOW_MASK_NORMAL";

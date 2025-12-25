@@ -11,11 +11,11 @@ namespace YPipeline
         protected override void Initialize(ref YPipelineData data)
         {
             m_CameraPipelineNodes.Clear();
-            m_CameraPipelineNodes.Add(PipelinePass.Create<CullingPass>());
-            m_CameraPipelineNodes.Add(PipelinePass.Create<PreviewSetupPass>());
-            m_CameraPipelineNodes.Add(PipelinePass.Create<PreviewDrawPass>());
-            // m_CameraPipelineNodes.Add(PipelinePass.Create<CopyColorPass>()); // 绘制透明物体可能需要用到 color texture，之后可能需要添加
-            m_CameraPipelineNodes.Add(PipelinePass.Create<PreviewFinalPass>()); // 是否加个 FXAA
+            m_CameraPipelineNodes.Add(PipelinePass.Create<CullingPass>(ref data));
+            m_CameraPipelineNodes.Add(PipelinePass.Create<PreviewSetupPass>(ref data));
+            m_CameraPipelineNodes.Add(PipelinePass.Create<PreviewDrawPass>(ref data));
+            // m_CameraPipelineNodes.Add(PipelinePass.Create<CopyColorPass>(ref data)); // 绘制透明物体可能需要用到 color texture，之后可能需要添加
+            m_CameraPipelineNodes.Add(PipelinePass.Create<PreviewFinalPass>(ref data)); // 是否加个 FXAA
         }
         
         public override void Dispose()

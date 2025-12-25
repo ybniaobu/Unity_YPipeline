@@ -13,7 +13,7 @@ namespace YPipeline
             public RendererListHandle alphaTestRendererList;
         }
 
-        protected override void Initialize() { }
+        protected override void Initialize(ref YPipelineData data) { }
         
         protected override void OnDispose() { }
 

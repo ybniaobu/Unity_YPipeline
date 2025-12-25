@@ -12,14 +12,14 @@ namespace YPipeline
         /// </summary>
         /// <typeparam name="T">PipelinePass 子类</typeparam>
         /// <returns>PipelinePass 子类实例</returns>
-        public static T Create<T>() where T : PipelinePass, new()
+        public static T Create<T>(ref YPipelineData data) where T : PipelinePass, new()
         {
             T node = new T();
-            node.Initialize();
+            node.Initialize(ref data);
             return node;
         }
         
-        protected abstract void Initialize();
+        protected abstract void Initialize(ref YPipelineData data);
         
         protected virtual void OnDispose() { }
         

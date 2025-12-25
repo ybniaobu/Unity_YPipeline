@@ -130,7 +130,7 @@ namespace YPipeline
         private NativeArray<LightShadowCasterCullingInfo> m_CullingInfoPerLight;
         private NativeArray<ShadowSplitData> m_ShadowSplitDataPerLight;
         
-        protected override void Initialize() { }
+        protected override void Initialize(ref YPipelineData data) { }
         
         protected override void OnDispose() { }
 

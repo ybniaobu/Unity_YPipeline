@@ -1,7 +1,7 @@
-﻿#ifndef YPIPELINE_THIN_GBUFFER_COMMON_INCLUDED
-#define YPIPELINE_THIN_GBUFFER_COMMON_INCLUDED
+﻿#ifndef YPIPELINE_STANDARD_PBR_FOR_TEST_GBUFFER_PASS_INCLUDED
+#define YPIPELINE_STANDARD_PBR_FOR_TEST_GBUFFER_PASS_INCLUDED
 
-#include "../../ShaderLibrary/EncodingLibrary.hlsl"
+#include "../../../../ShaderLibrary/Core/GBufferCommon.hlsl"
 
 struct Attributes
 {
@@ -13,14 +13,14 @@ struct Attributes
 
 struct Varyings
 {
-    float4 positionHCS : SV_POSITION;
-    float2 uv : TEXCOORD0;
+    float4 positionHCS  : SV_POSITION;
+    float2 uv           : TEXCOORD0;
     float3 positionWS   : TEXCOORD1;
     float3 normalWS     : TEXCOORD2;
     float4 tangentWS    : TEXCOORD3;
 };
 
-Varyings ThinGBufferVert(Attributes IN)
+Varyings GBufferVert(Attributes IN)
 {
     Varyings OUT;
     OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
@@ -31,10 +31,11 @@ Varyings ThinGBufferVert(Attributes IN)
     return OUT;
 }
 
-float4 ThinGBufferFrag(Varyings IN, out float depth: SV_DEPTH) : SV_TARGET
+GBufferOutput GBufferFrag(Varyings IN)
 {
+    GBufferOutput OUT;
     float4 albedo = SAMPLE_TEXTURE2D(_BaseTex, sampler_BaseTex, IN.uv) * _BaseColor;
-
+    
     #if defined(_CLIPPING)
         clip(albedo.a - _Cutoff);
     #endif
@@ -45,7 +46,9 @@ float4 ThinGBufferFrag(Varyings IN, out float depth: SV_DEPTH) : SV_TARGET
         dither = lerp(-dither, dither, isNextLodLevel);
         clip(unity_LODFade.x + dither);
     #endif
-
+    
+    float3 emission = SAMPLE_TEXTURE2D(_EmissionTex, sampler_EmissionTex, IN.uv).rgb * _EmissionColor.rgb;
+    
     #if _USE_ROUGHNESSTEX
         float roughness = SAMPLE_TEXTURE2D(_RoughnessTex, sampler_RoughnessTex, IN.uv).r;
         roughness *= pow(10, _RoughnessScale);
@@ -54,11 +57,18 @@ float4 ThinGBufferFrag(Varyings IN, out float depth: SV_DEPTH) : SV_TARGET
         float roughness = _Roughness;
     #endif
 
-    #if _USE_HYBRIDTEX
-        float4 hybrid = SAMPLE_TEXTURE2D(_HybridTex, sampler_HybridTex, IN.uv).rgba;
-        roughness = saturate(hybrid.r * pow(10, _RoughnessScale));
+    #if _USE_METALLICTEX
+        float metallic = SAMPLE_TEXTURE2D(_MetallicTex, sampler_MetallicTex, IN.uv).r;
+        metallic *= pow(10, _MetallicScale);
+        metallic = saturate(metallic);
+    #else
+        float metallic = _Metallic;
     #endif
 
+    float ao = SAMPLE_TEXTURE2D(_AOTex, sampler_AOTex, IN.uv).r;
+    ao *= pow(0.1, _AOScale);
+    ao = saturate(ao);
+    
     #if _USE_NORMALTEX
         float4 packedNormal = SAMPLE_TEXTURE2D(_NormalTex, sampler_NormalTex, IN.uv);
         float3 normalTS = UnpackNormalScale(packedNormal, _NormalIntensity);
@@ -70,10 +80,13 @@ float4 ThinGBufferFrag(Varyings IN, out float depth: SV_DEPTH) : SV_TARGET
     #else
         float3 N = normalize(IN.normalWS);
     #endif
-
-    depth = IN.positionHCS.z;
-    float3 encodedNormal = EncodeNormalInto888(N);
-    return float4(encodedNormal, roughness);
+    
+    OUT.gBuffer0 = float4(albedo.rgb, ao);
+    OUT.gBuffer1 = float4(EncodeNormalInto888(N), roughness);
+    OUT.gBuffer2 = float4(_Specular, metallic, 0.0, PackMaterialID(MATERIALID_STANDARD_PBR));
+    OUT.gBuffer3 = emission;
+    
+    return OUT;
 }
 
 #endif

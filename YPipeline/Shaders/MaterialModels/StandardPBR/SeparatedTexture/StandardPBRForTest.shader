@@ -1,4 +1,4 @@
-﻿Shader "YPipeline/Shading Models/Standard PBR"
+Shader "YPipeline/Shading Models/Standard PBR(Separated Texture)"
 {
     Properties
     {
@@ -9,19 +9,26 @@
         [Header(Specular Color Settings)] [Space(8)]
         _Specular("Dielectrics Specular Intensity", Range(0.0, 1.0)) = 0.5
         
-        [Header(Hybrid Settings)] [Space(8)]
+        [Header(Roughness Settings)] [Space(8)]
         _Roughness("Roughness", Range(0.0, 1.0)) = 0.5
+        [Toggle(_USE_ROUGHNESSTEX)] _UseRoughnessTex("use roughness texture?", Float) = 0
+    	_RoughnessScale("Roughness Scale", Range(-1.0, 1.0)) = 0.0
+        [NoScaleOffset] _RoughnessTex("Roughness Texture", 2D) = "white" {}
+        
+        [Header(Metallic Settings)] [Space(8)]
         _Metallic("Metallic", Range(0.0, 1.0)) = 0.0
-        [Toggle(_USE_HYBRIDTEX)] _UseHybridTex("Use Hybrid Texture?", Float) = 0
-        [NoScaleOffset] _HybridTex("Hybrid Texture", 2D) = "gray" {}
-        _RoughnessScale("Roughness Scale", Range(-1.0, 1.0)) = 0.0
+        [Toggle(_USE_METALLICTEX)] _UseMetallicTex("use metallic texture?", Float) = 0
     	_MetallicScale("Metallic Scale", Range(-1.0, 1.0)) = 0.0
-        _AOScale("Ambient Occlusion Scale", Range(-1.0, 1.0)) = 0.0
+        [NoScaleOffset] _MetallicTex("Metallic Texture", 2D) = "white" {}
         
         [Header(Normal Settings)] [Space(8)]
         [Toggle(_USE_NORMALTEX)] _UseNormalTex("use normal texture?", Float) = 0
         [NoScaleOffset] [Normal] _NormalTex("Normal Texture", 2D) = "bump" {}
         _NormalIntensity("Normal Intensity", Float) = 1.0
+        
+        [Header(Ambient Occlusion Settings)] [Space(8)]
+        [NoScaleOffset] _AOTex("Ambient Occlusion Texture", 2D) = "white" {}
+    	_AOScale("Ambient Occlusion Scale", Range(-1.0, 1.0)) = 0.0
     	
 	    [Header(Emission Settings)] [Space(8)]
         [HDR] _EmissionColor("Emission Color", Color) = (0.0, 0.0, 0.0, 1.0)
@@ -47,7 +54,7 @@
 
         Pass
         {
-            Name "StandardForward"
+            Name "Forward"
             
             Tags { "LightMode" = "YPipelineForward" }
             
@@ -58,11 +65,12 @@
             HLSLPROGRAM
             #pragma target 4.5
             
-            #pragma vertex StandardPBRVert
-            #pragma fragment StandardPBRFrag
+            #pragma vertex ForwardVert
+            #pragma fragment ForwardFrag
             
             // Material Keywords
-            #pragma shader_feature_local_fragment _USE_HYBRIDTEX
+            #pragma shader_feature_local_fragment _USE_ROUGHNESSTEX
+            #pragma shader_feature_local_fragment _USE_METALLICTEX
             #pragma shader_feature_local_fragment _USE_NORMALTEX
             
             // YPipeline keywords
@@ -74,9 +82,36 @@
             #pragma multi_compile _ LIGHTMAP_ON
             #pragma multi_compile _ PROBE_VOLUMES_L1 PROBE_VOLUMES_L2
 
-            #include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
-			#include "StandardPBRInput.hlsl"
-            #include "StandardPBRPass.hlsl"
+            #include "../../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+			#include "StandardPBRForTestInput.hlsl"
+            #include "StandardPBRForTestForwardPass.hlsl"
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "GBuffer"
+            
+            Tags { "LightMode" = "YPipelineGBuffer" }
+            
+            ZWrite Off
+            ZTest Equal // 使用 depth prepass
+            Cull [_Cull]
+            
+            HLSLPROGRAM
+            #pragma target 4.5
+            
+            #pragma vertex GBufferVert
+            #pragma fragment GBufferFrag
+            
+            // Material Keywords
+            #pragma shader_feature_local_fragment _USE_ROUGHNESSTEX
+            #pragma shader_feature_local_fragment _USE_METALLICTEX
+            #pragma shader_feature_local_fragment _USE_NORMALTEX
+
+            #include "../../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+			#include "StandardPBRForTestInput.hlsl"
+            #include "StandardPBRForTestGBufferPass.hlsl"
             ENDHLSL
         }
 
@@ -102,9 +137,9 @@
 			// Unity defined keywords
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
 
-			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
-			#include "StandardPBRInput.hlsl"
-			#include "../ShadowCasterCommon.hlsl"
+			#include "../../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+			#include "StandardPBRForTestInput.hlsl"
+			#include "../../ShadowCasterCommon.hlsl"
 			ENDHLSL
 		}
 
@@ -130,9 +165,9 @@
 			// Unity defined keywords
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
 
-			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
-			#include "StandardPBRInput.hlsl"
-			#include "../DepthPrePassCommon.hlsl"
+			#include "../../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+			#include "StandardPBRForTestInput.hlsl"
+			#include "../../DepthPrePassCommon.hlsl"
 			ENDHLSL
 		}
 
@@ -152,16 +187,16 @@
 			#pragma fragment ThinGBufferFrag
 
 			// Material Keywords
-			#pragma shader_feature_local_fragment _USE_HYBRIDTEX
+			#pragma shader_feature_local_fragment _USE_ROUGHNESSTEX
             #pragma shader_feature_local_fragment _USE_NORMALTEX
 			#pragma shader_feature_local_fragment _CLIPPING
 
 			// Unity defined keywords
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
 
-			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
-			#include "StandardPBRInput.hlsl"
-			#include "../ThinGBufferCommon.hlsl"
+			#include "../../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+			#include "StandardPBRForTestInput.hlsl"
+			#include "../../ThinGBufferCommon.hlsl"
 			ENDHLSL
 		}
 		
@@ -179,9 +214,9 @@
 			#pragma vertex MetaVert
 			#pragma fragment MetaFrag
 
-			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
-			#include "StandardPBRInput.hlsl"
-			#include "../MetaCommon.hlsl"
+			#include "../../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+			#include "StandardPBRForTestInput.hlsl"
+			#include "../../MetaCommon.hlsl"
 			ENDHLSL
 		}
 
@@ -216,9 +251,9 @@
             // Unity defined keywords
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
 
-            #include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
-			#include "StandardPBRInput.hlsl"
-			#include "../MotionVectorCommon.hlsl"
+            #include "../../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+			#include "StandardPBRForTestInput.hlsl"
+			#include "../../MotionVectorCommon.hlsl"
             ENDHLSL
 		}
     }

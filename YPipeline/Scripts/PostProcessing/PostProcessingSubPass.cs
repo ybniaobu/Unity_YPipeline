@@ -7,14 +7,14 @@ namespace YPipeline
     {
         public bool isActivated = true;
         
-        public static T Create<T>() where T : PostProcessingSubPass, new()
+        public static T Create<T>(ref YPipelineData data) where T : PostProcessingSubPass, new()
         {
             T subPass = new T();
-            subPass.Initialize();
+            subPass.Initialize(ref data);
             return subPass;
         }
 
-        protected abstract void Initialize();
+        protected abstract void Initialize(ref YPipelineData data);
 
         public abstract void OnDispose();
 

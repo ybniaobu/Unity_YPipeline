@@ -11,41 +11,52 @@ namespace YPipeline
         {
             m_CameraPipelineNodes.Clear();
             
-            m_CameraPipelineNodes.Add(PipelinePass.Create<CullingPass>());
-            m_CameraPipelineNodes.Add(PipelinePass.Create<LightCollectPass>());
+            m_CameraPipelineNodes.Add(PipelinePass.Create<CullingPass>(ref data));
+            m_CameraPipelineNodes.Add(PipelinePass.Create<LightCollectPass>(ref data));
             
             switch (data.asset.renderPath)
             {
-                case RenderPath.TiledBasedForward: 
-                    m_CameraPipelineNodes.Add(PipelinePass.Create<LightSetupPass>());
-                    m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardResourcesPass>());
-                    m_CameraPipelineNodes.Add(PipelinePass.Create<CameraSetupPass>());
-                    m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardThinGBufferPass>());
-                    m_CameraPipelineNodes.Add(PipelinePass.Create<CopyDepthPass>());
-                    m_CameraPipelineNodes.Add(PipelinePass.Create<MotionVectorPass>());
-                    m_CameraPipelineNodes.Add(PipelinePass.Create<ShadowPass>());
-                    m_CameraPipelineNodes.Add(PipelinePass.Create<AmbientOcclusionPass>());
-                    m_CameraPipelineNodes.Add(PipelinePass.Create<TiledLightCullingPass>());
-                    m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardGeometryPass>());
-#if UNITY_EDITOR
-                    m_CameraPipelineNodes.Add(PipelinePass.Create<ErrorMaterialPass>());
-#endif
-                    m_CameraPipelineNodes.Add(PipelinePass.Create<SkyboxPass>());
-                    m_CameraPipelineNodes.Add(PipelinePass.Create<CopyColorPass>());
-                    m_CameraPipelineNodes.Add(PipelinePass.Create<TransparencyPass>());
-                    m_CameraPipelineNodes.Add(PipelinePass.Create<PostProcessingPass>());
-                    
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                    m_CameraPipelineNodes.Add(PipelinePass.Create<DebugPass>());
-#endif
-#if UNITY_EDITOR
-                    m_CameraPipelineNodes.Add(PipelinePass.Create<GizmosPass>());
-#endif
+                case RenderPath.ForwardPlus: 
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<LightSetupPass>(ref data));
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<CameraSetupPass>(ref data));
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardResourcesPass>(ref data));
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardThinGBufferPass>(ref data));
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<CopyDepthPass>(ref data));
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<MotionVectorPass>(ref data));
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<ShadowPass>(ref data));
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<AmbientOcclusionPass>(ref data));
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<TiledLightCullingPass>(ref data));
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardGeometryPass>(ref data));
                     break;
-                case RenderPath.TiledBasedDeferred:
-                    
+                case RenderPath.DeferredPlus:
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<LightSetupPass>(ref data));
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<CameraSetupPass>(ref data));
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<DeferredResourcesPass>(ref data));
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<DepthOnlyPass>(ref data));
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<CopyDepthPass>(ref data));
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<DeferredGeometryPass>(ref data));
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<MotionVectorPass>(ref data));
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<ShadowPass>(ref data));
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<AmbientOcclusionPass>(ref data));
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<TiledLightCullingPass>(ref data));
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<DeferredLightingPass>(ref data));
                     break;
             }
+            
+#if UNITY_EDITOR
+            m_CameraPipelineNodes.Add(PipelinePass.Create<ErrorMaterialPass>(ref data));
+#endif
+            m_CameraPipelineNodes.Add(PipelinePass.Create<SkyboxPass>(ref data));
+            m_CameraPipelineNodes.Add(PipelinePass.Create<CopyColorPass>(ref data));
+            m_CameraPipelineNodes.Add(PipelinePass.Create<TransparencyPass>(ref data));
+            m_CameraPipelineNodes.Add(PipelinePass.Create<PostProcessingPass>(ref data));
+                    
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            m_CameraPipelineNodes.Add(PipelinePass.Create<DebugPass>(ref data));
+#endif
+#if UNITY_EDITOR
+            m_CameraPipelineNodes.Add(PipelinePass.Create<GizmosPass>(ref data));
+#endif
         }
         
         public override void Dispose()

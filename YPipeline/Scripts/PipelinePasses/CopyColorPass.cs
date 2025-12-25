@@ -13,7 +13,7 @@ namespace YPipeline
             public TextureHandle colorTexture;
         }
 
-        protected override void Initialize() { }
+        protected override void Initialize(ref YPipelineData data) { }
         
         protected override void OnDispose() { }
 

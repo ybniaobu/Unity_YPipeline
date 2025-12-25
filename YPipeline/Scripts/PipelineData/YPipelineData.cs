@@ -26,6 +26,8 @@ namespace YPipeline
         // ----------------------------------------------------------------------------------------------------
         // Properties
         // ----------------------------------------------------------------------------------------------------
+
+        public bool IsDeferredRenderingEnabled => asset.renderPath == RenderPath.DeferredPlus;
         
         public Vector2Int BufferSize => new Vector2Int((int) (camera.pixelWidth * asset.renderScale), (int) (camera.pixelHeight * asset.renderScale));
         
@@ -49,7 +51,11 @@ namespace YPipeline
         public TextureHandle CameraDepthAttachment { set; get; }
         public TextureHandle CameraColorTexture { set; get; }
         public TextureHandle CameraDepthTexture { set; get; }
-        public TextureHandle ThinGBuffer { set; get; }
+        public TextureHandle GBuffer0 { set; get; } // RGBA8_SRGB: albedo, AO
+        public TextureHandle GBuffer1 { set; get; } // RGBA8_UNORM: normal, roughness
+        public TextureHandle GBuffer2 { set; get; } // RGBA8_UNORM: reflectance, metallic, material ID (alpha）
+        public TextureHandle GBuffer3 { set; get; } // R11G11B10_FLOAT: emission
+        public TextureHandle ThinGBuffer { set; get; } // RGBA8_UNORM: normal, roughness
         public TextureHandle MotionVectorTexture { set; get; }
         public TextureHandle AmbientOcclusionTexture { set; get; }
         public bool isAmbientOcclusionTextureCreated;

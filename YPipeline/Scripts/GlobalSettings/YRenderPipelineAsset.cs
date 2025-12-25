@@ -9,7 +9,7 @@ namespace YPipeline
 {
     public enum RenderPath
     {
-        TiledBasedForward, TiledBasedDeferred, // ClusteredBasedForward, ClusteredBasedDeferred
+        [InspectorName("Forward+")] ForwardPlus, [InspectorName("Deferred+")] DeferredPlus
     }
 
     public enum Quality
@@ -89,7 +89,7 @@ namespace YPipeline
         
         // TODO：参考 HDRP 的 Asset
         [Header("Rendering Settings")]
-        public RenderPath renderPath = RenderPath.TiledBasedForward;
+        public RenderPath renderPath = RenderPath.ForwardPlus;
         
         public bool enableHDRColorBuffer = true;
         

@@ -116,7 +116,7 @@ namespace YPipeline
         
         private RTHandle m_EnvBRDFLut;
         
-        protected override void Initialize() { }
+        protected override void Initialize(ref YPipelineData data) { }
         
         protected override void OnDispose()
         {

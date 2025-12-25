@@ -1,5 +1,5 @@
-﻿#ifndef YPIPELINE_STANDARD_PBR_FOR_TEST_PASS_INCLUDED
-#define YPIPELINE_STANDARD_PBR_FOR_TEST_PASS_INCLUDED
+﻿#ifndef YPIPELINE_STANDARD_PBR_PASS_INCLUDED
+#define YPIPELINE_STANDARD_PBR_PASS_INCLUDED
 
 #include "../../../ShaderLibrary/RenderingEquationLibrary.hlsl"
 
@@ -50,27 +50,18 @@ void InitializeStandardPBRParams(in GeometryParams geometryParams, out StandardP
     standardPBRParams.albedo = color.rgb;
     standardPBRParams.alpha = color.a;
     standardPBRParams.emission = SAMPLE_TEXTURE2D(_EmissionTex, sampler_EmissionTex, geometryParams.uv).rgb * _EmissionColor.rgb;
-
-    #if _USE_ROUGHNESSTEX
-        standardPBRParams.roughness = SAMPLE_TEXTURE2D(_RoughnessTex, sampler_RoughnessTex, geometryParams.uv).r;
-        standardPBRParams.roughness *= pow(10, _RoughnessScale);
-        standardPBRParams.roughness = saturate(standardPBRParams.roughness);
+    
+    #if _USE_HYBRIDTEX
+        float4 hybrid = SAMPLE_TEXTURE2D(_HybridTex, sampler_HybridTex, geometryParams.uv).rgba;
+        standardPBRParams.roughness = saturate(hybrid.r * pow(10, _RoughnessScale));
+        standardPBRParams.metallic = saturate(hybrid.g * pow(10, _MetallicScale));
+        standardPBRParams.ao = saturate(hybrid.a * pow(0.1, _AOScale));
     #else
         standardPBRParams.roughness = _Roughness;
-    #endif
-
-    #if _USE_METALLICTEX
-        standardPBRParams.metallic = SAMPLE_TEXTURE2D(_MetallicTex, sampler_MetallicTex, geometryParams.uv).r;
-        standardPBRParams.metallic *= pow(10, _MetallicScale);
-        standardPBRParams.metallic = saturate(standardPBRParams.metallic);
-    #else
         standardPBRParams.metallic = _Metallic;
+        standardPBRParams.ao = 1.0;
     #endif
 
-    standardPBRParams.ao = SAMPLE_TEXTURE2D(_AOTex, sampler_AOTex, geometryParams.uv).r;
-    standardPBRParams.ao *= pow(0.1, _AOScale);
-    standardPBRParams.ao = saturate(standardPBRParams.ao);
-    
     #if _SCREEN_SPACE_AMBIENT_OCCLUSION
         standardPBRParams.ao = min(standardPBRParams.ao, SAMPLE_TEXTURE2D_LOD(_AmbientOcclusionTexture, sampler_PointClamp, geometryParams.screenUV, 0).r);
     #endif
@@ -83,7 +74,7 @@ void InitializeStandardPBRParams(in GeometryParams geometryParams, out StandardP
     standardPBRParams.NoV = saturate(dot(standardPBRParams.N, standardPBRParams.V)) + 1e-3; //防止小黑点
 }
 
-Varyings StandardPBRVert(Attributes IN)
+Varyings ForwardVert(Attributes IN)
 {
     Varyings OUT;
     OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
@@ -95,7 +86,7 @@ Varyings StandardPBRVert(Attributes IN)
     return OUT;
 }
 
-float4 StandardPBRFrag(Varyings IN) : SV_TARGET
+float4 ForwardFrag(Varyings IN) : SV_TARGET
 {
     // ------------------------- Clipping -------------------------
     
@@ -171,8 +162,8 @@ float4 StandardPBRFrag(Varyings IN) : SV_TARGET
     //     LightParams punctualLightParams = (LightParams) 0;
     //     
     //     UNITY_BRANCH
-    //     if (GetPunctualLightType(i) == SPOT_LIGHT) InitializeSpotLightParams(punctualLightParams, i, standardPBRParams.V, normalize(IN.normalWS), IN.positionWS, IN.positionHCS.xyz);
-    //     else if (GetPunctualLightType(i) == POINT_LIGHT) InitializePointLightParams(punctualLightParams, i, standardPBRParams.V, normalize(IN.normalWS), IN.positionWS, IN.positionHCS.xyz);
+    //     if (GetPunctualLightType(i) == SPOT_LIGHT) InitializeSpotLightParams(punctualLightParams, i, standardPBRParams.V, standardPBRParams.N, geometryParams.positionWS, geometryParams.pixelCoord);
+    //     else if (GetPunctualLightType(i) == POINT_LIGHT) InitializePointLightParams(punctualLightParams, i, standardPBRParams.V, standardPBRParams.N, geometryParams.positionWS, geometryParams.pixelCoord);
     //     
     //     BRDFParams punctualBRDFParams = (BRDFParams) 0;
     //     InitializeBRDFParams(punctualBRDFParams, standardPBRParams.N, punctualLightParams.L, standardPBRParams.V, punctualLightParams.H);

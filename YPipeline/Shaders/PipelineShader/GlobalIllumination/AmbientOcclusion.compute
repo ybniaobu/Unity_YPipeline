@@ -10,6 +10,7 @@
 #pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch
 
 #pragma multi_compile _ _HALF_RESOLUTION
+#pragma multi_compile _ _DEFERRED_RENDERING
 
 #include "../../../ShaderLibrary/Core/YPipelineCSCore.hlsl"
 #include "../../../ShaderLibrary/RandomLibrary.hlsl"
@@ -22,7 +23,14 @@ Texture2D<float> _HalfDepthTexture;
 Texture2D<float2> _AmbientOcclusionHistory;
 
 // --- Global Textures & Samplers ---
+#ifdef _DEFERRED_RENDERING
+TEXTURE2D(_GBuffer1);
+#define NORMAL_TEX _GBuffer1
+#else
 TEXTURE2D(_ThinGBuffer);
+#define NORMAL_TEX _ThinGBuffer
+#endif
+
 TEXTURE2D(_CameraDepthTexture);
 TEXTURE2D(_MotionVectorTexture);
 TEXTURE2D(_BlueNoise64);
@@ -97,9 +105,9 @@ float LoadDepth(int2 pixelCoord)
 float3 LoadAndDecodeNormal(int2 pixelCoord)
 {
     #ifdef _HALF_RESOLUTION
-    float3 packedNormalWS = LOAD_TEXTURE2D_LOD(_ThinGBuffer, pixelCoord * 2, 0).rgb;
+    float3 packedNormalWS = LOAD_TEXTURE2D_LOD(NORMAL_TEX, pixelCoord * 2, 0).rgb;
     #else
-    float3 packedNormalWS = LOAD_TEXTURE2D_LOD(_ThinGBuffer, pixelCoord, 0).rgb;
+    float3 packedNormalWS = LOAD_TEXTURE2D_LOD(NORMAL_TEX, pixelCoord, 0).rgb;
     #endif
     
     return DecodeNormalFrom888(packedNormalWS);

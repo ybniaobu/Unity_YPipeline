@@ -53,7 +53,7 @@ namespace YPipeline
 
         private TAA m_TAA;
         
-        protected override void Initialize() { }
+        protected override void Initialize(ref YPipelineData data) { }
 
         protected override void OnDispose()
         {

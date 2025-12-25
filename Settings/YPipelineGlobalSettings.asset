@@ -220,7 +220,6 @@ MonoBehaviour:
         - {fileID: 2800000, guid: 1aeeea0f5749f8d4db9eee0f9ef0efd6, type: 3}
         - {fileID: 2800000, guid: 3e25f95154fc98a429f5e2ffb05134a8, type: 3}
         m_BlueNoise16: {fileID: 2800000, guid: e95f12ac13c411d4f8cfbbfec19856a4, type: 3}
-        m_BlueNoise32: {fileID: 2800000, guid: 9fed75d5a620cf84f9ca41278254c75e, type: 3}
         m_BlueNoise64: {fileID: 2800000, guid: f20af32bca62bab448e8b4454ad1c3b8, type: 3}
         m_STBN128Scale3: {fileID: 2800000, guid: c48b19fb60fac744ea69884f4d05ece3,
           type: 3}
@@ -230,6 +229,8 @@ MonoBehaviour:
           type: 3}
         m_STBN128Vec3: {fileID: 2800000, guid: c9fafd6510965af4894085b94f9777a0, type: 3}
         m_DefaultPBRShader: {fileID: 4800000, guid: 19968cea1ec24a14a4525b681daf7a75,
+          type: 3}
+        m_DeferredLightingShader: {fileID: 4800000, guid: 2904dbbf634f4b16a2cdbc072024eb3e,
           type: 3}
         m_TiledLightCullingCS: {fileID: 7200000, guid: f0b81bd803cf09b48a241b0856dbef54,
           type: 3}

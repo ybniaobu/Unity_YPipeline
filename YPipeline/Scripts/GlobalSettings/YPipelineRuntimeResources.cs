@@ -120,6 +120,15 @@ namespace YPipeline
             set => this.SetValueAndNotify(ref m_DefaultPBRShader, value, nameof(m_DefaultPBRShader));
         }
 
+        [SerializeField] [ResourcePath("YPipeline/Shaders/PipelineShader/DeferredLighting/DeferredLighting.shader")]
+        private Shader m_DeferredLightingShader;
+
+        public Shader DeferredLightingShader
+        {
+            get => m_DeferredLightingShader;
+            set => this.SetValueAndNotify(ref m_DeferredLightingShader, value, nameof(m_DeferredLightingShader));
+        }
+
         #endregion
         
         // ----------------------------------------------------------------------------------------------------

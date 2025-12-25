@@ -1,12 +1,12 @@
 ﻿#ifndef YPIPELINE_UNLIT_INPUT_INCLUDED
 #define YPIPELINE_UNLIT_INPUT_INCLUDED
 
-UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
-    UNITY_DEFINE_INSTANCED_PROP(float4, _BaseColor)
-    UNITY_DEFINE_INSTANCED_PROP(float4, _BaseTex_ST)
-    UNITY_DEFINE_INSTANCED_PROP(float4, _EmissionColor)
-    UNITY_DEFINE_INSTANCED_PROP(float, _Cutoff)
-UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
+CBUFFER_START(UnityPerMaterial)
+    float4 _BaseColor;
+    float4 _BaseTex_ST;
+    float4 _EmissionColor;
+    float _Cutoff;
+CBUFFER_END
 
 TEXTURE2D(_BaseTex);        SAMPLER(sampler_BaseTex);
 TEXTURE2D(_EmissionTex);    SAMPLER(sampler_EmissionTex);

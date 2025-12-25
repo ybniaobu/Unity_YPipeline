@@ -50,7 +50,7 @@ namespace YPipeline
         }
         
         
-        protected override void Initialize() { }
+        protected override void Initialize(ref YPipelineData data) { }
         
         protected override void OnDispose() { }
 

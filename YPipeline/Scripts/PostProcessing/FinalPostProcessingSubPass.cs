@@ -43,7 +43,7 @@ namespace YPipeline
             }
         }
         
-        protected override void Initialize()
+        protected override void Initialize(ref YPipelineData data)
         {
             m_Random = new System.Random();
         }

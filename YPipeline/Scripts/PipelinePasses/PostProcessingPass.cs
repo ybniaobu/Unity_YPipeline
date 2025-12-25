@@ -27,13 +27,13 @@ namespace YPipeline
         
         private ProfilingSampler m_Sampler;
         
-        protected override void Initialize()
+        protected override void Initialize(ref YPipelineData data)
         {
-            m_TAASubPass = PostProcessingSubPass.Create<TAASubPass>();
-            m_BloomSubPass = PostProcessingSubPass.Create<BloomSubPass>();
-            m_ColorGradingLutSubPass = PostProcessingSubPass.Create<ColorGradingLutSubPass>();
-            m_UberPostProcessingSubPass = PostProcessingSubPass.Create<UberPostProcessingSubPass>();
-            m_FinalPostProcessingSubPass = PostProcessingSubPass.Create<FinalPostProcessingSubPass>();
+            m_TAASubPass = PostProcessingSubPass.Create<TAASubPass>(ref data);
+            m_BloomSubPass = PostProcessingSubPass.Create<BloomSubPass>(ref data);
+            m_ColorGradingLutSubPass = PostProcessingSubPass.Create<ColorGradingLutSubPass>(ref data);
+            m_UberPostProcessingSubPass = PostProcessingSubPass.Create<UberPostProcessingSubPass>(ref data);
+            m_FinalPostProcessingSubPass = PostProcessingSubPass.Create<FinalPostProcessingSubPass>(ref data);
             
             m_Sampler = new ProfilingSampler("Post Processing");
         }

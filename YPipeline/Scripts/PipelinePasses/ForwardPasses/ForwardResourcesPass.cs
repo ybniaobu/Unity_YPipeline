@@ -23,8 +23,13 @@ namespace YPipeline
         private RTHandle m_EnvBRDFLut;
         private RTHandle m_BlueNoise64;
         private RTHandle m_STBN128Scalar;
-            
-        protected override void Initialize() { }
+
+        protected override void Initialize(ref YPipelineData data)
+        {
+            m_EnvBRDFLut = RTHandles.Alloc(data.runtimeResources.EnvironmentBRDFLut);
+            m_BlueNoise64 = RTHandles.Alloc(data.runtimeResources.BlueNoise64);
+            m_STBN128Scalar = RTHandles.Alloc(data.runtimeResources.STBN128Scale3);
+        }
 
         protected override void OnDispose()
         {
@@ -35,6 +40,7 @@ namespace YPipeline
             
             RTHandles.Release(m_EnvBRDFLut);
             RTHandles.Release(m_BlueNoise64);
+            RTHandles.Release(m_STBN128Scalar);
             m_EnvBRDFLut = null;
             m_BlueNoise64 = null;
             m_STBN128Scalar = null;
@@ -42,7 +48,6 @@ namespace YPipeline
 
         protected override void OnRecord(ref YPipelineData data)
         {
-            // TODO：m_EnvBRDFLut、m_BlueNoise64 初始化一次
             using (var builder = data.renderGraph.AddRasterRenderPass<ForwardResourcesPassData>("Set Global Resources", out var passData))
             {
                 ImportBackBuffers(ref data);
@@ -51,29 +56,14 @@ namespace YPipeline
                 // Imported texture resources
                 // ----------------------------------------------------------------------------------------------------
                 
-                if (m_EnvBRDFLut == null || m_EnvBRDFLut.externalTexture != data.runtimeResources.EnvironmentBRDFLut)
-                {
-                    m_EnvBRDFLut?.Release();
-                    m_EnvBRDFLut = RTHandles.Alloc(data.runtimeResources.EnvironmentBRDFLut);
-                }
                 TextureHandle envBRDFLut = data.renderGraph.ImportTexture(m_EnvBRDFLut);
                 builder.UseTexture(envBRDFLut, AccessFlags.Read);
                 builder.SetGlobalTextureAfterPass(envBRDFLut, YPipelineShaderIDs.k_EnvBRDFLutID);
-
-                if (m_BlueNoise64 == null || m_BlueNoise64.externalTexture != data.runtimeResources.BlueNoise64)
-                {
-                    m_BlueNoise64?.Release();
-                    m_BlueNoise64 = RTHandles.Alloc(data.runtimeResources.BlueNoise64);
-                }
+                
                 TextureHandle blueNoise64 = data.renderGraph.ImportTexture(m_BlueNoise64);
                 builder.UseTexture(blueNoise64, AccessFlags.Read);
                 builder.SetGlobalTextureAfterPass(blueNoise64, YPipelineShaderIDs.k_BlueNoise64ID);
-
-                if (m_STBN128Scalar == null || m_STBN128Scalar.externalTexture != data.runtimeResources.STBN128Scale3)
-                {
-                    m_STBN128Scalar?.Release();
-                    m_STBN128Scalar = RTHandles.Alloc(data.runtimeResources.STBN128Scale3);
-                }
+                
                 TextureHandle stbn128 = data.renderGraph.ImportTexture(m_STBN128Scalar);
                 builder.UseTexture(stbn128, AccessFlags.Read);
                 builder.SetGlobalTextureAfterPass(stbn128, YPipelineShaderIDs.k_STBN128ScalarID);
@@ -149,6 +139,8 @@ namespace YPipeline
                 
                 builder.SetRenderFunc((ForwardResourcesPassData data, RasterGraphContext context) =>
                 {
+                    GlobalKeyword deferredKeyword = GlobalKeyword.Create(YPipelineKeywords.k_DeferredRendering);
+                    context.cmd.SetKeyword(deferredKeyword, false);
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_BufferSizeID, new Vector4(1f / data.bufferSize.x, 1f / data.bufferSize.y, data.bufferSize.x, data.bufferSize.y));
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_JitterID, data.jitter);
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_TimeParams,data.timeParams);

@@ -33,7 +33,7 @@ namespace YPipeline
 
         private AmbientOcclusion m_AO;
         
-        protected override void Initialize() { }
+        protected override void Initialize(ref YPipelineData data) { }
 
         protected override void OnDispose()
         {
@@ -67,7 +67,9 @@ namespace YPipeline
 
                     passData.cs = data.runtimeResources.AmbientOcclusionCS;
                     passData.aoMode = m_AO.ambientOcclusionMode.value;
-                    builder.UseTexture(data.ThinGBuffer, AccessFlags.Read);
+                    
+                    if (data.IsDeferredRenderingEnabled) builder.UseTexture(data.GBuffer1, AccessFlags.Read);
+                    else builder.UseTexture(data.ThinGBuffer, AccessFlags.Read);
                     builder.UseTexture(data.CameraDepthTexture, AccessFlags.Read);
 
                     passData.enableHalfResolution = m_AO.halfResolution.value;
