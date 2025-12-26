@@ -29,6 +29,10 @@ namespace YPipeline
             m_Data.renderGraph = new RenderGraph("YPipeline Render Graph");
             m_Data.lightsData = new YPipelineLightsData();
             
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            m_Data.debugSettings = new DebugSettings();
+#endif
+            
             // Supported Rendering Features
 #if UNITY_EDITOR
             SupportedRenderingFeatures.active.overridesRealtimeReflectionProbes = true;
@@ -53,6 +57,7 @@ namespace YPipeline
             
             RTHandles.Initialize(Screen.width, Screen.height);
             VolumeManager.instance.Initialize(null, asset.globalVolumeProfile);
+            BlitUtility.Initialize();
 
             // Camera Renderer
             m_GameCameraRenderer = CameraRenderer.Create<GameCameraRenderer>(ref m_Data);
@@ -61,11 +66,6 @@ namespace YPipeline
 #if UNITY_EDITOR
             m_PreviewCameraRenderer = CameraRenderer.Create<PreviewCameraRenderer>(ref m_Data);
             InitializeLightmapper();
-            EditorPrefs.SetInt("SceneViewFPS", 60);
-#endif
-            // Debug
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            m_Data.debugSettings = new DebugSettings();
 #endif
             
             // APV
@@ -103,6 +103,7 @@ namespace YPipeline
             
             VolumeManager.instance.Deinitialize();
             m_Data.Dispose();
+            BlitUtility.Dispose();
             
             m_GameCameraRenderer.Dispose();
             m_GameCameraRenderer = null;

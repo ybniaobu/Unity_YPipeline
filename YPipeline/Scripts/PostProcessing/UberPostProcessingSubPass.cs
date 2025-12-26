@@ -46,21 +46,7 @@ namespace YPipeline
         private RTHandle m_SpectralLut;
         private RTHandle m_ExtraLut;
         
-        private const string k_UberPostProcessing = "Hidden/YPipeline/UberPostProcessing";
         private Material m_UberPostProcessingMaterial;
-
-        private Material UberPostProcessingMaterial
-        {
-            get
-            {
-                if (m_UberPostProcessingMaterial == null)
-                {
-                    m_UberPostProcessingMaterial = new Material(Shader.Find(k_UberPostProcessing));
-                    m_UberPostProcessingMaterial.hideFlags = HideFlags.HideAndDontSave;
-                }
-                return m_UberPostProcessingMaterial;
-            }
-        }
 
         private Texture2D m_InternalSpectralLut;
 
@@ -92,8 +78,12 @@ namespace YPipeline
                 return m_InternalSpectralLut;
             }
         }
-        
-        protected override void Initialize(ref YPipelineData data) { }
+
+        protected override void Initialize(ref YPipelineData data)
+        {
+            m_UberPostProcessingMaterial = new Material(data.runtimeResources.UberPostProcessingShader);
+            m_UberPostProcessingMaterial.hideFlags = HideFlags.HideAndDontSave;
+        }
 
         public override void OnDispose()
         {
@@ -123,7 +113,7 @@ namespace YPipeline
 
             using (var builder = data.renderGraph.AddRasterRenderPass<UberPostPassData>("Uber Post Processing", out var passData))
             {
-                passData.material = UberPostProcessingMaterial;
+                passData.material = m_UberPostProcessingMaterial;
 
                 if (data.asset.antiAliasingMode == AntiAliasingMode.TAA)
                 {

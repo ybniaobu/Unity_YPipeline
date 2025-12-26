@@ -43,23 +43,13 @@ namespace YPipeline
         private LiftGammaGain m_LiftGammaGain;
         private ToneMapping m_ToneMapping;
         
-        private const string k_ColorGradingLut = "Hidden/YPipeline/ColorGradingLut";
         private Material m_ColorGradingLutMaterial;
 
-        private Material ColorGradingLutMaterial
+        protected override void Initialize(ref YPipelineData data)
         {
-            get
-            {
-                if (m_ColorGradingLutMaterial == null)
-                {
-                    m_ColorGradingLutMaterial = new Material(Shader.Find(k_ColorGradingLut));
-                    m_ColorGradingLutMaterial.hideFlags = HideFlags.HideAndDontSave;
-                }
-                return m_ColorGradingLutMaterial;
-            }
+            m_ColorGradingLutMaterial = new Material(data.runtimeResources.ColorGradingLutShader);
+            m_ColorGradingLutMaterial.hideFlags = HideFlags.HideAndDontSave;
         }
-        
-        protected override void Initialize(ref YPipelineData data) { }
 
         public override void OnDispose()
         {
@@ -82,7 +72,7 @@ namespace YPipeline
 
             using (var builder = data.renderGraph.AddRasterRenderPass<ColorGradingLutPassData>("Color Grading Lut", out var passData))
             {
-                passData.material = ColorGradingLutMaterial;
+                passData.material = m_ColorGradingLutMaterial;
                 
                 builder.AllowPassCulling(false);
                 

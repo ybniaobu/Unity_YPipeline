@@ -14,13 +14,11 @@ namespace YPipeline
         public bool showLightTiles;
         public float tileOpacity = 0.5f;
         
-        private const string k_LightCullingDebug = "Hidden/YPipeline/Debug/LightCullingDebug";
         public Material lightCullingDebugMaterial;
         
-        
-        public void Initialize()
+        public void Initialize(YPipelineDebugResources debugResources)
         {
-            lightCullingDebugMaterial = CoreUtils.CreateEngineMaterial(k_LightCullingDebug);
+            lightCullingDebugMaterial = CoreUtils.CreateEngineMaterial(debugResources.lightCullingDebugShader);
             
             DebugManager.instance.GetPanel(k_PanelName, true, 0).children.Add(
                 new DebugUI.RuntimeDebugShadersMessageBox(),

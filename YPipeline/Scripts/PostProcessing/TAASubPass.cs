@@ -33,22 +33,13 @@ namespace YPipeline
         
         private TAA m_TAA;
         
-        private const string k_TAA = "Hidden/YPipeline/TAA";
         private Material m_TAAMaterial;
-        private Material TAAMaterial
-        {
-            get
-            {
-                if (m_TAAMaterial == null)
-                {
-                    m_TAAMaterial = new Material(Shader.Find(k_TAA));
-                    m_TAAMaterial.hideFlags = HideFlags.HideAndDontSave;
-                }
-                return m_TAAMaterial;
-            }
-        }
 
-        protected override void Initialize(ref YPipelineData data) { }
+        protected override void Initialize(ref YPipelineData data)
+        {
+            m_TAAMaterial = new Material(data.runtimeResources.TAAShader);
+            m_TAAMaterial.hideFlags = HideFlags.HideAndDontSave;
+        }
 
         public override void OnDispose()
         {
@@ -76,7 +67,7 @@ namespace YPipeline
                 // TODO: 暂时使用 UnsafePass，因为 ComputePass 无法 Copy；
                 using (var builder = data.renderGraph.AddUnsafePass<TAAPassData>("TAA", out var passData))
                 {
-                    passData.material = TAAMaterial;
+                    passData.material = m_TAAMaterial;
                     passData.isFirstFrame = Time.frameCount == 1;
 
                     passData.colorAttachment = data.CameraColorAttachment;

@@ -22,13 +22,19 @@ namespace YPipeline
         
         private RTHandle m_EnvBRDFLut;
         private RTHandle m_BlueNoise64;
-        private RTHandle m_STBN128Scalar;
+        private RTHandle m_STBN128Scalar3;
+        private RTHandle m_STBN128Vec3;
+        private RTHandle m_STBN128UnitVec3;
+        private RTHandle m_STBN128CosineUnitVec3;
 
         protected override void Initialize(ref YPipelineData data)
         {
             m_EnvBRDFLut = RTHandles.Alloc(data.runtimeResources.EnvironmentBRDFLut);
             m_BlueNoise64 = RTHandles.Alloc(data.runtimeResources.BlueNoise64);
-            m_STBN128Scalar = RTHandles.Alloc(data.runtimeResources.STBN128Scale3);
+            m_STBN128Scalar3 = RTHandles.Alloc(data.runtimeResources.STBN128Scale3);
+            m_STBN128Vec3  = RTHandles.Alloc(data.runtimeResources.STBN128Vec3);
+            m_STBN128UnitVec3  = RTHandles.Alloc(data.runtimeResources.STBN128UnitVec3);
+            m_STBN128CosineUnitVec3 = RTHandles.Alloc(data.runtimeResources.STBN128CosineUnitVec3);
         }
 
         protected override void OnDispose()
@@ -40,10 +46,16 @@ namespace YPipeline
             
             RTHandles.Release(m_EnvBRDFLut);
             RTHandles.Release(m_BlueNoise64);
-            RTHandles.Release(m_STBN128Scalar);
+            RTHandles.Release(m_STBN128Scalar3);
+            RTHandles.Release(m_STBN128Vec3);
+            RTHandles.Release(m_STBN128UnitVec3);
+            RTHandles.Release(m_STBN128CosineUnitVec3);
             m_EnvBRDFLut = null;
             m_BlueNoise64 = null;
-            m_STBN128Scalar = null;
+            m_STBN128Scalar3 = null;
+            m_STBN128Vec3 = null;
+            m_STBN128UnitVec3 = null;
+            m_STBN128CosineUnitVec3 = null;
         }
         
         protected override void OnRecord(ref YPipelineData data)
@@ -64,9 +76,21 @@ namespace YPipeline
                 builder.UseTexture(blueNoise64, AccessFlags.Read);
                 builder.SetGlobalTextureAfterPass(blueNoise64, YPipelineShaderIDs.k_BlueNoise64ID);
                 
-                TextureHandle stbn128 = data.renderGraph.ImportTexture(m_STBN128Scalar);
-                builder.UseTexture(stbn128, AccessFlags.Read);
-                builder.SetGlobalTextureAfterPass(stbn128, YPipelineShaderIDs.k_STBN128ScalarID);
+                TextureHandle stbn128Scalar = data.renderGraph.ImportTexture(m_STBN128Scalar3);
+                builder.UseTexture(stbn128Scalar, AccessFlags.Read);
+                builder.SetGlobalTextureAfterPass(stbn128Scalar, YPipelineShaderIDs.k_STBN128ScalarID);
+                
+                TextureHandle stbn128Vec3 = data.renderGraph.ImportTexture(m_STBN128Vec3);
+                builder.UseTexture(stbn128Vec3, AccessFlags.Read);
+                builder.SetGlobalTextureAfterPass(stbn128Vec3, YPipelineShaderIDs.k_STBN128Vec3ID);
+                
+                TextureHandle stbn128UnitVec3 = data.renderGraph.ImportTexture(m_STBN128UnitVec3);
+                builder.UseTexture(stbn128UnitVec3, AccessFlags.Read);
+                builder.SetGlobalTextureAfterPass(stbn128UnitVec3, YPipelineShaderIDs.k_STBN128UnitVec3ID);
+                
+                TextureHandle stbn128CosineUnitVec3 = data.renderGraph.ImportTexture(m_STBN128CosineUnitVec3);
+                builder.UseTexture(stbn128CosineUnitVec3, AccessFlags.Read);
+                builder.SetGlobalTextureAfterPass(stbn128CosineUnitVec3, YPipelineShaderIDs.k_STBN128CosineUnitVec3ID);
                 
                 // ----------------------------------------------------------------------------------------------------
                 // Attachments

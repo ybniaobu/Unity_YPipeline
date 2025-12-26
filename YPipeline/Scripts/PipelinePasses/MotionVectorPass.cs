@@ -16,22 +16,13 @@ namespace YPipeline
             public RendererListHandle alphaTestRendererList;
         }
         
-        private const string k_CameraMotionVector = "Hidden/YPipeline/CameraMotionVector";
         private Material m_CameraMotionVectorMaterial;
-        private Material CameraMotionVectorMaterial
+
+        protected override void Initialize(ref YPipelineData data)
         {
-            get
-            {
-                if (m_CameraMotionVectorMaterial == null)
-                {
-                    m_CameraMotionVectorMaterial = new Material(Shader.Find(k_CameraMotionVector));
-                    m_CameraMotionVectorMaterial.hideFlags = HideFlags.HideAndDontSave;
-                }
-                return m_CameraMotionVectorMaterial;
-            }
+            m_CameraMotionVectorMaterial = new Material(data.runtimeResources.CameraMotionVectorShader);
+            m_CameraMotionVectorMaterial.hideFlags = HideFlags.HideAndDontSave;
         }
-        
-        protected override void Initialize(ref YPipelineData data) { }
 
         protected override void OnDispose()
         {
@@ -85,7 +76,7 @@ namespace YPipeline
                 builder.UseRendererList(passData.alphaTestRendererList);
                 
                 // Camera Motion Vector
-                passData.cameraMotionVectorMaterial = CameraMotionVectorMaterial;
+                passData.cameraMotionVectorMaterial = m_CameraMotionVectorMaterial;
                 builder.UseTexture(data.CameraDepthTexture, AccessFlags.Read);
                 
                 // Render Graph Setting

@@ -120,13 +120,76 @@ namespace YPipeline
             set => this.SetValueAndNotify(ref m_DefaultPBRShader, value, nameof(m_DefaultPBRShader));
         }
 
+        [SerializeField] [ResourcePath("YPipeline/Shaders/PostProcessing/Copy.shader")]
+        private Shader m_CopyShader;
+        public Shader CopyShader
+        {
+            get => m_CopyShader;
+            set => this.SetValueAndNotify(ref m_CopyShader, value, nameof(m_CopyShader));
+        }
+        
+        [SerializeField] [ResourcePath("YPipeline/Shaders/Utilities/CopyDepth.shader")]
+        private Shader m_CopyDepthShader;
+        public Shader CopyDepthShader
+        {
+            get => m_CopyDepthShader;
+            set => this.SetValueAndNotify(ref m_CopyDepthShader, value, nameof(m_CopyDepthShader));
+        }
+        
+        [SerializeField] [ResourcePath("YPipeline/Shaders/PipelineShader/CameraMotionVector/CameraMotionVector.shader")]
+        private Shader m_CameraMotionVectorShader;
+        public Shader CameraMotionVectorShader
+        {
+            get => m_CameraMotionVectorShader;
+            set => this.SetValueAndNotify(ref m_CameraMotionVectorShader, value, nameof(m_CameraMotionVectorShader));
+        }
+
         [SerializeField] [ResourcePath("YPipeline/Shaders/PipelineShader/DeferredLighting/DeferredLighting.shader")]
         private Shader m_DeferredLightingShader;
-
         public Shader DeferredLightingShader
         {
             get => m_DeferredLightingShader;
             set => this.SetValueAndNotify(ref m_DeferredLightingShader, value, nameof(m_DeferredLightingShader));
+        }
+
+        [SerializeField] [ResourcePath("YPipeline/Shaders/PostProcessing/TAA.shader")]
+        private Shader m_TAAShader;
+        public Shader TAAShader
+        {
+            get => m_TAAShader;
+            set => this.SetValueAndNotify(ref m_TAAShader, value, nameof(m_TAAShader));
+        }
+
+        [SerializeField] [ResourcePath("YPipeline/Shaders/PostProcessing/Bloom.shader")]
+        private Shader m_BloomShader;
+        public Shader BloomShader
+        {
+            get => m_BloomShader;
+            set => this.SetValueAndNotify(ref m_BloomShader, value, nameof(m_BloomShader));
+        }
+
+        [SerializeField] [ResourcePath("YPipeline/Shaders/PostProcessing/ColorGradingLut.shader")]
+        private Shader m_ColorGradingLutShader;
+        public Shader ColorGradingLutShader
+        {
+            get => m_ColorGradingLutShader;
+            set => this.SetValueAndNotify(ref m_ColorGradingLutShader, value, nameof(m_ColorGradingLutShader));
+        }
+        
+        [SerializeField] [ResourcePath("YPipeline/Shaders/PostProcessing/UberPostProcessing.shader")]
+        private Shader m_UberPostProcessingShader;
+        public Shader UberPostProcessingShader
+        {
+            get => m_UberPostProcessingShader;
+            set => this.SetValueAndNotify(ref m_UberPostProcessingShader, value, nameof(m_UberPostProcessingShader));
+        }
+
+        [SerializeField] [ResourcePath("YPipeline/Shaders/PostProcessing/FinalPostProcessing.shader")]
+        private Shader m_FinalPostProcessing;
+        public Shader FinalPostProcessing
+        {
+            get => m_FinalPostProcessing;
+            set => this.SetValueAndNotify(ref m_FinalPostProcessing, value, nameof(m_FinalPostProcessing));
         }
 
         #endregion

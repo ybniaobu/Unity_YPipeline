@@ -18,9 +18,8 @@ namespace YPipeline
         // ----------------------------------------------------------------------------------------------------
         
         #region Materials
-
-        [SerializeField]
-        [ResourcePath("YPipeline/PipelineResources/DefaultMaterials/StandardPBR.mat")]
+        
+        [SerializeField] [ResourcePath("YPipeline/PipelineResources/DefaultMaterials/StandardPBR.mat")]
         private Material m_DefaultPBRMaterial;
         public Material DefaultPBRMaterial
         {

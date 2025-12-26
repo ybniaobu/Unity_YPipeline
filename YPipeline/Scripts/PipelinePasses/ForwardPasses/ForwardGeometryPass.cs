@@ -23,7 +23,7 @@ namespace YPipeline
             {
                 RendererListDesc opaqueRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_ForwardOpaqueShaderTagIds, data.cullingResults, data.camera)
                 {
-                    rendererConfiguration = PerObjectData.ReflectionProbes | PerObjectData.Lightmaps | PerObjectData.LightProbe,
+                    rendererConfiguration = PerObjectData.ReflectionProbes | PerObjectData.Lightmaps | PerObjectData.LightProbe, // TODO：使用自己上传的全局球谐后，删除 PerObjectData.LightProbe
                     renderQueueRange = new RenderQueueRange(2000, 2449),
                     sortingCriteria = SortingCriteria.OptimizeStateChanges
                 };

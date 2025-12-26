@@ -195,8 +195,14 @@ TEXTURE2D(_BlueNoise64);
 float4 _BlueNoise64_TexelSize;
 
 // STBN
-TEXTURE2D(_STBN128Scalar);
-float4 _STBN128Scalar_TexelSize;
+TEXTURE2D(_STBN128Scalar3);
+float4 _STBN128Scalar3_TexelSize;
+TEXTURE2D(_STBN128Vec3);
+float4 _STBN128Vec3_TexelSize;
+TEXTURE2D(_STBN128UnitVec3);
+float4 _STBN128UnitVec3_TexelSize;
+TEXTURE2D(_STBN128CosineUnitVec3);
+float4 _STBN128CosineUnitVec3_TexelSize;
 
 // General Samplers
 SAMPLER(sampler_PointRepeat);

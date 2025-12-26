@@ -52,6 +52,7 @@ namespace YPipeline
             if (data.isAmbientOcclusionTextureCreated)
             {
                 // TODO：暂时使用 UnsafePass，因为 ComputePass 无法 Copy；
+                // TODO: 整理下面代码，应该有很多行可以合并的
                 using (var builder = data.renderGraph.AddUnsafePass<AmbientOcclusionPassData>("Ambient Occlusion", out var passData))
                 {
                     int halfResolution = m_AO.halfResolution.value ? 2 : 1;

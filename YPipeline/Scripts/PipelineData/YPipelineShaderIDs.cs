@@ -71,6 +71,9 @@ namespace YPipeline
         public static readonly int k_EnvBRDFLutID = Shader.PropertyToID("_EnvBRDFLut");
         public static readonly int k_BlueNoise64ID = Shader.PropertyToID("_BlueNoise64");
         public static readonly int k_STBN128ScalarID = Shader.PropertyToID("_STBN128Scalar");
+        public static readonly int k_STBN128Vec3ID = Shader.PropertyToID("_STBN128Vec3");
+        public static readonly int k_STBN128UnitVec3ID = Shader.PropertyToID("_STBN128UnitVec3");
+        public static readonly int k_STBN128CosineUnitVec3ID = Shader.PropertyToID("_STBN128CosineUnitVec3");
         
         // ----------------------------------------------------------------------------------------------------
         // Shadow Textures IDs

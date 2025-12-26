@@ -31,6 +31,7 @@ MonoBehaviour:
       - rid: 2073298774936518742
       - rid: 2073298774936518743
       - rid: 2073298774936518744
+      - rid: 2073299092847722591
     m_RuntimeSettings:
       m_List: []
   references:
@@ -230,7 +231,20 @@ MonoBehaviour:
         m_STBN128Vec3: {fileID: 2800000, guid: c9fafd6510965af4894085b94f9777a0, type: 3}
         m_DefaultPBRShader: {fileID: 4800000, guid: 19968cea1ec24a14a4525b681daf7a75,
           type: 3}
+        m_CopyShader: {fileID: 4800000, guid: 32a48a1170834648a362d934f784a8eb, type: 3}
+        m_CopyDepthShader: {fileID: 4800000, guid: 82558231c9b94257ba617bb80e1be1c5,
+          type: 3}
+        m_CameraMotionVectorShader: {fileID: 4800000, guid: 1535ddc7e2ef4f1193855f3204de9307,
+          type: 3}
         m_DeferredLightingShader: {fileID: 4800000, guid: 2904dbbf634f4b16a2cdbc072024eb3e,
+          type: 3}
+        m_TAAShader: {fileID: 4800000, guid: 99f8090e29864395b0201bef52891440, type: 3}
+        m_BloomShader: {fileID: 4800000, guid: db9dfdaf4623e064a94e0532c3fdc7cd, type: 3}
+        m_ColorGradingLutShader: {fileID: 4800000, guid: 51552d58ca5940b1985d0cc49da9e5a4,
+          type: 3}
+        m_UberPostProcessingShader: {fileID: 4800000, guid: 4979e4243d7e4bce88a125a17f29c4b5,
+          type: 3}
+        m_FinalPostProcessing: {fileID: 4800000, guid: 28ef6031c11341e2ba417ef3dbb86ee9,
           type: 3}
         m_TiledLightCullingCS: {fileID: 7200000, guid: f0b81bd803cf09b48a241b0856dbef54,
           type: 3}
@@ -242,3 +256,9 @@ MonoBehaviour:
         m_Version: 1
         m_DefaultPBRMaterial: {fileID: 2100000, guid: c0ab7d7107a2e474ba54f45508a1308e,
           type: 2}
+    - rid: 2073299092847722591
+      type: {class: YPipelineDebugResources, ns: YPipeline, asm: Assembly-CSharp}
+      data:
+        m_Version: 1
+        m_LightCullingDebugShader: {fileID: 4800000, guid: 9778f837e421e8442987327327e04c4c,
+          type: 3}

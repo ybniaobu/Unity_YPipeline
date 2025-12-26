@@ -15,8 +15,8 @@ float3 AddNoiseToSamplingPosition_YPipeline(float3 positionWS, float2 pixelCoord
     float3 top = mul((float3x3)GetViewToWorldMatrix(), float3(0.0, 1.0, 0.0));
     
     float2 frameMagicScale = k_Halton[_APVFrameIndex % 64 + 1];
-    int2 sampleCoord = (pixelCoord + _APVFrameIndex * frameMagicScale) % _STBN128Scalar_TexelSize.zw;
-    float3 noise = LOAD_TEXTURE2D_LOD(_STBN128Scalar, sampleCoord, 0).rgb;
+    int2 sampleCoord = (pixelCoord + _APVFrameIndex * frameMagicScale) % _STBN128UnitVec3_TexelSize.zw;
+    float3 noise = LOAD_TEXTURE2D_LOD(_STBN128UnitVec3, sampleCoord, 0).rgb;
     direction += top * (noise.y - 0.5) + right * (noise.z - 0.5);
     return positionWS + noise.x * _APVSamplingNoise * direction;
 }

@@ -30,23 +30,13 @@ namespace YPipeline
         
         private Bloom m_Bloom;
         
-        private const string k_Bloom = "Hidden/YPipeline/Bloom";
         private Material m_BloomMaterial;
 
-        private Material BloomMaterial
+        protected override void Initialize(ref YPipelineData data)
         {
-            get
-            {
-                if (m_BloomMaterial == null)
-                {
-                    m_BloomMaterial = new Material(Shader.Find(k_Bloom));
-                    m_BloomMaterial.hideFlags = HideFlags.HideAndDontSave;
-                }
-                return m_BloomMaterial;
-            }
+            m_BloomMaterial = new Material(data.runtimeResources.BloomShader);
+            m_BloomMaterial.hideFlags = HideFlags.HideAndDontSave;
         }
-
-        protected override void Initialize(ref YPipelineData data) { }
 
         public override void OnDispose()
         {
@@ -64,7 +54,7 @@ namespace YPipeline
             // TODO：看看 URP 怎么 RasterPass 的。
             using (var builder = data.renderGraph.AddUnsafePass<BloomPassData>("Bloom", out var passData, ProfilingSampler.Get(YPipelineProfileIDs.Bloom)))
             {
-                passData.material = BloomMaterial;
+                passData.material = m_BloomMaterial;
                 passData.isBloomEnabled = m_Bloom.IsActive();
                 
                 builder.AllowPassCulling(false);

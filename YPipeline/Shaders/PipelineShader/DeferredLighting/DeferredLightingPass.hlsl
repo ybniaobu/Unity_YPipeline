@@ -39,10 +39,11 @@ void InitializeGeometryParams(Varyings IN, out GeometryParams geometryParams)
     float depth = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, IN.positionHCS.xy, 0).r;
     float4 NDC = GetNDCFromUVAndDepth(IN.uv, depth);
     geometryParams.positionWS = TransformNDCToWorld(NDC, UNITY_MATRIX_I_VP);
+    geometryParams.normalWS = 0.0; // 无需使用，在 standardPBRParams.N 里；
+    geometryParams.tangentWS = 0.0; // 无需使用
     geometryParams.uv = IN.uv;
     geometryParams.pixelCoord = IN.positionHCS.xy;
     geometryParams.screenUV = IN.uv;
-    geometryParams.normalWS = 0.0; // 暂时不使用
 }
 
 void InitializeStandardPBRParams(in GeometryParams geometryParams, out StandardPBRParams standardPBRParams, out uint materialID)
@@ -75,10 +76,6 @@ void InitializeStandardPBRParams(in GeometryParams geometryParams, out StandardP
 
 float4 DeferredLightingFrag(Varyings IN) : SV_TARGET
 {
-    // ------------------------- PBR Parameters -------------------------
-    
-    RenderingEquationContent renderingEquationContent = (RenderingEquationContent) 0;
-    
     GeometryParams geometryParams = (GeometryParams) 0;
     InitializeGeometryParams(IN, geometryParams);
     
@@ -86,56 +83,19 @@ float4 DeferredLightingFrag(Varyings IN) : SV_TARGET
     StandardPBRParams standardPBRParams = (StandardPBRParams) 0;
     InitializeStandardPBRParams(geometryParams, standardPBRParams, materialID);
     
-    // [forcecase] switch (materialID)
-    // {
-    //     case MATERIALID_STANDARD_PBR:
-    //     break;
-    // }
-    // TODO: 把下面包装成一个函数 ！！！！！！！！！！！！！！！！！！！！！！！！！！
+    RenderingEquationContent renderingEquationContent = (RenderingEquationContent) 0;
     
-    // ------------------------- Indirect Lighting -------------------------
-    
-    float3 envBRDF = SampleEnvLut(ENVIRONMENT_BRDF_LUT, LUT_SAMPLER, standardPBRParams.NoV, standardPBRParams.roughness);
-    float3 energyCompensation = 1.0 + standardPBRParams.F0 * (1.0 / envBRDF.x - 1) * 0.5; // 0.5 is a magic number
-    
-    renderingEquationContent.indirectLightDiffuse += CalculateDiffuseIndirectLighting(geometryParams, standardPBRParams, envBRDF.b);
-
-    //renderingEquationContent.indirectLightSpecular += CalculateIBL_Specular(standardPBRParams, unity_SpecCube0, samplerunity_SpecCube0, envBRDF.rg, energyCompensation);
-    renderingEquationContent.indirectLightSpecular += CalculateIBL_Specular_RemappedMipmap(standardPBRParams, unity_SpecCube0,
-        samplerunity_SpecCube0, envBRDF.rg, energyCompensation);
-    
-    // ------------------------- Direct Lighting - Sun Light -------------------------
-    
-    LightParams sunLightParams = (LightParams) 0;
-    InitializeSunLightParams(sunLightParams, standardPBRParams.V, standardPBRParams.N, geometryParams.positionWS, geometryParams.pixelCoord);
-
-    BRDFParams sunBRDFParams = (BRDFParams) 0;
-    InitializeBRDFParams(sunBRDFParams, standardPBRParams.N, sunLightParams.L, standardPBRParams.V, sunLightParams.H);
-
-    renderingEquationContent.directSunLight += CalculateLightIrradiance(sunLightParams) * StandardPBR_EnergyCompensation(sunBRDFParams, standardPBRParams, energyCompensation);
-    
-    // ------------------------- Direct Lighting - Punctual Light -------------------------
-
-    LightsTileParams lightsTileParams = (LightsTileParams) 0;   
-    InitializeLightsTileParams(lightsTileParams, geometryParams.pixelCoord);
-    
-    for (int i = lightsTileParams.headerIndex + 1; i <= lightsTileParams.lastLightIndex; i++)
+    [forcecase] switch (materialID)
     {
-        uint lightIndex = _TilesLightIndicesBuffer[i];
+        case MATERIALID_STANDARD_PBR: StandardPBRShading(geometryParams, standardPBRParams, renderingEquationContent);
+        break;
         
-        LightParams punctualLightParams = (LightParams) 0;
-        
-        UNITY_BRANCH
-        if (GetPunctualLightType(lightIndex) == SPOT_LIGHT) InitializeSpotLightParams(punctualLightParams, lightIndex, standardPBRParams.V, standardPBRParams.N, geometryParams.positionWS, geometryParams.pixelCoord);
-        else if (GetPunctualLightType(lightIndex) == POINT_LIGHT) InitializePointLightParams(punctualLightParams, lightIndex, standardPBRParams.V, standardPBRParams.N, geometryParams.positionWS, geometryParams.pixelCoord);
-    
-        BRDFParams punctualBRDFParams = (BRDFParams) 0;
-        InitializeBRDFParams(punctualBRDFParams, standardPBRParams.N, punctualLightParams.L, standardPBRParams.V, punctualLightParams.H);
-    
-        renderingEquationContent.directPunctualLights += CalculateLightIrradiance(punctualLightParams) * StandardPBR_EnergyCompensation(punctualBRDFParams, standardPBRParams, energyCompensation);
+        default: StandardPBRShading(geometryParams, standardPBRParams, renderingEquationContent);
+        break;
     }
     
-    return float4(renderingEquationContent.directSunLight + renderingEquationContent.directPunctualLights + renderingEquationContent.indirectLightDiffuse + renderingEquationContent.indirectLightSpecular + standardPBRParams.emission, 1.0);
+    
+    return float4(CombineRenderingEquationContent(renderingEquationContent), 1.0);
 }
 
 #endif

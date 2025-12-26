@@ -27,24 +27,13 @@ namespace YPipeline
         private RTHandle m_FilmGrainTexture;
         private System.Random m_Random;
         
-        private const string k_FinalPostProcessing = "Hidden/YPipeline/FinalPostProcessing";
         private Material m_FinalPostProcessingMaterial;
-        
-        private Material FinalPostProcessingMaterial
-        {
-            get
-            {
-                if (m_FinalPostProcessingMaterial == null)
-                {
-                    m_FinalPostProcessingMaterial = new Material(Shader.Find(k_FinalPostProcessing));
-                    m_FinalPostProcessingMaterial.hideFlags = HideFlags.HideAndDontSave;
-                }
-                return m_FinalPostProcessingMaterial;
-            }
-        }
         
         protected override void Initialize(ref YPipelineData data)
         {
+            m_FinalPostProcessingMaterial = new Material(data.runtimeResources.FinalPostProcessing);
+            m_FinalPostProcessingMaterial.hideFlags = HideFlags.HideAndDontSave;
+            
             m_Random = new System.Random();
         }
 
@@ -67,7 +56,7 @@ namespace YPipeline
             
             using (var builder = data.renderGraph.AddRasterRenderPass<FinalPostPassData>("Final Post Processing", out var passData))
             {
-                passData.material = FinalPostProcessingMaterial;
+                passData.material = m_FinalPostProcessingMaterial;
                 passData.finalTexture = data.CameraFinalTexture;
                 builder.UseTexture(data.CameraFinalTexture, AccessFlags.Read);
                 builder.SetRenderAttachment(data.CameraColorTarget, 0, AccessFlags.Write);
