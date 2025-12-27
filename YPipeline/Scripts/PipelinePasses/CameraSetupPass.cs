@@ -62,7 +62,7 @@ namespace YPipeline
 
         protected override void OnRecord(ref YPipelineData data)
         {
-            using (var builder = data.renderGraph.AddRasterRenderPass<CameraSetupPassData>("Setup Camera Properties", out var passData))
+            using (var builder = data.renderGraph.AddRasterRenderPass<CameraSetupPassData>("Set Camera Properties", out var passData))
             {
                 passData.camera = data.camera;
                 YPipelineCamera yCamera = data.camera.GetYPipelineCamera();

@@ -29,10 +29,22 @@
 // Diffuse Indirect Lighting
 // ----------------------------------------------------------------------------------------------------
 
+// TODO: 修改所以 Diffuse GI 的这个函数
+float3 CalculateIrradiance(in GeometryParams geometryParams, in StandardPBRParams standardPBRParams, float envBRDF_Diffuse)
+{
+    float3 irradiance = SAMPLE_TEXTURE2D_LOD(_IrradianceTexture, sampler_LinearClamp, geometryParams.screenUV, 0).rgb;
+    float3 envBRDFDiffuse = standardPBRParams.albedo * envBRDF_Diffuse;
+    float Kd = 1.0 - standardPBRParams.metallic;
+    float3 Diffuse = irradiance * envBRDFDiffuse * Kd * standardPBRParams.ao;
+    return Diffuse;
+}
+
 // TODO: 改为 Macro 形式
 float3 CalculateDiffuseIndirectLighting(in GeometryParams geometryParams, in StandardPBRParams standardPBRParams, float envBRDF_Diffuse)
 {
-    #if defined(PROBE_VOLUMES_L1) || defined(PROBE_VOLUMES_L2)
+    #if defined(_SCREEN_SPACE_IRRADIANCE)
+        return CalculateIrradiance(geometryParams, standardPBRParams, envBRDF_Diffuse);
+    #elif defined(PROBE_VOLUMES_L1) || defined(PROBE_VOLUMES_L2)
         return CalculateProbeVolume(geometryParams, standardPBRParams, envBRDF_Diffuse);
     #elif defined(LIGHTMAP_ON)
         return CalculateLightMap(geometryParams.lightMapUV, standardPBRParams, envBRDF_Diffuse);

@@ -21,7 +21,7 @@ namespace YPipeline
 
         public void SetPerCameraDataMatrices(Matrix4x4 viewMatrix, Matrix4x4 projectionMatrix, Matrix4x4 jitteredProjectionMatrix)
         {
-            if (Time.frameCount == 1 || m_IsPerCameraDataReset)
+            if (Time.frameCount == 0 || m_IsPerCameraDataReset)
             {
                 this.previousViewMatrix = viewMatrix;
                 this.previousProjectionMatrix = projectionMatrix;

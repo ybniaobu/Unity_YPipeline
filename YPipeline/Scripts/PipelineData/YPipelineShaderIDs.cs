@@ -50,6 +50,8 @@ namespace YPipeline
         public static readonly int k_ColorTextureID = Shader.PropertyToID("_CameraColorTexture");
         public static readonly int k_DepthTextureID = Shader.PropertyToID("_CameraDepthTexture");
         public static readonly int k_MotionVectorTextureID = Shader.PropertyToID("_MotionVectorTexture");
+        public static readonly int k_IrradianceTextureID = Shader.PropertyToID("_IrradianceTexture");
+        public static readonly int k_IrradianceHistoryID = Shader.PropertyToID("_IrradianceHistory");
         public static readonly int k_AmbientOcclusionTextureID = Shader.PropertyToID("_AmbientOcclusionTexture");
         public static readonly int k_AmbientOcclusionHistoryID = Shader.PropertyToID("_AmbientOcclusionHistory");
         
@@ -70,7 +72,7 @@ namespace YPipeline
         
         public static readonly int k_EnvBRDFLutID = Shader.PropertyToID("_EnvBRDFLut");
         public static readonly int k_BlueNoise64ID = Shader.PropertyToID("_BlueNoise64");
-        public static readonly int k_STBN128ScalarID = Shader.PropertyToID("_STBN128Scalar");
+        public static readonly int k_STBN128Scalar3ID = Shader.PropertyToID("_STBN128Scalar3");
         public static readonly int k_STBN128Vec3ID = Shader.PropertyToID("_STBN128Vec3");
         public static readonly int k_STBN128UnitVec3ID = Shader.PropertyToID("_STBN128UnitVec3");
         public static readonly int k_STBN128CosineUnitVec3ID = Shader.PropertyToID("_STBN128CosineUnitVec3");
@@ -258,6 +260,9 @@ namespace YPipeline
         
         // SSAO
         public const string k_ScreenSpaceAmbientOcclusion = "_SCREEN_SPACE_AMBIENT_OCCLUSION";
+        
+        // SSDGI
+        public const string k_ScreenSpaceIrradiance = "_SCREEN_SPACE_IRRADIANCE";
         
         // ----------------------------------------------------------------------------------------------------
         // Light Culling Related Keywords

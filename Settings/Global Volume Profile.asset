@@ -1,5 +1,30 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-8600194741728878130
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 52c014f205234c41995af1f8e28ff788, type: 3}
+  m_Name: ScreenSpaceDiffuseGlobalIllumination
+  m_EditorClassIdentifier: Assembly-CSharp::YPipeline.ScreenSpaceDiffuseGlobalIllumination
+  active: 1
+  mode:
+    m_OverrideState: 1
+    m_Value: 1
+  hbilIntensity:
+    m_OverrideState: 1
+    m_Value: 1
+  sampleCount:
+    m_OverrideState: 1
+    m_Value: 12
+  hbilRadius:
+    m_OverrideState: 1
+    m_Value: 2
 --- !u!114 &-4627504947601211039
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -453,6 +478,7 @@ MonoBehaviour:
   - {fileID: 8792400353565013660}
   - {fileID: 3228833441281930345}
   - {fileID: 5557600475121756230}
+  - {fileID: -8600194741728878130}
 --- !u!114 &1065390465042528501
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -657,7 +683,7 @@ MonoBehaviour:
     m_Value: 2
   aCESMode:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 1
   aGXMode:
     m_OverrideState: 1
     m_Value: 0

@@ -93,10 +93,9 @@ namespace YPipeline
                         builder.UseTexture(data.CameraColorAttachment, AccessFlags.Read);
                     }
                     
-                    DefaultFormat format = data.asset.enableHDRColorBuffer ? DefaultFormat.HDR : DefaultFormat.LDR;
                     TextureDesc bloomTextureDesc = new TextureDesc(width >> 1, height >> 1)
                     {
-                        colorFormat = SystemInfo.GetGraphicsFormat(format),
+                        colorFormat = GraphicsFormat.R16G16B16A16_SFloat,
                         filterMode = FilterMode.Bilinear,
                         name = "Bloom Texture"
                     };
@@ -106,7 +105,7 @@ namespace YPipeline
 
                     TextureDesc bloomPrefilteredTextureDesc = new TextureDesc(width, height)
                     {
-                        colorFormat = SystemInfo.GetGraphicsFormat(format),
+                        colorFormat = GraphicsFormat.R16G16B16A16_SFloat,
                         filterMode = FilterMode.Bilinear,
                         name = "Bloom Prefiltered Texture"
                     };
@@ -118,7 +117,7 @@ namespace YPipeline
                         height >>= 1;
                         TextureDesc bloomPyramidUpDesc = new TextureDesc(width, height)
                         {
-                            colorFormat = SystemInfo.GetGraphicsFormat(format),
+                            colorFormat = GraphicsFormat.R16G16B16A16_SFloat,
                             filterMode = FilterMode.Bilinear,
                             name = "Bloom Pyramid Up"
                             //name = "Bloom Pyramid Up" + i
@@ -127,7 +126,7 @@ namespace YPipeline
                         
                         TextureDesc bloomPyramidDownDesc = new TextureDesc(width, height)
                         {
-                            colorFormat = SystemInfo.GetGraphicsFormat(format),
+                            colorFormat = GraphicsFormat.R16G16B16A16_SFloat,
                             filterMode = FilterMode.Bilinear,
                             name = "Bloom Pyramid Down"
                             //name = "Bloom Pyramid Down" + i

@@ -37,6 +37,9 @@ namespace YPipeline
 
         protected override void Initialize(ref YPipelineData data)
         {
+            var stack = VolumeManager.instance.stack;
+            m_TAA = stack.GetComponent<TAA>();
+            
             m_TAAMaterial = new Material(data.runtimeResources.TAAShader);
             m_TAAMaterial.hideFlags = HideFlags.HideAndDontSave;
         }
@@ -51,104 +54,86 @@ namespace YPipeline
 
         public override void OnRecord(ref YPipelineData data)
         {
-            bool isTAAEnabled = data.asset.antiAliasingMode == AntiAliasingMode.TAA;
-            CoreUtils.SetKeyword(data.cmd, YPipelineKeywords.k_TAA, isTAAEnabled);
-            YPipelineCamera yCamera = data.camera.GetYPipelineCamera();
+            CoreUtils.SetKeyword(data.cmd, YPipelineKeywords.k_TAA, data.IsTAAEnabled);
+            if (!data.IsTAAEnabled) return;
             
-            if (!isTAAEnabled)
+            // TODO: 暂时使用 UnsafePass，因为 ComputePass 无法 Copy；
+            using (var builder = data.renderGraph.AddUnsafePass<TAAPassData>("TAA", out var passData))
             {
-                yCamera.perCameraData.ReleaseTAAHistory();
-            }
-            else
-            {
-                var stack = VolumeManager.instance.stack;
-                m_TAA = stack.GetComponent<TAA>();
+                passData.material = m_TAAMaterial;
+                passData.isFirstFrame = Time.frameCount == 0;
+
+                passData.colorAttachment = data.CameraColorAttachment;
+                builder.UseTexture(data.CameraColorAttachment, AccessFlags.Read);
+                passData.motionVectorTexture = data.MotionVectorTexture;
+                builder.UseTexture(data.MotionVectorTexture, AccessFlags.Read);
+                builder.UseTexture(data.CameraDepthTexture, AccessFlags.Read);
                 
-                // TODO: 暂时使用 UnsafePass，因为 ComputePass 无法 Copy；
-                using (var builder = data.renderGraph.AddUnsafePass<TAAPassData>("TAA", out var passData))
+                // Record shader variables & keywords
+                passData.taaParams = new Vector4(m_TAA.historyBlendFactor.value, m_TAA.varianceCriticalValue.value, 
+                    m_TAA.fixedContrastThreshold.value, m_TAA.relativeContrastThreshold.value);
+
+                passData.is3X3 = m_TAA.neighborhood.value == TAANeighborhood._3X3;
+                passData.isYCoCg = m_TAA.colorSpace.value == TAAColorSpace.YCoCg;
+                passData.isVarianceAABB = m_TAA.AABB.value == AABBMode.Variance;
+                passData.rectifyMode = m_TAA.colorRectifyMode.value;
+                passData.currentFilter = m_TAA.currentFilter.value;
+                passData.historyFilter = m_TAA.historyFilter.value;
+                
+                // TAA history
+                Vector2Int bufferSize = data.BufferSize;
+                
+                YPipelineCamera yCamera = data.camera.GetYPipelineCamera();
+                passData.isTAAHistoryReset = yCamera.perCameraData.IsTAAHistoryReset;
+                yCamera.perCameraData.IsTAAHistoryReset = false;
+                passData.taaHistory = data.TAAHistory;
+                builder.UseTexture(data.TAAHistory, AccessFlags.ReadWrite);
+
+                // Create TAA target
+                TextureDesc taaTargetDesc = new TextureDesc(bufferSize.x, bufferSize.y)
                 {
-                    passData.material = m_TAAMaterial;
-                    passData.isFirstFrame = Time.frameCount == 1;
-
-                    passData.colorAttachment = data.CameraColorAttachment;
-                    builder.UseTexture(data.CameraColorAttachment, AccessFlags.Read);
-                    passData.motionVectorTexture = data.MotionVectorTexture;
-                    builder.UseTexture(data.MotionVectorTexture, AccessFlags.Read);
-                    builder.UseTexture(data.CameraDepthTexture, AccessFlags.Read);
-                    
-                    // Record shader variables & keywords
-                    passData.taaParams = new Vector4(m_TAA.historyBlendFactor.value, m_TAA.varianceCriticalValue.value, 
-                        m_TAA.fixedContrastThreshold.value, m_TAA.relativeContrastThreshold.value);
-
-                    passData.is3X3 = m_TAA.neighborhood.value == TAANeighborhood._3X3;
-                    passData.isYCoCg = m_TAA.colorSpace.value == TAAColorSpace.YCoCg;
-                    passData.isVarianceAABB = m_TAA.AABB.value == AABBMode.Variance;
-                    passData.rectifyMode = m_TAA.colorRectifyMode.value;
-                    passData.currentFilter = m_TAA.currentFilter.value;
-                    passData.historyFilter = m_TAA.historyFilter.value;
-                    
-                    // Import TAA history
-                    Vector2Int bufferSize = data.BufferSize;
+                    format = GraphicsFormat.R16G16B16A16_SFloat,
+                    clearBuffer = true,
+                    anisoLevel = 0,
+                    filterMode = FilterMode.Bilinear,
+                    wrapMode = TextureWrapMode.Clamp,
+                    name = "TAA Target"
+                };
                 
-                    RenderTextureDescriptor taaHistoryDesc = new RenderTextureDescriptor(bufferSize.x, bufferSize.y)
-                    {
-                        graphicsFormat = SystemInfo.GetGraphicsFormat(data.asset.enableHDRColorBuffer ? DefaultFormat.HDR : DefaultFormat.LDR),
-                        volumeDepth = 1,
-                        msaaSamples = 1,
-                        mipCount = 0,
-                        autoGenerateMips = false,
-                    };
-                    
-                    RTHandle taaHistory = yCamera.perCameraData.GetTAAHistory(ref taaHistoryDesc);
-                    passData.isTAAHistoryReset = yCamera.perCameraData.IsTAAHistoryReset;
-                    yCamera.perCameraData.IsTAAHistoryReset = false;
-                    data.TAAHistory = data.renderGraph.ImportTexture(taaHistory);
-                    passData.taaHistory = data.TAAHistory;
-                    builder.UseTexture(data.TAAHistory, AccessFlags.ReadWrite);
-
-                    // Create TAA target
-                    TextureDesc taaTargetDesc = new TextureDesc(taaHistoryDesc)
-                    {
-                        anisoLevel = 0,
-                        filterMode = FilterMode.Bilinear,
-                        wrapMode = TextureWrapMode.Clamp,
-                        name = "TAA Target"
-                    };
-                    
-                    data.TAATarget = data.renderGraph.CreateTexture(taaTargetDesc);
-                    passData.taaTarget = data.TAATarget;
-                    builder.UseTexture(data.TAATarget, AccessFlags.Write);
-                    
-                    builder.AllowPassCulling(false);
+                data.TAATarget = data.renderGraph.CreateTexture(taaTargetDesc);
+                passData.taaTarget = data.TAATarget;
+                builder.UseTexture(data.TAATarget, AccessFlags.Write);
                 
-                    builder.SetRenderFunc((TAAPassData data, UnsafeGraphContext context) =>
-                    {
-                        context.cmd.BeginSample("TAABlendHistory");
-                        data.material.SetVector(YPipelineShaderIDs.k_TAAParamsID, data.taaParams);
-                        // data.material.SetTexture(YPipelineShaderIDs.k_MotionVectorTextureID, data.isFirstFrame || data.isTAAHistoryReset ? context.defaultResources.blackTexture : data.motionVectorTexture);
-                        
-                        CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAASample3X3, data.is3X3);
-                        CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAAYCOCG, data.isYCoCg);
-                        CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAAVariance, data.isVarianceAABB);
-                        CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAACurrentFilter, data.currentFilter == CurrentFilter.Gaussian);
-                        CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAAHistoryFilter, data.historyFilter == HistoryFilter.CatmullRomBicubic);
-                        
-                        if (data.isFirstFrame || data.isTAAHistoryReset) BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.taaHistory);
-                        data.material.SetTexture(YPipelineShaderIDs.k_TAAHistoryID, data.taaHistory);
-                        
-                        BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.taaTarget, data.material, (int) data.rectifyMode);
-                        context.cmd.EndSample("TAABlendHistory");
-                        
-                        context.cmd.BeginSample("TAACopyHistory");
-                        // bool copyTextureSupported = SystemInfo.copyTextureSupport > CopyTextureSupport.None;
-                        // if (copyTextureSupported) context.cmd.CopyTexture(data.taaTarget, data.taaHistory);
-                        // else BlitUtility.BlitTexture(context.cmd, data.taaTarget, data.taaHistory);
+                builder.AllowPassCulling(false);
+            
+                builder.SetRenderFunc((TAAPassData data, UnsafeGraphContext context) =>
+                {
+                    context.cmd.BeginSample("TAABlendHistory");
+                    data.material.SetVector(YPipelineShaderIDs.k_TAAParamsID, data.taaParams);
+                    // data.material.SetTexture(YPipelineShaderIDs.k_MotionVectorTextureID, data.isFirstFrame || data.isTAAHistoryReset ? context.defaultResources.blackTexture : data.motionVectorTexture);
+                    
+                    CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAASample3X3, data.is3X3);
+                    CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAAYCOCG, data.isYCoCg);
+                    CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAAVariance, data.isVarianceAABB);
+                    CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAACurrentFilter, data.currentFilter == CurrentFilter.Gaussian);
+                    CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAAHistoryFilter, data.historyFilter == HistoryFilter.CatmullRomBicubic);
+                    
+                    if (data.isFirstFrame || data.isTAAHistoryReset) BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.taaHistory);
+                    data.material.SetTexture(YPipelineShaderIDs.k_TAAHistoryID, data.taaHistory);
+                    
+                    BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.taaTarget, data.material, (int) data.rectifyMode);
+                    context.cmd.EndSample("TAABlendHistory");
+                    
+                    context.cmd.BeginSample("TAACopyHistory");
+                    // bool copyTextureSupported = SystemInfo.copyTextureSupport > CopyTextureSupport.None;
+                    // if (copyTextureSupported) context.cmd.CopyTexture(data.taaTarget, data.taaHistory);
+                    // else BlitUtility.BlitTexture(context.cmd, data.taaTarget, data.taaHistory);
 
-                        context.cmd.CopyTexture(data.taaTarget, data.taaHistory);
-                        context.cmd.EndSample("TAACopyHistory");
-                    });
-                }
+                    context.cmd.CopyTexture(data.taaTarget, data.taaHistory);
+                    context.cmd.EndSample("TAACopyHistory");
+                });
             }
+            
         }
     }
 }

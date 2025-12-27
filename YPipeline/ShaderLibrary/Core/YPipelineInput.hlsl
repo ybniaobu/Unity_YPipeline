@@ -188,6 +188,7 @@ TEXTURE2D(_CameraColorTexture);
 TEXTURE2D(_CameraDepthTexture);
 TEXTURE2D(_ThinGBuffer);
 TEXTURE2D(_MotionVectorTexture);
+TEXTURE2D(_IrradianceTexture);
 TEXTURE2D(_AmbientOcclusionTexture);
 
 // Blue Noise

@@ -78,7 +78,7 @@ namespace YPipeline
                 
                 TextureHandle stbn128Scalar = data.renderGraph.ImportTexture(m_STBN128Scalar3);
                 builder.UseTexture(stbn128Scalar, AccessFlags.Read);
-                builder.SetGlobalTextureAfterPass(stbn128Scalar, YPipelineShaderIDs.k_STBN128ScalarID);
+                builder.SetGlobalTextureAfterPass(stbn128Scalar, YPipelineShaderIDs.k_STBN128Scalar3ID);
                 
                 TextureHandle stbn128Vec3 = data.renderGraph.ImportTexture(m_STBN128Vec3);
                 builder.UseTexture(stbn128Vec3, AccessFlags.Read);
@@ -93,7 +93,7 @@ namespace YPipeline
                 builder.SetGlobalTextureAfterPass(stbn128CosineUnitVec3, YPipelineShaderIDs.k_STBN128CosineUnitVec3ID);
                 
                 // ----------------------------------------------------------------------------------------------------
-                // Buffers
+                // Attachments
                 // ----------------------------------------------------------------------------------------------------
                 
                 Vector2Int bufferSize = data.BufferSize;
@@ -101,7 +101,7 @@ namespace YPipeline
                 
                 TextureDesc colorAttachmentDesc = new TextureDesc(bufferSize.x,bufferSize.y)
                 {
-                    colorFormat = SystemInfo.GetGraphicsFormat(data.asset.enableHDRColorBuffer ? DefaultFormat.HDR : DefaultFormat.LDR),
+                    colorFormat = GraphicsFormat.R16G16B16A16_SFloat,
                     filterMode = FilterMode.Bilinear,
                     clearBuffer = true,
                     clearColor = Color.clear,
@@ -110,7 +110,7 @@ namespace YPipeline
                 
                 TextureDesc colorTextureDesc = new TextureDesc(bufferSize.x,bufferSize.y)
                 {
-                    colorFormat = SystemInfo.GetGraphicsFormat(data.asset.enableHDRColorBuffer ? DefaultFormat.HDR : DefaultFormat.LDR),
+                    colorFormat = GraphicsFormat.R16G16B16A16_SFloat,
                     filterMode = FilterMode.Bilinear,
                     clearBuffer = true,
                     clearColor = Color.clear,
@@ -133,6 +133,15 @@ namespace YPipeline
                     name = "Depth Texture"
                 };
                 
+                data.CameraColorAttachment = data.renderGraph.CreateTexture(colorAttachmentDesc);
+                data.CameraDepthAttachment = data.renderGraph.CreateTexture(depthAttachmentDesc);
+                data.CameraColorTexture = data.renderGraph.CreateTexture(colorTextureDesc);
+                data.CameraDepthTexture = data.renderGraph.CreateTexture(depthTextureDesc);
+                
+                // ----------------------------------------------------------------------------------------------------
+                // Other Textures
+                // ----------------------------------------------------------------------------------------------------
+                
                 TextureDesc thinGBufferDesc = new TextureDesc(bufferSize.x, bufferSize.y)
                 {
                     format = GraphicsFormat.R8G8B8A8_UNorm,
@@ -141,11 +150,28 @@ namespace YPipeline
                     name = "Thin GBuffer"
                 };
                 
-                data.CameraColorAttachment = data.renderGraph.CreateTexture(colorAttachmentDesc);
-                data.CameraDepthAttachment = data.renderGraph.CreateTexture(depthAttachmentDesc);
-                data.CameraColorTexture = data.renderGraph.CreateTexture(colorTextureDesc);
-                data.CameraDepthTexture = data.renderGraph.CreateTexture(depthTextureDesc);
                 data.ThinGBuffer = data.renderGraph.CreateTexture(thinGBufferDesc);
+
+                if (data.IsTAAEnabled)
+                {
+                    RenderTextureDescriptor taaHistoryDesc = new RenderTextureDescriptor(bufferSize.x, bufferSize.y)
+                    {
+                        graphicsFormat = GraphicsFormat.R16G16B16A16_SFloat,
+                        volumeDepth = 1,
+                        msaaSamples = 1,
+                        mipCount = 0,
+                        autoGenerateMips = false,
+                    };
+                    
+                    YPipelineCamera yCamera = data.camera.GetYPipelineCamera();
+                    RTHandle taaHistory = yCamera.perCameraData.GetTAAHistory(ref taaHistoryDesc);
+                    data.TAAHistory = data.renderGraph.ImportTexture(taaHistory);
+                }
+                else
+                {
+                    YPipelineCamera yCamera = data.camera.GetYPipelineCamera();
+                    yCamera.perCameraData.ReleaseTAAHistory();
+                }
                 
                 // ----------------------------------------------------------------------------------------------------
                 // Global Constant Buffer Variables

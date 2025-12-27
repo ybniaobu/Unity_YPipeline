@@ -28,8 +28,10 @@ namespace YPipeline
         // ----------------------------------------------------------------------------------------------------
 
         public bool IsDeferredRenderingEnabled => asset.renderPath == RenderPath.DeferredPlus;
-        
+        public bool IsTAAEnabled => asset.antiAliasingMode == AntiAliasingMode.TAA;
         public Vector2Int BufferSize => new Vector2Int((int) (camera.pixelWidth * asset.renderScale), (int) (camera.pixelHeight * asset.renderScale));
+        
+        public bool isSSDGIEnabled;
         
         // ----------------------------------------------------------------------------------------------------
         // Buffer and Texture Handles
@@ -57,6 +59,7 @@ namespace YPipeline
         public TextureHandle GBuffer3 { set; get; } // R11G11B10_FLOAT: emission
         public TextureHandle ThinGBuffer { set; get; } // RGBA8_UNORM: normal, roughness
         public TextureHandle MotionVectorTexture { set; get; }
+        public TextureHandle IrradianceTexture { set; get; }
         public TextureHandle AmbientOcclusionTexture { set; get; }
         public bool isAmbientOcclusionTextureCreated;
         public TextureHandle TAATarget { set; get; }

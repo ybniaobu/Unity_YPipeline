@@ -248,6 +248,8 @@ MonoBehaviour:
           type: 3}
         m_TiledLightCullingCS: {fileID: 7200000, guid: f0b81bd803cf09b48a241b0856dbef54,
           type: 3}
+        m_HorizonBasedGlobalIlluminationCS: {fileID: 7200000, guid: 0e1577e6c7579314a84060af3f04b2d1,
+          type: 3}
         m_AmbientOcclusionCS: {fileID: 7200000, guid: a9de2fa8b17c30e4593b18fba4d49293,
           type: 3}
     - rid: 2073298774936518744

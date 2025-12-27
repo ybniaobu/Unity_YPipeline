@@ -208,6 +208,14 @@ namespace YPipeline
             set => this.SetValueAndNotify(ref m_TiledLightCullingCS, value, nameof(m_TiledLightCullingCS));
         }
         
+        [SerializeField] [ResourcePath("YPipeline/Shaders/PipelineShader/GlobalIllumination/HBGI.compute")]
+        private ComputeShader m_HorizonBasedGlobalIlluminationCS;
+        public ComputeShader HorizonBasedGlobalIlluminationCS
+        {
+            get => m_HorizonBasedGlobalIlluminationCS;
+            set => this.SetValueAndNotify(ref m_HorizonBasedGlobalIlluminationCS, value, nameof(m_HorizonBasedGlobalIlluminationCS));
+        }
+        
         [SerializeField] [ResourcePath("YPipeline/Shaders/PipelineShader/GlobalIllumination/AmbientOcclusion.compute")]
         private ComputeShader m_AmbientOcclusionCS;
         public ComputeShader AmbientOcclusionCS

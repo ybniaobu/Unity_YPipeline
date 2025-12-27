@@ -91,8 +91,6 @@ namespace YPipeline
         [Header("Rendering Settings")]
         public RenderPath renderPath = RenderPath.ForwardPlus;
         
-        public bool enableHDRColorBuffer = true;
-        
         public bool enableSRPBatcher = true;
         
         [Range(0.1f, 2f)] public float renderScale = 1.0f;
