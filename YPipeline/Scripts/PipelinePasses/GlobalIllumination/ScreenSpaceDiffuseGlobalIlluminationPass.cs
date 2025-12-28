@@ -35,8 +35,8 @@ namespace YPipeline
         protected override void OnRecord(ref YPipelineData data)
         {
             data.isSSDGIEnabled = m_SSDGI.IsActive();
-            if (!data.isSSDGIEnabled && Time.frameCount == 0) return;
             CoreUtils.SetKeyword(data.cmd, YPipelineKeywords.k_ScreenSpaceIrradiance, data.isSSDGIEnabled);
+            if (!data.isSSDGIEnabled || Time.frameCount == 0) return;
 
             using (var builder = data.renderGraph.AddUnsafePass<SSDGIPassData>("Diffuse Global Illumination", out var passData))
             {

@@ -1,7 +1,9 @@
 ﻿#ifndef YPIPELINE_DIFFUSE_GI_COMMON_INCLUDED
 #define YPIPELINE_DIFFUSE_GI_COMMON_INCLUDED
 
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/AmbientProbe.hlsl"
+#include "../../ShaderLibrary/IBLLibrary.hlsl"
+// #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/AmbientProbe.hlsl" // IBLLibrary 改写了 EvaluateAmbientProbe 函数
+#define __AMBIENTPROBE_HLSL__
 #include "Packages/com.unity.render-pipelines.core/Runtime/Lighting/ProbeVolume/ProbeVolume.hlsl"
 
 // ----------------------------------------------------------------------------------------------------
@@ -22,16 +24,14 @@ float3 SampleProbeVolume_NoNoise(float3 positionWS, float3 normalWS, float3 view
     return irradiance;
 }
 
-// TODO: 上传自己的全局 SH 和 APV keyword
+// TODO: 上传自己的全局 SH
 float3 DiffuseGIFallback(float3 positionWS, float3 normalWS, float3 viewDir)
 {
-    // #if defined(PROBE_VOLUMES_L1) || defined(PROBE_VOLUMES_L2)
-    //     return SampleProbeVolume_NoNoise(positionWS, normalWS, viewDir);
-    // #else
-    //     return EvaluateAmbientProbe(normalWS);
-    // #endif
-    
-    return SampleProbeVolume_NoNoise(positionWS, normalWS, viewDir);
+    #if defined(PROBE_VOLUMES_L1) || defined(PROBE_VOLUMES_L2)
+        return SampleProbeVolume_NoNoise(positionWS, normalWS, viewDir);
+    #else
+        return EvaluateAmbientProbe(normalWS);
+    #endif
 }
 
 #endif

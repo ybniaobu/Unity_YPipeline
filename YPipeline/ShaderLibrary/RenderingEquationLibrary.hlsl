@@ -48,10 +48,10 @@ void StandardPBRShading(in GeometryParams geometryParams, in StandardPBRParams s
     float3 envBRDF = SampleEnvLut(ENVIRONMENT_BRDF_LUT, LUT_SAMPLER, standardPBRParams.NoV, standardPBRParams.roughness);
     float3 energyCompensation = 1.0 + standardPBRParams.F0 * (1.0 / envBRDF.x - 1) * 0.5; // 0.5 is a magic number
     
-    content.indirectLightDiffuse += CalculateDiffuseIndirectLighting(geometryParams, standardPBRParams, envBRDF.b);
+    content.indirectLightDiffuse += DiffuseIndirectLighting(geometryParams, standardPBRParams, envBRDF.b);
 
-    //renderingEquationContent.indirectLightSpecular += CalculateIBL_Specular(standardPBRParams, unity_SpecCube0, samplerunity_SpecCube0, envBRDF.rg, energyCompensation);
-    content.indirectLightSpecular += CalculateIBL_Specular_RemappedMipmap(standardPBRParams, unity_SpecCube0,
+    //renderingEquationContent.indirectLightSpecular += CalculateIndirectSpecular_IBL(standardPBRParams, unity_SpecCube0, samplerunity_SpecCube0, envBRDF.rg, energyCompensation);
+    content.indirectLightSpecular += CalculateIndirectSpecular_IBL_RemappedMipmap(standardPBRParams, unity_SpecCube0,
         samplerunity_SpecCube0, envBRDF.rg, energyCompensation);
     
     // ------------------------- Direct Lighting - Sun Light -------------------------

@@ -9,25 +9,47 @@
 // Spherical Harmonics(SH)
 // ----------------------------------------------------------------------------------------------------
 
-float3 SampleSphericalHarmonics(float3 N)
+float4 _AmbientProbe[7]; // YPipeline 上传的全局 AmbientProbe 球谐数据
+
+float3 EvaluateAmbientProbe(float3 N)
 {
     float3 L0L1;
     float4 vA = float4(N, 1.0);
-    L0L1.r = dot(unity_SHAr, vA);
-    L0L1.g = dot(unity_SHAg, vA);
-    L0L1.b = dot(unity_SHAb, vA);
+    L0L1.r = dot(_AmbientProbe[0], vA);
+    L0L1.g = dot(_AmbientProbe[2], vA);
+    L0L1.b = dot(_AmbientProbe[4], vA);
 
     float3 L2;
     float4 vB = N.xyzz * N.yzzx;
-    L2.r = dot(unity_SHBr, vB);
-    L2.g = dot(unity_SHBg, vB);
-    L2.b = dot(unity_SHBb, vB);
+    L2.r = dot(_AmbientProbe[1], vB);
+    L2.g = dot(_AmbientProbe[3], vB);
+    L2.b = dot(_AmbientProbe[5], vB);
     
     float vC = N.x * N.x - N.y * N.y;
-    L2 += unity_SHC.rgb * vC;
+    L2 += _AmbientProbe[6].rgb * vC;
 
     return L0L1 + L2;
 }
+
+// float3 SampleSphericalHarmonics(float3 N)
+// {
+//     float3 L0L1;
+//     float4 vA = float4(N, 1.0);
+//     L0L1.r = dot(unity_SHAr, vA);
+//     L0L1.g = dot(unity_SHAg, vA);
+//     L0L1.b = dot(unity_SHAb, vA);
+//
+//     float3 L2;
+//     float4 vB = N.xyzz * N.yzzx;
+//     L2.r = dot(unity_SHBr, vB);
+//     L2.g = dot(unity_SHBg, vB);
+//     L2.b = dot(unity_SHBb, vB);
+//     
+//     float vC = N.x * N.x - N.y * N.y;
+//     L2 += unity_SHC.rgb * vC;
+//
+//     return L0L1 + L2;
+// }
 
 // ----------------------------------------------------------------------------------------------------
 // IBL calculation
@@ -44,9 +66,9 @@ float3 SampleEnvLut(Texture2D envLut, SamplerState envLutSampler, float NoV, flo
 //     return DecodeHDREnvironment(env, unity_SpecCube0_HDR);
 // }
 
-float3 CalculateIBL_Diffuse(in StandardPBRParams standardPBRParams, float envBRDF_Diffuse)
+float3 CalculateIndirectDiffuse_IBL(in StandardPBRParams standardPBRParams, float envBRDF_Diffuse)
 {
-    float3 irradiance = SampleSphericalHarmonics(standardPBRParams.N);
+    float3 irradiance = EvaluateAmbientProbe(standardPBRParams.N);
     float3 envBRDFDiffuse = standardPBRParams.albedo * envBRDF_Diffuse;
     float Kd = 1.0 - standardPBRParams.metallic;
     float3 IBLDiffuse = irradiance * envBRDFDiffuse * Kd * standardPBRParams.ao;
@@ -59,7 +81,7 @@ float RoughnessToMipmapLevel(float roughness, float maxMipLevel)
     return roughness * maxMipLevel;
 }
 
-float3 CalculateIBL_Specular(in StandardPBRParams standardPBRParams, TextureCube prefilteredEnvMap, SamplerState prefilteredEnvMapSampler, float2 envBRDF_Specular, float3 energyCompensation)
+float3 CalculateIndirectSpecular_IBL(in StandardPBRParams standardPBRParams, TextureCube prefilteredEnvMap, SamplerState prefilteredEnvMapSampler, float2 envBRDF_Specular, float3 energyCompensation)
 {
     float3 prefilteredColor = SAMPLE_TEXTURECUBE_LOD(prefilteredEnvMap, prefilteredEnvMapSampler, standardPBRParams.R, 6.0 * standardPBRParams.roughness).rgb;
     //float3 prefilteredColor = SampleHDREnvironment(prefilteredEnvMap, prefilteredEnvMapSampler, standardPBRParams.R, 6.0 * standardPBRParams.roughness);
@@ -71,7 +93,7 @@ float3 CalculateIBL_Specular(in StandardPBRParams standardPBRParams, TextureCube
     return IBLSpecular;
 }
 
-float3 CalculateIBL_Specular_RemappedMipmap(in StandardPBRParams standardPBRParams, TextureCube prefilteredEnvMap, SamplerState prefilteredEnvMapSampler, float2 envBRDF_Specular, float3 energyCompensation)
+float3 CalculateIndirectSpecular_IBL_RemappedMipmap(in StandardPBRParams standardPBRParams, TextureCube prefilteredEnvMap, SamplerState prefilteredEnvMapSampler, float2 envBRDF_Specular, float3 energyCompensation)
 {
     float mipmap = RoughnessToMipmapLevel(standardPBRParams.roughness, 6.0);
     float3 prefilteredColor = SAMPLE_TEXTURECUBE_LOD(prefilteredEnvMap, prefilteredEnvMapSampler, standardPBRParams.R, mipmap).rgb;

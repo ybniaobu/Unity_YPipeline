@@ -3,6 +3,7 @@
 #pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch
 
 #pragma multi_compile _ _DEFERRED_RENDERING
+#pragma multi_compile _ PROBE_VOLUMES_L1 PROBE_VOLUMES_L2
 
 #include "../../../ShaderLibrary/Core/YPipelineCSCore.hlsl"
 #include "../../../ShaderLibrary/RandomLibrary.hlsl"
@@ -175,7 +176,7 @@ void HBGIKernel(uint3 id : SV_DispatchThreadID)
         }
     }
     
-    irradiance = saturate(irradiance / sampleCount);
+    irradiance = irradiance / sampleCount;
     _OutputTexture[id.xy] = float4(irradiance, originLinearDepth);
     // _OutputTexture[id.xy] = _InputTexture[id.xy];
     // _OutputTexture[id.xy] = float4(normalWS, 0.0);

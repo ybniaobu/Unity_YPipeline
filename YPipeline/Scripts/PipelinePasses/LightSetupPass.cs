@@ -19,6 +19,9 @@ namespace YPipeline
             public BufferHandle punctualLightsBuffer;
             public int punctualLightCount;
             public PunctualLightStructuredBuffer[] punctualLightsData = new PunctualLightStructuredBuffer[YPipelineLightsData.k_MaxPunctualLightCount];
+            
+            // Ambient Probe(SH)
+            public Vector4[] ambientProbe = new Vector4[7];
         }
         
         private struct SunLightConstantBuffer
@@ -102,6 +105,9 @@ namespace YPipeline
                 });
                 passData.punctualLightsBuffer = builder.UseBuffer(data.PunctualLightBufferHandle, AccessFlags.Write);
                 
+                // Ambient Probe(SH)
+                GatherAmbientProbeSH(ref passData.ambientProbe);
+                
                 builder.AllowPassCulling(false);
 
                 builder.SetRenderFunc((LightSetupPassData data, UnsafeGraphContext context) =>
@@ -123,8 +129,24 @@ namespace YPipeline
                     context.cmd.SetGlobalVector(YPipelineShaderIDs.k_PunctualLightCountID, new Vector4(data.punctualLightCount, 0));
                     context.cmd.SetBufferData(data.punctualLightsBuffer, data.punctualLightsData, 0, 0, data.punctualLightCount);
                     context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_PunctualLightDataID, data.punctualLightsBuffer);
+                    
+                    // Ambient Probe(SH)
+                    context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_AmbientProbeID, data.ambientProbe);
                 });
             }
+        }
+        
+        private void GatherAmbientProbeSH(ref Vector4[] ambientProbe)
+        {
+            SphericalHarmonicsL2 SH = RenderSettings.ambientProbe;
+            float intensity = Mathf.LinearToGammaSpace(RenderSettings.ambientIntensity);
+            ambientProbe[0] = intensity * new Vector4(SH[0, 3], SH[0, 1], SH[0, 2], SH[0, 0] - SH[0, 6]);
+            ambientProbe[1] = intensity * new Vector4(SH[0, 4], SH[0, 5], SH[0, 6] * 3, SH[0, 7]);
+            ambientProbe[2] = intensity * new Vector4(SH[1, 3], SH[1, 1], SH[1, 2], SH[1, 0] - SH[1, 6]);
+            ambientProbe[3] = intensity * new Vector4(SH[1, 4], SH[1, 5], SH[1, 6] * 3, SH[1, 7]);
+            ambientProbe[4] = intensity * new Vector4(SH[2, 3], SH[2, 1], SH[2, 2], SH[2, 0] - SH[2, 6]);
+            ambientProbe[5] = intensity * new Vector4(SH[2, 4], SH[2, 5], SH[2, 6] * 3, SH[2, 7]);
+            ambientProbe[6] = intensity * new Vector4(SH[0, 8], SH[1, 8], SH[2, 8]);
         }
     }
 }

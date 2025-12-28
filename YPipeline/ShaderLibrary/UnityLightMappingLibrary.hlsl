@@ -19,7 +19,7 @@ float3 SampleLightMap(float2 lightMapUV)
     return SampleSingleLightmap(unity_Lightmap, samplerunity_Lightmap, lightMapUV, float4(1, 1, 0, 0), true);
 }
 
-float3 CalculateLightMap(float2 lightMapUV, in StandardPBRParams standardPBRParams, float envBRDF_Diffuse)
+float3 CalculateIndirectDiffuse_LightMap(float2 lightMapUV, in StandardPBRParams standardPBRParams, float envBRDF_Diffuse)
 {
     float3 irradiance = SampleLightMap(lightMapUV);
     float3 envBRDFDiffuse = standardPBRParams.albedo * envBRDF_Diffuse;
