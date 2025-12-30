@@ -130,7 +130,7 @@ void HBGIKernel(uint3 id : SV_DispatchThreadID)
     float3 irradiance = 0.0;
     float intensity = 1.0;
     float sampleCount = 24;
-    float radius = 1;
+    float radius = 2;
     
     // float count = 0;
     

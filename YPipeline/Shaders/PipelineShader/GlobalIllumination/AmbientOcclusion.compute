@@ -35,6 +35,8 @@ TEXTURE2D(_CameraDepthTexture);
 TEXTURE2D(_MotionVectorTexture);
 TEXTURE2D(_BlueNoise64);
 float4 _BlueNoise64_TexelSize;
+TEXTURE2D(_STBN128Scalar3);
+float4 _STBN128Scalar3_TexelSize;
 SAMPLER(sampler_LinearClamp);
 SAMPLER(sampler_PointClamp);
 
@@ -125,7 +127,8 @@ float3 GenerateHemisphereSamples(float2 xi, float scale)
     float cosTheta = 1 - xi.y;
     float sinTheta = sqrt(1 - cosTheta * cosTheta);
     
-    float r = scale * scale; // distribute more samples closer to the hemisphere origin
+    // float r = scale * scale; // distribute more samples closer to the hemisphere origin
+    float r = scale;
     return float3(r * sinTheta * cos(phi), r * cosTheta, r * sinTheta * sin(phi));
 }
 
@@ -135,7 +138,8 @@ float3 GenerateCosineWeightedHemisphereSamples(float2 xi, float scale)
     float cosTheta = sqrt(1 - xi.y);
     float sinTheta = sqrt(1 - cosTheta * cosTheta);
     
-    float r = scale * scale; // distribute more samples closer to the hemisphere origin
+    // float r = scale * scale; // distribute more samples closer to the hemisphere origin
+    float r = scale;
     return float3(r * sinTheta * cos(phi), r * cosTheta, r * sinTheta * sin(phi));
 }
 
@@ -168,8 +172,10 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
 
     // ------------------------- Random Rotation -------------------------
     
-    float randomRadian = (LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.zw, 0).r + _Jitter.z * IsTemporalBlurEnabled()) * TWO_PI;
+    float3 noise = LOAD_TEXTURE2D_LOD(_STBN128Scalar3, id.xy % _STBN128Scalar3_TexelSize.zw, 0).rgb;
+    float randomRadian = (noise.r + _Jitter.z * IsTemporalBlurEnabled()) * TWO_PI;
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
+    float2 offset = float2(noise.g + _Jitter.w * 0.11, noise.b + _Jitter.w * 0.23);
 
     // ------------------------- SSAO Loop -------------------------
     
@@ -183,8 +189,8 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
     {
         // ------------------------- Generate Hemisphere Samples -------------------------
         
-        float2 xi = k_Sobol[i + 1];
-        float scale = max(k_Halton[i + 1].y + _Jitter.z * 0.01 * IsTemporalBlurEnabled(), 0.01);
+        float2 xi = frac(k_Sobol[i + 1] + offset);
+        float scale = k_Halton[i + 1].y;
         float3 dirTS = GenerateCosineWeightedHemisphereSamples(xi, scale);
         dirTS.xz = mul(rotation, dirTS.xz);
 
