@@ -418,7 +418,7 @@ void GTAOKernel(uint3 id : SV_DispatchThreadID)
     // float offset = offsets[(_TimeParams.x / 6) % 4];
     // float randomOffset = frac(noise2 + offset * IsTemporalBlurEnabled());
     
-    float2 noise = LOAD_TEXTURE2D_LOD(_BlueNoise64, id.xy % _BlueNoise64_TexelSize.zw, 0).rg;
+    float2 noise = LOAD_TEXTURE2D_LOD(_STBN128Scalar3, id.xy % _STBN128Scalar3_TexelSize.zw, 0).rg;
     float randomRadian = (noise.r + _Jitter.z * IsTemporalBlurEnabled()) * TWO_PI;
     float randomOffset = frac(noise.g + _Jitter.w * IsTemporalBlurEnabled());
 
@@ -487,7 +487,7 @@ void GTAOKernel(uint3 id : SV_DispatchThreadID)
 
         // ------------------------- Calculate AO  -------------------------
         
-        float cosN = dot(projectedNormal / projectedNormalLength, V);
+        float cosN = clamp(dot(projectedNormal / projectedNormalLength, V), -1.0, 1.0);
         float n = -sign(dot(V, tangent)) * GTAOFastAcos(cosN);
         
         float2 h = GTAOFastAcos(maxCosH);

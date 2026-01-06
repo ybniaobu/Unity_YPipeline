@@ -6,41 +6,43 @@ using UnityEngine.Rendering.RenderGraphModule;
 
 namespace YPipeline
 {
-    public class ScreenSpaceDiffuseGlobalIlluminationPass : PipelinePass
+    public class ScreenSpaceGlobalIlluminationPass : PipelinePass
     {
-        private class SSDGIPassData
+        private class SSGIPassData
         {
             public ComputeShader cs;
             public Vector2Int threadGroupSizes;
             
             public Vector4 textureSize;
+            public Vector4 ssgiParams;
             
             public TextureHandle sceneHistory; // TAAHistory or SceneHistory
             public TextureHandle irradianceTexture;
         }
 
-        private ScreenSpaceDiffuseGlobalIllumination m_SSDGI;
+        private ScreenSpaceGlobalIllumination m_SSGI;
 
         protected override void Initialize(ref YPipelineData data)
         {
             var stack = VolumeManager.instance.stack;
-            m_SSDGI = stack.GetComponent<ScreenSpaceDiffuseGlobalIllumination>();
+            m_SSGI = stack.GetComponent<ScreenSpaceGlobalIllumination>();
         }
 
         protected override void OnDispose()
         {
-            m_SSDGI = null;
+            m_SSGI = null;
         }
 
         protected override void OnRecord(ref YPipelineData data)
         {
-            data.isSSDGIEnabled = m_SSDGI.IsActive();
+            data.isSSDGIEnabled = m_SSGI.IsActive();
             CoreUtils.SetKeyword(data.cmd, YPipelineKeywords.k_ScreenSpaceIrradiance, data.isSSDGIEnabled);
             if (!data.isSSDGIEnabled || Time.frameCount == 0) return;
 
-            using (var builder = data.renderGraph.AddUnsafePass<SSDGIPassData>("Diffuse Global Illumination", out var passData))
+            using (var builder = data.renderGraph.AddUnsafePass<SSGIPassData>("Diffuse Global Illumination", out var passData))
             {
                 passData.cs = data.runtimeResources.HorizonBasedGlobalIlluminationCS;
+                
                 // Pass Data
                 Vector2Int bufferSize = data.BufferSize;
                 Vector2Int textureSize = bufferSize;
@@ -48,6 +50,8 @@ namespace YPipeline
                 int threadGroupSizeX = Mathf.CeilToInt(textureSize.x / 8.0f);
                 int threadGroupSizeY = Mathf.CeilToInt(textureSize.y / 8.0f);
                 passData.threadGroupSizes = new Vector2Int(threadGroupSizeX, threadGroupSizeY);
+
+                passData.ssgiParams = new Vector4(m_SSGI.hbilIntensity.value, m_SSGI.hbilRadius.value, m_SSGI.hbilDirectionCount.value, m_SSGI.hbilStepCount.value);
                 
                 
                 // Irradiance Texture
@@ -71,11 +75,12 @@ namespace YPipeline
                 
                 builder.AllowPassCulling(false);
 
-                builder.SetRenderFunc((SSDGIPassData data, UnsafeGraphContext context) =>
+                builder.SetRenderFunc((SSGIPassData data, UnsafeGraphContext context) =>
                 {
                     context.cmd.SetComputeVectorParam(data.cs, "_TextureSize", data.textureSize);
+                    context.cmd.SetComputeVectorParam(data.cs, YPipelineShaderIDs.k_SSGIParamsID, data.ssgiParams);
                     
-                    int hbgiKernel = data.cs.FindKernel("HBGIKernel");
+                    int hbgiKernel = data.cs.FindKernel("HBGIKernel2");
                     context.cmd.SetComputeTextureParam(data.cs, hbgiKernel, "_InputTexture", data.sceneHistory);
                     context.cmd.SetComputeTextureParam(data.cs, hbgiKernel, "_OutputTexture", data.irradianceTexture);
                     context.cmd.DispatchCompute(data.cs, hbgiKernel, data.threadGroupSizes.x, data.threadGroupSizes.y, 1);

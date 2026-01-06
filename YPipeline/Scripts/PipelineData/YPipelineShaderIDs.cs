@@ -163,6 +163,8 @@ namespace YPipeline
         
         public static readonly int k_AmbientProbeID = Shader.PropertyToID("_AmbientProbe");
         
+        public static readonly int k_SSGIParamsID = Shader.PropertyToID("_SSGIParams");
+        
         // ----------------------------------------------------------------------------------------------------
         // Ambient Occlusion Related Param IDs
         // ----------------------------------------------------------------------------------------------------
@@ -267,7 +269,7 @@ namespace YPipeline
         // SSAO
         public const string k_ScreenSpaceAmbientOcclusion = "_SCREEN_SPACE_AMBIENT_OCCLUSION";
         
-        // SSDGI
+        // SSGI
         public const string k_ScreenSpaceIrradiance = "_SCREEN_SPACE_IRRADIANCE";
         
         // ----------------------------------------------------------------------------------------------------
