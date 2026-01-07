@@ -41,7 +41,7 @@ namespace YPipeline
 
             using (var builder = data.renderGraph.AddUnsafePass<SSGIPassData>("Diffuse Global Illumination", out var passData))
             {
-                passData.cs = data.runtimeResources.HorizonBasedGlobalIlluminationCS;
+                passData.cs = data.runtimeResources.HBILCS;
                 
                 // Pass Data
                 Vector2Int bufferSize = data.BufferSize;
@@ -80,7 +80,7 @@ namespace YPipeline
                     context.cmd.SetComputeVectorParam(data.cs, "_TextureSize", data.textureSize);
                     context.cmd.SetComputeVectorParam(data.cs, YPipelineShaderIDs.k_SSGIParamsID, data.ssgiParams);
                     
-                    int hbgiKernel = data.cs.FindKernel("HBGIKernel2");
+                    int hbgiKernel = data.cs.FindKernel("HBILAlternateKernel");
                     context.cmd.SetComputeTextureParam(data.cs, hbgiKernel, "_InputTexture", data.sceneHistory);
                     context.cmd.SetComputeTextureParam(data.cs, hbgiKernel, "_OutputTexture", data.irradianceTexture);
                     context.cmd.DispatchCompute(data.cs, hbgiKernel, data.threadGroupSizes.x, data.threadGroupSizes.y, 1);

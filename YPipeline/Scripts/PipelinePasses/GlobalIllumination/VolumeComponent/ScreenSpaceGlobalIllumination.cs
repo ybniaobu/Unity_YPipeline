@@ -5,7 +5,7 @@ namespace YPipeline
 {
     public enum SSGIMode
     {
-        None, HBGI, SSGI
+        None, HBIL, SSGI
     }
     
     [System.Serializable]
@@ -17,7 +17,7 @@ namespace YPipeline
     public class ScreenSpaceGlobalIllumination : VolumeComponent, IPostProcessComponent
     {
         [Tooltip("屏幕空间漫反射全局光照算法 Choose a screen space diffuse global illumination algorithm.")]
-        public SSGIModeParameter mode = new SSGIModeParameter(SSGIMode.HBGI, true);
+        public SSGIModeParameter mode = new SSGIModeParameter(SSGIMode.HBIL, true);
         
         // HBIL
         public ClampedFloatParameter hbilIntensity = new ClampedFloatParameter(1.0f, 0.0f, 2.0f);

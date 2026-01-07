@@ -1,5 +1,5 @@
-#pragma kernel HBGIKernel
-#pragma kernel HBGIKernel2
+#pragma kernel HBILKernel
+#pragma kernel HBILAlternateKernel
 
 #pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch
 
@@ -144,25 +144,12 @@ float ComputeAOAndBentNormal(float2 projectedNormal2D, float2 maxCosH, out float
     return projectedNormal2D.x * part0 + projectedNormal2D.y * part1;
 }
 
-float IntegrateArcCosWeight(float2 h, float n)
-{
-    float2 arc = -cos(2 * h - n) + cos(n) + 2 * h * sin(n);
-    return 0.25 * (arc.x + arc.y);
-}
-
-float ComputeNearFieldIrradiance2(float2 cosTheta, float n)
-{
-    float2 theta = GTAOFastAcos(cosTheta);
-    float2 arc = -cos(2 * theta - n) + 2 * theta * sin(n);
-    return 0.25 * (arc.y - arc.x);
-}
-
 // ----------------------------------------------------------------------------------------------------
-// HBGI Kernel
+// HBIL Kernel
 // ----------------------------------------------------------------------------------------------------
 
 [numthreads(8, 8, 1)]
-void HBGIKernel(uint3 id : SV_DispatchThreadID)
+void HBILKernel(uint3 id : SV_DispatchThreadID)
 {
     uint2 pixelCoord = clamp(id.xy, 0, _TextureSize.zw - 1);
     float2 screenUV = (float2(pixelCoord) + float2(0.5, 0.5)) * _TextureSize.xy;
@@ -274,12 +261,31 @@ void HBGIKernel(uint3 id : SV_DispatchThreadID)
     
     
     irradiance = irradiance / GetDirectionCount();
-    irradiance += DiffuseGIFallback(originWS, normalWS, viewDirWS);
+    // irradiance += DiffuseGIFallback(originWS, normalWS, viewDirWS);
     _OutputTexture[id.xy] = float4(irradiance, 0.0);
 }
 
+// ----------------------------------------------------------------------------------------------------
+// HBIL Kernel (Alternate)
+// 上面的代码使用的是 HBIL 论文中的方法，下面使用的是 GTAO 中的方法。
+// GTAO 的方法比 HBIL 论文中的逻辑更加直接，但是性能更差，可以用于佐证上面的代码有没有写对。
+// ----------------------------------------------------------------------------------------------------
+
+// 注意 h.x 是 h1 应该为负数，h.y 是 h2 应该为正数
+float IntegrateArcAO(float2 h, float n)
+{
+    float2 arc = -cos(2 * h - n) + cos(n) + 2 * h * sin(n);
+    return 0.25 * (arc.x + arc.y);
+}
+
+float IntegrateArcIrradiance(float2 theta, float n)
+{
+    float2 arc = -cos(2 * theta - n) + 2 * theta * sin(n);
+    return 0.25 * (arc.y - arc.x);
+}
+
 [numthreads(8, 8, 1)]
-void HBGIKernel2(uint3 id : SV_DispatchThreadID)
+void HBILAlternateKernel(uint3 id : SV_DispatchThreadID)
 {
     uint2 pixelCoord = clamp(id.xy, 0, _TextureSize.zw - 1);
     float2 screenUV = (float2(pixelCoord) + float2(0.5, 0.5)) * _TextureSize.xy;
@@ -288,7 +294,7 @@ void HBGIKernel2(uint3 id : SV_DispatchThreadID)
     
     float rawDepth = LoadDepth(pixelCoord);
     
-    // TODO: 待修改
+    // TODO: 与 APV 采样有关，待修改
     float4 originNDC = GetNDCFromUVAndDepth(screenUV, rawDepth);
     float3 originWS = TransformNDCToWorld(originNDC, UNITY_MATRIX_I_VP);
     float3 viewDirWS = GetWorldSpaceNormalizedViewDir(originWS);
@@ -310,8 +316,6 @@ void HBGIKernel2(uint3 id : SV_DispatchThreadID)
         _OutputTexture[id.xy] = float4(0.0, 0.0, 0.0, 1.0);
         return;
     }
-
-    // ------------------------- Calculate Step Size -------------------------
 
     // Avoid oversampling if NUM_STEPS is greater than the kernel radius in pixels
     float numSteps = min(GetStepCount(), radiusInPixel);
@@ -341,28 +345,24 @@ void HBGIKernel2(uint3 id : SV_DispatchThreadID)
         float3 sliceDir = float3(cos(angle), sin(angle), 0);
         float2 pixelDelta = sliceDir.xy * stepSizeInPixel;
         
-        // ------------------------- Normal Projection -------------------------
+        // ------------------------- Normal Projection & Initialize Horizon Angle-------------------------
         
         float3 sliceNormal = normalize(cross(sliceDir, viewDir));
         float3 realTangent = cross(normalVS, sliceNormal);
         float3 projectedNormal = normalVS - sliceNormal * dot(normalVS, sliceNormal);
         float projectedNormalLength = length(projectedNormal);
         
-        float3 h1 = realTangent;
-        float3 h2 = -realTangent;
+        float hInitialValue = dot(viewDir, realTangent);
         float cosN = clamp(dot(projectedNormal / projectedNormalLength, viewDir), -1.0, 1.0);
-        float n = -sign(dot(viewDir, realTangent)) * GTAOFastAcos(cosN);
-
-        // ------------------------- Slice Loop -------------------------
-        
-        float2 maxCosH = float2(dot(h1, viewDir), dot(h2, viewDir));
+        float n = -sign(hInitialValue) * GTAOFastAcos(cosN);
+        float2 maxCosH = float2(-hInitialValue, hInitialValue);
         
         for (int s = 0; s < numSteps; s++)
         {
             // ------------------------- Apply Random Offset -------------------------
             
             float2 offset = (randomOffset + s) * pixelDelta;
-            float4 sampleCoord = clamp(id.xyxy + float4(-offset, offset), 0, _TextureSize.zwzw - 1);
+            uint4 sampleCoord = clamp(id.xyxy + float4(-offset, offset), 0, _TextureSize.zwzw - 1);
 
             // ------------------------- Calculate CosH -------------------------
 
@@ -373,37 +373,47 @@ void HBGIKernel2(uint3 id : SV_DispatchThreadID)
             float3 sh2 = FetchPositionVS(sampleUV.zw, sh2Depth) - positionVS; // H2
             float2 length2 = float2(dot(sh1, sh1), dot(sh2, sh2));
             float2 cosH = float2(dot(sh1, viewDir), dot(sh2, viewDir)) * rsqrt(length2);
+            
+            // ------------------------- Irradiance Integral -------------------------
 
             if (length2.x < r2 && cosH.x > maxCosH.x)
             {
                 float3 nearRadiance = LoadRadiance(sampleCoord.xy);
                 float2 cosTheta = float2(cosH.x, maxCosH.x);
-                irradiance += projectedNormalLength * ComputeNearFieldIrradiance2(cosTheta, n) * nearRadiance;
+                float2 theta = -GTAOFastAcos(cosTheta); // h1 为负数
+                irradiance += projectedNormalLength * IntegrateArcIrradiance(theta, n) * nearRadiance;
                 maxCosH.x = cosH.x;
-                h1 = normalize(sh1);
             }
             
             if (length2.y < r2 && cosH.y > maxCosH.y)
             {
                 float3 nearRadiance = LoadRadiance(sampleCoord.zw);
                 float2 cosTheta = float2(cosH.y, maxCosH.y);
-                irradiance += projectedNormalLength * ComputeNearFieldIrradiance2(cosTheta, n) * nearRadiance;
+                float2 theta = GTAOFastAcos(cosTheta);
+                irradiance += projectedNormalLength * IntegrateArcIrradiance(theta, n) * nearRadiance;
                 maxCosH.y = cosH.y;
-                h2 = normalize(sh2);
             }
         }
         
         float2 h = GTAOFastAcos(maxCosH);
-        ao += projectedNormalLength * IntegrateArcCosWeight(h, n);
-        bentNormalVS += 0.5 * (h1 + h2);
+        h.x = -h.x;
+        ao += projectedNormalLength * IntegrateArcAO(h, n);
+        
+        float bentAngle = (h.x + h.y) * 0.5;
+        float3 tangentVS = cross(viewDir, sliceNormal);
+        bentNormalVS += viewDir * cos(bentAngle) + tangentVS * sin(bentAngle);
     }
 
     ao = saturate(ao / GetDirectionCount());
-    bentNormalVS = normalize(bentNormalVS / GetDirectionCount());
+    bentNormalVS = normalize(bentNormalVS);
     bentNormalVS.z = -bentNormalVS.z;
-    float3 bentNormal = TransformViewToWorldDir(bentNormalVS, true);
+    
+    // TODO: 妈的，unity 没上传 matrix
+    float4x4 projMatrix = Inverse(UNITY_MATRIX_I_P);
+    float4x4 invViewMatrix = mul(UNITY_MATRIX_I_VP, projMatrix);
+    float3 bentNormal = normalize(mul((float3x3) invViewMatrix, bentNormalVS).xyz);
     
     irradiance = irradiance / GetDirectionCount();
-    irradiance += DiffuseGIFallback(originWS, normalWS, viewDirWS);
+    irradiance += DiffuseGIFallback(originWS, normalWS, bentNormal) * ao;
     _OutputTexture[id.xy] = float4(irradiance, 1.0);
 }

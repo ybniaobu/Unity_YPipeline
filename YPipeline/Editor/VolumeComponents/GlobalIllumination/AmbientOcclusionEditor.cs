@@ -82,25 +82,26 @@ namespace YPipeline.Editor
             {
                 EditorGUILayout.HelpBox("注：目前 GTAO 在着色时未使用 Multiple Bounces，并且未实现 Specular Occlusion。", MessageType.Info);
             }
-            
-            PropertyField(m_HalfResolution);
 
             switch (m_AmbientOcclusionMode.value.enumValueIndex)
             {
                 case (int) AmbientOcclusionMode.None:
                     break;
                 case (int) AmbientOcclusionMode.SSAO:
+                    PropertyField(m_HalfResolution);
                     PropertyField(m_SSAOIntensity, EditorGUIUtility.TrTextContent("Intensity"));
                     PropertyField(m_SampleCount);
                     PropertyField(m_SSAORadius, EditorGUIUtility.TrTextContent("Radius"));
                     break;
                 case (int) AmbientOcclusionMode.HBAO:
+                    PropertyField(m_HalfResolution);
                     PropertyField(m_HBAOIntensity, EditorGUIUtility.TrTextContent("Intensity"));
                     PropertyField(m_HBAORadius, EditorGUIUtility.TrTextContent("Radius"));
                     PropertyField(m_HBAODirectionCount, EditorGUIUtility.TrTextContent("Direction Count"));
                     PropertyField(m_HBAOStepCount, EditorGUIUtility.TrTextContent("Step Count"));
                     break;
                 case (int) AmbientOcclusionMode.GTAO:
+                    PropertyField(m_HalfResolution);
                     PropertyField(m_GTAOIntensity, EditorGUIUtility.TrTextContent("Intensity"));
                     PropertyField(m_GTAORadius, EditorGUIUtility.TrTextContent("Radius"));
                     PropertyField(m_GTAODirectionCount, EditorGUIUtility.TrTextContent("Direction Count"));
@@ -109,6 +110,8 @@ namespace YPipeline.Editor
                 default:
                     break;
             }
+
+            if (m_AmbientOcclusionMode.value.enumValueIndex == (int)AmbientOcclusionMode.None) return;
             
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Spatial Filter - Bilateral Blur", EditorStyles.boldLabel);

@@ -29,11 +29,11 @@ MonoBehaviour:
   maxShadowDistance: 100
   distanceFade: 0.05
   cascadeCount: 4
-  spiltRatio1: 0.05
-  spiltRatio2: 0.2
-  spiltRatio3: 0.5
+  spiltRatio1: 0.1
+  spiltRatio2: 0.25
+  spiltRatio3: 0.6
   cascadeEdgeFade: 0.05
-  sunLightShadowMapSize: 2048
+  sunLightShadowMapSize: 4096
   spotLightShadowMapSize: 2048
   pointLightShadowMapSize: 1024
   globalVolumeProfile: {fileID: 11400000, guid: eb8647ca7eb7e324fa7d7b19a82bc4f5,
