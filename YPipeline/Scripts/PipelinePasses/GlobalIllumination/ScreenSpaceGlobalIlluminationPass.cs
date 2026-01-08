@@ -51,7 +51,7 @@ namespace YPipeline
                 int threadGroupSizeY = Mathf.CeilToInt(textureSize.y / 8.0f);
                 passData.threadGroupSizes = new Vector2Int(threadGroupSizeX, threadGroupSizeY);
 
-                passData.ssgiParams = new Vector4(m_SSGI.hbilIntensity.value, m_SSGI.hbilRadius.value, m_SSGI.hbilDirectionCount.value, m_SSGI.hbilStepCount.value);
+                passData.ssgiParams = new Vector4(m_SSGI.hbilIntensity.value, m_SSGI.convergeDegree.value, m_SSGI.directionCount.value, m_SSGI.stepCount.value);
                 
                 
                 // Irradiance Texture

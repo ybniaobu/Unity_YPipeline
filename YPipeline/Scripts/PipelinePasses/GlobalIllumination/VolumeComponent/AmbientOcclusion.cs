@@ -40,7 +40,7 @@ namespace YPipeline
         public ClampedFloatParameter hbaoIntensity = new ClampedFloatParameter(1.0f, 0.0f, 2.0f);
         
         [Tooltip("采样半径 Sampling radius. Bigger the radius, wider ambient occlusion will be achieved.")]
-        public ClampedFloatParameter hbaoRadius = new ClampedFloatParameter(0.75f, 0.0f, 4.0f);
+        public ClampedFloatParameter hbaoRadius = new ClampedFloatParameter(1.0f, 0.0f, 4.0f);
         
         [Tooltip("步进方向数 Number of directions on the AO hemisphere.")]
         public ClampedIntParameter hbaoDirectionCount = new ClampedIntParameter(4, 2, 8);
@@ -53,10 +53,10 @@ namespace YPipeline
         public ClampedFloatParameter gtaoIntensity = new ClampedFloatParameter(0.75f, 0.0f, 2.0f);
         
         [Tooltip("采样半径 Sampling radius. Bigger the radius, wider ambient occlusion will be achieved.")]
-        public ClampedFloatParameter gtaoRadius = new ClampedFloatParameter(0.75f, 0.0f, 4.0f);
+        public ClampedFloatParameter gtaoRadius = new ClampedFloatParameter(1.0f, 0.0f, 4.0f);
         
         [Tooltip("步进方向数 Number of directions on the AO hemisphere.")]
-        public ClampedIntParameter gtaoDirectionCount = new ClampedIntParameter(3, 1, 6);
+        public ClampedIntParameter gtaoDirectionCount = new ClampedIntParameter(2, 1, 6);
         
         [Tooltip("步进步数 Number of steps during horizon search.")]
         public ClampedIntParameter gtaoStepCount = new ClampedIntParameter(4, 2, 12);

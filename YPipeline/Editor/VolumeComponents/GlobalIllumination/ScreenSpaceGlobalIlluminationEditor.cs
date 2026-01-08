@@ -10,9 +10,14 @@ namespace YPipeline.Editor
         
         // HBIL
         private SerializedDataParameter m_HBILIntensity;
-        private SerializedDataParameter m_HBILRadius;
-        private SerializedDataParameter m_HBILDirectionCount;
-        private SerializedDataParameter m_HBILStepCount;
+        private SerializedDataParameter m_ConvergeDegree;
+        private SerializedDataParameter m_DirectionCount;
+        private SerializedDataParameter m_StepCount;
+        
+        // Fallback
+        private SerializedDataParameter m_FallbackMode;
+        private SerializedDataParameter m_FallbackIntensity;
+        private SerializedDataParameter m_UseBentNormal;
 
         public override void OnEnable()
         {
@@ -22,9 +27,14 @@ namespace YPipeline.Editor
             
             // HBIL
             m_HBILIntensity = Unpack(o.Find(x => x.hbilIntensity));
-            m_HBILRadius = Unpack(o.Find(x => x.hbilRadius));
-            m_HBILDirectionCount = Unpack(o.Find(x => x.hbilDirectionCount));
-            m_HBILStepCount = Unpack(o.Find(x => x.hbilStepCount));
+            m_ConvergeDegree = Unpack(o.Find(x => x.convergeDegree));
+            m_DirectionCount = Unpack(o.Find(x => x.directionCount));
+            m_StepCount = Unpack(o.Find(x => x.stepCount));
+            
+            // Fallback
+            m_FallbackMode = Unpack(o.Find(x => x.fallbackMode));
+            m_FallbackIntensity = Unpack(o.Find(x => x.fallbackIntensity));
+            m_UseBentNormal = Unpack(o.Find(x => x.useBentNormal));
         }
 
         public override void OnInspectorGUI()
@@ -39,15 +49,22 @@ namespace YPipeline.Editor
                 case (int) SSGIMode.None:
                     break;
                 case (int) SSGIMode.HBIL:
-                    PropertyField(m_HBILIntensity, EditorGUIUtility.TrTextContent("Intensity"));
-                    PropertyField(m_HBILRadius, EditorGUIUtility.TrTextContent("Radius"));
-                    PropertyField(m_HBILDirectionCount, EditorGUIUtility.TrTextContent("Direction Count"));
-                    PropertyField(m_HBILStepCount, EditorGUIUtility.TrTextContent("Step Count"));
+                    PropertyField(m_HBILIntensity, EditorGUIUtility.TrTextContent("Near Field Intensity"));
+                    PropertyField(m_ConvergeDegree);
+                    PropertyField(m_DirectionCount);
+                    PropertyField(m_StepCount);
                     break;
                 case (int) SSGIMode.SSGI:
-                    EditorGUILayout.HelpBox("SSGI 暂未实现，使用的仍然是 HBIL。", MessageType.Warning);
+                    EditorGUILayout.HelpBox("暂未实现 SSGI", MessageType.Warning);
                     break;
             }
+            
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Fallback", EditorStyles.boldLabel);
+            
+            PropertyField(m_FallbackMode);
+            PropertyField(m_FallbackIntensity);
+            PropertyField(m_UseBentNormal);
         }
     }
 }
