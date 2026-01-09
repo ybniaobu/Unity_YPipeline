@@ -16,9 +16,12 @@ MonoBehaviour:
   mode:
     m_OverrideState: 1
     m_Value: 1
+  halfResolution:
+    m_OverrideState: 1
+    m_Value: 1
   hbilIntensity:
     m_OverrideState: 1
-    m_Value: 0.75
+    m_Value: 1
   convergeDegree:
     m_OverrideState: 1
     m_Value: 1.5
@@ -33,10 +36,10 @@ MonoBehaviour:
     m_Value: 1
   fallbackIntensity:
     m_OverrideState: 1
-    m_Value: 0.75
-  useBentNormal:
+    m_Value: 1
+  farFieldAO:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 0.75
 --- !u!114 &-4627504947601211039
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -698,7 +701,7 @@ MonoBehaviour:
     m_Value: 1
   aGXMode:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 2
 --- !u!114 &3228833441281930345
 MonoBehaviour:
   m_ObjectHideFlags: 3

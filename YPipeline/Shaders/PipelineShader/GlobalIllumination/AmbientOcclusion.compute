@@ -262,7 +262,7 @@ void HBAOKernel(uint3 id : SV_DispatchThreadID)
     float3 normalWS = LoadAndDecodeNormal(pixelCoord);
     float3 normalVS = FetchViewNormal(normalWS);
 
-    // ------------------------- Calculate Radius -------------------------
+    // ------------------------- Calculate Step Size -------------------------
 
     float radiusInUV = 0.5 * GetHBAORadius() * _CameraSettings.y / P.z;
     float radiusInPixel = min(radiusInUV * _TextureSize.w, 0.2 * _TextureSize.w);
@@ -272,8 +272,6 @@ void HBAOKernel(uint3 id : SV_DispatchThreadID)
         _OutputTexture[id.xy] = float2(1.0, P.z);
         return;
     }
-
-    // ------------------------- Calculate Step Size -------------------------
 
     // Avoid oversampling if NUM_STEPS is greater than the kernel radius in pixels
     float numSteps = min(HBAO_NUM_STEPS, radiusInPixel);
@@ -387,7 +385,7 @@ void GTAOKernel(uint3 id : SV_DispatchThreadID)
     float3 normalWS = LoadAndDecodeNormal(pixelCoord);
     float3 normalVS = FetchViewNormal(normalWS);
 
-    // ------------------------- Calculate Radius & Step Size -------------------------
+    // ------------------------- Calculate Step Size -------------------------
     
     float radiusInUV = 0.5 * GetGTAORadius() * _CameraSettings.y / positionVS.z;
     float radiusInPixel = min(radiusInUV * _TextureSize.w, 0.2 * _TextureSize.w);
@@ -397,8 +395,6 @@ void GTAOKernel(uint3 id : SV_DispatchThreadID)
         _OutputTexture[id.xy] = float2(1.0, positionVS.z);
         return;
     }
-
-    // ------------------------- Calculate Step Size -------------------------
 
     // Avoid oversampling if NUM_STEPS is greater than the kernel radius in pixels
     float numSteps = min(GTAO_NUM_STEPS, radiusInPixel);
@@ -495,6 +491,6 @@ void GTAOKernel(uint3 id : SV_DispatchThreadID)
         ao += projectedNormalLength * IntegrateArcCosWeight(h, n);
     }
 
-    ao = saturate(PositivePow(ao / GTAO_NUM_DIRECTIONS, GetGTAOIntensity()));
+    ao = pow(saturate(ao / GTAO_NUM_DIRECTIONS), GetGTAOIntensity());
     _OutputTexture[id.xy] = float2(ao, positionVS.z);
 }

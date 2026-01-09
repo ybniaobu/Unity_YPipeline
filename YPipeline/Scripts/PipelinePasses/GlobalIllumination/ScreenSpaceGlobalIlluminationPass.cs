@@ -15,6 +15,7 @@ namespace YPipeline
             
             public Vector4 textureSize;
             public Vector4 ssgiParams;
+            public Vector4 fallbackParams;
             
             public TextureHandle sceneHistory; // TAAHistory or SceneHistory
             public TextureHandle irradianceTexture;
@@ -52,7 +53,7 @@ namespace YPipeline
                 passData.threadGroupSizes = new Vector2Int(threadGroupSizeX, threadGroupSizeY);
 
                 passData.ssgiParams = new Vector4(m_SSGI.hbilIntensity.value, m_SSGI.convergeDegree.value, m_SSGI.directionCount.value, m_SSGI.stepCount.value);
-                
+                passData.fallbackParams = new Vector4((int)m_SSGI.fallbackMode.value, m_SSGI.fallbackIntensity.value, m_SSGI.farFieldAO.value, 0);
                 
                 // Irradiance Texture
                 TextureDesc irradianceTextureDesc = new TextureDesc(bufferSize.x, bufferSize.y)
@@ -69,9 +70,15 @@ namespace YPipeline
                 passData.irradianceTexture = data.IrradianceTexture;
                 builder.UseTexture(data.IrradianceTexture, AccessFlags.Write);
                 builder.SetGlobalTextureAfterPass(data.IrradianceTexture, YPipelineShaderIDs.k_IrradianceTextureID);
-
+                
+                // Render Textures
                 passData.sceneHistory = data.TAAHistory;
                 builder.UseTexture(data.TAAHistory, AccessFlags.Read);
+                
+                if (data.IsDeferredRenderingEnabled) builder.UseTexture(data.GBuffer1, AccessFlags.Read);
+                else builder.UseTexture(data.ThinGBuffer, AccessFlags.Read);
+                builder.UseTexture(data.CameraDepthTexture, AccessFlags.Read);
+                builder.UseTexture(data.MotionVectorTexture, AccessFlags.Read);
                 
                 builder.AllowPassCulling(false);
 
@@ -79,6 +86,7 @@ namespace YPipeline
                 {
                     context.cmd.SetComputeVectorParam(data.cs, "_TextureSize", data.textureSize);
                     context.cmd.SetComputeVectorParam(data.cs, YPipelineShaderIDs.k_SSGIParamsID, data.ssgiParams);
+                    context.cmd.SetComputeVectorParam(data.cs, YPipelineShaderIDs.k_SSGIFallbackParamsID, data.fallbackParams);
                     
                     int hbgiKernel = data.cs.FindKernel("HBILAlternateKernel");
                     context.cmd.SetComputeTextureParam(data.cs, hbgiKernel, "_InputTexture", data.sceneHistory);

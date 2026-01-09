@@ -10,7 +10,7 @@ namespace YPipeline
 
     public enum SSGIFallbackMode
     {
-        None, APV, AmbientProbe
+        APV = 0, AmbientProbe = 1
     }
     
     [System.Serializable]
@@ -30,8 +30,11 @@ namespace YPipeline
         [Tooltip("屏幕空间漫反射全局光照算法 Choose a screen space diffuse global illumination algorithm.")]
         public SSGIModeParameter mode = new SSGIModeParameter(SSGIMode.HBIL, true);
         
+        [Tooltip("是否使用半分辨率 If this option is set to true, the effect runs at half resolution. This will increases performance significantly, but also decreases quality.")]
+        public BoolParameter halfResolution = new BoolParameter(true);
+        
         // HBIL
-        public ClampedFloatParameter hbilIntensity = new ClampedFloatParameter(0.75f, 0.0f, 2.0f);
+        public ClampedFloatParameter hbilIntensity = new ClampedFloatParameter(1.0f, 0.0f, 2.0f);
         
         public ClampedFloatParameter convergeDegree = new ClampedFloatParameter(1.5f, 1.0f, 2.0f);
         
@@ -42,9 +45,9 @@ namespace YPipeline
         // Fallback
         public SSGIFallbackModeParameter fallbackMode = new SSGIFallbackModeParameter(SSGIFallbackMode.APV, true);
         
-        public ClampedFloatParameter fallbackIntensity = new ClampedFloatParameter(0.75f, 0.0f, 2.0f);
+        public ClampedFloatParameter fallbackIntensity = new ClampedFloatParameter(1.0f, 0.0f, 2.0f);
         
-        public BoolParameter useBentNormal = new BoolParameter(false);
+        public ClampedFloatParameter farFieldAO = new ClampedFloatParameter(0.75f, 0.0f, 2.0f);
         
         public bool IsActive() => mode.value != SSGIMode.None;
     }

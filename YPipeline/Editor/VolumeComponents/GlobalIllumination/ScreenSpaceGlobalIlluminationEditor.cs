@@ -7,6 +7,7 @@ namespace YPipeline.Editor
     public class ScreenSpaceGlobalIlluminationEditor : VolumeComponentEditor
     {
         private SerializedDataParameter m_Mode;
+        private SerializedDataParameter m_HalfResolution;
         
         // HBIL
         private SerializedDataParameter m_HBILIntensity;
@@ -17,13 +18,14 @@ namespace YPipeline.Editor
         // Fallback
         private SerializedDataParameter m_FallbackMode;
         private SerializedDataParameter m_FallbackIntensity;
-        private SerializedDataParameter m_UseBentNormal;
+        private SerializedDataParameter m_FarFieldAO;
 
         public override void OnEnable()
         {
             var o = new PropertyFetcher<ScreenSpaceGlobalIllumination>(serializedObject);
             
             m_Mode = Unpack(o.Find(x => x.mode));
+            m_HalfResolution = Unpack(o.Find(x => x.halfResolution));
             
             // HBIL
             m_HBILIntensity = Unpack(o.Find(x => x.hbilIntensity));
@@ -34,13 +36,13 @@ namespace YPipeline.Editor
             // Fallback
             m_FallbackMode = Unpack(o.Find(x => x.fallbackMode));
             m_FallbackIntensity = Unpack(o.Find(x => x.fallbackIntensity));
-            m_UseBentNormal = Unpack(o.Find(x => x.useBentNormal));
+            m_FarFieldAO = Unpack(o.Find(x => x.farFieldAO));
         }
 
         public override void OnInspectorGUI()
         {
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Screen Space Diffuse Indirect Lighting", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Indirect Diffuse Lighting", EditorStyles.boldLabel);
             
             PropertyField(m_Mode);
 
@@ -49,6 +51,7 @@ namespace YPipeline.Editor
                 case (int) SSGIMode.None:
                     break;
                 case (int) SSGIMode.HBIL:
+                    PropertyField(m_HalfResolution);
                     PropertyField(m_HBILIntensity, EditorGUIUtility.TrTextContent("Near Field Intensity"));
                     PropertyField(m_ConvergeDegree);
                     PropertyField(m_DirectionCount);
@@ -59,12 +62,14 @@ namespace YPipeline.Editor
                     break;
             }
             
+            if (m_Mode.value.enumValueIndex == (int) SSGIMode.None) return;
+            
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Fallback", EditorStyles.boldLabel);
             
             PropertyField(m_FallbackMode);
             PropertyField(m_FallbackIntensity);
-            PropertyField(m_UseBentNormal);
+            PropertyField(m_FarFieldAO);
         }
     }
 }

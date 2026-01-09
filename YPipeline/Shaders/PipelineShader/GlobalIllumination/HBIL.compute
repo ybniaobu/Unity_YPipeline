@@ -1,4 +1,4 @@
-#pragma kernel HBILKernel
+// #pragma kernel HBILKernel
 #pragma kernel HBILAlternateKernel
 
 #pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch
@@ -9,7 +9,7 @@
 #include "../../../ShaderLibrary/Core/YPipelineCSCore.hlsl"
 #include "../../../ShaderLibrary/RandomLibrary.hlsl"
 #include "../../../ShaderLibrary/EncodingLibrary.hlsl"
-#include "../../../ShaderLibrary/GlobalIllumination/DiffuseGICommon.hlsl"
+#include "GIFallback.hlsl"
 
 // --- Local Textures ---
 RWTexture2D<float4> _OutputTexture;
@@ -26,6 +26,9 @@ TEXTURE2D(_ThinGBuffer);
 #endif
 
 TEXTURE2D(_CameraDepthTexture);
+TEXTURE2D(_MotionVectorTexture);
+TEXTURE2D(_STBN128Scalar3);
+float4 _STBN128Scalar3_TexelSize;
 SAMPLER(sampler_LinearClamp);
 SAMPLER(sampler_PointClamp);
 
@@ -38,15 +41,7 @@ float4 _TimeParams; // x: frameCount, y: 1.0 / frameCount
 // --- Local Variables ---
 float4 _TextureSize; // x: 1.0 / width, y: 1.0 / height, z: width, w: height
 float4 _SSGIParams; // x: intensity, y: converge degree, z: direction count, w: step count
-
-TEXTURE2D(_STBN128Scalar3);
-float4 _STBN128Scalar3_TexelSize;
-TEXTURE2D(_STBN128Vec3);
-float4 _STBN128Vec3_TexelSize;
-TEXTURE2D(_STBN128UnitVec3);
-float4 _STBN128UnitVec3_TexelSize;
-TEXTURE2D(_STBN128CosineUnitVec3);
-float4 _STBN128CosineUnitVec3_TexelSize;
+float4 _SSGIFallbackParams; // x: fallback mode (0 for APV, 1 for ambient probe), y: fallback intensity, z: far-field AO intensity, w: use bent normal
 
 // ----------------------------------------------------------------------------------------------------
 // Input
@@ -56,6 +51,11 @@ inline float GetIntensity()                 { return _SSGIParams.x; }
 inline float GetConvergeDegree()            { return _SSGIParams.y; }
 inline float GetDirectionCount()            { return _SSGIParams.z; }
 inline float GetStepCount()                 { return _SSGIParams.w; }
+
+inline float GetFallbackMode()              { return _SSGIFallbackParams.x; }
+inline float GetFallbackIntensity()         { return _SSGIFallbackParams.y; }
+inline float GetFarFieldAOIntensity()       { return _SSGIFallbackParams.z; }
+inline float UseBentNormal()                { return _SSGIFallbackParams.w; }
 
 // ----------------------------------------------------------------------------------------------------
 // Utility Functions
@@ -106,164 +106,164 @@ inline float2 GTAOFastAcos(float2 x)
     return x >= 0 ? res : PI - res;
 }
 
-float2 FetchProjectedNormal2D(float3 normalVS, float3 tangentVS, float3 viewDir)
-{
-    return float2(dot(normalVS, tangentVS), dot(normalVS, viewDir));
-}
-
-float2 InitializeHorizonAngle(float2 projectedNormal2D)
-{
-    float t = - projectedNormal2D.x / projectedNormal2D.y;
-    float cosFront = t * rsqrt(1.0 + t * t);
-    return float2(cosFront, -cosFront);
-}
-
-// cosTheta 更大的是 θ0，即 cosTheta.x
-float3 ComputeNearFieldIrradiance(float2 projectedNormal2D, float2 cosTheta, float3 radiance)
-{
-    float2 theta = GTAOFastAcos(cosTheta);
-    float2 sinTheta2 = 1 - cosTheta * cosTheta;
-    float2 sinCosTheta = sqrt(sinTheta2) * cosTheta;
-    
-    float part0 = projectedNormal2D.x * 0.5 * (theta.y - theta.x + sinCosTheta.x - sinCosTheta.y);
-    float part1 = projectedNormal2D.y * 0.5 * (sinTheta2.y - sinTheta2.x);
-    
-    return radiance * (part0 + part1);
-}
-
-float ComputeAOAndBentNormal(float2 projectedNormal2D, float2 maxCosH, out float2 bentNormal)
-{
-    float2 theta = GTAOFastAcos(maxCosH);
-    float2 sinTheta2 = 1 - maxCosH * maxCosH;
-    float2 sinCosTheta = sqrt(sinTheta2) * maxCosH;
-    
-    float part0 = 0.5 * (theta.y + theta.x - sinCosTheta.x - sinCosTheta.y);
-    float part1 = 0.5 * (sinTheta2.y + sinTheta2.x);
-    bentNormal = float2(part0, part1);
-    
-    return projectedNormal2D.x * part0 + projectedNormal2D.y * part1;
-}
-
-// ----------------------------------------------------------------------------------------------------
-// HBIL Kernel
-// ----------------------------------------------------------------------------------------------------
-
-[numthreads(8, 8, 1)]
-void HBILKernel(uint3 id : SV_DispatchThreadID)
-{
-    int2 pixelCoord = clamp(id.xy, 0, _TextureSize.zw - 1);
-    float2 screenUV = (float2(pixelCoord) + float2(0.5, 0.5)) * _TextureSize.xy;
-    
-    // ------------------------- Fetch Position & Normal -------------------------
-    
-    float rawDepth = LoadDepth(pixelCoord);
-    
-    // TODO: 待修改
-    float4 originNDC = GetNDCFromUVAndDepth(screenUV, rawDepth);
-    float3 originWS = TransformNDCToWorld(originNDC, UNITY_MATRIX_I_VP);
-    float3 viewDirWS = GetWorldSpaceNormalizedViewDir(originWS);
-    
-    float3 positionVS = FetchPositionVS(screenUV, rawDepth);
-    float3 viewDir = normalize(-positionVS);
-
-    float3 normalWS = LoadAndDecodeNormal(pixelCoord);
-    float3 normalVS = FetchNormalVS(normalWS);
-    
-    // ------------------------- Calculate Radius & Step Size -------------------------
-    
-    float radiusInUV = 0.5 * GetConvergeDegree() * _CameraSettings.y / positionVS.z;
-    // float radiusInPixel = min(radiusInUV * _TextureSize.w, 0.2 * _TextureSize.w);
-    float radiusInPixel = radiusInUV * _TextureSize.w;
-
-    if (radiusInPixel < 1 || rawDepth < 1e-7)
-    {
-        _OutputTexture[id.xy] = float4(0.0, 0.0, 0.0, 1.0);
-        return;
-    }
-    
-    // ------------------------- Calculate Step Size -------------------------
-
-    // Avoid oversampling if numSteps is greater than the kernel radius in pixels
-    float numSteps = min(GetStepCount(), radiusInPixel);
-    float stepSizeInPixel = radiusInPixel / numSteps;
-    
-    // ------------------------- Noise -------------------------
-    
-    float2 noise = LOAD_TEXTURE2D_LOD(_STBN128Scalar3, id.xy % _STBN128Scalar3_TexelSize.zw, 0).rg;
-    // float randomRadian = (noise.r + _Jitter.z * IsTemporalBlurEnabled()) * TWO_PI;
-    float randomRadian = (noise.r + _Jitter.z) * TWO_PI;
-    // float randomOffset = frac(noise.g + _Jitter.w * IsTemporalBlurEnabled());
-    float randomOffset = noise.g;
-    
-    // ------------------------- Loop -------------------------
-
-    float3 irradiance = 0;
-    float3 bentNormalVS = 0;
-    float ao = 0;
-    float dirAngle = PI / GetDirectionCount();
-    float r2 = GetConvergeDegree() * GetConvergeDegree();
-    
-    for (int d = 0; d < GetDirectionCount(); d++)
-    {
-        // ------------------------- Randomize Direction -------------------------
-        
-        float angle = dirAngle * d + randomRadian;
-        float3 sliceDir = float3(cos(angle), sin(angle), 0);
-        float2 pixelDelta = sliceDir.xy * stepSizeInPixel;
-        
-        // ------------------------- Normal Projection -------------------------
-        
-        float3 sliceNormal = normalize(cross(sliceDir, viewDir));
-        float3 tangentVS = normalize(cross(viewDir, sliceNormal)); // D(φ)
-        // float3 realTangentVS = cross(normalVS, sliceNormal);
-        // float3 projectedNormal = normalVS - sliceNormal * dot(normalVS, sliceNormal);
-        float2 projectedNormal2D = FetchProjectedNormal2D(normalVS, tangentVS, viewDir); // n'
-        float2 maxCosH = InitializeHorizonAngle(projectedNormal2D);
-        
-        for (int s = 0; s < GetStepCount(); s++)
-        {
-            float2 offset = (randomOffset + s) * pixelDelta;
-            float4 sampleCoord = clamp(id.xyxy + float4(-offset, offset), 0, _TextureSize.zwzw - 1);
-            float4 sampleUV = (sampleCoord + 0.5) * _TextureSize.xyxy;
-            float sh1Depth = LoadDepth(sampleCoord.xy);
-            float sh2Depth = LoadDepth(sampleCoord.zw);
-            float3 sh1 = FetchPositionVS(sampleUV.xy, sh1Depth) - positionVS; // H1
-            float3 sh2 = FetchPositionVS(sampleUV.zw, sh2Depth) - positionVS; // H2
-            float2 length2 = float2(dot(sh1, sh1), dot(sh2, sh2));
-            float2 cosH = float2(dot(sh1, viewDir), dot(sh2, viewDir)) * rsqrt(length2);
-            
-            if (length2.x < r2 && cosH.x > maxCosH.x)
-            {
-                float3 nearRadiance = LoadRadiance(sampleCoord.xy);
-                float2 cosTheta = float2(cosH.x, maxCosH.x);
-                irradiance += ComputeNearFieldIrradiance(projectedNormal2D, cosTheta, nearRadiance);
-                maxCosH.x = cosH.x;
-            }
-            
-            if (length2.y < r2 && cosH.y > maxCosH.y)
-            {
-                float3 nearRadiance = LoadRadiance(sampleCoord.zw);
-                float2 cosTheta = float2(cosH.y, maxCosH.y);
-                irradiance += ComputeNearFieldIrradiance(projectedNormal2D, cosTheta, nearRadiance);
-                maxCosH.y = cosH.y;
-            }
-        }
-        
-        float2 bentNormal2D;
-        ao += ComputeAOAndBentNormal(projectedNormal2D, maxCosH, bentNormal2D);
-        
-        bentNormalVS += bentNormal2D.x * tangentVS + bentNormal2D.y * viewDir;
-    }
-    
-    ao = saturate(ao / GetDirectionCount());
-    bentNormalVS.z = -bentNormalVS.z;
-    float3 bentNormal = TransformViewToWorldDir(bentNormalVS / GetDirectionCount(), true);
-    
-    
-    irradiance = irradiance / GetDirectionCount();
-    // irradiance += DiffuseGIFallback(originWS, normalWS, viewDirWS);
-    _OutputTexture[id.xy] = float4(irradiance, 0.0);
-}
+// float2 FetchProjectedNormal2D(float3 normalVS, float3 tangentVS, float3 viewDir)
+// {
+//     return float2(dot(normalVS, tangentVS), dot(normalVS, viewDir));
+// }
+//
+// float2 InitializeHorizonAngle(float2 projectedNormal2D)
+// {
+//     float t = - projectedNormal2D.x / projectedNormal2D.y;
+//     float cosFront = t * rsqrt(1.0 + t * t);
+//     return float2(cosFront, -cosFront);
+// }
+//
+// // cosTheta 更大的是 θ0，即 cosTheta.x
+// float3 ComputeNearFieldIrradiance(float2 projectedNormal2D, float2 cosTheta, float3 radiance)
+// {
+//     float2 theta = GTAOFastAcos(cosTheta);
+//     float2 sinTheta2 = 1 - cosTheta * cosTheta;
+//     float2 sinCosTheta = sqrt(sinTheta2) * cosTheta;
+//     
+//     float part0 = projectedNormal2D.x * 0.5 * (theta.y - theta.x + sinCosTheta.x - sinCosTheta.y);
+//     float part1 = projectedNormal2D.y * 0.5 * (sinTheta2.y - sinTheta2.x);
+//     
+//     return radiance * (part0 + part1);
+// }
+//
+// float ComputeAOAndBentNormal(float2 projectedNormal2D, float2 maxCosH, out float2 bentNormal)
+// {
+//     float2 theta = GTAOFastAcos(maxCosH);
+//     float2 sinTheta2 = 1 - maxCosH * maxCosH;
+//     float2 sinCosTheta = sqrt(sinTheta2) * maxCosH;
+//     
+//     float part0 = 0.5 * (theta.y + theta.x - sinCosTheta.x - sinCosTheta.y);
+//     float part1 = 0.5 * (sinTheta2.y + sinTheta2.x);
+//     bentNormal = float2(part0, part1);
+//     
+//     return projectedNormal2D.x * part0 + projectedNormal2D.y * part1;
+// }
+//
+// // ----------------------------------------------------------------------------------------------------
+// // HBIL Kernel
+// // ----------------------------------------------------------------------------------------------------
+//
+// [numthreads(8, 8, 1)]
+// void HBILKernel(uint3 id : SV_DispatchThreadID)
+// {
+//     int2 pixelCoord = clamp(id.xy, 0, _TextureSize.zw - 1);
+//     float2 screenUV = (float2(pixelCoord) + float2(0.5, 0.5)) * _TextureSize.xy;
+//     
+//     // ------------------------- Fetch Position & Normal -------------------------
+//     
+//     float rawDepth = LoadDepth(pixelCoord);
+//     
+//     // TODO: 待修改
+//     float4 originNDC = GetNDCFromUVAndDepth(screenUV, rawDepth);
+//     float3 originWS = TransformNDCToWorld(originNDC, UNITY_MATRIX_I_VP);
+//     float3 viewDirWS = GetWorldSpaceNormalizedViewDir(originWS);
+//     
+//     float3 positionVS = FetchPositionVS(screenUV, rawDepth);
+//     float3 viewDir = normalize(-positionVS);
+//
+//     float3 normalWS = LoadAndDecodeNormal(pixelCoord);
+//     float3 normalVS = FetchNormalVS(normalWS);
+//     
+//     // ------------------------- Calculate Radius & Step Size -------------------------
+//     
+//     float radiusInUV = 0.5 * GetConvergeDegree() * _CameraSettings.y / positionVS.z;
+//     // float radiusInPixel = min(radiusInUV * _TextureSize.w, 0.2 * _TextureSize.w);
+//     float radiusInPixel = radiusInUV * _TextureSize.w;
+//
+//     if (radiusInPixel < 1 || rawDepth < 1e-7)
+//     {
+//         _OutputTexture[id.xy] = float4(0.0, 0.0, 0.0, 1.0);
+//         return;
+//     }
+//     
+//     // ------------------------- Calculate Step Size -------------------------
+//
+//     // Avoid oversampling if numSteps is greater than the kernel radius in pixels
+//     float numSteps = min(GetStepCount(), radiusInPixel);
+//     float stepSizeInPixel = radiusInPixel / numSteps;
+//     
+//     // ------------------------- Noise -------------------------
+//     
+//     float2 noise = LOAD_TEXTURE2D_LOD(_STBN128Scalar3, id.xy % _STBN128Scalar3_TexelSize.zw, 0).rg;
+//     // float randomRadian = (noise.r + _Jitter.z * IsTemporalBlurEnabled()) * TWO_PI;
+//     float randomRadian = (noise.r + _Jitter.z) * TWO_PI;
+//     // float randomOffset = frac(noise.g + _Jitter.w * IsTemporalBlurEnabled());
+//     float randomOffset = noise.g;
+//     
+//     // ------------------------- Loop -------------------------
+//
+//     float3 irradiance = 0;
+//     float3 bentNormalVS = 0;
+//     float ao = 0;
+//     float dirAngle = PI / GetDirectionCount();
+//     float r2 = GetConvergeDegree() * GetConvergeDegree();
+//     
+//     for (int d = 0; d < GetDirectionCount(); d++)
+//     {
+//         // ------------------------- Randomize Direction -------------------------
+//         
+//         float angle = dirAngle * d + randomRadian;
+//         float3 sliceDir = float3(cos(angle), sin(angle), 0);
+//         float2 pixelDelta = sliceDir.xy * stepSizeInPixel;
+//         
+//         // ------------------------- Normal Projection -------------------------
+//         
+//         float3 sliceNormal = normalize(cross(sliceDir, viewDir));
+//         float3 tangentVS = normalize(cross(viewDir, sliceNormal)); // D(φ)
+//         // float3 realTangentVS = cross(normalVS, sliceNormal);
+//         // float3 projectedNormal = normalVS - sliceNormal * dot(normalVS, sliceNormal);
+//         float2 projectedNormal2D = FetchProjectedNormal2D(normalVS, tangentVS, viewDir); // n'
+//         float2 maxCosH = InitializeHorizonAngle(projectedNormal2D);
+//         
+//         for (int s = 0; s < GetStepCount(); s++)
+//         {
+//             float2 offset = (randomOffset + s) * pixelDelta;
+//             float4 sampleCoord = clamp(id.xyxy + float4(-offset, offset), 0, _TextureSize.zwzw - 1);
+//             float4 sampleUV = (sampleCoord + 0.5) * _TextureSize.xyxy;
+//             float sh1Depth = LoadDepth(sampleCoord.xy);
+//             float sh2Depth = LoadDepth(sampleCoord.zw);
+//             float3 sh1 = FetchPositionVS(sampleUV.xy, sh1Depth) - positionVS; // H1
+//             float3 sh2 = FetchPositionVS(sampleUV.zw, sh2Depth) - positionVS; // H2
+//             float2 length2 = float2(dot(sh1, sh1), dot(sh2, sh2));
+//             float2 cosH = float2(dot(sh1, viewDir), dot(sh2, viewDir)) * rsqrt(length2);
+//             
+//             if (length2.x < r2 && cosH.x > maxCosH.x)
+//             {
+//                 float3 nearRadiance = LoadRadiance(sampleCoord.xy);
+//                 float2 cosTheta = float2(cosH.x, maxCosH.x);
+//                 irradiance += ComputeNearFieldIrradiance(projectedNormal2D, cosTheta, nearRadiance);
+//                 maxCosH.x = cosH.x;
+//             }
+//             
+//             if (length2.y < r2 && cosH.y > maxCosH.y)
+//             {
+//                 float3 nearRadiance = LoadRadiance(sampleCoord.zw);
+//                 float2 cosTheta = float2(cosH.y, maxCosH.y);
+//                 irradiance += ComputeNearFieldIrradiance(projectedNormal2D, cosTheta, nearRadiance);
+//                 maxCosH.y = cosH.y;
+//             }
+//         }
+//         
+//         float2 bentNormal2D;
+//         ao += ComputeAOAndBentNormal(projectedNormal2D, maxCosH, bentNormal2D);
+//         
+//         bentNormalVS += bentNormal2D.x * tangentVS + bentNormal2D.y * viewDir;
+//     }
+//     
+//     ao = saturate(ao / GetDirectionCount());
+//     bentNormalVS.z = -bentNormalVS.z;
+//     float3 bentNormal = TransformViewToWorldDir(bentNormalVS / GetDirectionCount(), true);
+//     
+//     
+//     irradiance = irradiance / GetDirectionCount();
+//     // irradiance += DiffuseGIFallback(originWS, normalWS, viewDirWS);
+//     _OutputTexture[id.xy] = float4(irradiance, 0.0);
+// }
 
 // ----------------------------------------------------------------------------------------------------
 // HBIL Kernel (Alternate)
@@ -284,6 +284,22 @@ float IntegrateArcIrradiance(float2 theta, float n)
     return 0.25 * (arc.y - arc.x);
 }
 
+float2 Reprojection(float3 sampleWS)
+{
+    float4 currentSampleCS = mul(UNITY_MATRIX_NONJITTERED_VP, float4(sampleWS.xyz, 1.0));
+    float4 previousSampleCS = mul(UNITY_PREV_MATRIX_NONJITTERED_VP, float4(sampleWS.xyz, 1.0));
+    
+    float2 currentPositionNDC = currentSampleCS.xy / currentSampleCS.w;
+    float2 previousPositionNDC = previousSampleCS.xy / previousSampleCS.w;
+    
+    float2 velocity = currentPositionNDC - previousPositionNDC;
+    #if UNITY_UV_STARTS_AT_TOP
+    velocity.y = -velocity.y;
+    #endif
+    velocity *= 0.5;
+    return velocity;
+}
+
 float3 SliceMarching(bool IsRightDir, uint2 pixelCoord, float2 maxTexelDelta, float randomOffset, float3 positionVS, float3 viewDir, float n, float projectedNormalLength, inout float2 maxCosH)
 {
     float3 irradiance = 0;
@@ -294,28 +310,38 @@ float3 SliceMarching(bool IsRightDir, uint2 pixelCoord, float2 maxTexelDelta, fl
     {
         float2 offset = PositivePow((randomOffset + s) / GetStepCount(), GetConvergeDegree()) * maxTexelDelta;
         int2 sampleCoord = pixelCoord + offset * samplingDirection;
+        
+        if (sampleCoord.x < 0 || sampleCoord.y < 0 || sampleCoord.x > _TextureSize.z - 1 || sampleCoord.y > _TextureSize.w - 1) break;
+        
         sampleCoord = clamp(sampleCoord, 0, _TextureSize.zw - 1);
         float2 sampleUV = (float2(sampleCoord) + 0.5) * _TextureSize.xy;
 
         // ------------------------- Calculate CosH -------------------------
         
         float sampleDepth = LoadDepth(sampleCoord);
-        float3 H = normalize(FetchPositionVS(sampleUV.xy, sampleDepth) - positionVS);
+        float4 sampleNDC = GetNDCFromUVAndDepth(sampleUV, sampleDepth);
+        float3 sampleWS = TransformNDCToWorld(sampleNDC, UNITY_MATRIX_I_VP);
+        float3 sampleVS = TransformNDCToView(sampleNDC, UNITY_MATRIX_I_P);
+        sampleVS.z = -sampleVS.z;
+        float3 H = normalize(sampleVS - positionVS);
         float cosH = dot(H, viewDir);
             
+        // ------------------------- Reprojection -------------------------
+        
+        float2 velocity = Reprojection(sampleWS);
+        float2 historyUV = sampleUV - velocity;
+        float2 historyCoord = clamp(historyUV * _TextureSize.zw, 0, _TextureSize.zw - 1);
+        
         // ------------------------- Irradiance Integral -------------------------
         
         if (cosH > max)
         {
-            float3 nearRadiance = LoadRadiance(sampleCoord);
+            float3 nearRadiance = LoadRadiance(historyCoord);
             float2 cosTheta = float2(cosH, max);
             float2 theta = GTAOFastAcos(cosTheta) * samplingDirection;
             irradiance += projectedNormalLength * IntegrateArcIrradiance(theta, n) * nearRadiance;
             max = cosH;
         }
-        
-        // 当样本离屏时，停止采样，但确保采样过一次。
-        if (sampleCoord.x == 0 || sampleCoord.y == 0 || sampleCoord.x == _TextureSize.z - 1 || sampleCoord.y == _TextureSize.w - 1) break;
     }
     
     maxCosH = IsRightDir ? float2(maxCosH.x, max) : float2(max, maxCosH.y);
@@ -327,25 +353,25 @@ void HBILAlternateKernel(uint3 id : SV_DispatchThreadID)
 {
     int2 pixelCoord = clamp(id.xy, 0, _TextureSize.zw - 1);
     float2 screenUV = (float2(pixelCoord) + float2(0.5, 0.5)) * _TextureSize.xy;
-
-    // ------------------------- Fetch Position & Normal -------------------------
-    
     float rawDepth = LoadDepth(pixelCoord);
-    float3 positionVS = FetchPositionVS(screenUV, rawDepth);
-    float3 viewDir = normalize(-positionVS);
     
     if (rawDepth < 1e-7)
     {
-        _OutputTexture[id.xy] = float4(0.0, 0.0, 0.0, positionVS.z);
+        _OutputTexture[id.xy] = float4(0.0, 0.0, 0.0, 1.0);
         return;
     }
 
+    // ------------------------- Fetch Position & Normal -------------------------
+    
+    float4 positionNDC = GetNDCFromUVAndDepth(screenUV, rawDepth);
+    float3 positionWS = TransformNDCToWorld(positionNDC, UNITY_MATRIX_I_VP);
+    float3 positionVS = TransformNDCToView(positionNDC, UNITY_MATRIX_I_P);
+    positionVS.z = -positionVS.z;
+    float3 viewDir = normalize(-positionVS);
+    // float3 viewDirWS = GetWorldSpaceNormalizedViewDir(positionWS);
+
     float3 normalWS = LoadAndDecodeNormal(pixelCoord);
     float3 normalVS = FetchNormalVS(normalWS);
-    
-    // TODO: 与 APV 采样有关，待修改
-    float3 positionWS = TransformViewToWorld(float3(positionVS.xy, -positionVS.z));
-    float3 viewDirWS = GetWorldSpaceNormalizedViewDir(positionWS);
 
     // ------------------------- Noise -------------------------
     
@@ -355,15 +381,12 @@ void HBILAlternateKernel(uint3 id : SV_DispatchThreadID)
     float randomRadian = noise.r * TWO_PI;
     float randomOffset = noise.b;
     
-    // float3 noise = LOAD_TEXTURE2D_LOD(_STBN128Scalar3, pixelCoord % _STBN128Scalar3_TexelSize.zw, 0).rgb;
-    // float randomRadian = (noise.r + _Jitter.z * IsTemporalBlurEnabled()) * TWO_PI;
-    // float randomOffset = frac(noise.g + _Jitter.w * IsTemporalBlurEnabled());
-    
     // ------------------------- Direction Loop -------------------------
     
     int maxRayTexel = max(_TextureSize.z, _TextureSize.w);
     float dirAngle = PI / GetDirectionCount();
     float3 irradiance = 0;
+    float ao = 0;
     float3 bentNormalVS = 0;
     
     for (int d = 0; d < GetDirectionCount(); d++)
@@ -395,6 +418,7 @@ void HBILAlternateKernel(uint3 id : SV_DispatchThreadID)
         
         float2 h = GTAOFastAcos(maxCosH);
         h.x = -h.x;
+        ao += projectedNormalLength * IntegrateArcAO(h, n);
         float bentAngle = (h.x + h.y) * 0.5;
         float3 tangentVS = cross(viewDir, sliceNormal);
         bentNormalVS += viewDir * cos(bentAngle) + tangentVS * sin(bentAngle);
@@ -402,10 +426,20 @@ void HBILAlternateKernel(uint3 id : SV_DispatchThreadID)
     
     bentNormalVS = normalize(bentNormalVS);
     bentNormalVS.z = -bentNormalVS.z;
-    
     float3 bentNormal = TransformViewToWorldDir(bentNormalVS,true);
     
+    ao = pow(saturate(ao / GetDirectionCount()), GetFarFieldAOIntensity());
     irradiance = irradiance / GetDirectionCount() * GetIntensity();
-    irradiance += DiffuseGIFallback(positionWS, normalWS, bentNormal, noise);
-    _OutputTexture[id.xy] = float4(irradiance, positionVS.z);
+    
+    UNITY_BRANCH
+    if (GetFallbackMode() < 0.5)
+    {
+        irradiance += FallbackAPV(positionWS, normalWS, bentNormal, noise) * ao * GetFallbackIntensity();
+    }
+    else
+    {
+        irradiance += FallbackAmbientProbe(bentNormal) * ao * GetFallbackIntensity();
+    }
+    
+    _OutputTexture[id.xy] = float4(irradiance, ao);
 }

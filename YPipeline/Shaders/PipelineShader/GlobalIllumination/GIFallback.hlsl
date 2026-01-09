@@ -1,7 +1,7 @@
-﻿#ifndef YPIPELINE_DIFFUSE_GI_COMMON_INCLUDED
-#define YPIPELINE_DIFFUSE_GI_COMMON_INCLUDED
+﻿#ifndef YPIPELINE_GI_FALLBACK_INCLUDED
+#define YPIPELINE_GI_FALLBACK_INCLUDED
 
-#include "../../ShaderLibrary/IBLLibrary.hlsl"
+#include "../../../ShaderLibrary/IBLLibrary.hlsl"
 // #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/AmbientProbe.hlsl" // IBLLibrary 改写了 EvaluateAmbientProbe 函数
 #define __AMBIENTPROBE_HLSL__
 #include "Packages/com.unity.render-pipelines.core/Runtime/Lighting/ProbeVolume/ProbeVolume.hlsl"
@@ -25,12 +25,17 @@ float3 SampleProbeVolume_NoNoise(float3 positionWS, float3 normalWS, float3 bent
     return irradiance;
 }
 
-float3 DiffuseGIFallback(float3 positionWS, float3 normalWS, float3 bentNormal,  float3 noise)
+float3 FallbackAmbientProbe(float3 bentNormal)
+{
+    return EvaluateAmbientProbe(bentNormal);
+}
+
+float3 FallbackAPV(float3 positionWS, float3 normalWS, float3 bentNormal,  float3 noise)
 {
     #if defined(PROBE_VOLUMES_L1) || defined(PROBE_VOLUMES_L2)
         return SampleProbeVolume_NoNoise(positionWS, normalWS, bentNormal, noise);
     #else
-        return EvaluateAmbientProbe(normalWS);
+        return EvaluateAmbientProbe(bentNormal);
     #endif
 }
 
