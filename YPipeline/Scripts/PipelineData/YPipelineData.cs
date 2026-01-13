@@ -31,7 +31,7 @@ namespace YPipeline
         public bool IsTAAEnabled => asset.antiAliasingMode == AntiAliasingMode.TAA;
         public Vector2Int BufferSize => new Vector2Int((int) (camera.pixelWidth * asset.renderScale), (int) (camera.pixelHeight * asset.renderScale));
         
-        public bool isSSDGIEnabled;
+        public bool isSSGIEnabled;
         
         // ----------------------------------------------------------------------------------------------------
         // Buffer and Texture Handles

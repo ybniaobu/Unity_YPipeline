@@ -215,6 +215,14 @@ namespace YPipeline
             get => m_HBILCS;
             set => this.SetValueAndNotify(ref m_HBILCS, value, nameof(m_HBILCS));
         }
+
+        [SerializeField] [ResourcePath("YPipeline/Shaders/PipelineShader/GlobalIllumination/GIDenoise.compute")]
+        private ComputeShader m_GIDenoiseCS;
+        public ComputeShader GIDenoiseCS
+        {
+            get => m_GIDenoiseCS;
+            set => this.SetValueAndNotify(ref m_GIDenoiseCS, value, nameof(m_GIDenoiseCS));
+        }
         
         [SerializeField] [ResourcePath("YPipeline/Shaders/PipelineShader/GlobalIllumination/AmbientOcclusion.compute")]
         private ComputeShader m_AmbientOcclusionCS;

@@ -65,6 +65,30 @@ namespace YPipeline
         }
         
         // ----------------------------------------------------------------------------------------------------
+        // Irradiance History
+        // ----------------------------------------------------------------------------------------------------
+        
+        public bool IsIrradianceHistoryReset { get; set; }
+        private RTHandle m_IrradianceHistory;
+
+        public RTHandle GetIrradianceHistory(ref RenderTextureDescriptor desc, string name = "Irradiance History")
+        {
+            if (m_IrradianceHistory == null || m_IrradianceHistory.rt.width != desc.width || m_IrradianceHistory.rt.height != desc.height)
+            {
+                IsIrradianceHistoryReset = true;
+                m_IrradianceHistory?.Release();
+                m_IrradianceHistory = RTHandles.Alloc(desc, FilterMode.Bilinear, TextureWrapMode.Clamp, anisoLevel: 0, name: name);
+            }
+            return m_IrradianceHistory;
+        }
+
+        public void ReleaseIrradianceHistory()
+        {
+            m_IrradianceHistory?.Release();
+            m_IrradianceHistory = null;
+        }
+        
+        // ----------------------------------------------------------------------------------------------------
         // Ambient Occlusion History
         // ----------------------------------------------------------------------------------------------------
         
@@ -120,6 +144,7 @@ namespace YPipeline
                 }
                 //Dispose unmanaged resources
                 ReleaseTAAHistory();
+                ReleaseIrradianceHistory();
                 ReleaseAOHistory();
             }
             

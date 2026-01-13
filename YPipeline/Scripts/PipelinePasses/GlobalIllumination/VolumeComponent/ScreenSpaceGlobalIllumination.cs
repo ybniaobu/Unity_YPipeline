@@ -28,7 +28,7 @@ namespace YPipeline
     public class ScreenSpaceGlobalIllumination : VolumeComponent, IPostProcessComponent
     {
         [Tooltip("屏幕空间漫反射全局光照算法 Choose a screen space diffuse global illumination algorithm.")]
-        public SSGIModeParameter mode = new SSGIModeParameter(SSGIMode.HBIL, true);
+        public SSGIModeParameter mode = new SSGIModeParameter(SSGIMode.None, true);
         
         [Tooltip("是否使用半分辨率 If this option is set to true, the effect runs at half resolution. This will increases performance significantly, but also decreases quality.")]
         public BoolParameter halfResolution = new BoolParameter(true);
@@ -48,6 +48,24 @@ namespace YPipeline
         public ClampedFloatParameter fallbackIntensity = new ClampedFloatParameter(1.0f, 0.0f, 2.0f);
         
         public ClampedFloatParameter farFieldAO = new ClampedFloatParameter(0.75f, 0.0f, 2.0f);
+        
+        // Bilateral Denoise
+        public BoolParameter enableBilateralDenoise = new BoolParameter(false, BoolParameter.DisplayType.Checkbox);
+        
+        [Tooltip("过滤核半径 Defines the neighborhood area used for weighted averaging. Larger kernel produces stronger blurring effects.")]
+        public ClampedIntParameter kernelRadius = new ClampedIntParameter(4, 2, 8);
+        
+        [Tooltip("空域标准差 The smoothing parameter for spatial kernel, higher value results in blurrier result.")]
+        public ClampedFloatParameter spatialSigma = new ClampedFloatParameter(2.0f, 0.0f, 5.0f);
+        
+        [Tooltip("值域标准差 The smoothing parameter for range kernel, lower value achieves a better effect in edge preservation but could introduces false edges.")]
+        public ClampedFloatParameter depthSigma = new ClampedFloatParameter(0.25f, 0.0f, 0.5f);
+        
+        // Temporal Denoise
+        public BoolParameter enableTemporalDenoise = new BoolParameter(true, BoolParameter.DisplayType.Checkbox);
+        
+        [Tooltip("Lower value reduces ghosting but produces more noise and flicking, higher value reduces noise but produces more ghosting.")]
+        public ClampedFloatParameter criticalValue = new ClampedFloatParameter(1.0f, 0.5f, 1.5f);
         
         public bool IsActive() => mode.value != SSGIMode.None;
     }

@@ -19,6 +19,16 @@ namespace YPipeline.Editor
         private SerializedDataParameter m_FallbackMode;
         private SerializedDataParameter m_FallbackIntensity;
         private SerializedDataParameter m_FarFieldAO;
+        
+        // Bilateral Denoise
+        private SerializedDataParameter m_EnableBilateralDenoise;
+        private SerializedDataParameter m_KernelRadius;
+        private SerializedDataParameter m_SpatialSigma;
+        private SerializedDataParameter m_DepthSigma;
+        
+        // Temporal Denoise
+        private SerializedDataParameter m_EnableTemporalDenoise;
+        private SerializedDataParameter m_CriticalValue;
 
         public override void OnEnable()
         {
@@ -37,6 +47,16 @@ namespace YPipeline.Editor
             m_FallbackMode = Unpack(o.Find(x => x.fallbackMode));
             m_FallbackIntensity = Unpack(o.Find(x => x.fallbackIntensity));
             m_FarFieldAO = Unpack(o.Find(x => x.farFieldAO));
+            
+            // Bilateral Denoise
+            m_EnableBilateralDenoise = Unpack(o.Find(x => x.enableBilateralDenoise));
+            m_KernelRadius = Unpack(o.Find(x => x.kernelRadius));
+            m_SpatialSigma = Unpack(o.Find(x => x.spatialSigma));
+            m_DepthSigma = Unpack(o.Find(x => x.depthSigma));
+            
+            // Temporal Denoise
+            m_EnableTemporalDenoise = Unpack(o.Find(x => x.enableTemporalDenoise));
+            m_CriticalValue = Unpack(o.Find(x => x.criticalValue));
         }
 
         public override void OnInspectorGUI()
@@ -70,6 +90,25 @@ namespace YPipeline.Editor
             PropertyField(m_FallbackMode);
             PropertyField(m_FallbackIntensity);
             PropertyField(m_FarFieldAO);
+            
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Denoise", EditorStyles.boldLabel);
+            
+            PropertyField(m_EnableBilateralDenoise);
+
+            if (m_EnableBilateralDenoise.value.boolValue)
+            {
+                PropertyField(m_KernelRadius);
+                PropertyField(m_SpatialSigma);
+                PropertyField(m_DepthSigma);
+            }
+            
+            PropertyField(m_EnableTemporalDenoise);
+
+            if (m_EnableTemporalDenoise.value.boolValue)
+            {
+                PropertyField(m_CriticalValue);
+            }
         }
     }
 }

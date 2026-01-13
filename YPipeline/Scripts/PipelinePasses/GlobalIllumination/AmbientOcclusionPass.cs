@@ -133,7 +133,7 @@ namespace YPipeline
                         filterMode = FilterMode.Bilinear,
                         clearBuffer = false,
                         enableRandomWrite = true,
-                        name = "Ambient Occlusion transition0"
+                        name = "Ambient Occlusion Transition0"
                     };
                     
                     TextureDesc transitionDesc1 = new TextureDesc(textureSize.x, textureSize.y)
@@ -142,7 +142,7 @@ namespace YPipeline
                         filterMode = FilterMode.Bilinear,
                         clearBuffer = false,
                         enableRandomWrite = true,
-                        name = "Ambient Occlusion transition1"
+                        name = "Ambient Occlusion Transition1"
                     };
 
                     if (passData.enableSpatialBlur || passData.enableTemporalBlur || passData.enableHalfResolution)
@@ -150,7 +150,7 @@ namespace YPipeline
                         passData.transition0 = builder.CreateTransientTexture(transitionDesc0);
                     }
 
-                    if (passData.enableSpatialBlur || passData.enableTemporalBlur)
+                    if (passData.enableSpatialBlur || (passData.enableTemporalBlur && passData.enableHalfResolution))
                     {
                         passData.transition1 = builder.CreateTransientTexture(transitionDesc1);
                     }
