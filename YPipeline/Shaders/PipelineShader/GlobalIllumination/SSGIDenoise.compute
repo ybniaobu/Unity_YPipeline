@@ -3,6 +3,7 @@
 #pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch
 
 #include "../../../ShaderLibrary/Core/YPipelineCSCore.hlsl"
+#include "DenoiseCommon.hlsl"
 
 // --- Local Textures ---
 RWTexture2D<float4> _OutputTexture;
@@ -24,15 +25,6 @@ groupshared float4 _IrradianceZ[TILE_SIZE * TILE_SIZE];
 // --- Local Variables ---
 float4 _TextureSize; // x: 1.0 / width, y: 1.0 / height, z: width, w: height
 float4 _AOTemporalBlurParams; // x: is temporal blur enabled (1 or 0), y: variance critical value
-
-// ----------------------------------------------------------------------------------------------------
-// Filter Utility Functions
-// ----------------------------------------------------------------------------------------------------
-
-inline float4 LoadIrradianceAndDepth(int2 pixelCoord)
-{
-    return LOAD_TEXTURE2D_LOD(_InputTexture, pixelCoord, 0);
-}
 
 // ----------------------------------------------------------------------------------------------------
 // Temporal Filter Functions & Kernel
@@ -64,59 +56,10 @@ inline void GetNeighbourhoodSamples(in uint tileIDs[9], inout float4 samples[9])
     samples[8] = _IrradianceZ[tileIDs[8]];
 }
 
-float3 FilterMiddleColor(in float4 samples[9], float middleDepth)
-{
-    const float weights[9] = { 4.0, 2.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0, 1.0 };
-    
-    float weightSum = 4.0;
-    float3 filtered = weightSum * samples[0].rgb;
-
-    UNITY_UNROLL
-    for (int i = 0; i < 8; i++)
-    {
-        float sampleDepth = samples[i + 1].a;
-        bool occlusionTest = abs(1 - sampleDepth / middleDepth) < 0.1;
-        float weight = weights[i + 1] * occlusionTest;
-        weightSum += weight;
-        filtered += weight * samples[i + 1].rgb;
-    }
-    
-    filtered *= rcp(weightSum);
-    return filtered;
-}
-
-void VarianceMinMax(in float4 samples[9], float gamma, float3 prefiltered, out float3 minColor, out float3 maxColor)
-{
-    float3 m1 = 0;
-    float3 m2 = 0;
-
-    UNITY_UNROLL
-    for (int i = 0; i < 9; i++)
-    {
-        float3 sampleColor = samples[i].rgb;
-        m1 += sampleColor;
-        m2 += sampleColor * sampleColor;
-    }
-
-    const int sampleCount = 9;
-    m1 *= rcp(sampleCount);
-    m2 *= rcp(sampleCount);
-
-    float3 sigma = sqrt(abs(m2 - m1 * m1)); // standard deviation
-    float3 neighborMin = m1 - gamma * sigma;
-    float3 neighborMax = m1 + gamma * sigma;
-
-    neighborMin = min(neighborMin, prefiltered);
-    neighborMax = max(neighborMax, prefiltered);
-
-    minColor = neighborMin;
-    maxColor = neighborMax;
-}
-
 [numthreads(THREAD_NUM, THREAD_NUM, 1)]
 void TemporalDenoiseKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_GroupThreadID, uint3 groupId : SV_GroupID, uint groupIndex : SV_GroupIndex)
 {
-    // ------------------------- Fetch AO & Depth -------------------------
+    // ------------------------- Fetch Irradiance & Depth -------------------------
 
     int2 tileTopLeftCoord = groupId.xy * THREAD_NUM - TILE_BORDER;
 
@@ -125,45 +68,46 @@ void TemporalDenoiseKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId :
     {
         int2 coord = tileTopLeftCoord + int2(i % TILE_SIZE, i / TILE_SIZE);
         coord = clamp(coord, 0, _TextureSize.zw - 1);
-        _IrradianceZ[i] = LoadIrradianceAndDepth(coord);
+        _IrradianceZ[i] = LoadColorAndDepth(_InputTexture, coord);
     }
 
     GroupMemoryBarrierWithGroupSync();
 
-    // ------------------------- Temporal Blur -------------------------
-
-    // Reprojection
+    // ------------------------- Reprojection -------------------------
+    
     float2 screenUV = (float2(id.xy) + float2(0.5, 0.5)) * _TextureSize.xy;
     float2 velocity = SAMPLE_TEXTURE2D_LOD(_MotionVectorTexture, sampler_PointClamp, screenUV, 0).rg;
     float2 historyUV = screenUV - velocity;
-    float4 history = SAMPLE_TEXTURE2D_LOD(_IrradianceHistory, sampler_LinearClamp, historyUV, 0);
+    float4 history = SampleColorAndDepth(_IrradianceHistory, sampler_LinearClamp, historyUV);
 
-    // Neighbourhood
+    // ------------------------- Fetch Neighbourhood Samples -------------------------
+    
     uint2 middleTileID = groupThreadId.xy + TILE_BORDER;
     uint tileIDs[9];
     GetNeighbourhoodTileIDs(middleTileID, tileIDs);
     float4 neighbours[9];
     GetNeighbourhoodSamples(tileIDs, neighbours);
 
-    // prefilter
-    float middleDepth = neighbours[0].a;
-    float3 prefiltered = FilterMiddleColor(neighbours, middleDepth);
-
-    // Variance Clamping
+    // ------------------------- History Clamping -------------------------
+    
+    float3 prefiltered = BilateralFilterMiddleColor(neighbours);
     
     // float gamma = GetTemporalVarianceCriticalValue();
-    float gamma = 1.0f;
-    gamma = lerp(gamma, max(gamma - 0.75, 0.1), saturate(sqrt(max(velocity.x, velocity.y)) * 10.0));
+    float gamma = 2.0f;
+    float velocityFactor = length(velocity);
+    gamma = lerp(gamma, max(gamma - 0.75, 0.1), saturate(velocityFactor * 10));
     float3 minColor, maxColor;
     VarianceMinMax(neighbours, gamma, prefiltered, minColor, maxColor);
-    history.rgb = clamp(history.rgb, minColor, maxColor);
+    // history.rgb = clamp(history.rgb, minColor, maxColor);
+    history.rgb = NeighborhoodClipToFiltered(minColor, maxColor, prefiltered, history.rgb);
 
-    // Adaptive Blending Factor
+    // ------------------------- Adaptive Blending Factor -------------------------
+    
+    float middleDepth = neighbours[0].a;
     float historyDepth = history.a;
-    bool depthTest = abs(1 - middleDepth / historyDepth) < 0.1;
-    float blendFactor = lerp(0, 0.9, depthTest);
+    bool depthTest = abs(1 - middleDepth / historyDepth) < 0.05;
+    float blendFactor = lerp(0, 0.95, depthTest); // Depth Test
+    blendFactor = lerp(blendFactor, 0, any(abs(historyUV - 0.5) > 0.5)); // Off-Screen Test
     
-    blendFactor = lerp(blendFactor, 0, any(abs(historyUV - 0.5) > 0.5));
-    
-    _OutputTexture[id.xy] = float4(lerp(prefiltered, history.rgb, blendFactor), middleDepth);
+    _OutputTexture[id.xy] = float4(OutputColor(lerp(prefiltered, history.rgb, blendFactor)), middleDepth);
 }

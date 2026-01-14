@@ -246,37 +246,38 @@ void TemporalBlurKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV
 
     GroupMemoryBarrierWithGroupSync();
 
-    // ------------------------- Temporal Blur -------------------------
-
-    // Reprojection
+    // ------------------------- Reprojection -------------------------
+    
     float2 screenUV = (float2(id.xy) + float2(0.5, 0.5)) * _TextureSize.xy;
     float2 velocity = SAMPLE_TEXTURE2D_LOD(_MotionVectorTexture, sampler_PointClamp, screenUV, 0).rg;
     float2 historyUV = screenUV - velocity;
     float2 history = SAMPLE_TEXTURE2D_LOD(_AmbientOcclusionHistory, sampler_LinearClamp, historyUV, 0);
 
-    // Neighbourhood
+    // ------------------------- Fetch Neighbourhood Samples -------------------------
+    
     uint2 middleTileID = groupThreadId.xy + TILE_BORDER;
     uint tileIDs[9];
     GetNeighbourhoodTileIDs(middleTileID, tileIDs);
     float2 neighbours[9];
     GetNeighbourhoodSamples(tileIDs, neighbours);
 
-    // prefilter
+    // ------------------------- History Clamping -------------------------
+    
     float middleDepth = neighbours[0].g;
     float prefiltered = FilterMiddleColor(neighbours, middleDepth);
-
-    // Variance Clamping
+    
     float gamma = GetTemporalVarianceCriticalValue();
-    gamma = lerp(gamma, max(gamma - 0.75, 0.1), saturate(sqrt(max(velocity.x, velocity.y)) * 10.0));
+    float velocityFactor = length(velocity);
+    gamma = lerp(gamma, max(gamma - 0.75, 0.1), saturate(velocityFactor * 10));
     float2 minMax = VarianceMinMax(neighbours, gamma, prefiltered);
     history.r = clamp(history.r, minMax.x, minMax.y);
 
-    // Adaptive Blending Factor
-    float historyDepth = history.g;
-    bool depthTest = abs(1 - middleDepth / historyDepth) < 0.1;
-    float blendFactor = lerp(0, 0.9, depthTest);
+    // ------------------------- Adaptive Blending Factor -------------------------
     
-    blendFactor = lerp(blendFactor, 0, any(abs(historyUV - 0.5) > 0.5));
+    float historyDepth = history.g;
+    bool depthTest = abs(1 - middleDepth / historyDepth) < 0.05;
+    float blendFactor = lerp(0, 0.95, depthTest); // Depth Test
+    blendFactor = lerp(blendFactor, 0, any(abs(historyUV - 0.5) > 0.5)); // Off-Screen Test
     
     _OutputTexture[id.xy] = float2(lerp(prefiltered, history.r, blendFactor), middleDepth);
 }

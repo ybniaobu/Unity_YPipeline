@@ -50,7 +50,7 @@ namespace YPipeline
                 YPipelineCamera yCamera = data.camera.GetYPipelineCamera();
                 
                 passData.hbilCS = data.runtimeResources.HBILCS;
-                passData.denoiseCS = data.runtimeResources.GIDenoiseCS;
+                passData.denoiseCS = data.runtimeResources.SSGIDenoiseCS;
                 passData.enableHalfResolution = m_SSGI.halfResolution.value;
                 passData.enableTemporalDenoise = m_SSGI.enableTemporalDenoise.value;
                 
@@ -133,6 +133,7 @@ namespace YPipeline
                 builder.SetRenderFunc((SSGIPassData data, UnsafeGraphContext context) =>
                 {
                     // HBIL
+                    context.cmd.BeginSample("HBIL");
                     context.cmd.SetComputeVectorParam(data.hbilCS, "_TextureSize", data.textureSize);
                     context.cmd.SetComputeVectorParam(data.hbilCS, YPipelineShaderIDs.k_SSGIParamsID, data.ssgiParams);
                     context.cmd.SetComputeVectorParam(data.hbilCS, YPipelineShaderIDs.k_SSGIFallbackParamsID, data.fallbackParams);
@@ -143,6 +144,7 @@ namespace YPipeline
                     context.cmd.SetComputeTextureParam(data.hbilCS, hbgiKernel, "_InputTexture", data.sceneHistory);
                     context.cmd.SetComputeTextureParam(data.hbilCS, hbgiKernel, "_OutputTexture", occlusionOutput);
                     context.cmd.DispatchCompute(data.hbilCS, hbgiKernel, data.threadGroupSizes.x, data.threadGroupSizes.y, 1);
+                    context.cmd.EndSample("HBIL");
                     
                     // Denoise
                     if (data.enableTemporalDenoise)

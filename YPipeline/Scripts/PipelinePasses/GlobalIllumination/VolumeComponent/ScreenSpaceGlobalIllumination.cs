@@ -38,9 +38,9 @@ namespace YPipeline
         
         public ClampedFloatParameter convergeDegree = new ClampedFloatParameter(1.5f, 1.0f, 2.0f);
         
-        public ClampedIntParameter directionCount = new ClampedIntParameter(2, 1, 6);
+        public ClampedIntParameter directionCount = new ClampedIntParameter(3, 1, 6);
         
-        public ClampedIntParameter stepCount = new ClampedIntParameter(4, 2, 12);
+        public ClampedIntParameter stepCount = new ClampedIntParameter(6, 2, 12);
         
         // Fallback
         public SSGIFallbackModeParameter fallbackMode = new SSGIFallbackModeParameter(SSGIFallbackMode.APV, true);
@@ -63,6 +63,8 @@ namespace YPipeline
         
         // Temporal Denoise
         public BoolParameter enableTemporalDenoise = new BoolParameter(true, BoolParameter.DisplayType.Checkbox);
+        
+        public ClampedFloatParameter depthThreshold = new ClampedFloatParameter(0.1f, 0.0f, 0.2f);
         
         [Tooltip("Lower value reduces ghosting but produces more noise and flicking, higher value reduces noise but produces more ghosting.")]
         public ClampedFloatParameter criticalValue = new ClampedFloatParameter(1.0f, 0.5f, 1.5f);

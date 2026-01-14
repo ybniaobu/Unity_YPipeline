@@ -9,7 +9,7 @@
 #include "../../../ShaderLibrary/Core/YPipelineCSCore.hlsl"
 #include "../../../ShaderLibrary/RandomLibrary.hlsl"
 #include "../../../ShaderLibrary/EncodingLibrary.hlsl"
-#include "GIFallback.hlsl"
+#include "SSGIFallback.hlsl"
 
 // --- Local Textures ---
 RWTexture2D<float4> _OutputTexture;

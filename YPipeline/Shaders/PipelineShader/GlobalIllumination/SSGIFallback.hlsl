@@ -1,5 +1,5 @@
-﻿#ifndef YPIPELINE_GI_FALLBACK_INCLUDED
-#define YPIPELINE_GI_FALLBACK_INCLUDED
+﻿#ifndef YPIPELINE_SSGI_FALLBACK_INCLUDED
+#define YPIPELINE_SSGI_FALLBACK_INCLUDED
 
 #include "../../../ShaderLibrary/IBLLibrary.hlsl"
 // #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/AmbientProbe.hlsl" // IBLLibrary 改写了 EvaluateAmbientProbe 函数
