@@ -14,6 +14,11 @@ inline float2 LoadAOandDepth(int2 pixelCoord)
 [numthreads(8, 8, 1)]
 void DepthDownsampleKernel(uint3 id : SV_DispatchThreadID)
 {
+    // float2 screenUV = (float2(id.xy) + float2(0.5, 0.5)) * _TextureSize.xy;
+    // float4 depths = GATHER_RED_TEXTURE2D(_CameraDepthTexture, sampler_PointClamp, screenUV);
+    // float maxDepth = min(depths.x, min(depths.y, min(depths.z, depths.w)));
+    // _OutputTexture[id.xy] = maxDepth;
+    
     uint2 pixelCoord = clamp(id.xy, 0, _TextureSize.zw - 1);
     _OutputTexture[id.xy] = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, pixelCoord * 2, 0).r;
 }
@@ -246,13 +251,6 @@ void TemporalBlurKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV
 
     GroupMemoryBarrierWithGroupSync();
 
-    // ------------------------- Reprojection -------------------------
-    
-    float2 screenUV = (float2(id.xy) + float2(0.5, 0.5)) * _TextureSize.xy;
-    float2 velocity = SAMPLE_TEXTURE2D_LOD(_MotionVectorTexture, sampler_PointClamp, screenUV, 0).rg;
-    float2 historyUV = screenUV - velocity;
-    float2 history = SAMPLE_TEXTURE2D_LOD(_AmbientOcclusionHistory, sampler_LinearClamp, historyUV, 0);
-
     // ------------------------- Fetch Neighbourhood Samples -------------------------
     
     uint2 middleTileID = groupThreadId.xy + TILE_BORDER;
@@ -260,6 +258,13 @@ void TemporalBlurKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV
     GetNeighbourhoodTileIDs(middleTileID, tileIDs);
     float2 neighbours[9];
     GetNeighbourhoodSamples(tileIDs, neighbours);
+    
+    // ------------------------- Reprojection -------------------------
+    
+    float2 screenUV = (float2(id.xy) + float2(0.5, 0.5)) * _TextureSize.xy;
+    float2 velocity = SAMPLE_TEXTURE2D_LOD(_MotionVectorTexture, sampler_PointClamp, screenUV, 0).rg;
+    float2 historyUV = screenUV - velocity;
+    float2 history = SAMPLE_TEXTURE2D_LOD(_AmbientOcclusionHistory, sampler_LinearClamp, historyUV, 0);
 
     // ------------------------- History Clamping -------------------------
     
@@ -267,8 +272,6 @@ void TemporalBlurKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV
     float prefiltered = FilterMiddleColor(neighbours, middleDepth);
     
     float gamma = GetTemporalVarianceCriticalValue();
-    float velocityFactor = length(velocity);
-    gamma = lerp(gamma, max(gamma - 0.75, 0.1), saturate(velocityFactor * 10));
     float2 minMax = VarianceMinMax(neighbours, gamma, prefiltered);
     history.r = clamp(history.r, minMax.x, minMax.y);
 
@@ -278,6 +281,8 @@ void TemporalBlurKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV
     bool depthTest = abs(1 - middleDepth / historyDepth) < 0.05;
     float blendFactor = lerp(0, 0.95, depthTest); // Depth Test
     blendFactor = lerp(blendFactor, 0, any(abs(historyUV - 0.5) > 0.5)); // Off-Screen Test
+    float velocityFactor = saturate(length(velocity) * unity_DeltaTime.y * 10.0);
+    blendFactor = lerp(blendFactor, 0.8, velocityFactor); // Velocity Test
     
     _OutputTexture[id.xy] = float2(lerp(prefiltered, history.r, blendFactor), middleDepth);
 }

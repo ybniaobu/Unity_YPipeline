@@ -181,8 +181,7 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
     float intensity = GetSSAOIntensity();
     float sampleCount = GetSSAOSampleCount();
     float radius = GetSSAORadius();
-
-    UNITY_UNROLL
+    
     for (int i = 0; i < sampleCount; i++)
     {
         // ------------------------- Generate Hemisphere Samples -------------------------

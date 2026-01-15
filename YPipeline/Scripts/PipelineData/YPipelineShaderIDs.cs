@@ -165,6 +165,7 @@ namespace YPipeline
         
         public static readonly int k_SSGIParamsID = Shader.PropertyToID("_SSGIParams");
         public static readonly int k_SSGIFallbackParamsID = Shader.PropertyToID("_SSGIFallbackParams");
+        public static readonly int k_SSGIDenoiseParamsID = Shader.PropertyToID("_SSGIDenoiseParams");
         
         // ----------------------------------------------------------------------------------------------------
         // Ambient Occlusion Related Param IDs

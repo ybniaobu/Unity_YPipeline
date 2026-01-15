@@ -3,11 +3,21 @@
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
 
-#define YCOCG 1
+// ----------------------------------------------------------------------------------------------------
+// Temporal Denoise Functions
+// ----------------------------------------------------------------------------------------------------
+
+inline float BilateralWeight(float radius, float depth, float middleDepth, float sigma, float depthThreshold)
+{
+    bool depthTest = abs(1 - depth / middleDepth) < depthThreshold;
+    return exp2(-radius * radius * rcp(2.0 * sigma.x * sigma.x)) * depthTest;
+}
 
 // ----------------------------------------------------------------------------------------------------
 // Temporal Denoise Functions
 // ----------------------------------------------------------------------------------------------------
+
+#define YCOCG 1
 
 inline float3 RGB2YCoCg(float3 rgb)
 {
@@ -47,6 +57,15 @@ inline float4 SampleColorAndDepth(TEXTURE2D(tex), SAMPLER(samplerTex), float2 sc
     #endif
 }
 
+inline float GetLuma(float3 color)
+{
+    #if YCOCG
+    return color.r;
+    #else
+    return Luminance(color);
+    #endif
+}
+
 inline float3 OutputColor(float3 color)
 {
     #if YCOCG
@@ -56,13 +75,13 @@ inline float3 OutputColor(float3 color)
     #endif
 }
 
-float3 BilateralFilterMiddleColor(in float4 neighbours[9])
+float3 BilateralFilterColor(in float4 neighbours[9], float depthThreshold)
 {
     const float weights[9] = { 4.0, 2.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0, 1.0 };
     
     float3 middleColor = neighbours[0].rgb;
     float middleDepth = neighbours[0].a;
-    float weightSum = 4.0;
+    float weightSum = rcp(GetLuma(middleColor) + 1.0) * 4.0;
     float3 filtered = weightSum * middleColor;
 
     UNITY_UNROLL
@@ -70,8 +89,8 @@ float3 BilateralFilterMiddleColor(in float4 neighbours[9])
     {
         float3 sampleColor = neighbours[i + 1].rgb;
         float sampleDepth = neighbours[i + 1].a;
-        bool occlusionTest = abs(1 - sampleDepth / middleDepth) < 0.05;
-        float weight = weights[i + 1] * occlusionTest;
+        bool occlusionTest = abs(1 - sampleDepth / middleDepth) < depthThreshold;
+        float weight = rcp(GetLuma(sampleColor) + 1.0) * weights[i + 1] * occlusionTest;
         weightSum += weight;
         filtered += weight * sampleColor;
     }
@@ -80,7 +99,32 @@ float3 BilateralFilterMiddleColor(in float4 neighbours[9])
     return filtered;
 }
 
-void VarianceMinMax(in float4 samples[9], float gamma, float3 prefiltered, out float3 minColor, out float3 maxColor)
+float BilateralFilterAO(in float2 neighbours[9], float depthThreshold)
+{
+    const float weights[9] = { 4.0, 2.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0, 1.0 };
+    
+    float middleAO = neighbours[0].r;
+    float middleDepth = neighbours[0].g;
+    float weightSum = 4.0;
+    float filtered = weightSum * middleAO;
+
+    UNITY_UNROLL
+    for (int i = 0; i < 8; i++)
+    {
+        float sampleAO = neighbours[i + 1].r;
+        float sampleDepth = neighbours[i + 1].g;
+        bool occlusionTest = abs(1 - sampleDepth / middleDepth) < depthThreshold;
+        float weight = weights[i + 1] * occlusionTest;
+        weightSum += weight;
+        filtered += weight * sampleAO;
+    }
+    
+    filtered *= rcp(weightSum);
+    return filtered;
+}
+
+// Irradiance Version
+void VarianceMinMax(in float4 neighbours[9], float gamma, float3 prefiltered, out float3 minColor, out float3 maxColor)
 {
     float3 m1 = 0;
     float3 m2 = 0;
@@ -88,7 +132,7 @@ void VarianceMinMax(in float4 samples[9], float gamma, float3 prefiltered, out f
     UNITY_UNROLL
     for (int i = 0; i < 9; i++)
     {
-        float3 sampleColor = samples[i].rgb;
+        float3 sampleColor = neighbours[i].rgb;
         m1 += sampleColor;
         m2 += sampleColor * sampleColor;
     }
@@ -106,6 +150,34 @@ void VarianceMinMax(in float4 samples[9], float gamma, float3 prefiltered, out f
 
     minColor = neighborMin;
     maxColor = neighborMax;
+}
+
+// AO Version, return float2(minAO, maxAO)
+float2 VarianceMinMax(in float2 neighbours[9], float gamma, float prefiltered)
+{
+    float m1 = 0;
+    float m2 = 0;
+
+    UNITY_UNROLL
+    for (int i = 0; i < 9; i++)
+    {
+        float sampleAO = neighbours[i].r;
+        m1 += sampleAO;
+        m2 += sampleAO * sampleAO;
+    }
+
+    const int sampleCount = 9;
+    m1 *= rcp(sampleCount);
+    m2 *= rcp(sampleCount);
+
+    float sigma = sqrt(abs(m2 - m1 * m1)); // standard deviation
+    float neighborMin = m1 - gamma * sigma;
+    float neighborMax = m1 + gamma * sigma;
+
+    neighborMin = min(neighborMin, prefiltered);
+    neighborMax = max(neighborMax, prefiltered);
+
+    return float2(neighborMin, neighborMax);
 }
 
 float3 NeighborhoodClipToFiltered(float3 minColor, float3 maxColor, float3 prefiltered, float3 history)
@@ -126,5 +198,15 @@ float3 NeighborhoodClipToFiltered(float3 minColor, float3 maxColor, float3 prefi
     return lerp(history, prefiltered, historyBlend);
 }
 
+float3 LumaExponentialAccumulation(float3 history, float3 current, float blendFactor)
+{
+    float historyLuma = GetLuma(history);
+    float currentLuma = GetLuma(current);
+    float historyLumaWeight = rcp(historyLuma + 1.0);
+    float currentLumaWeight = rcp(currentLuma + 1.0);
+    float weightSum = lerp(currentLumaWeight, historyLumaWeight, blendFactor);
+    float3 blendColor = lerp(current * currentLumaWeight, history * historyLumaWeight, blendFactor);
+    return blendColor / weightSum;
+}
 
 #endif

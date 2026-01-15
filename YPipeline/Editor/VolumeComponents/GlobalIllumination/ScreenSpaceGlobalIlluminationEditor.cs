@@ -20,13 +20,10 @@ namespace YPipeline.Editor
         private SerializedDataParameter m_FallbackIntensity;
         private SerializedDataParameter m_FarFieldAO;
         
-        // Bilateral Denoise
-        private SerializedDataParameter m_EnableBilateralDenoise;
+        // Denoise
         private SerializedDataParameter m_KernelRadius;
-        private SerializedDataParameter m_SpatialSigma;
-        private SerializedDataParameter m_DepthSigma;
-        
-        // Temporal Denoise
+        private SerializedDataParameter m_Sigma;
+        private SerializedDataParameter m_DepthThreshold;
         private SerializedDataParameter m_EnableTemporalDenoise;
         private SerializedDataParameter m_CriticalValue;
 
@@ -48,21 +45,18 @@ namespace YPipeline.Editor
             m_FallbackIntensity = Unpack(o.Find(x => x.fallbackIntensity));
             m_FarFieldAO = Unpack(o.Find(x => x.farFieldAO));
             
-            // Bilateral Denoise
-            m_EnableBilateralDenoise = Unpack(o.Find(x => x.enableBilateralDenoise));
+            // Denoise
             m_KernelRadius = Unpack(o.Find(x => x.kernelRadius));
-            m_SpatialSigma = Unpack(o.Find(x => x.spatialSigma));
-            m_DepthSigma = Unpack(o.Find(x => x.depthSigma));
-            
-            // Temporal Denoise
+            m_Sigma = Unpack(o.Find(x => x.sigma));
+            m_DepthThreshold = Unpack(o.Find(x => x.depthThreshold));
             m_EnableTemporalDenoise = Unpack(o.Find(x => x.enableTemporalDenoise));
             m_CriticalValue = Unpack(o.Find(x => x.criticalValue));
         }
 
         public override void OnInspectorGUI()
         {
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Indirect Diffuse Lighting", EditorStyles.boldLabel);
+            // EditorGUILayout.Space();
+            // EditorGUILayout.LabelField("Indirect Diffuse Lighting", EditorStyles.boldLabel);
             
             PropertyField(m_Mode);
 
@@ -85,29 +79,27 @@ namespace YPipeline.Editor
             if (m_Mode.value.enumValueIndex == (int) SSGIMode.None) return;
             
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Fallback", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Fallback Settings", EditorStyles.boldLabel);
             
             PropertyField(m_FallbackMode);
             PropertyField(m_FallbackIntensity);
             PropertyField(m_FarFieldAO);
             
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Denoise", EditorStyles.boldLabel);
-            
-            PropertyField(m_EnableBilateralDenoise);
+            EditorGUILayout.LabelField("Denoise Settings", EditorStyles.boldLabel);
 
-            if (m_EnableBilateralDenoise.value.boolValue)
-            {
-                PropertyField(m_KernelRadius);
-                PropertyField(m_SpatialSigma);
-                PropertyField(m_DepthSigma);
-            }
             
+            PropertyField(m_KernelRadius);
+            PropertyField(m_Sigma);
+            PropertyField(m_DepthThreshold);
             PropertyField(m_EnableTemporalDenoise);
 
             if (m_EnableTemporalDenoise.value.boolValue)
             {
-                PropertyField(m_CriticalValue);
+                using (new IndentLevelScope())
+                {
+                    PropertyField(m_CriticalValue);
+                }
             }
         }
     }

@@ -14,7 +14,7 @@ namespace YPipeline
             public AmbientOcclusionMode aoMode;
             
             public Vector2Int threadGroupSizes8;
-            public Vector2Int threadGroupSizes16;
+            public Vector2Int threadGroupSizes64;
             public Vector2Int textureSize;
             public bool enableHalfResolution;
             public bool enableSpatialBlur;
@@ -62,9 +62,9 @@ namespace YPipeline
                     int threadGroupSizeX = Mathf.CeilToInt(textureSize.x / 8.0f);
                     int threadGroupSizeY = Mathf.CeilToInt(textureSize.y / 8.0f);
                     passData.threadGroupSizes8 = new Vector2Int(threadGroupSizeX, threadGroupSizeY);
-                    threadGroupSizeX = Mathf.CeilToInt(textureSize.x / 16.0f);
-                    threadGroupSizeY = Mathf.CeilToInt(textureSize.y / 16.0f);
-                    passData.threadGroupSizes16 = new Vector2Int(threadGroupSizeX, threadGroupSizeY);
+                    threadGroupSizeX = Mathf.CeilToInt(textureSize.x / 64.0f);
+                    threadGroupSizeY = Mathf.CeilToInt(textureSize.y / 64.0f);
+                    passData.threadGroupSizes64 = new Vector2Int(threadGroupSizeX, threadGroupSizeY);
 
                     passData.cs = data.runtimeResources.AmbientOcclusionCS;
                     passData.aoMode = m_AO.ambientOcclusionMode.value;
@@ -232,7 +232,7 @@ namespace YPipeline
                             int blurHorizontalKernel = data.cs.FindKernel("SpatialBlurHorizontalKernel");
                             context.cmd.SetComputeTextureParam(data.cs, blurHorizontalKernel, "_InputTexture", data.transition0);
                             context.cmd.SetComputeTextureParam(data.cs, blurHorizontalKernel, "_OutputTexture", data.transition1);
-                            context.cmd.DispatchCompute(data.cs, blurHorizontalKernel, data.threadGroupSizes16.x, data.textureSize.y, 1);
+                            context.cmd.DispatchCompute(data.cs, blurHorizontalKernel, data.threadGroupSizes64.x, data.textureSize.y, 1);
                             context.cmd.EndSample("SSAO Spatial Blur Horizontal");
 
                             context.cmd.BeginSample("SSAO Spatial Blur Vertical");
@@ -241,7 +241,7 @@ namespace YPipeline
                             TextureHandle spatialBlurOutput = data.enableTemporalBlur ? data.transition0 : data.aoTexture;
                             spatialBlurOutput = data.enableHalfResolution ? data.transition0 : spatialBlurOutput;
                             context.cmd.SetComputeTextureParam(data.cs, blurVerticalKernel, "_OutputTexture", spatialBlurOutput);
-                            context.cmd.DispatchCompute(data.cs, blurVerticalKernel, data.textureSize.x, data.threadGroupSizes16.y, 1);
+                            context.cmd.DispatchCompute(data.cs, blurVerticalKernel, data.textureSize.x, data.threadGroupSizes64.y, 1);
                             context.cmd.EndSample("SSAO Spatial Blur Vertical");
                         }
 
