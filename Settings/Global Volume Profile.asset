@@ -18,7 +18,7 @@ MonoBehaviour:
     m_Value: 1
   halfResolution:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0
   hbilIntensity:
     m_OverrideState: 1
     m_Value: 1
@@ -40,12 +40,6 @@ MonoBehaviour:
   farFieldAO:
     m_OverrideState: 1
     m_Value: 0.75
-  kernelRadius:
-    m_OverrideState: 1
-    m_Value: 5
-  sigma:
-    m_OverrideState: 1
-    m_Value: 3
   depthThreshold:
     m_OverrideState: 1
     m_Value: 0.05
@@ -55,6 +49,15 @@ MonoBehaviour:
   criticalValue:
     m_OverrideState: 1
     m_Value: 1
+  enableBilateralDenoise:
+    m_OverrideState: 1
+    m_Value: 0
+  kernelRadius:
+    m_OverrideState: 1
+    m_Value: 10
+  sigma:
+    m_OverrideState: 1
+    m_Value: 4
 --- !u!114 &-4627504947601211039
 MonoBehaviour:
   m_ObjectHideFlags: 3

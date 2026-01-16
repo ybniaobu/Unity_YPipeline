@@ -59,6 +59,10 @@ namespace YPipeline
         public TextureHandle GBuffer3 { set; get; } // R11G11B10_FLOAT: emission
         public TextureHandle ThinGBuffer { set; get; } // RGBA8_UNORM: normal, roughness
         public TextureHandle MotionVectorTexture { set; get; }
+        public TextureHandle HalfDepthTexture { set; get; }
+        public TextureHandle HalfNormalRoughnessTexture { set; get; }
+        public TextureHandle HalfMotionVectorTexture { set; get; }
+        public TextureHandle HalfSceneHistory { set; get; }
         public TextureHandle IrradianceTexture { set; get; }
         public TextureHandle AmbientOcclusionTexture { set; get; }
         public bool isAmbientOcclusionTextureCreated;
@@ -69,6 +73,7 @@ namespace YPipeline
         
         // Imported texture resources
         public TextureHandle TAAHistory { set; get; }
+        public TextureHandle SceneHistory { set; get; }
         
         public TextureHandle EnvBRDFLut { set; get; }
         public TextureHandle BlueNoise256 { set; get; }

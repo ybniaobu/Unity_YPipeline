@@ -246,6 +246,8 @@ MonoBehaviour:
           type: 3}
         m_FinalPostProcessing: {fileID: 4800000, guid: 28ef6031c11341e2ba417ef3dbb86ee9,
           type: 3}
+        m_DownSampleCS: {fileID: 7200000, guid: 432f15e196ed3f849aea90cdc030101f,
+          type: 3}
         m_TiledLightCullingCS: {fileID: 7200000, guid: f0b81bd803cf09b48a241b0856dbef54,
           type: 3}
         m_HBILCS: {fileID: 7200000, guid: 0e1577e6c7579314a84060af3f04b2d1, type: 3}

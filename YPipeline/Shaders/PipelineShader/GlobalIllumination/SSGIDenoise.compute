@@ -4,7 +4,10 @@
 
 #pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch
 
+#pragma multi_compile _ _DEFERRED_RENDERING
+
 #include "../../../ShaderLibrary/Core/YPipelineCSCore.hlsl"
+#include "../../../ShaderLibrary/EncodingLibrary.hlsl"
 #include "DenoiseCommon.hlsl"
 
 // --- Local Textures ---
@@ -15,12 +18,21 @@ Texture2D<float4> _IrradianceHistory;
 // --- Global Textures & Samplers ---
 TEXTURE2D(_MotionVectorTexture);
 
+#ifdef _DEFERRED_RENDERING
+TEXTURE2D(_GBuffer1);
+#define NORMAL_TEX _GBuffer1
+#else
+TEXTURE2D(_ThinGBuffer);
+#define NORMAL_TEX _ThinGBuffer
+#endif
+
 SAMPLER(sampler_LinearClamp);
 SAMPLER(sampler_PointClamp);
 
 // --- Spatial Denoise Groupshared Memory ---
-#define MAX_FILTER_RADIUS 10
+#define MAX_FILTER_RADIUS 18
 groupshared float4 _IrradianceAndDepth[64 + 2 * MAX_FILTER_RADIUS];
+groupshared float4 _Normal[64 + 2 * MAX_FILTER_RADIUS];
 
 // --- Temporal Denoise Groupshared Memory ---
 static const uint THREAD_NUM = 8;
@@ -45,6 +57,12 @@ inline float GetCriticalValue()     { return _SSGIDenoiseParams.w; }
 // Bilateral Denoise
 // ----------------------------------------------------------------------------------------------------
 
+float3 LoadAndDecodeNormal(int2 pixelCoord)
+{
+    float3 packedNormalWS = LOAD_TEXTURE2D_LOD(NORMAL_TEX, pixelCoord, 0).rgb;
+    return DecodeNormalFrom888(packedNormalWS);
+}
+
 [numthreads(64, 1, 1)]
 void BilateralDenoiseHorizontalKernel(uint3 id : SV_DispatchThreadID, uint groupIndex : SV_GroupIndex)
 {
@@ -52,14 +70,18 @@ void BilateralDenoiseHorizontalKernel(uint3 id : SV_DispatchThreadID, uint group
 
     int2 pixelCoord = clamp(id.xy, 0, _TextureSize.zw - 1);
     float4 irradianceAndDepth = LOAD_TEXTURE2D_LOD(_InputTexture, pixelCoord, 0);
+    float3 normal = LoadAndDecodeNormal(pixelCoord);
     _IrradianceAndDepth[groupIndex + MAX_FILTER_RADIUS] = irradianceAndDepth;
+    _Normal[groupIndex + MAX_FILTER_RADIUS] = float4(normal, 0.0);
 
     if (groupIndex < MAX_FILTER_RADIUS)
     {
         int2 extraCoord = pixelCoord - int2(MAX_FILTER_RADIUS, 0);
         extraCoord = clamp(extraCoord, 0, _TextureSize.zw - 1);
         float4 extraIrradianceAndDepth = LOAD_TEXTURE2D_LOD(_InputTexture, extraCoord, 0);
+        float3 extraNormal = LoadAndDecodeNormal(extraCoord);
         _IrradianceAndDepth[groupIndex] = extraIrradianceAndDepth;
+        _Normal[groupIndex] = float4(extraNormal, 0.0);
     }
 
     if (groupIndex >= 64 - MAX_FILTER_RADIUS)
@@ -67,7 +89,9 @@ void BilateralDenoiseHorizontalKernel(uint3 id : SV_DispatchThreadID, uint group
         int2 extraCoord = pixelCoord + int2(MAX_FILTER_RADIUS, 0);
         extraCoord = clamp(extraCoord, 0, _TextureSize.zw - 1);
         float4 extraIrradianceAndDepth = LOAD_TEXTURE2D_LOD(_InputTexture, extraCoord, 0);
+        float3 extraNormal = LoadAndDecodeNormal(extraCoord);
         _IrradianceAndDepth[groupIndex + 2 * MAX_FILTER_RADIUS] = extraIrradianceAndDepth;
+        _Normal[groupIndex + 2 * MAX_FILTER_RADIUS] = float4(extraNormal, 0.0);
     }
     
     GroupMemoryBarrierWithGroupSync();
@@ -75,6 +99,7 @@ void BilateralDenoiseHorizontalKernel(uint3 id : SV_DispatchThreadID, uint group
     // ------------------------- Bilateral Blur -------------------------
 
     float4 middle = _IrradianceAndDepth[groupIndex + MAX_FILTER_RADIUS];
+    float3 middleNormal = _Normal[groupIndex + MAX_FILTER_RADIUS].xyz;
     float weightSum = 0.0;
     float3 irradiance = 0.0;
         
@@ -82,7 +107,9 @@ void BilateralDenoiseHorizontalKernel(uint3 id : SV_DispatchThreadID, uint group
     for (int i = -radius; i <= radius; i++)
     {
         float4 sample = _IrradianceAndDepth[groupIndex + MAX_FILTER_RADIUS + i];
+        float3 sampleNormal = _Normal[groupIndex + MAX_FILTER_RADIUS + i].xyz;
         float weight = BilateralWeight(i, sample.a, middle.a, GetSigma(), GetDepthThreshold());
+        weight *= NormalWeight(sampleNormal, middleNormal);
         irradiance += sample.rgb * weight;
         weightSum += weight;
     }
@@ -97,14 +124,18 @@ void BilateralDenoiseVerticalKernel(uint3 id : SV_DispatchThreadID, uint groupIn
     
     int2 pixelCoord = clamp(id.xy, 0, _TextureSize.zw - 1);
     float4 irradianceAndDepth = LOAD_TEXTURE2D_LOD(_InputTexture, pixelCoord, 0);
+    float3 normal = LoadAndDecodeNormal(pixelCoord);
     _IrradianceAndDepth[groupIndex + MAX_FILTER_RADIUS] = irradianceAndDepth;
+    _Normal[groupIndex + MAX_FILTER_RADIUS] = float4(normal, 0.0);
 
     if (groupIndex < MAX_FILTER_RADIUS)
     {
         int2 extraCoord = pixelCoord - int2(0, MAX_FILTER_RADIUS);
         extraCoord = clamp(extraCoord, 0, _TextureSize.zw - 1);
         float4 extraIrradianceAndDepth = LOAD_TEXTURE2D_LOD(_InputTexture, extraCoord, 0);
+        float3 extraNormal = LoadAndDecodeNormal(extraCoord);
         _IrradianceAndDepth[groupIndex] = extraIrradianceAndDepth;
+        _Normal[groupIndex] = float4(extraNormal, 0.0);
     }
 
     if (groupIndex >= 64 - MAX_FILTER_RADIUS)
@@ -112,7 +143,9 @@ void BilateralDenoiseVerticalKernel(uint3 id : SV_DispatchThreadID, uint groupIn
         int2 extraCoord = pixelCoord + int2(0, MAX_FILTER_RADIUS);
         extraCoord = clamp(extraCoord, 0, _TextureSize.zw - 1);
         float4 extraIrradianceAndDepth = LOAD_TEXTURE2D_LOD(_InputTexture, extraCoord, 0);
+        float3 extraNormal = LoadAndDecodeNormal(extraCoord);
         _IrradianceAndDepth[groupIndex + 2 * MAX_FILTER_RADIUS] = extraIrradianceAndDepth;
+        _Normal[groupIndex + 2 * MAX_FILTER_RADIUS] = float4(extraNormal, 0.0);
     }
     
     GroupMemoryBarrierWithGroupSync();
@@ -120,6 +153,7 @@ void BilateralDenoiseVerticalKernel(uint3 id : SV_DispatchThreadID, uint groupIn
     // ------------------------- Bilateral Blur -------------------------
 
     float4 middle = _IrradianceAndDepth[groupIndex + MAX_FILTER_RADIUS];
+    float3 middleNormal = _Normal[groupIndex + MAX_FILTER_RADIUS].xyz;
     float weightSum = 0.0;
     float3 irradiance = 0.0;
         
@@ -127,7 +161,9 @@ void BilateralDenoiseVerticalKernel(uint3 id : SV_DispatchThreadID, uint groupIn
     for (int i = -radius; i <= radius; i++)
     {
         float4 sample = _IrradianceAndDepth[groupIndex + MAX_FILTER_RADIUS + i];
+        float3 sampleNormal = _Normal[groupIndex + MAX_FILTER_RADIUS + i].xyz;
         float weight = BilateralWeight(i, sample.a, middle.a, GetSigma(), GetDepthThreshold());
+        weight *= NormalWeight(sampleNormal, middleNormal);
         irradiance += sample.rgb * weight;
         weightSum += weight;
     }
@@ -203,6 +239,8 @@ void TemporalDenoiseKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId :
     float3 prefiltered = BilateralFilterColor(neighbours, GetDepthThreshold());
     
     float gamma = GetCriticalValue();
+    float velocityFactor = saturate(length(velocity) * unity_DeltaTime.y * 10.0);
+    gamma = lerp(gamma + 0.5, max(gamma - 0.5, 0.1), velocityFactor);
     float3 minColor, maxColor;
     VarianceMinMax(neighbours, gamma, prefiltered, minColor, maxColor);
     // history.rgb = clamp(history.rgb, minColor, maxColor);
@@ -215,8 +253,7 @@ void TemporalDenoiseKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId :
     bool depthTest = abs(1 - middleDepth / historyDepth) < GetDepthThreshold();
     float blendFactor = lerp(0, 0.95, depthTest); // Depth Test
     blendFactor = lerp(blendFactor, 0, any(abs(historyUV - 0.5) > 0.5)); // Off-Screen Test
-    float velocityFactor = saturate(length(velocity) * unity_DeltaTime.y * 10.0);
-    blendFactor = lerp(blendFactor, 0.8, velocityFactor); // Velocity Test
+    blendFactor = lerp(blendFactor, 0.85, velocityFactor); // Velocity Test
     
     _OutputTexture[id.xy] = float4(OutputColor(LumaExponentialAccumulation(history.rgb, prefiltered, blendFactor)), middleDepth);
     // _OutputTexture[id.xy] = float4(OutputColor(lerp(prefiltered, history.rgb, blendFactor)), middleDepth);

@@ -66,6 +66,12 @@ namespace YPipeline
         public static readonly int k_GBuffer2ID = Shader.PropertyToID("_GBuffer2");
         public static readonly int k_GBuffer3ID = Shader.PropertyToID("_GBuffer3");
         
+        // Half Texture
+        public static readonly int k_HalfDepthTextureID = Shader.PropertyToID("_HalfDepthTexture");
+        public static readonly int k_HalfNormalRoughnessTextureID = Shader.PropertyToID("_HalfNormalRoughnessTexture");
+        public static readonly int k_HalfMotionVectorTextureID = Shader.PropertyToID("_HalfMotionVectorTexture");
+        public static readonly int k_HalfSceneHistoryID = Shader.PropertyToID("_HalfSceneHistory");
+        
         // ----------------------------------------------------------------------------------------------------
         // Common Resource Textures IDs
         // ----------------------------------------------------------------------------------------------------

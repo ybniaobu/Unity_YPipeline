@@ -6,12 +6,13 @@ public class AutoRotation : MonoBehaviour
     public Vector3 moveSpeed;
     public float moveDistance = 1.0f;
     public bool stop;
+    public bool enable72FPS;
     private Transform m_Transform;
     private Vector3 m_StartPosition;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        Application.targetFrameRate = 60;
+        if (enable72FPS) Application.targetFrameRate = 72;
         m_Transform = GetComponent<Transform>();
         m_StartPosition = m_Transform.position;
     }

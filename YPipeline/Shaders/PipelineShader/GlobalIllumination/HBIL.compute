@@ -1,8 +1,10 @@
+#pragma kernel HBILReprojectionKernel
 #pragma kernel HBILKernel
 #pragma kernel HBILAlternateKernel
 
-#pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch
+#pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch switch2
 
+#pragma multi_compile _ _HALF_RESOLUTION
 #pragma multi_compile _ _DEFERRED_RENDERING
 #pragma multi_compile _ PROBE_VOLUMES_L1 PROBE_VOLUMES_L2
 
@@ -25,10 +27,9 @@ TEXTURE2D(_ThinGBuffer);
 #endif
 
 TEXTURE2D(_CameraDepthTexture);
+TEXTURE2D(_MotionVectorTexture);
 TEXTURE2D(_STBN128Scalar3);
 float4 _STBN128Scalar3_TexelSize;
-TEXTURE2D(_BlueNoise64);
-float4 _BlueNoise64_TexelSize;
 SAMPLER(sampler_LinearClamp);
 SAMPLER(sampler_PointClamp);
 
@@ -135,22 +136,6 @@ float3 ComputeNearFieldIrradiance_Back(float2 projectedNormal2D, float2 cosTheta
     return radiance * (part0 + part1);
 }
 
-float2 Reprojection(float3 sampleWS)
-{
-    float4 currentSampleCS = mul(UNITY_MATRIX_NONJITTERED_VP, float4(sampleWS.xyz, 1.0));
-    float4 previousSampleCS = mul(UNITY_PREV_MATRIX_NONJITTERED_VP, float4(sampleWS.xyz, 1.0));
-    
-    float2 currentPositionNDC = currentSampleCS.xy / currentSampleCS.w;
-    float2 previousPositionNDC = previousSampleCS.xy / previousSampleCS.w;
-    
-    float2 velocity = currentPositionNDC - previousPositionNDC;
-    #if UNITY_UV_STARTS_AT_TOP
-    velocity.y = -velocity.y;
-    #endif
-    velocity *= 0.5;
-    return velocity;
-}
-
 float3 SliceIntegration_Front(uint2 pixelCoord, float2 maxTexelDelta, float randomOffset, float3 positionVS, float3 viewDir, float2 projectedNormal2D, inout float2 maxCosH)
 {
     float3 irradiance = 0;
@@ -165,25 +150,17 @@ float3 SliceIntegration_Front(uint2 pixelCoord, float2 maxTexelDelta, float rand
         
         float sampleDepth = LoadDepth(sampleCoord);
         float4 sampleNDC = GetNDCFromUVAndDepth(sampleUV, sampleDepth);
-        float3 sampleWS = TransformNDCToWorld(sampleNDC, UNITY_MATRIX_I_VP);
         float3 sampleVS = TransformNDCToView(sampleNDC, UNITY_MATRIX_I_P);
         sampleVS.z = -sampleVS.z;
         float3 H = normalize(sampleVS - positionVS);
         float cosH = dot(H, viewDir);
         
-        // ------------------------- Reprojection -------------------------
-        // 注：这里不采样 motion vector 主要是为了性能
-        
-        float2 velocity = Reprojection(sampleWS);
-        float2 historyUV = sampleUV - velocity;
-        if (any(abs(historyUV - 0.5) > 0.5)) continue;
-        float2 historyCoord = historyUV * _TextureSize.zw;
-        
         // ------------------------- Irradiance Integral -------------------------
         
         if (cosH > maxCosH.y)
         {
-            float3 nearRadiance = LoadRadiance(historyCoord);
+            // 理论上采样上一帧 Scene Color 需要 Motion Vector 重投影。为了节省采样，在本 pass 前提前将 Scene Color 进行了重投影，故这里无需考虑
+            float3 nearRadiance = LoadRadiance(sampleCoord);
             float2 cosTheta = float2(cosH, maxCosH.y);
             irradiance += ComputeNearFieldIrradiance_Front(projectedNormal2D, cosTheta, nearRadiance);
             maxCosH.y = cosH;
@@ -206,25 +183,17 @@ float3 SliceIntegration_Back(uint2 pixelCoord, float2 maxTexelDelta, float rando
         
         float sampleDepth = LoadDepth(sampleCoord);
         float4 sampleNDC = GetNDCFromUVAndDepth(sampleUV, sampleDepth);
-        float3 sampleWS = TransformNDCToWorld(sampleNDC, UNITY_MATRIX_I_VP);
         float3 sampleVS = TransformNDCToView(sampleNDC, UNITY_MATRIX_I_P);
         sampleVS.z = -sampleVS.z;
         float3 H = normalize(sampleVS - positionVS);
         float cosH = dot(H, viewDir);
         
-        // ------------------------- Reprojection -------------------------
-        // 注：这里不采样 motion vector 主要是为了性能
-        
-        float2 velocity = Reprojection(sampleWS);
-        float2 historyUV = sampleUV - velocity;
-        if (any(abs(historyUV - 0.5) > 0.5)) continue;
-        float2 historyCoord = historyUV * _TextureSize.zw;
-        
         // ------------------------- Irradiance Integral -------------------------
         
         if (cosH > maxCosH.x)
         {
-            float3 nearRadiance = LoadRadiance(historyCoord);
+            // 理论上采样上一帧 Scene Color 需要 Motion Vector 重投影。为了节省采样，在本 pass 前提前将 Scene Color 进行了重投影，故这里无需考虑
+            float3 nearRadiance = LoadRadiance(sampleCoord);
             float2 cosTheta = float2(cosH, maxCosH.x);
             irradiance += ComputeNearFieldIrradiance_Back(projectedNormal2D, cosTheta, nearRadiance);
             maxCosH.x = cosH;
@@ -249,6 +218,23 @@ float ComputeAOAndBentNormal(float2 projectedNormal2D, float2 maxCosH, out float
 // ----------------------------------------------------------------------------------------------------
 // HBIL Kernel
 // ----------------------------------------------------------------------------------------------------
+[numthreads(8, 8, 1)]
+void HBILReprojectionKernel(uint3 id : SV_DispatchThreadID)
+{
+    int2 pixelCoord = clamp(id.xy, 0, _CameraBufferSize.zw - 1);
+    float2 screenUV = (pixelCoord + float2(0.5, 0.5)) * _CameraBufferSize.xy;
+    float2 velocity = LOAD_TEXTURE2D_LOD(_MotionVectorTexture, pixelCoord, 0).rg;
+    float2 historyUV = screenUV - velocity;
+    
+    if (any(abs(historyUV - 0.5) > 0.5))
+    {
+        _OutputTexture[id.xy] = float4(0.0, 0.0, 0.0, 0.0);
+        return;
+    }
+    
+    float4 history = SAMPLE_TEXTURE2D_LOD(_InputTexture, sampler_LinearClamp, historyUV, 0);
+    _OutputTexture[id.xy] = history;
+}
 
 [numthreads(8, 8, 1)]
 void HBILKernel(uint3 id : SV_DispatchThreadID)
@@ -285,7 +271,8 @@ void HBILKernel(uint3 id : SV_DispatchThreadID)
     
     // ------------------------- Loop -------------------------
     
-    int maxRayTexel = max(_TextureSize.z, _TextureSize.w);
+    int maxRayTexel = min(_TextureSize.z, _TextureSize.w);
+    // int maxRayTexel = max(_TextureSize.z, _TextureSize.w);
     float dirAngle = PI / GetDirectionCount();
     float3 irradiance = 0;
     float ao = 0;
@@ -378,25 +365,17 @@ float3 SliceMarching(bool IsRightDir, uint2 pixelCoord, float2 maxTexelDelta, fl
         
         float sampleDepth = LoadDepth(sampleCoord);
         float4 sampleNDC = GetNDCFromUVAndDepth(sampleUV, sampleDepth);
-        float3 sampleWS = TransformNDCToWorld(sampleNDC, UNITY_MATRIX_I_VP);
         float3 sampleVS = TransformNDCToView(sampleNDC, UNITY_MATRIX_I_P);
         sampleVS.z = -sampleVS.z;
         float3 H = normalize(sampleVS - positionVS);
         float cosH = dot(H, viewDir);
         
-        // ------------------------- Reprojection -------------------------
-        // 注：这里不采样 motion vector 主要是为了性能
-        
-        float2 velocity = Reprojection(sampleWS);
-        float2 historyUV = sampleUV - velocity;
-        if (any(abs(historyUV - 0.5) > 0.5)) continue;
-        float2 historyCoord = historyUV * _TextureSize.zw;
-        
         // ------------------------- Irradiance Integral -------------------------
         
         if (cosH > max)
         {
-            float3 nearRadiance = LoadRadiance(historyCoord);
+            // 理论上采样上一帧 Scene Color 需要 Motion Vector 重投影。为了节省采样，在本 pass 前提前将 Scene Color 进行了重投影，故这里无需考虑
+            float3 nearRadiance = LoadRadiance(sampleCoord);
             float2 cosTheta = float2(cosH, max);
             float2 theta = GTAOFastAcos(cosTheta) * samplingDirection;
             irradiance += projectedNormalLength * IntegrateArcIrradiance(theta, n) * nearRadiance;
@@ -444,7 +423,8 @@ void HBILAlternateKernel(uint3 id : SV_DispatchThreadID)
     
     // ------------------------- Loop -------------------------
     
-    int maxRayTexel = max(_TextureSize.z, _TextureSize.w);
+    int maxRayTexel = min(_TextureSize.z, _TextureSize.w);
+    // int maxRayTexel = max(_TextureSize.z, _TextureSize.w);
     float dirAngle = PI / GetDirectionCount();
     float3 irradiance = 0;
     float ao = 0;

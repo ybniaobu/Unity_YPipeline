@@ -13,6 +13,12 @@ inline float BilateralWeight(float radius, float depth, float middleDepth, float
     return exp2(-radius * radius * rcp(2.0 * sigma.x * sigma.x)) * depthTest;
 }
 
+inline float NormalWeight(float3 normal, float3 middleNormal)
+{
+    float normalDelta = max(dot(normal, middleNormal), 0);
+    return normalDelta * normalDelta;
+}
+
 // ----------------------------------------------------------------------------------------------------
 // Temporal Denoise Functions
 // ----------------------------------------------------------------------------------------------------

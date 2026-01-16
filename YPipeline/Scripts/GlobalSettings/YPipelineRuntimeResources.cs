@@ -199,6 +199,14 @@ namespace YPipeline
         // ----------------------------------------------------------------------------------------------------
         
         #region Compute Shaders
+
+        [SerializeField] [ResourcePath("YPipeline/Shaders/PipelineShader/DownSample/DownSample.compute")]
+        private ComputeShader m_DownSampleCS;
+        public ComputeShader DownSampleCS
+        {
+            get => m_DownSampleCS;
+            set => this.SetValueAndNotify(ref m_DownSampleCS, value, nameof(m_DownSampleCS));
+        }
         
         [SerializeField] [ResourcePath("YPipeline/Shaders/PipelineShader/LightCulling/TiledLightCulling.compute")]
         private ComputeShader m_TiledLightCullingCS;

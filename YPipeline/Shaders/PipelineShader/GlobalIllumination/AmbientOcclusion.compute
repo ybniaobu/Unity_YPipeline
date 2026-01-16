@@ -7,7 +7,7 @@
 #pragma kernel SpatialBlurVerticalKernel
 #pragma kernel TemporalBlurKernel
 
-#pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch
+#pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch switch2
 
 #pragma multi_compile _ _HALF_RESOLUTION
 #pragma multi_compile _ _DEFERRED_RENDERING
