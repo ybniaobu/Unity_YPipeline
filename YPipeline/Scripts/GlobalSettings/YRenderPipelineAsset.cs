@@ -109,14 +109,19 @@ namespace YPipeline
         [Tooltip("Enable light 2.5D culling, which splits depth into cells to better handle depth discontinuities")]
         public bool enableSplitDepth = true;
         
+        // Global Illumination
+        public bool enableScreenSpaceAmbientOcclusion = true;
+        public bool enableScreenSpaceGlobalIllumination = false;
+        public bool enableScreenSpaceReflection = false;
+        
         // APV
         public ProbeVolumeSHBands probeVolumeSHBands = ProbeVolumeSHBands.SphericalHarmonicsL1;
         public ProbeVolumeTextureMemoryBudget probeVolumeMemoryBudget = ProbeVolumeTextureMemoryBudget.MemoryBudgetMedium;
         public ProbeVolumeBlendingTextureMemoryBudget probeVolumeBlendingMemoryBudget = ProbeVolumeBlendingTextureMemoryBudget.MemoryBudgetMedium;
-        public bool supportProbeVolumeGPUStreaming = false;
+        public bool supportProbeVolumeGPUStreaming = true;
         public bool supportProbeVolumeDiskStreaming = false;
-        public bool supportProbeVolumeScenarios = false;
-        public bool supportProbeVolumeScenarioBlending = false;
+        public bool supportProbeVolumeScenarios = true;
+        public bool supportProbeVolumeScenarioBlending = true;
         
         // ----------------------------------------------------------------------------------------------------
         // 阴影配置 Shadow Settings

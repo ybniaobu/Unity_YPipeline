@@ -1,31 +1,41 @@
 #pragma kernel TemporalDenoiseKernel
 #pragma kernel BilateralDenoiseHorizontalKernel
 #pragma kernel BilateralDenoiseVerticalKernel
+#pragma kernel UpsampleKernel
 
 #pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch
 
+#pragma multi_compile _ _HALF_RESOLUTION
 #pragma multi_compile _ _DEFERRED_RENDERING
 
 #include "../../../ShaderLibrary/Core/YPipelineCSCore.hlsl"
 #include "../../../ShaderLibrary/EncodingLibrary.hlsl"
-#include "DenoiseCommon.hlsl"
+#include "DenoiseLibrary.hlsl"
+#include "UpsampleLibrary.hlsl"
 
-// --- Local Textures ---
+// --- Textures & Samplers ---
 RWTexture2D<float4> _OutputTexture;
 Texture2D<float4> _InputTexture;
 Texture2D<float4> _IrradianceHistory;
 
-// --- Global Textures & Samplers ---
-TEXTURE2D(_MotionVectorTexture);
-
-#ifdef _DEFERRED_RENDERING
-TEXTURE2D(_GBuffer1);
-#define NORMAL_TEX _GBuffer1
+#ifdef _HALF_RESOLUTION
+    Texture2D<float4> _HalfNormalRoughnessTexture;
+    #define NORMAL_TEX _HalfNormalRoughnessTexture
+    Texture2D<float2> _HalfMotionVectorTexture;
+    #define MOTION_TEX _HalfMotionVectorTexture
 #else
-TEXTURE2D(_ThinGBuffer);
-#define NORMAL_TEX _ThinGBuffer
+    #ifdef _DEFERRED_RENDERING
+        TEXTURE2D(_GBuffer1);
+        #define NORMAL_TEX _GBuffer1
+    #else
+        TEXTURE2D(_ThinGBuffer);
+        #define NORMAL_TEX _ThinGBuffer
+    #endif
+    TEXTURE2D(_MotionVectorTexture);
+    #define MOTION_TEX _MotionVectorTexture
 #endif
 
+TEXTURE2D(_CameraDepthTexture);
 SAMPLER(sampler_LinearClamp);
 SAMPLER(sampler_PointClamp);
 
@@ -40,6 +50,9 @@ static const uint TILE_BORDER = 1;
 static const uint TILE_SIZE = THREAD_NUM + 2 * TILE_BORDER;
 groupshared float4 _IrradianceZ[TILE_SIZE * TILE_SIZE];
 
+// --- Global Variables ---
+float4 _CameraBufferSize; // x: 1.0 / bufferSize.x, y: 1.0 / bufferSize.y, z: bufferSize.x, w: bufferSize.y
+
 // --- Local Variables ---
 float4 _TextureSize; // x: 1.0 / width, y: 1.0 / height, z: width, w: height
 float4 _SSGIDenoiseParams; // x: bilateral denoise radius, y: bilateral denoise sigma, z: depth threshold, w: temporal critical value
@@ -52,6 +65,40 @@ inline float GetKernelRadius()      { return _SSGIDenoiseParams.x; }
 inline float GetSigma()             { return _SSGIDenoiseParams.y; }
 inline float GetDepthThreshold()    { return _SSGIDenoiseParams.z; }
 inline float GetCriticalValue()     { return _SSGIDenoiseParams.w; }
+
+// ----------------------------------------------------------------------------------------------------
+// Upsample
+// ----------------------------------------------------------------------------------------------------
+
+[numthreads(8, 8, 1)]
+void UpsampleKernel(uint3 id : SV_DispatchThreadID)
+{
+    float2 screenUV = (float2(id.xy) + float2(0.5, 0.5)) * _CameraBufferSize.xy;
+    int2 pixelCoord = clamp(id.xy, 0, _CameraBufferSize.zw - 1);
+
+    // ------------------------- Fetch Depth & Color -------------------------
+    
+    float fullDepth = LOAD_TEXTURE2D_LOD(_CameraDepthTexture, pixelCoord, 0).r;
+    fullDepth = GetViewDepthFromDepthTexture(fullDepth);
+    
+    float4 halfDepths = GATHER_ALPHA_TEXTURE2D(_InputTexture, sampler_PointClamp, screenUV);
+    float4 reds = GATHER_RED_TEXTURE2D(_InputTexture, sampler_PointClamp, screenUV);
+    float4 greens = GATHER_GREEN_TEXTURE2D(_InputTexture, sampler_PointClamp, screenUV);
+    float4 blues = GATHER_BLUE_TEXTURE2D(_InputTexture, sampler_PointClamp, screenUV);
+    float3 color01  = float3(reds.x, greens.x, blues.x);
+    float3 color11  = float3(reds.y, greens.y, blues.y);
+    float3 color10  = float3(reds.z, greens.z, blues.z);
+    float3 color00 = float3(reds.w, greens.w, blues.w);
+
+    // ------------------------- Depth-Aware Upsample -------------------------
+    
+    int xEven = 1 - pixelCoord.x & 1;
+    int yEven = 1 - pixelCoord.y & 1;
+    int orderIndex = yEven * 2 + xEven;
+    float3 finalColor = DepthAwareBilateralUpsample(GetDepthThreshold(), fullDepth, halfDepths, color01, color11, color10, color00, orderIndex);
+    // float3 finalColor = NearestDepthUpsample(fullDepth, halfDepths, color01, color11, color10, color00);
+    _OutputTexture[id.xy] = float4(finalColor, fullDepth);
+}
 
 // ----------------------------------------------------------------------------------------------------
 // Bilateral Denoise
@@ -230,7 +277,7 @@ void TemporalDenoiseKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId :
     // ------------------------- Reprojection -------------------------
     
     float2 screenUV = (float2(id.xy) + float2(0.5, 0.5)) * _TextureSize.xy;
-    float2 velocity = SAMPLE_TEXTURE2D_LOD(_MotionVectorTexture, sampler_PointClamp, screenUV, 0).rg;
+    float2 velocity = SAMPLE_TEXTURE2D_LOD(MOTION_TEX, sampler_PointClamp, screenUV, 0).rg;
     float2 historyUV = screenUV - velocity;
     float4 history = SampleColorAndDepth(_IrradianceHistory, sampler_LinearClamp, historyUV);
 
@@ -239,7 +286,7 @@ void TemporalDenoiseKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId :
     float3 prefiltered = BilateralFilterColor(neighbours, GetDepthThreshold());
     
     float gamma = GetCriticalValue();
-    float velocityFactor = saturate(length(velocity) * unity_DeltaTime.y * 10.0);
+    float velocityFactor = saturate(length(velocity) * unity_DeltaTime.y * 2.0);
     gamma = lerp(gamma + 0.5, max(gamma - 0.5, 0.1), velocityFactor);
     float3 minColor, maxColor;
     VarianceMinMax(neighbours, gamma, prefiltered, minColor, maxColor);

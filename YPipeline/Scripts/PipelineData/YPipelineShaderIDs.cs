@@ -70,7 +70,7 @@ namespace YPipeline
         public static readonly int k_HalfDepthTextureID = Shader.PropertyToID("_HalfDepthTexture");
         public static readonly int k_HalfNormalRoughnessTextureID = Shader.PropertyToID("_HalfNormalRoughnessTexture");
         public static readonly int k_HalfMotionVectorTextureID = Shader.PropertyToID("_HalfMotionVectorTexture");
-        public static readonly int k_HalfSceneHistoryID = Shader.PropertyToID("_HalfSceneHistory");
+        public static readonly int k_HalfReprojectedSceneHistoryID = Shader.PropertyToID("_HalfReprojectedSceneHistory");
         
         // ----------------------------------------------------------------------------------------------------
         // Common Resource Textures IDs

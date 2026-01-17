@@ -43,6 +43,7 @@ namespace YPipeline
                 builder.SetRenderAttachment(data.CameraColorAttachment, 0, AccessFlags.Write);
                 builder.SetRenderAttachmentDepth(data.CameraDepthAttachment, AccessFlags.Read);
 
+                if (data.isIrradianceTextureCreated) builder.UseTexture(data.IrradianceTexture, AccessFlags.Read);
                 if (data.isAmbientOcclusionTextureCreated) builder.UseTexture(data.AmbientOcclusionTexture, AccessFlags.Read);
                 if (data.isSunLightShadowMapCreated) builder.UseTexture(data.SunLightShadowMap, AccessFlags.Read);
                 if (data.isPointLightShadowMapCreated) builder.UseTexture(data.PointLightShadowMap, AccessFlags.Read);

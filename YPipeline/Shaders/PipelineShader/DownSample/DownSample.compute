@@ -24,14 +24,14 @@ TEXTURE2D(_ThinGBuffer);
 #endif
 RWTexture2D<float4> _HalfNormalRoughnessTexture;
 
-#if defined(_OUTPUT_MOTION_VECTOR) || defined(_OUTPUT_SCENE_HISTORY)
+#ifdef _OUTPUT_MOTION_VECTOR
 Texture2D<float2> _MotionVectorTexture;
 RWTexture2D<float2> _HalfMotionVectorTexture;
 #endif
 
 #ifdef _OUTPUT_SCENE_HISTORY
 Texture2D<float4> _SceneHistoryInput;
-RWTexture2D<float4> _SceneHistoryOutput;
+RWTexture2D<float4> _HalfReprojectedSceneHistory;
 #endif
 
 SAMPLER(sampler_LinearClamp);
@@ -110,13 +110,26 @@ void DownsampleKernel(uint3 id : SV_DispatchThreadID)
     
     #if defined(_OUTPUT_SCENE_HISTORY) || defined(_OUTPUT_MOTION_VECTOR)
     float2 velocity = LOAD_TEXTURE2D_LOD(_MotionVectorTexture, pixelCoord + int2(depthOffset.xy), 0);
+    
     #ifdef _OUTPUT_MOTION_VECTOR
     _HalfMotionVectorTexture[id.xy] = velocity;
     #endif
+    
     #ifdef _OUTPUT_SCENE_HISTORY
     float2 historyUV = screenUV - velocity;
+    
+    if (any(abs(historyUV - 0.5) > 0.5))
+    {
+        _HalfReprojectedSceneHistory[id.xy] = float4(0.0, 0.0, 0.0, 0.0);
+        return;
+    }
+    
     float4 sceneColor = SAMPLE_TEXTURE2D_LOD(_SceneHistoryInput, sampler_LinearClamp, historyUV, 0);
-    _SceneHistoryOutput[id.xy] = sceneColor;
+    
+    // TODO: 这里没有验证历史信息是不太好的，但是该 Pass 执行时还没有当前帧的颜色信息，所以只能使用几何信息拒绝错误历史信息
+    // 等 TAA 进一步优化后，再修改这里，使用上一帧深度值拒绝错误历史信息
+    
+    _HalfReprojectedSceneHistory[id.xy] = float4(sceneColor.rgb, 0.0);
     #endif
     #endif
 }

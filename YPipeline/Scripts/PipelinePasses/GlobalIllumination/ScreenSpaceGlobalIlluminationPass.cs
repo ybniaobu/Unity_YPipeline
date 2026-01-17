@@ -27,11 +27,18 @@ namespace YPipeline
             public Vector4 fallbackParams;
             public Vector4 denoiseParams;
             
-            public TextureHandle sceneHistory; // TAAHistory or SceneHistory
-            public TextureHandle reprojectedSceneHistory;
             public TextureHandle irradianceTexture;
             public TextureHandle irradianceHistory;
-            public TextureHandle transition;
+            public TextureHandle transition0;
+            public TextureHandle transition1;
+            
+            public TextureHandle sceneHistory; // TAAHistory or SceneHistory
+            public TextureHandle reprojectedSceneHistory;
+            
+            public TextureHandle halfDepthTexture;
+            public TextureHandle halfNormalRoughnessTexture;
+            public TextureHandle halfMotionVectorTexture;
+            public TextureHandle halfReprojectedSceneHistory;
         }
 
         private ScreenSpaceGlobalIllumination m_SSGI;
@@ -49,9 +56,10 @@ namespace YPipeline
 
         protected override void OnRecord(ref YPipelineData data)
         {
-            data.isSSGIEnabled = m_SSGI.IsActive();
-            CoreUtils.SetKeyword(data.cmd, YPipelineKeywords.k_ScreenSpaceIrradiance, data.isSSGIEnabled);
-            if (!data.isSSGIEnabled || Time.frameCount == 0) return;
+            bool ssgiEnabled = data.IsSSGIEnabled && m_SSGI.IsActive();
+            data.isIrradianceTextureCreated = ssgiEnabled;
+            CoreUtils.SetKeyword(data.cmd, YPipelineKeywords.k_ScreenSpaceIrradiance, ssgiEnabled);
+            if (!ssgiEnabled || Time.frameCount == 0) return;
 
             using (var builder = data.renderGraph.AddUnsafePass<SSGIPassData>("Diffuse Global Illumination", out var passData))
             {
@@ -96,16 +104,26 @@ namespace YPipeline
                 builder.SetGlobalTextureAfterPass(data.IrradianceTexture, YPipelineShaderIDs.k_IrradianceTextureID);
                 
                 // Irradiance Transition Texture
-                TextureDesc transitionDesc = new TextureDesc(textureSize.x, textureSize.y)
+                TextureDesc transitionDesc0 = new TextureDesc(textureSize.x, textureSize.y)
                 {
                     format = GraphicsFormat.R16G16B16A16_SFloat,
                     filterMode = FilterMode.Bilinear,
                     clearBuffer = false,
                     enableRandomWrite = true,
-                    name = "Irradiance Transition"
+                    name = "Irradiance Transition0"
                 };
                 
-                passData.transition = builder.CreateTransientTexture(transitionDesc);
+                TextureDesc transitionDesc1 = new TextureDesc(textureSize.x, textureSize.y)
+                {
+                    format = GraphicsFormat.R16G16B16A16_SFloat,
+                    filterMode = FilterMode.Bilinear,
+                    clearBuffer = false,
+                    enableRandomWrite = true,
+                    name = "Irradiance Transition1"
+                };
+                
+                passData.transition0 = builder.CreateTransientTexture(transitionDesc0);
+                passData.transition1 = builder.CreateTransientTexture(transitionDesc1);
                 
                 // Irradiance History
                 RenderTextureDescriptor irradianceHistoryDesc = new RenderTextureDescriptor(textureSize.x, textureSize.y)
@@ -123,24 +141,44 @@ namespace YPipeline
                     passData.irradianceHistory = data.renderGraph.ImportTexture(irradianceHistory);
                     builder.UseTexture(passData.irradianceHistory, AccessFlags.ReadWrite);
 
-                    builder.UseTexture(data.MotionVectorTexture, AccessFlags.Read);
+                    if (passData.enableHalfResolution)
+                    {
+                        passData.halfMotionVectorTexture = data.HalfMotionVectorTexture;
+                        builder.UseTexture(data.HalfMotionVectorTexture, AccessFlags.Read);
+                    }
+                    else builder.UseTexture(data.MotionVectorTexture, AccessFlags.Read);
                 }
                 else
                 {
                     yCamera.perCameraData.ReleaseIrradianceHistory();
                 }
                 
-                // Scene History
-                passData.sceneHistory = data.TAAHistory;
-                builder.UseTexture(data.TAAHistory, AccessFlags.Read);
-                
-                if (!passData.enableHalfResolution)
+                // Other Render Textures
+                if (passData.enableHalfResolution)
                 {
+                    passData.halfDepthTexture = data.HalfDepthTexture;
+                    passData.halfNormalRoughnessTexture = data.HalfNormalRoughnessTexture;
+                    passData.halfReprojectedSceneHistory = data.HalfReprojectedSceneHistory;
+                    builder.UseTexture(data.HalfDepthTexture, AccessFlags.Read);
+                    builder.UseTexture(data.HalfNormalRoughnessTexture, AccessFlags.Read);
+                    builder.UseTexture(data.HalfReprojectedSceneHistory, AccessFlags.Read);
+                }
+                else
+                {
+                    builder.UseTexture(data.CameraDepthTexture, AccessFlags.Read);
+                    if (data.IsDeferredRenderingEnabled) builder.UseTexture(data.GBuffer1, AccessFlags.Read);
+                    else builder.UseTexture(data.ThinGBuffer, AccessFlags.Read);
+                    
+                    TextureHandle sceneHistory = data.IsTAAEnabled ? data.TAAHistory : data.SceneHistory;
+                    passData.sceneHistory = sceneHistory;
+                    builder.UseTexture(sceneHistory, AccessFlags.Read);
+                    builder.UseTexture(data.MotionVectorTexture, AccessFlags.Read);
+                    
                     TextureDesc reprojectedSceneHistoryDesc = new TextureDesc(bufferSize.x, bufferSize.y)
                     {
                         format = GraphicsFormat.R16G16B16A16_SFloat,
                         filterMode = FilterMode.Bilinear,
-                        clearBuffer = true,
+                        clearBuffer = false,
                         enableRandomWrite = true,
                         name = "Reprojected Scene History"
                     };
@@ -148,26 +186,18 @@ namespace YPipeline
                     passData.reprojectedSceneHistory = builder.CreateTransientTexture(reprojectedSceneHistoryDesc);
                 }
                 
-                // Other Render Textures
-                if (data.IsDeferredRenderingEnabled) builder.UseTexture(data.GBuffer1, AccessFlags.Read);
-                else builder.UseTexture(data.ThinGBuffer, AccessFlags.Read);
-                builder.UseTexture(data.CameraDepthTexture, AccessFlags.Read);
-                builder.UseTexture(data.MotionVectorTexture, AccessFlags.Read);
-                
                 builder.AllowPassCulling(false);
 
                 builder.SetRenderFunc((SSGIPassData data, UnsafeGraphContext context) =>
                 {
-                    bool enableBlur = data.enableTemporalDenoise || data.enableBilateralDenoise;
-                    LocalKeyword halfResKeyword = new LocalKeyword(data.hbilCS, "_HALF_RESOLUTION");
-                    context.cmd.SetKeyword(data.hbilCS, halfResKeyword, data.enableHalfResolution);
-                    context.cmd.SetComputeVectorParam(data.hbilCS, "_TextureSize", data.textureSize);
-                    context.cmd.SetComputeVectorParam(data.hbilCS, YPipelineShaderIDs.k_SSGIParamsID, data.ssgiParams);
-                    context.cmd.SetComputeVectorParam(data.hbilCS, YPipelineShaderIDs.k_SSGIFallbackParamsID, data.fallbackParams);
+                    bool enableDenoise = data.enableTemporalDenoise || data.enableBilateralDenoise;
+                    bool enableTemporalDenoise = data.enableTemporalDenoise;
+                    bool enableBilateralDenoise = data.enableBilateralDenoise;
+                    bool enableHalfResolution = data.enableHalfResolution;
                     
                     // Reprojection
                     // 若开启了 Half Resolution, 在 Downsample Pass 中会将 Scene History Reprojection
-                    if (!data.enableHalfResolution)
+                    if (!enableHalfResolution)
                     {
                         context.cmd.BeginSample("Scene History Reprojection");
                         int reprojectionKernel = data.hbilCS.FindKernel("HBILReprojectionKernel");
@@ -179,58 +209,89 @@ namespace YPipeline
                     
                     // HBIL
                     context.cmd.BeginSample("HBIL");
+                    
+                    LocalKeyword halfResKeyword = new LocalKeyword(data.hbilCS, "_HALF_RESOLUTION");
+                    context.cmd.SetKeyword(data.hbilCS, halfResKeyword, enableHalfResolution);
+                    context.cmd.SetComputeVectorParam(data.hbilCS, "_TextureSize", data.textureSize);
+                    context.cmd.SetComputeVectorParam(data.hbilCS, YPipelineShaderIDs.k_SSGIParamsID, data.ssgiParams);
+                    context.cmd.SetComputeVectorParam(data.hbilCS, YPipelineShaderIDs.k_SSGIFallbackParamsID, data.fallbackParams);
+                    
                     // int hbgiKernel = data.cs.FindKernel("HBILAlternateKernel");
                     int hbgiKernel = data.hbilCS.FindKernel("HBILKernel");
-                    TextureHandle occlusionOutput = data.enableTemporalDenoise ? data.transition : data.irradianceTexture;
-                    context.cmd.SetComputeTextureParam(data.hbilCS, hbgiKernel, "_InputTexture", data.reprojectedSceneHistory);
+                    TextureHandle occlusionOutput = enableTemporalDenoise ? data.transition0 : data.transition1;
+                    occlusionOutput = !enableDenoise && !enableHalfResolution ? data.irradianceTexture : occlusionOutput;
+
+                    if (enableHalfResolution)
+                    {
+                        context.cmd.SetComputeTextureParam(data.hbilCS, hbgiKernel, YPipelineShaderIDs.k_HalfDepthTextureID, data.halfDepthTexture);
+                        context.cmd.SetComputeTextureParam(data.hbilCS, hbgiKernel, YPipelineShaderIDs.k_HalfNormalRoughnessTextureID, data.halfNormalRoughnessTexture);
+                        context.cmd.SetComputeTextureParam(data.hbilCS, hbgiKernel, "_InputTexture", data.halfReprojectedSceneHistory);
+                    }
+                    else
+                    {
+                        context.cmd.SetComputeTextureParam(data.hbilCS, hbgiKernel, "_InputTexture", data.reprojectedSceneHistory);
+                    }
+                    
                     context.cmd.SetComputeTextureParam(data.hbilCS, hbgiKernel, "_OutputTexture", occlusionOutput);
                     context.cmd.DispatchCompute(data.hbilCS, hbgiKernel, data.threadGroupSizes8.x, data.threadGroupSizes8.y, 1);
                     context.cmd.EndSample("HBIL");
                     
                     // Denoise
-                    if (enableBlur)
+                    if (enableDenoise || enableHalfResolution)
                     {
+                        LocalKeyword halfResKeyword2 = new LocalKeyword(data.denoiseCS, "_HALF_RESOLUTION");
+                        context.cmd.SetKeyword(data.denoiseCS, halfResKeyword2, enableHalfResolution);
                         context.cmd.SetComputeVectorParam(data.denoiseCS, "_TextureSize", data.textureSize);
                         context.cmd.SetComputeVectorParam(data.denoiseCS, YPipelineShaderIDs.k_SSGIDenoiseParamsID, data.denoiseParams);
                     }
                     
                     // Temporal Denoise
-                    if (data.enableTemporalDenoise)
+                    if (enableTemporalDenoise)
                     {
                         context.cmd.BeginSample("SSGI Temporal Denoise");
                         int temporalKernel = data.denoiseCS.FindKernel("TemporalDenoiseKernel");
                         context.cmd.SetComputeTextureParam(data.denoiseCS, temporalKernel, YPipelineShaderIDs.k_IrradianceHistoryID, data.irradianceHistory);
-                        context.cmd.SetComputeTextureParam(data.denoiseCS, temporalKernel, "_InputTexture", data.transition);
-                        context.cmd.SetComputeTextureParam(data.denoiseCS, temporalKernel, "_OutputTexture", data.irradianceTexture);
+                        if (enableHalfResolution) context.cmd.SetComputeTextureParam(data.denoiseCS, temporalKernel, YPipelineShaderIDs.k_HalfMotionVectorTextureID, data.halfMotionVectorTexture);
+                        TextureHandle temporalOutput = enableBilateralDenoise || enableHalfResolution ? data.transition1 : data.irradianceTexture;
+                        context.cmd.SetComputeTextureParam(data.denoiseCS, temporalKernel, "_InputTexture", data.transition0);
+                        context.cmd.SetComputeTextureParam(data.denoiseCS, temporalKernel, "_OutputTexture", temporalOutput);
                         context.cmd.DispatchCompute(data.denoiseCS, temporalKernel, data.threadGroupSizes8.x, data.threadGroupSizes8.y, 1);
                         
                         // TODO: 是否改为使用 CS 复制
-                        context.cmd.CopyTexture(data.irradianceTexture, data.irradianceHistory);
+                        // 可以考虑在 Bilateral Denoise 后 Copy
+                        context.cmd.CopyTexture(temporalOutput, data.irradianceHistory);
                         context.cmd.EndSample("SSGI Temporal Denoise");
                     }
                     
                     // Bilateral Denoise
-                    if (data.enableBilateralDenoise)
+                    if (enableBilateralDenoise)
                     {
                         context.cmd.BeginSample("SSGI Bilateral Denoise");
                         int horizontalKernel = data.denoiseCS.FindKernel("BilateralDenoiseHorizontalKernel");
-                        context.cmd.SetComputeTextureParam(data.denoiseCS, horizontalKernel, "_InputTexture", data.irradianceTexture);
-                        context.cmd.SetComputeTextureParam(data.denoiseCS, horizontalKernel, "_OutputTexture", data.transition);
+                        if (enableHalfResolution) context.cmd.SetComputeTextureParam(data.denoiseCS, horizontalKernel, YPipelineShaderIDs.k_HalfNormalRoughnessTextureID, data.halfNormalRoughnessTexture);
+                        context.cmd.SetComputeTextureParam(data.denoiseCS, horizontalKernel, "_InputTexture", data.transition1);
+                        context.cmd.SetComputeTextureParam(data.denoiseCS, horizontalKernel, "_OutputTexture", data.transition0);
                         context.cmd.DispatchCompute(data.denoiseCS, horizontalKernel, data.threadGroupSizes64.x, data.threadGroupSizes1.y, 1);
 
                         int verticalKernel = data.denoiseCS.FindKernel("BilateralDenoiseVerticalKernel");
-                        context.cmd.SetComputeTextureParam(data.denoiseCS, verticalKernel, "_InputTexture", data.transition);
-                        context.cmd.SetComputeTextureParam(data.denoiseCS, verticalKernel, "_OutputTexture", data.irradianceTexture);
+                        TextureHandle bilateralOutput = enableHalfResolution ? data.transition1 : data.irradianceTexture;
+                        if (enableHalfResolution) context.cmd.SetComputeTextureParam(data.denoiseCS, verticalKernel, YPipelineShaderIDs.k_HalfNormalRoughnessTextureID, data.halfNormalRoughnessTexture);
+                        context.cmd.SetComputeTextureParam(data.denoiseCS, verticalKernel, "_InputTexture", data.transition0);
+                        context.cmd.SetComputeTextureParam(data.denoiseCS, verticalKernel, "_OutputTexture", bilateralOutput);
                         context.cmd.DispatchCompute(data.denoiseCS, verticalKernel, data.threadGroupSizes1.x, data.threadGroupSizes64.y, 1);
-
                         context.cmd.EndSample("SSGI Bilateral Denoise");
                     }
                     
-                    // 考虑在 Bilateral Denoise 后 Copy
-                    // if (data.enableTemporalDenoise)
-                    // {
-                    //     context.cmd.CopyTexture(data.irradianceTexture, data.irradianceHistory);
-                    // }
+                    // Upsample
+                    if (enableHalfResolution)
+                    {
+                        context.cmd.BeginSample("SSGI Upsample");
+                        int upsampleKernel = data.denoiseCS.FindKernel("UpsampleKernel");
+                        context.cmd.SetComputeTextureParam(data.denoiseCS, upsampleKernel, "_InputTexture", data.transition1);
+                        context.cmd.SetComputeTextureParam(data.denoiseCS, upsampleKernel, "_OutputTexture", data.irradianceTexture);
+                        context.cmd.DispatchCompute(data.denoiseCS, upsampleKernel, data.threadGroupSizesFull8.x, data.threadGroupSizesFull8.y, 1);
+                        context.cmd.EndSample("SSGI Upsample");
+                    }
                 });
             }
         }

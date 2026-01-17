@@ -65,6 +65,30 @@ namespace YPipeline
         }
         
         // ----------------------------------------------------------------------------------------------------
+        // Scene History
+        // ----------------------------------------------------------------------------------------------------
+
+        public bool IsSceneHistoryReset { get; set; }
+        private RTHandle m_SceneHistory;
+
+        public RTHandle GetSceneHistory(ref RenderTextureDescriptor desc, string name = "Scene History")
+        {
+            if (m_SceneHistory == null || m_SceneHistory.rt.width != desc.width || m_SceneHistory.rt.height != desc.height)
+            {
+                IsSceneHistoryReset = true;
+                m_SceneHistory?.Release();
+                m_SceneHistory = RTHandles.Alloc(desc, FilterMode.Bilinear, TextureWrapMode.Clamp, anisoLevel: 0, name: name);
+            }
+            return m_SceneHistory;
+        }
+
+        public void ReleaseSceneHistory()
+        {
+            m_SceneHistory?.Release();
+            m_SceneHistory = null;
+        }
+        
+        // ----------------------------------------------------------------------------------------------------
         // Irradiance History
         // ----------------------------------------------------------------------------------------------------
         
@@ -144,6 +168,7 @@ namespace YPipeline
                 }
                 //Dispose unmanaged resources
                 ReleaseTAAHistory();
+                ReleaseSceneHistory();
                 ReleaseIrradianceHistory();
                 ReleaseAOHistory();
             }

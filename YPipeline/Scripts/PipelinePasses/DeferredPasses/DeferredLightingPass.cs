@@ -37,6 +37,7 @@ namespace YPipeline
                 builder.UseTexture(data.GBuffer2, AccessFlags.Read);
                 builder.UseTexture(data.GBuffer3, AccessFlags.Read);
                 
+                if (data.isIrradianceTextureCreated) builder.UseTexture(data.IrradianceTexture, AccessFlags.Read);
                 if (data.isAmbientOcclusionTextureCreated) builder.UseTexture(data.AmbientOcclusionTexture, AccessFlags.Read);
                 if (data.isSunLightShadowMapCreated) builder.UseTexture(data.SunLightShadowMap, AccessFlags.Read);
                 if (data.isPointLightShadowMapCreated) builder.UseTexture(data.PointLightShadowMap, AccessFlags.Read);

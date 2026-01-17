@@ -18,6 +18,9 @@ MonoBehaviour:
   antiAliasingMode: 2
   fxaaMode: 0
   enableSplitDepth: 1
+  enableScreenSpaceAmbientOcclusion: 1
+  enableScreenSpaceGlobalIllumination: 1
+  enableScreenSpaceReflection: 0
   probeVolumeSHBands: 1
   probeVolumeMemoryBudget: 1024
   probeVolumeBlendingMemoryBudget: 256

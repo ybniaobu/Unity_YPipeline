@@ -52,8 +52,12 @@ namespace YPipeline
         }
 
         private TAA m_TAA;
-        
-        protected override void Initialize(ref YPipelineData data) { }
+
+        protected override void Initialize(ref YPipelineData data)
+        {
+            var stack = VolumeManager.instance.stack;
+            m_TAA = stack.GetComponent<TAA>();
+        }
 
         protected override void OnDispose()
         {
@@ -67,16 +71,13 @@ namespace YPipeline
                 passData.camera = data.camera;
                 YPipelineCamera yCamera = data.camera.GetYPipelineCamera();
                 passData.yCamera = yCamera;
-                
-                var stack = VolumeManager.instance.stack;
-                m_TAA = stack.GetComponent<TAA>();
 
                 bool isOrthographic = data.camera.orthographic;
                 Matrix4x4 viewMatrix = data.camera.worldToCameraMatrix;
                 Matrix4x4 projectionMatrix = data.camera.projectionMatrix;
                 Matrix4x4 jitteredProjectionMatrix;
 
-                if (data.asset.antiAliasingMode == AntiAliasingMode.TAA)
+                if (data.IsTAAEnabled)
                 {
                     int frameIndex = Time.frameCount;
                     Vector2 jitter = RandomUtility.k_Halton[frameIndex % 16 + 1] - new Vector2(0.5f, 0.5f);

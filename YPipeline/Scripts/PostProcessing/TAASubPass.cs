@@ -55,6 +55,7 @@ namespace YPipeline
         public override void OnRecord(ref YPipelineData data)
         {
             CoreUtils.SetKeyword(data.cmd, YPipelineKeywords.k_TAA, data.IsTAAEnabled);
+            if (data is { IsSSGIEnabled: true, IsTAAEnabled: false }) CopySceneColor(ref data);
             if (!data.IsTAAEnabled) return;
             
             // TODO: 暂时使用 UnsafePass，因为 ComputePass 无法 Copy；
@@ -133,7 +134,25 @@ namespace YPipeline
                     context.cmd.EndSample("TAACopyHistory");
                 });
             }
-            
+        }
+
+        public void CopySceneColor(ref YPipelineData data)
+        {
+            // 看情况是否改为 AddCopyPass 或 AddBlitPass。
+            using (var builder = data.renderGraph.AddUnsafePass<TAAPassData>("Copy Scene Color", out var passData))
+            {
+                passData.colorAttachment = data.CameraColorAttachment;
+                builder.UseTexture(data.CameraColorAttachment, AccessFlags.Read);
+                passData.taaHistory = data.SceneHistory;
+                builder.UseTexture(data.SceneHistory, AccessFlags.ReadWrite);
+                
+                builder.AllowPassCulling(false);
+
+                builder.SetRenderFunc((TAAPassData data, UnsafeGraphContext context) =>
+                {
+                    context.cmd.CopyTexture(data.colorAttachment, data.taaHistory);
+                });
+            }
         }
     }
 }

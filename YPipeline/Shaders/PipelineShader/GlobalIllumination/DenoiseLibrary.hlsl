@@ -1,10 +1,10 @@
-﻿#ifndef YPIPELINE_DENOISE_COMMON_INCLUDED
-#define YPIPELINE_DENOISE_COMMON_INCLUDED
+﻿#ifndef YPIPELINE_DENOISE_LIBRARY_INCLUDED
+#define YPIPELINE_DENOISE_LIBRARY_INCLUDED
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
 
 // ----------------------------------------------------------------------------------------------------
-// Temporal Denoise Functions
+// Bilateral Denoise Functions
 // ----------------------------------------------------------------------------------------------------
 
 inline float BilateralWeight(float radius, float depth, float middleDepth, float sigma, float depthThreshold)

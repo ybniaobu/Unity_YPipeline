@@ -11,6 +11,7 @@ namespace YPipeline
         {
             public ComputeShader cs;
             public bool temporalDenoiseEnabled;
+            public bool ssgiEnabled;
             
             public Vector2Int threadGroupSizes;
             public Vector4 textureSize;
@@ -18,7 +19,8 @@ namespace YPipeline
             public TextureHandle halfDepth;
             public TextureHandle halfNormalRoughness;
             public TextureHandle halfMotionVector;
-            public TextureHandle halfSceneHistory;
+            public TextureHandle halfReprojectedSceneHistory;
+            public TextureHandle sceneHistoryInput;
         }
         
         private ScreenSpaceGlobalIllumination m_SSGI;
@@ -35,10 +37,18 @@ namespace YPipeline
 
         protected override void OnRecord(ref YPipelineData data)
         {
+            bool needDownsample = (data.IsSSGIEnabled && m_SSGI.IsActive() && m_SSGI.halfResolution.value) 
+                                  || (data.IsSSAOEnabled && m_SSAO.IsActive() && m_SSAO.halfResolution.value);
+            if (!needDownsample) return;
+            
             using (var builder = data.renderGraph.AddComputePass<DownSamplePassData>("Downsample", out var passData))
             {
+                bool temporalDenoiseEnabled = m_SSGI.enableTemporalDenoise.value || m_SSAO.enableTemporalFilter.value;
+                bool ssgiEnabled = m_SSGI.IsActive();
+                
                 passData.cs = data.runtimeResources.DownSampleCS;
-                passData.temporalDenoiseEnabled = m_SSGI.enableTemporalDenoise.value || m_SSAO.enableTemporalFilter.value;
+                passData.temporalDenoiseEnabled = temporalDenoiseEnabled;
+                passData.ssgiEnabled = ssgiEnabled;
                 Vector2Int textureSize = data.BufferSize / 2;
                 passData.threadGroupSizes = new Vector2Int(textureSize.x / 8, textureSize.y / 8);
                 passData.textureSize = new Vector4(1f / textureSize.x, 1f / textureSize.y, textureSize.x, textureSize.y);
@@ -56,6 +66,7 @@ namespace YPipeline
                 data.HalfDepthTexture = data.renderGraph.CreateTexture(halfDepthDesc);
                 passData.halfDepth = data.HalfDepthTexture;
                 builder.UseTexture(data.HalfDepthTexture, AccessFlags.Write);
+                builder.UseTexture(data.CameraDepthTexture, AccessFlags.Read);
                 
                 // Half Normal Rougness Texture
                 TextureDesc halfNormalRoughnessDesc = new TextureDesc(textureSize.x, textureSize.y)
@@ -70,26 +81,47 @@ namespace YPipeline
                 data.HalfNormalRoughnessTexture = data.renderGraph.CreateTexture(halfNormalRoughnessDesc);
                 passData.halfNormalRoughness = data.HalfNormalRoughnessTexture;
                 builder.UseTexture(data.HalfNormalRoughnessTexture, AccessFlags.Write);
-                
-                // Half Motion Vector Texture
-                TextureDesc halfMotionVectorDesc = new TextureDesc(textureSize.x, textureSize.y)
-                {
-                    colorFormat = GraphicsFormat.R16G16_SFloat,
-                    filterMode = FilterMode.Point,
-                    clearBuffer = false,
-                    enableRandomWrite = true,
-                    name = "Half Motion Vector Texture"
-                };
-                
-                data.HalfMotionVectorTexture = data.renderGraph.CreateTexture(halfMotionVectorDesc);
-                passData.halfMotionVector = data.HalfMotionVectorTexture;
-                builder.UseTexture(data.HalfMotionVectorTexture, AccessFlags.Write);
-                
-                // Input Render Textures
-                builder.UseTexture(data.CameraDepthTexture, AccessFlags.Read);
                 if (data.IsDeferredRenderingEnabled) builder.UseTexture(data.GBuffer1, AccessFlags.Read);
                 else builder.UseTexture(data.ThinGBuffer, AccessFlags.Read);
-                builder.UseTexture(data.HalfMotionVectorTexture, AccessFlags.Read);
+                
+                // Half Motion Vector Texture
+                if (temporalDenoiseEnabled)
+                {
+                    TextureDesc halfMotionVectorDesc = new TextureDesc(textureSize.x, textureSize.y)
+                    {
+                        colorFormat = GraphicsFormat.R16G16_SFloat,
+                        filterMode = FilterMode.Point,
+                        clearBuffer = false,
+                        enableRandomWrite = true,
+                        name = "Half Motion Vector Texture"
+                    };
+
+                    data.HalfMotionVectorTexture = data.renderGraph.CreateTexture(halfMotionVectorDesc);
+                    passData.halfMotionVector = data.HalfMotionVectorTexture;
+                    builder.UseTexture(data.HalfMotionVectorTexture, AccessFlags.Write);
+                    builder.UseTexture(data.MotionVectorTexture, AccessFlags.Read);
+                }
+                
+                // Half Reprojected Scene History
+                if (ssgiEnabled)
+                {
+                    TextureDesc halfSceneHistoryDesc = new TextureDesc(textureSize.x, textureSize.y)
+                    {
+                        format = GraphicsFormat.R16G16B16A16_SFloat,
+                        filterMode = FilterMode.Bilinear,
+                        clearBuffer = true,
+                        enableRandomWrite = true,
+                        name = "Half Reprojected Scene History"
+                    };
+                    
+                    data.HalfReprojectedSceneHistory = data.renderGraph.CreateTexture(halfSceneHistoryDesc);
+                    passData.halfReprojectedSceneHistory = data.HalfReprojectedSceneHistory;
+                    builder.UseTexture(data.HalfReprojectedSceneHistory, AccessFlags.Write);
+
+                    TextureHandle sceneHistoryInput = data.IsTAAEnabled ? data.TAAHistory : data.SceneHistory;
+                    passData.sceneHistoryInput = sceneHistoryInput;
+                    builder.UseTexture(sceneHistoryInput, AccessFlags.Read);
+                }
                 
                 builder.AllowPassCulling(false);
                 builder.AllowGlobalStateModification(true);
@@ -100,12 +132,18 @@ namespace YPipeline
                     LocalKeyword sceneHistoryKeyword = new LocalKeyword(data.cs, "_OUTPUT_SCENE_HISTORY");
                     
                     context.cmd.SetKeyword(data.cs, motionVectorKeyword, data.temporalDenoiseEnabled);
-                    int downsampleKernel = data.cs.FindKernel("DownsampleKernel");
-                    
+                    context.cmd.SetKeyword(data.cs, sceneHistoryKeyword, data.ssgiEnabled);
                     context.cmd.SetComputeVectorParam(data.cs, "_TextureSize", data.textureSize);
+                    
+                    int downsampleKernel = data.cs.FindKernel("DownsampleKernel");
                     context.cmd.SetComputeTextureParam(data.cs, downsampleKernel, YPipelineShaderIDs.k_HalfDepthTextureID, data.halfDepth);
                     context.cmd.SetComputeTextureParam(data.cs, downsampleKernel, YPipelineShaderIDs.k_HalfNormalRoughnessTextureID, data.halfNormalRoughness);
                     if (data.temporalDenoiseEnabled) context.cmd.SetComputeTextureParam(data.cs, downsampleKernel, YPipelineShaderIDs.k_HalfMotionVectorTextureID, data.halfMotionVector);
+                    if (data.ssgiEnabled)
+                    {
+                        context.cmd.SetComputeTextureParam(data.cs, downsampleKernel, "_SceneHistoryInput", data.sceneHistoryInput);
+                        context.cmd.SetComputeTextureParam(data.cs, downsampleKernel, YPipelineShaderIDs.k_HalfReprojectedSceneHistoryID, data.halfReprojectedSceneHistory);
+                    }
                     
                     context.cmd.DispatchCompute(data.cs, downsampleKernel, data.threadGroupSizes.x, data.threadGroupSizes.y, 1);
                 });

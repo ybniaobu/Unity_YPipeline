@@ -13,21 +13,29 @@
 #include "../../../ShaderLibrary/EncodingLibrary.hlsl"
 #include "SSGIFallback.hlsl"
 
-// --- Local Textures ---
+// --- Textures & Samplers ---
 RWTexture2D<float4> _OutputTexture;
 Texture2D<float4> _InputTexture;
 
-// --- Global Textures & Samplers ---
-#ifdef _DEFERRED_RENDERING
-TEXTURE2D(_GBuffer1);
-#define NORMAL_TEX _GBuffer1
+TEXTURE2D(_MotionVectorTexture);
+
+#ifdef _HALF_RESOLUTION
+    Texture2D<float> _HalfDepthTexture;
+    #define DEPTH_TEX _HalfDepthTexture
+    Texture2D<float4> _HalfNormalRoughnessTexture;
+    #define NORMAL_TEX _HalfNormalRoughnessTexture
 #else
-TEXTURE2D(_ThinGBuffer);
-#define NORMAL_TEX _ThinGBuffer
+    TEXTURE2D(_CameraDepthTexture);
+    #define DEPTH_TEX _CameraDepthTexture
+    #ifdef _DEFERRED_RENDERING
+        TEXTURE2D(_GBuffer1);
+        #define NORMAL_TEX _GBuffer1
+    #else
+        TEXTURE2D(_ThinGBuffer);
+        #define NORMAL_TEX _ThinGBuffer
+    #endif
 #endif
 
-TEXTURE2D(_CameraDepthTexture);
-TEXTURE2D(_MotionVectorTexture);
 TEXTURE2D(_STBN128Scalar3);
 float4 _STBN128Scalar3_TexelSize;
 SAMPLER(sampler_LinearClamp);
@@ -64,7 +72,7 @@ inline float IsTemporalDenoiseEnabled()     { return _SSGIFallbackParams.w; }
 
 inline float LoadDepth(int2 pixelCoord)
 {
-    return LOAD_TEXTURE2D_LOD(_CameraDepthTexture, pixelCoord, 0).r;
+    return LOAD_TEXTURE2D_LOD(DEPTH_TEX, pixelCoord, 0).r;
 }
 
 inline float3 LoadAndDecodeNormal(int2 pixelCoord)
@@ -233,7 +241,11 @@ void HBILReprojectionKernel(uint3 id : SV_DispatchThreadID)
     }
     
     float4 history = SAMPLE_TEXTURE2D_LOD(_InputTexture, sampler_LinearClamp, historyUV, 0);
-    _OutputTexture[id.xy] = history;
+    
+    // TODO: 这里没有验证历史信息是不太好的，但是 HBIL Pass 执行时还没有当前帧的颜色信息，所以只能使用几何信息拒绝错误历史信息
+    // 等 TAA 进一步优化后，再修改这里，使用上一帧深度值拒绝错误历史信息
+    
+    _OutputTexture[id.xy] = float4(history.rgb, 0.0);
 }
 
 [numthreads(8, 8, 1)]

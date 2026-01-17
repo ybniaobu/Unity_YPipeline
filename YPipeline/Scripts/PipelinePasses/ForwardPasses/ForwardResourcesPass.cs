@@ -152,6 +152,7 @@ namespace YPipeline
                 
                 data.ThinGBuffer = data.renderGraph.CreateTexture(thinGBufferDesc);
 
+                YPipelineCamera yCamera = data.camera.GetYPipelineCamera();
                 if (data.IsTAAEnabled)
                 {
                     RenderTextureDescriptor taaHistoryDesc = new RenderTextureDescriptor(bufferSize.x, bufferSize.y)
@@ -162,15 +163,31 @@ namespace YPipeline
                         mipCount = 0,
                         autoGenerateMips = false,
                     };
-                    
-                    YPipelineCamera yCamera = data.camera.GetYPipelineCamera();
                     RTHandle taaHistory = yCamera.perCameraData.GetTAAHistory(ref taaHistoryDesc);
                     data.TAAHistory = data.renderGraph.ImportTexture(taaHistory);
                 }
                 else
                 {
-                    YPipelineCamera yCamera = data.camera.GetYPipelineCamera();
                     yCamera.perCameraData.ReleaseTAAHistory();
+                }
+                
+                if (data is { IsSSGIEnabled: true, IsTAAEnabled: false })
+                {
+                    RenderTextureDescriptor sceneHistoryDesc = new RenderTextureDescriptor(bufferSize.x, bufferSize.y)
+                    {
+                        graphicsFormat = GraphicsFormat.R16G16B16A16_SFloat,
+                        volumeDepth = 1,
+                        msaaSamples = 1,
+                        mipCount = 0,
+                        autoGenerateMips = false,
+                    };
+                    
+                    RTHandle sceneHistory =  yCamera.perCameraData.GetSceneHistory(ref sceneHistoryDesc);
+                    data.SceneHistory = data.renderGraph.ImportTexture(sceneHistory);
+                }
+                else
+                {
+                    yCamera.perCameraData.ReleaseSceneHistory();
                 }
                 
                 // ----------------------------------------------------------------------------------------------------

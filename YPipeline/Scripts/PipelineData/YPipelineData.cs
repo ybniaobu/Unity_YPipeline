@@ -27,18 +27,19 @@ namespace YPipeline
         // Properties
         // ----------------------------------------------------------------------------------------------------
 
+        public Vector2Int BufferSize => new Vector2Int((int) (camera.pixelWidth * asset.renderScale), (int) (camera.pixelHeight * asset.renderScale));
         public bool IsDeferredRenderingEnabled => asset.renderPath == RenderPath.DeferredPlus;
         public bool IsTAAEnabled => asset.antiAliasingMode == AntiAliasingMode.TAA;
-        public Vector2Int BufferSize => new Vector2Int((int) (camera.pixelWidth * asset.renderScale), (int) (camera.pixelHeight * asset.renderScale));
+        public bool IsSSAOEnabled => asset.enableScreenSpaceAmbientOcclusion;
+        public bool IsSSGIEnabled => asset.enableScreenSpaceGlobalIllumination;
+        public bool IsSSREnabled => asset.enableScreenSpaceReflection;
         
-        public bool isSSGIEnabled;
+        // Store locally the value on the instance due as the Render Pipeline Asset data might change before the disposal of the asset, making some APV Resources leak.
+        public bool isAPVEnabled;
         
         // ----------------------------------------------------------------------------------------------------
         // Buffer and Texture Handles
         // ----------------------------------------------------------------------------------------------------
-        
-        // Store locally the value on the instance due as the Render Pipeline Asset data might change before the disposal of the asset, making some APV Resources leak.
-        public bool isAPVEnabled;
         
         public TextureHandle SunLightShadowMap { set; get; }
         public bool isSunLightShadowMapCreated;
@@ -62,8 +63,9 @@ namespace YPipeline
         public TextureHandle HalfDepthTexture { set; get; }
         public TextureHandle HalfNormalRoughnessTexture { set; get; }
         public TextureHandle HalfMotionVectorTexture { set; get; }
-        public TextureHandle HalfSceneHistory { set; get; }
+        public TextureHandle HalfReprojectedSceneHistory { set; get; }
         public TextureHandle IrradianceTexture { set; get; }
+        public bool isIrradianceTextureCreated;
         public TextureHandle AmbientOcclusionTexture { set; get; }
         public bool isAmbientOcclusionTextureCreated;
         public TextureHandle TAATarget { set; get; }
