@@ -253,7 +253,8 @@ MonoBehaviour:
         m_HBILCS: {fileID: 7200000, guid: 0e1577e6c7579314a84060af3f04b2d1, type: 3}
         m_SSGIDenoiseCS: {fileID: 7200000, guid: 4ff1dac7f2b31e342b80d7bdcb67333f,
           type: 3}
-        m_AmbientOcclusionCS: {fileID: 7200000, guid: a9de2fa8b17c30e4593b18fba4d49293,
+        m_SSAOCS: {fileID: 7200000, guid: a9de2fa8b17c30e4593b18fba4d49293, type: 3}
+        m_SSAODenoiseCS: {fileID: 7200000, guid: de74b96335bd64641a54c217a2316502,
           type: 3}
     - rid: 2073298774936518744
       type: {class: YPipelineEditorResources, ns: YPipeline, asm: Assembly-CSharp}

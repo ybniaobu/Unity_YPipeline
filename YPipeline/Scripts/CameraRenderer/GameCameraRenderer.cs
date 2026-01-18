@@ -26,7 +26,7 @@ namespace YPipeline
                     m_CameraPipelineNodes.Add(PipelinePass.Create<ShadowPass>(ref data));
                     m_CameraPipelineNodes.Add(PipelinePass.Create<DownSamplePass>(ref data));
                     m_CameraPipelineNodes.Add(PipelinePass.Create<ScreenSpaceGlobalIlluminationPass>(ref data));
-                    m_CameraPipelineNodes.Add(PipelinePass.Create<AmbientOcclusionPass>(ref data));
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<ScreenSpaceAmbientOcclusionPass>(ref data));
                     m_CameraPipelineNodes.Add(PipelinePass.Create<TiledLightCullingPass>(ref data));
                     m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardGeometryPass>(ref data));
                     break;
@@ -41,7 +41,7 @@ namespace YPipeline
                     m_CameraPipelineNodes.Add(PipelinePass.Create<ShadowPass>(ref data));
                     m_CameraPipelineNodes.Add(PipelinePass.Create<DownSamplePass>(ref data));
                     m_CameraPipelineNodes.Add(PipelinePass.Create<ScreenSpaceGlobalIlluminationPass>(ref data));
-                    m_CameraPipelineNodes.Add(PipelinePass.Create<AmbientOcclusionPass>(ref data));
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<ScreenSpaceAmbientOcclusionPass>(ref data));
                     m_CameraPipelineNodes.Add(PipelinePass.Create<TiledLightCullingPass>(ref data));
                     m_CameraPipelineNodes.Add(PipelinePass.Create<DeferredLightingPass>(ref data));
                     break;

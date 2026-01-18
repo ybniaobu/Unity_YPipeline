@@ -1,11 +1,6 @@
 #pragma kernel SSAOKernel
 #pragma kernel HBAOKernel
 #pragma kernel GTAOKernel
-#pragma kernel DepthDownsampleKernel
-#pragma kernel UpsampleKernel
-#pragma kernel SpatialBlurHorizontalKernel
-#pragma kernel SpatialBlurVerticalKernel
-#pragma kernel TemporalBlurKernel
 
 #pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch switch2
 
@@ -16,23 +11,27 @@
 #include "../../../ShaderLibrary/RandomLibrary.hlsl"
 #include "../../../ShaderLibrary/EncodingLibrary.hlsl"
 
-// --- Local Textures ---
+// --- Textures & Samplers ---
 RWTexture2D<float2> _OutputTexture;
 Texture2D<float2> _InputTexture;
-Texture2D<float> _HalfDepthTexture;
-Texture2D<float2> _AmbientOcclusionHistory;
 
-// --- Global Textures & Samplers ---
-#ifdef _DEFERRED_RENDERING
-TEXTURE2D(_GBuffer1);
-#define NORMAL_TEX _GBuffer1
+#ifdef _HALF_RESOLUTION
+    Texture2D<float> _HalfDepthTexture;
+    #define DEPTH_TEX _HalfDepthTexture
+    Texture2D<float4> _HalfNormalRoughnessTexture;
+    #define NORMAL_TEX _HalfNormalRoughnessTexture
 #else
-TEXTURE2D(_ThinGBuffer);
-#define NORMAL_TEX _ThinGBuffer
+    TEXTURE2D(_CameraDepthTexture);
+    #define DEPTH_TEX _CameraDepthTexture
+    #ifdef _DEFERRED_RENDERING
+        TEXTURE2D(_GBuffer1);
+        #define NORMAL_TEX _GBuffer1
+    #else
+        TEXTURE2D(_ThinGBuffer);
+        #define NORMAL_TEX _ThinGBuffer
+    #endif
 #endif
 
-TEXTURE2D(_CameraDepthTexture);
-TEXTURE2D(_MotionVectorTexture);
 TEXTURE2D(_STBN128Scalar3);
 float4 _STBN128Scalar3_TexelSize;
 SAMPLER(sampler_LinearClamp);
@@ -50,66 +49,41 @@ float4 _TextureSize; // x: 1.0 / width, y: 1.0 / height, z: width, w: height
 // SSAO - x: intensity, y: sample count, z: radius
 // HBAO - x: intensity, y: radius, z: direction count, w: step count
 // GTAO - x: intensity, y: radius, z: direction count, w: step count
-float4 _AmbientOcclusionParams;
-float4 _AOSpatialBlurParams; // x: kernel radius, y: spatial sigma, z: depth/range sigma
-float4 _AOTemporalBlurParams; // x: is temporal blur enabled (1 or 0), y: variance critical value
-
-// --- Spatial Filter Groupshared Memory ---
-#define MAX_FILTER_RADIUS 8
-groupshared float2 _AOAndDepth[64 + 2 * MAX_FILTER_RADIUS];
-
-// --- Temporal Filter Groupshared Memory ---
-static const uint THREAD_NUM = 8;
-static const uint TILE_BORDER = 1;
-static const uint TILE_SIZE = THREAD_NUM + 2 * TILE_BORDER;
-groupshared float2 _AOZ[TILE_SIZE * TILE_SIZE];
+float4 _SSAOParams;
+int _TemporalDenoiseEnabled; // temporal denoise enabled (1 or 0)
 
 // ----------------------------------------------------------------------------------------------------
 // Input
 // ----------------------------------------------------------------------------------------------------
 
-inline float GetSSAOIntensity()                 { return _AmbientOcclusionParams.x; }
-inline float GetSSAOSampleCount()               { return _AmbientOcclusionParams.y; }
-inline float GetSSAORadius()                    { return _AmbientOcclusionParams.z; }
+inline float GetSSAOIntensity()                 { return _SSAOParams.x; }
+inline float GetSSAOSampleCount()               { return _SSAOParams.y; }
+inline float GetSSAORadius()                    { return _SSAOParams.z; }
 
-inline float GetHBAOIntensity()                 { return _AmbientOcclusionParams.x; }
-inline float GetHBAORadius()                    { return _AmbientOcclusionParams.y; }
-inline float GetHBAODirectionCount()            { return _AmbientOcclusionParams.z; }
-inline float GetHBAOStepCount()                 { return _AmbientOcclusionParams.w; }
+inline float GetHBAOIntensity()                 { return _SSAOParams.x; }
+inline float GetHBAORadius()                    { return _SSAOParams.y; }
+inline float GetHBAODirectionCount()            { return _SSAOParams.z; }
+inline float GetHBAOStepCount()                 { return _SSAOParams.w; }
 
-inline float GetGTAOIntensity()                 { return _AmbientOcclusionParams.x; }
-inline float GetGTAORadius()                    { return _AmbientOcclusionParams.y; }
-inline float GetGTAODirectionCount()            { return _AmbientOcclusionParams.z; }
-inline float GetGTAOStepCount()                 { return _AmbientOcclusionParams.w; }
+inline float GetGTAOIntensity()                 { return _SSAOParams.x; }
+inline float GetGTAORadius()                    { return _SSAOParams.y; }
+inline float GetGTAODirectionCount()            { return _SSAOParams.z; }
+inline float GetGTAOStepCount()                 { return _SSAOParams.w; }
 
-inline float GetSpatialBlurKernelRadius()       { return _AOSpatialBlurParams.x; }
-inline float2 GetSpatialBlurSigma()             { return _AOSpatialBlurParams.yz; }
-inline float IsTemporalBlurEnabled()            { return _AOTemporalBlurParams.x; }
-inline float GetTemporalVarianceCriticalValue() { return _AOTemporalBlurParams.y; }
-
-#include "AmbientOcclusionDenoise.hlsl"
+inline float IsTemporalDenoiseEnabled()            { return _TemporalDenoiseEnabled; }
 
 // ----------------------------------------------------------------------------------------------------
-// SSAO Utility Functions
+// Utility Functions
 // ----------------------------------------------------------------------------------------------------
 
 float LoadDepth(int2 pixelCoord)
 {
-    #ifdef _HALF_RESOLUTION
-    return LOAD_TEXTURE2D_LOD(_HalfDepthTexture, pixelCoord, 0).r;
-    #else
-    return LOAD_TEXTURE2D_LOD(_CameraDepthTexture, pixelCoord, 0).r;
-    #endif
+    return LOAD_TEXTURE2D_LOD(DEPTH_TEX, pixelCoord, 0).r;
 }
 
 float3 LoadAndDecodeNormal(int2 pixelCoord)
 {
-    #ifdef _HALF_RESOLUTION
-    float3 packedNormalWS = LOAD_TEXTURE2D_LOD(NORMAL_TEX, pixelCoord * 2, 0).rgb;
-    #else
     float3 packedNormalWS = LOAD_TEXTURE2D_LOD(NORMAL_TEX, pixelCoord, 0).rgb;
-    #endif
-    
     return DecodeNormalFrom888(packedNormalWS);
 }
 
@@ -171,7 +145,7 @@ void SSAOKernel(uint3 id : SV_DispatchThreadID)
     // ------------------------- Random Rotation -------------------------
     
     float3 noise = LOAD_TEXTURE2D_LOD(_STBN128Scalar3, id.xy % _STBN128Scalar3_TexelSize.zw, 0).rgb;
-    float randomRadian = (noise.r + _Jitter.z * IsTemporalBlurEnabled()) * TWO_PI;
+    float randomRadian = (noise.r + _Jitter.z * IsTemporalDenoiseEnabled()) * TWO_PI;
     float2x2 rotation = float2x2(cos(randomRadian), -sin(randomRadian), sin(randomRadian), cos(randomRadian));
     float2 offset = float2(noise.g + _Jitter.w * 0.11, noise.b + _Jitter.w * 0.23);
 
@@ -281,8 +255,8 @@ void HBAOKernel(uint3 id : SV_DispatchThreadID)
     float ao = 0;
     float phi = TWO_PI / HBAO_NUM_DIRECTIONS;
     float3 noise = LOAD_TEXTURE2D_LOD(_STBN128Scalar3, id.xy % _STBN128Scalar3_TexelSize.zw, 0).rgb;
-    float randomRadian = (noise.r + _Jitter.z * IsTemporalBlurEnabled()) * TWO_PI;
-    float randomOffset = frac(noise.b + (_Jitter.w + 0.5) * IsTemporalBlurEnabled());
+    float randomRadian = (noise.r + _Jitter.z * IsTemporalDenoiseEnabled()) * TWO_PI;
+    float randomOffset = frac(noise.b + (_Jitter.w + 0.5) * IsTemporalDenoiseEnabled());
     float r2 = GetHBAORadius() * GetHBAORadius();
     
     for (int d = 0; d < HBAO_NUM_DIRECTIONS; ++d)
@@ -412,8 +386,8 @@ void GTAOKernel(uint3 id : SV_DispatchThreadID)
     // float randomOffset = frac(noise2 + offset * IsTemporalBlurEnabled());
     
     float3 noise = LOAD_TEXTURE2D_LOD(_STBN128Scalar3, id.xy % _STBN128Scalar3_TexelSize.zw, 0).rgb;
-    float randomRadian = (noise.r + _Jitter.z * IsTemporalBlurEnabled()) * TWO_PI;
-    float randomOffset = frac(noise.g + (_Jitter.w + 0.5) * IsTemporalBlurEnabled()); // randomOffset 接近于 0 会产生小黑点
+    float randomRadian = (noise.r + _Jitter.z * IsTemporalDenoiseEnabled()) * TWO_PI;
+    float randomOffset = frac(noise.g + (_Jitter.w + 0.5) * IsTemporalDenoiseEnabled()); // randomOffset 接近于 0 会产生小黑点
 
     // ------------------------- Direction Loop -------------------------
 

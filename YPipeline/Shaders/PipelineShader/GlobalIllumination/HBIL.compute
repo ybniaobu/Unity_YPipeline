@@ -279,7 +279,7 @@ void HBILKernel(uint3 id : SV_DispatchThreadID)
     int2 noiseCoord = (pixelCoord + (_Jitter.zw + 0.5) * _STBN128Scalar3_TexelSize.zw * IsTemporalDenoiseEnabled()) % _STBN128Scalar3_TexelSize.zw;
     float3 noise = LOAD_TEXTURE2D_LOD(_STBN128Scalar3, noiseCoord, 0).rgb;
     float randomRadian = noise.r * TWO_PI;
-    float randomOffset = noise.b;
+    float randomOffset = noise.g;
     
     // ------------------------- Loop -------------------------
     
@@ -431,7 +431,7 @@ void HBILAlternateKernel(uint3 id : SV_DispatchThreadID)
     int2 noiseCoord = (pixelCoord + _TimeParams.x * frameMagicScale) % _STBN128Scalar3_TexelSize.zw;
     float3 noise = LOAD_TEXTURE2D_LOD(_STBN128Scalar3, noiseCoord, 0).rgb;
     float randomRadian = noise.r * TWO_PI;
-    float randomOffset = noise.b;
+    float randomOffset = noise.g;
     
     // ------------------------- Loop -------------------------
     

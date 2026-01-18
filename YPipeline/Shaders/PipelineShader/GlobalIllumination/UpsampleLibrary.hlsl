@@ -11,11 +11,11 @@
 
 static const float4 k_BilinearWeights[4] = 
 {
-    //     00          10          01          11
-    float4(9.0 / 16.0, 3.0 / 16.0, 3.0 / 16.0, 1.0 / 16.0),
-    float4(3.0 / 16.0, 9.0 / 16.0, 1.0 / 16.0, 3.0 / 16.0),
-    float4(3.0 / 16.0, 1.0 / 16.0, 9.0 / 16.0, 3.0 / 16.0),
-    float4(1.0 / 16.0, 3.0 / 16.0, 3.0 / 16.0, 9.0 / 16.0),
+    //     01          11          10          00
+    float4(3.0 / 16.0, 1.0 / 16.0, 3.0 / 16.0, 9.0 / 16.0),
+    float4(1.0 / 16.0, 3.0 / 16.0, 9.0 / 16.0, 3.0 / 16.0),
+    float4(9.0 / 16.0, 3.0 / 16.0, 1.0 / 16.0, 3.0 / 16.0),
+    float4(3.0 / 16.0, 9.0 / 16.0, 3.0 / 16.0, 1.0 / 16.0),
 };
 
 // ----------------------------------------------------------------------------------------------------
@@ -68,6 +68,7 @@ float DepthAwareBilateralUpsample(float depthThreshold, float fullDepth, float4 
 // Nearest-Depth Upsample Functions
 // ----------------------------------------------------------------------------------------------------
 
+// color3 version
 float3 NearestDepthUpsample(float fullDepth, float4 halfDepths, float3 color01, float3 color11, float3 color10, float3 color00)
 {
     float4 depthDelta = abs(halfDepths - fullDepth);
@@ -76,6 +77,17 @@ float3 NearestDepthUpsample(float fullDepth, float4 halfDepths, float3 color01, 
     nearest = lerp(nearest, float4(color10, depthDelta.z), depthDelta.z < nearest.w);
     nearest = lerp(nearest, float4(color00, depthDelta.w), depthDelta.w < nearest.w);
     return nearest.xyz;
+}
+
+// single channel version
+float NearestDepthUpsample(float fullDepth, float4 halfDepths, float4 values)
+{
+    float4 depthDelta = abs(halfDepths - fullDepth);
+    float2 nearest = float2(values.x, depthDelta.x);
+    nearest = lerp(nearest, float2(values.y, depthDelta.y), depthDelta.y < nearest.y);
+    nearest = lerp(nearest, float2(values.z, depthDelta.z), depthDelta.z < nearest.y);
+    nearest = lerp(nearest, float2(values.w, depthDelta.w), depthDelta.w < nearest.y);
+    return nearest.x;
 }
 
 #endif

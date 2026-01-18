@@ -25,6 +25,8 @@ namespace YPipeline
         public SSGIFallbackModeParameter(SSGIFallbackMode value, bool overrideState = false) : base(value, overrideState) { }
     }
     
+    [System.Serializable, VolumeComponentMenu("Global Illumination/Screen Space Global Illumination")]
+    [SupportedOnRenderPipeline(typeof(YRenderPipelineAsset))]
     public class ScreenSpaceGlobalIllumination : VolumeComponent, IPostProcessComponent
     {
         [Tooltip("屏幕空间漫反射全局光照算法 Choose a screen space diffuse global illumination algorithm.")]
@@ -34,19 +36,26 @@ namespace YPipeline
         public BoolParameter halfResolution = new BoolParameter(true);
         
         // HBIL
+        [Tooltip("近距离间接光照强度 Controls the strength of the near-field indirect lighting.")]
         public ClampedFloatParameter hbilIntensity = new ClampedFloatParameter(1.0f, 0.0f, 2.0f);
         
+        [Tooltip("样本聚集程度 A higher value results in samples being more tightly clustered (concentrated)")]
         public ClampedFloatParameter convergeDegree = new ClampedFloatParameter(1.5f, 1.0f, 2.0f);
         
+        [Tooltip("采样方向数量 Number of directions.")]
         public ClampedIntParameter directionCount = new ClampedIntParameter(3, 1, 6);
         
+        [Tooltip("步数 Number of steps to take along one direction during horizon search. ")]
         public ClampedIntParameter stepCount = new ClampedIntParameter(6, 2, 12);
         
         // Fallback
+        [Tooltip("远距离间接光照模式 Source for the far-field(off-screen) indirect lighting.")]
         public SSGIFallbackModeParameter fallbackMode = new SSGIFallbackModeParameter(SSGIFallbackMode.APV, true);
         
+        [Tooltip("远距离间接光照强度 Controls the strength of the far-field(off-screen) indirect lighting.")]
         public ClampedFloatParameter fallbackIntensity = new ClampedFloatParameter(1.0f, 0.0f, 2.0f);
         
+        [Tooltip("远距离间接光照遮蔽强度 Controls the strength of the far-field ambient occlusion.")]
         public ClampedFloatParameter farFieldAO = new ClampedFloatParameter(0.75f, 0.0f, 2.0f);
         
         // Denoise
@@ -61,7 +70,7 @@ namespace YPipeline
         public BoolParameter enableBilateralDenoise = new BoolParameter(true, BoolParameter.DisplayType.Checkbox);
         
         [Tooltip("过滤核半径 Defines the neighborhood area used for weighted averaging. Larger kernel produces stronger blurring effects.")]
-        public ClampedIntParameter kernelRadius = new ClampedIntParameter(10, 2, 18);
+        public ClampedIntParameter kernelRadius = new ClampedIntParameter(8, 0, 16);
         
         [Tooltip("标准差 The standard deviation of the Gaussian function, higher value results in blurrier result.")]
         public ClampedFloatParameter sigma = new ClampedFloatParameter(4.0f, 0.0f, 8.0f);

@@ -24,13 +24,13 @@ namespace YPipeline
         }
         
         private ScreenSpaceGlobalIllumination m_SSGI;
-        private AmbientOcclusion m_SSAO;
+        private ScreenSpaceAmbientOcclusion m_SSAO;
 
         protected override void Initialize(ref YPipelineData data)
         {
             var stack = VolumeManager.instance.stack;
             m_SSGI = stack.GetComponent<ScreenSpaceGlobalIllumination>();
-            m_SSAO = stack.GetComponent<AmbientOcclusion>();
+            m_SSAO = stack.GetComponent<ScreenSpaceAmbientOcclusion>();
         }
         
         protected override void OnDispose() { }
@@ -43,14 +43,14 @@ namespace YPipeline
             
             using (var builder = data.renderGraph.AddComputePass<DownSamplePassData>("Downsample", out var passData))
             {
-                bool temporalDenoiseEnabled = m_SSGI.enableTemporalDenoise.value || m_SSAO.enableTemporalFilter.value;
+                bool temporalDenoiseEnabled = m_SSGI.enableTemporalDenoise.value || m_SSAO.enableTemporalDenoise.value;
                 bool ssgiEnabled = m_SSGI.IsActive();
                 
                 passData.cs = data.runtimeResources.DownSampleCS;
                 passData.temporalDenoiseEnabled = temporalDenoiseEnabled;
                 passData.ssgiEnabled = ssgiEnabled;
                 Vector2Int textureSize = data.BufferSize / 2;
-                passData.threadGroupSizes = new Vector2Int(textureSize.x / 8, textureSize.y / 8);
+                passData.threadGroupSizes = new Vector2Int(Mathf.CeilToInt(textureSize.x / 8.0f), Mathf.CeilToInt(textureSize.y / 8.0f));
                 passData.textureSize = new Vector4(1f / textureSize.x, 1f / textureSize.y, textureSize.x, textureSize.y);
                 
                 // Half Depth Texture

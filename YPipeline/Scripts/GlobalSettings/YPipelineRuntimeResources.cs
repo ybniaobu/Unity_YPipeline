@@ -232,12 +232,20 @@ namespace YPipeline
             set => this.SetValueAndNotify(ref m_SSGIDenoiseCS, value, nameof(m_SSGIDenoiseCS));
         }
         
-        [SerializeField] [ResourcePath("YPipeline/Shaders/PipelineShader/GlobalIllumination/AmbientOcclusion.compute")]
-        private ComputeShader m_AmbientOcclusionCS;
-        public ComputeShader AmbientOcclusionCS
+        [SerializeField] [ResourcePath("YPipeline/Shaders/PipelineShader/GlobalIllumination/SSAO.compute")]
+        private ComputeShader m_SSAOCS;
+        public ComputeShader SSAOCS
         {
-            get => m_AmbientOcclusionCS;
-            set => this.SetValueAndNotify(ref m_AmbientOcclusionCS, value, nameof(m_AmbientOcclusionCS));
+            get => m_SSAOCS;
+            set => this.SetValueAndNotify(ref m_SSAOCS, value, nameof(m_SSAOCS));
+        }
+        
+        [SerializeField] [ResourcePath("YPipeline/Shaders/PipelineShader/GlobalIllumination/SSAODenoise.compute")]
+        private ComputeShader m_SSAODenoiseCS;
+        public ComputeShader SSAODenoiseCS
+        {
+            get => m_SSAODenoiseCS;
+            set => this.SetValueAndNotify(ref m_SSAODenoiseCS, value, nameof(m_SSAOCS));
         }
         
         #endregion

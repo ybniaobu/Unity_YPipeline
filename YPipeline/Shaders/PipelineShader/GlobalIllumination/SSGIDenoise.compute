@@ -40,7 +40,7 @@ SAMPLER(sampler_LinearClamp);
 SAMPLER(sampler_PointClamp);
 
 // --- Spatial Denoise Groupshared Memory ---
-#define MAX_FILTER_RADIUS 18
+#define MAX_FILTER_RADIUS 16
 groupshared float4 _IrradianceAndDepth[64 + 2 * MAX_FILTER_RADIUS];
 groupshared float4 _Normal[64 + 2 * MAX_FILTER_RADIUS];
 
@@ -97,6 +97,7 @@ void UpsampleKernel(uint3 id : SV_DispatchThreadID)
     int orderIndex = yEven * 2 + xEven;
     float3 finalColor = DepthAwareBilateralUpsample(GetDepthThreshold(), fullDepth, halfDepths, color01, color11, color10, color00, orderIndex);
     // float3 finalColor = NearestDepthUpsample(fullDepth, halfDepths, color01, color11, color10, color00);
+    // float3 finalColor = DepthAwareBilateralUpsample_Uniform(GetDepthThreshold(), fullDepth, halfDepths, color01, color11, color10, color00);
     _OutputTexture[id.xy] = float4(finalColor, fullDepth);
 }
 
@@ -295,12 +296,13 @@ void TemporalDenoiseKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId :
 
     // ------------------------- Adaptive Blending Factor -------------------------
     
+    float blendFactor = lerp(0.95, 0.85, velocityFactor); // Velocity Test
+    
     float middleDepth = neighbours[0].a;
     float historyDepth = history.a;
     bool depthTest = abs(1 - middleDepth / historyDepth) < GetDepthThreshold();
-    float blendFactor = lerp(0, 0.95, depthTest); // Depth Test
+    blendFactor = lerp(0, blendFactor, depthTest); // Depth Test
     blendFactor = lerp(blendFactor, 0, any(abs(historyUV - 0.5) > 0.5)); // Off-Screen Test
-    blendFactor = lerp(blendFactor, 0.85, velocityFactor); // Velocity Test
     
     _OutputTexture[id.xy] = float4(OutputColor(LumaExponentialAccumulation(history.rgb, prefiltered, blendFactor)), middleDepth);
     // _OutputTexture[id.xy] = float4(OutputColor(lerp(prefiltered, history.rgb, blendFactor)), middleDepth);

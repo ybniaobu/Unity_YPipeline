@@ -57,11 +57,13 @@ namespace YPipeline
         protected override void OnRecord(ref YPipelineData data)
         {
             bool ssgiEnabled = data.IsSSGIEnabled && m_SSGI.IsActive();
-            data.isIrradianceTextureCreated = ssgiEnabled;
             CoreUtils.SetKeyword(data.cmd, YPipelineKeywords.k_ScreenSpaceIrradiance, ssgiEnabled);
-            if (!ssgiEnabled || Time.frameCount == 0) return;
+            ssgiEnabled = ssgiEnabled && Time.frameCount != 0;
+            data.isIrradianceTextureCreated = ssgiEnabled;
+            if (!ssgiEnabled) return;
 
-            using (var builder = data.renderGraph.AddUnsafePass<SSGIPassData>("Diffuse Global Illumination", out var passData))
+            // TODO：暂时使用 UnsafePass，因为 ComputePass 无法 Copy；
+            using (var builder = data.renderGraph.AddUnsafePass<SSGIPassData>("Screen Space Global Illumination", out var passData))
             {
                 YPipelineCamera yCamera = data.camera.GetYPipelineCamera();
                 
@@ -104,26 +106,31 @@ namespace YPipeline
                 builder.SetGlobalTextureAfterPass(data.IrradianceTexture, YPipelineShaderIDs.k_IrradianceTextureID);
                 
                 // Irradiance Transition Texture
-                TextureDesc transitionDesc0 = new TextureDesc(textureSize.x, textureSize.y)
+                if (passData.enableBilateralDenoise || passData.enableTemporalDenoise)
                 {
-                    format = GraphicsFormat.R16G16B16A16_SFloat,
-                    filterMode = FilterMode.Bilinear,
-                    clearBuffer = false,
-                    enableRandomWrite = true,
-                    name = "Irradiance Transition0"
-                };
-                
-                TextureDesc transitionDesc1 = new TextureDesc(textureSize.x, textureSize.y)
+                    TextureDesc transitionDesc0 = new TextureDesc(textureSize.x, textureSize.y)
+                    {
+                        format = GraphicsFormat.R16G16B16A16_SFloat,
+                        filterMode = FilterMode.Bilinear,
+                        clearBuffer = false,
+                        enableRandomWrite = true,
+                        name = "Irradiance Transition0"
+                    };
+                    passData.transition0 = builder.CreateTransientTexture(transitionDesc0);
+                }
+
+                if (passData.enableBilateralDenoise || passData.enableHalfResolution)
                 {
-                    format = GraphicsFormat.R16G16B16A16_SFloat,
-                    filterMode = FilterMode.Bilinear,
-                    clearBuffer = false,
-                    enableRandomWrite = true,
-                    name = "Irradiance Transition1"
-                };
-                
-                passData.transition0 = builder.CreateTransientTexture(transitionDesc0);
-                passData.transition1 = builder.CreateTransientTexture(transitionDesc1);
+                    TextureDesc transitionDesc1 = new TextureDesc(textureSize.x, textureSize.y)
+                    {
+                        format = GraphicsFormat.R16G16B16A16_SFloat,
+                        filterMode = FilterMode.Bilinear,
+                        clearBuffer = false,
+                        enableRandomWrite = true,
+                        name = "Irradiance Transition1"
+                    };
+                    passData.transition1 = builder.CreateTransientTexture(transitionDesc1);
+                }
                 
                 // Irradiance History
                 RenderTextureDescriptor irradianceHistoryDesc = new RenderTextureDescriptor(textureSize.x, textureSize.y)
@@ -218,8 +225,8 @@ namespace YPipeline
                     
                     // int hbgiKernel = data.cs.FindKernel("HBILAlternateKernel");
                     int hbgiKernel = data.hbilCS.FindKernel("HBILKernel");
-                    TextureHandle occlusionOutput = enableTemporalDenoise ? data.transition0 : data.transition1;
-                    occlusionOutput = !enableDenoise && !enableHalfResolution ? data.irradianceTexture : occlusionOutput;
+                    TextureHandle hbilOutput = enableTemporalDenoise ? data.transition0 : data.transition1;
+                    hbilOutput = !enableDenoise && !enableHalfResolution ? data.irradianceTexture : hbilOutput;
 
                     if (enableHalfResolution)
                     {
@@ -232,7 +239,7 @@ namespace YPipeline
                         context.cmd.SetComputeTextureParam(data.hbilCS, hbgiKernel, "_InputTexture", data.reprojectedSceneHistory);
                     }
                     
-                    context.cmd.SetComputeTextureParam(data.hbilCS, hbgiKernel, "_OutputTexture", occlusionOutput);
+                    context.cmd.SetComputeTextureParam(data.hbilCS, hbgiKernel, "_OutputTexture", hbilOutput);
                     context.cmd.DispatchCompute(data.hbilCS, hbgiKernel, data.threadGroupSizes8.x, data.threadGroupSizes8.y, 1);
                     context.cmd.EndSample("HBIL");
                     

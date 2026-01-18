@@ -3,8 +3,8 @@ using UnityEditor.Rendering;
 
 namespace YPipeline.Editor
 {
-    [CustomEditor(typeof(AmbientOcclusion))]
-    public class AmbientOcclusionEditor : VolumeComponentEditor
+    [CustomEditor(typeof(ScreenSpaceAmbientOcclusion))]
+    public class ScreenSpaceAmbientOcclusionEditor : VolumeComponentEditor
     {
         private SerializedDataParameter m_AmbientOcclusionMode;
         private SerializedDataParameter m_HalfResolution;
@@ -26,19 +26,17 @@ namespace YPipeline.Editor
         private SerializedDataParameter m_GTAODirectionCount;
         private SerializedDataParameter m_GTAOStepCount;
         
-        // Spatial Filter
-        private SerializedDataParameter m_EnableSpatialFilter;
-        private SerializedDataParameter m_KernelRadius;
-        private SerializedDataParameter m_SpatialSigma;
-        private SerializedDataParameter m_DepthSigma;
-        
-        // Temporal Filter
-        private SerializedDataParameter m_EnableTemporalFilter;
+        // Denoise
+        private SerializedDataParameter m_DepthThreshold;
+        private SerializedDataParameter m_EnableTemporalDenoise;
         private SerializedDataParameter m_CriticalValue;
+        private SerializedDataParameter m_EnableBilateralDenoise;
+        private SerializedDataParameter m_KernelRadius;
+        private SerializedDataParameter m_Sigma;
 
         public override void OnEnable()
         {
-            var o = new PropertyFetcher<AmbientOcclusion>(serializedObject);
+            var o = new PropertyFetcher<ScreenSpaceAmbientOcclusion>(serializedObject);
             
             m_AmbientOcclusionMode = Unpack(o.Find(x => x.ambientOcclusionMode));
             m_HalfResolution = Unpack(o.Find(x => x.halfResolution));
@@ -60,47 +58,42 @@ namespace YPipeline.Editor
             m_GTAODirectionCount = Unpack(o.Find(x => x.gtaoDirectionCount));
             m_GTAOStepCount = Unpack(o.Find(x => x.gtaoStepCount));
             
-            // Spatial Filter
-            m_EnableSpatialFilter = Unpack(o.Find(x => x.enableSpatialFilter));
-            m_KernelRadius = Unpack(o.Find(x => x.kernelRadius));
-            m_SpatialSigma = Unpack(o.Find(x => x.spatialSigma));
-            m_DepthSigma = Unpack(o.Find(x => x.depthSigma));
-            
-            // Temporal Filter
-            m_EnableTemporalFilter = Unpack(o.Find(x => x.enableTemporalFilter));
+            // Denoise
+            m_DepthThreshold = Unpack(o.Find(x => x.depthThreshold));
+            m_EnableTemporalDenoise = Unpack(o.Find(x => x.enableTemporalDenoise));
             m_CriticalValue = Unpack(o.Find(x => x.criticalValue));
+            m_EnableBilateralDenoise = Unpack(o.Find(x => x.enableBilateralDenoise));
+            m_KernelRadius = Unpack(o.Find(x => x.kernelRadius));
+            m_Sigma = Unpack(o.Find(x => x.sigma));
         }
 
         public override void OnInspectorGUI()
         {
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Screen Space Ambient Occlusion", EditorStyles.boldLabel);
-            
             PropertyField(m_AmbientOcclusionMode);
             
-            if (m_AmbientOcclusionMode.value.enumValueIndex == (int) AmbientOcclusionMode.GTAO)
+            if (m_AmbientOcclusionMode.value.enumValueIndex == (int) SSAOMode.GTAO)
             {
                 EditorGUILayout.HelpBox("注：目前 GTAO 在着色时未使用 Multiple Bounces，并且未实现 Specular Occlusion。", MessageType.Info);
             }
 
             switch (m_AmbientOcclusionMode.value.enumValueIndex)
             {
-                case (int) AmbientOcclusionMode.None:
+                case (int) SSAOMode.None:
                     break;
-                case (int) AmbientOcclusionMode.SSAO:
+                case (int) SSAOMode.SSAO:
                     PropertyField(m_HalfResolution);
                     PropertyField(m_SSAOIntensity, EditorGUIUtility.TrTextContent("Intensity"));
                     PropertyField(m_SampleCount);
                     PropertyField(m_SSAORadius, EditorGUIUtility.TrTextContent("Radius"));
                     break;
-                case (int) AmbientOcclusionMode.HBAO:
+                case (int) SSAOMode.HBAO:
                     PropertyField(m_HalfResolution);
                     PropertyField(m_HBAOIntensity, EditorGUIUtility.TrTextContent("Intensity"));
                     PropertyField(m_HBAORadius, EditorGUIUtility.TrTextContent("Radius"));
                     PropertyField(m_HBAODirectionCount, EditorGUIUtility.TrTextContent("Direction Count"));
                     PropertyField(m_HBAOStepCount, EditorGUIUtility.TrTextContent("Step Count"));
                     break;
-                case (int) AmbientOcclusionMode.GTAO:
+                case (int) SSAOMode.GTAO:
                     PropertyField(m_HalfResolution);
                     PropertyField(m_GTAOIntensity, EditorGUIUtility.TrTextContent("Intensity"));
                     PropertyField(m_GTAORadius, EditorGUIUtility.TrTextContent("Radius"));
@@ -111,21 +104,33 @@ namespace YPipeline.Editor
                     break;
             }
 
-            if (m_AmbientOcclusionMode.value.enumValueIndex == (int)AmbientOcclusionMode.None) return;
+            if (m_AmbientOcclusionMode.value.enumValueIndex == (int)SSAOMode.None) return;
             
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Spatial Filter - Bilateral Blur", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Denoise Settings", EditorStyles.boldLabel);
             
-            PropertyField(m_EnableSpatialFilter, EditorGUIUtility.TrTextContent("Enable"));
-            PropertyField(m_KernelRadius);
-            PropertyField(m_SpatialSigma);
-            PropertyField(m_DepthSigma);
+            PropertyField(m_DepthThreshold);
             
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Temporal Filter", EditorStyles.boldLabel);
+            PropertyField(m_EnableTemporalDenoise);
+
+            if (m_EnableTemporalDenoise.value.boolValue)
+            {
+                using (new IndentLevelScope())
+                {
+                    PropertyField(m_CriticalValue);
+                }
+            }
             
-            PropertyField(m_EnableTemporalFilter, EditorGUIUtility.TrTextContent("Enable"));
-            PropertyField(m_CriticalValue);
+            PropertyField(m_EnableBilateralDenoise);
+
+            if (m_EnableBilateralDenoise.value.boolValue)
+            {
+                using (new IndentLevelScope())
+                {
+                    PropertyField(m_KernelRadius);
+                    PropertyField(m_Sigma);
+                }
+            }
         }
     }
 }
