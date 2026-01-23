@@ -8,9 +8,8 @@
 
 #include "../../../ShaderLibrary/Core/YPipelineCSCore.hlsl"
 
-// 实际测试下来，感觉还是直接 load 效果最好
 #define CHECKERBOARD_DOWNSAMPLE 0
-#define MIN_DEPTH_DOWNSAMPLE 0
+#define MIN_DEPTH_DOWNSAMPLE 1
 #define MAX_DEPTH_DOWNSAMPLE 0
 
 Texture2D<float> _CameraDepthTexture;

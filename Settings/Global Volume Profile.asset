@@ -100,7 +100,7 @@ MonoBehaviour:
     m_Value: 0.5
   threshold:
     m_OverrideState: 1
-    m_Value: 5
+    m_Value: 10
   thresholdKnee:
     m_OverrideState: 1
     m_Value: 0.5
@@ -661,7 +661,7 @@ MonoBehaviour:
     m_Value: 1
   aGXMode:
     m_OverrideState: 1
-    m_Value: 2
+    m_Value: 0
 --- !u!114 &3228833441281930345
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -929,7 +929,7 @@ MonoBehaviour:
     m_Value: 1
   kernelRadius:
     m_OverrideState: 1
-    m_Value: 8
+    m_Value: 16
   sigma:
     m_OverrideState: 1
-    m_Value: 4
+    m_Value: 8

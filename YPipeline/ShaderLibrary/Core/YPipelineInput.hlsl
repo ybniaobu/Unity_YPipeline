@@ -111,7 +111,7 @@ struct PointLightShadowData
 };
 
 StructuredBuffer<PointLightShadowData> _PointLightShadowData;
-StructuredBuffer<float4x4> _PointLightShadowMatrices;
+StructuredBuffer<float4x4> _PointLightShadowMatrices; // TODO: 修改进 PointLightShadowData 里
 
 inline float3 GetPointLightShadowColor(int shadowIndex)                     { return _PointLightShadowData[shadowIndex].pointLightShadowColors.xyz; }
 inline float GetPointLightShadowStrength(int shadowIndex)                   { return _PointLightShadowData[shadowIndex].pointLightShadowColors.w; }
@@ -139,7 +139,7 @@ struct SpotLightShadowData
 };
 
 StructuredBuffer<SpotLightShadowData> _SpotLightShadowData;
-StructuredBuffer<float4x4> _SpotLightShadowMatrices;
+StructuredBuffer<float4x4> _SpotLightShadowMatrices; // TODO: 修改进 SpotLightShadowData 里
 
 inline float3 GetSpotLightShadowColor(int shadowIndex)                     { return _SpotLightShadowData[shadowIndex].spotLightShadowColors.xyz; }
 inline float GetSpotLightShadowStrength(int shadowIndex)                   { return _SpotLightShadowData[shadowIndex].spotLightShadowColors.w; }

@@ -109,6 +109,9 @@ namespace YPipeline
         [Tooltip("Enable light 2.5D culling, which splits depth into cells to better handle depth discontinuities")]
         public bool enableSplitDepth = true;
         
+        // Reflection Probes Culling
+        [Range(4, 16)] public int maxReflectionProbesOnScreen = 8;
+        
         // Global Illumination
         public bool enableScreenSpaceAmbientOcclusion = true;
         public bool enableScreenSpaceGlobalIllumination = false;

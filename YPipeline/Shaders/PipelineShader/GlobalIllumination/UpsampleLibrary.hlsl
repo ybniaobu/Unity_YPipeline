@@ -29,7 +29,8 @@ float3 DepthAwareBilateralUpsample_Uniform(float depthThreshold, float fullDepth
     float4 weights = abs(1.0 - halfDepths / fullDepth) < depthThreshold;
     float weightSum = weights.x + weights.y + weights.z + weights.w + HALF_MIN;
     float3 weightedColorSum = color01 * weights.x + color11 * weights.y + color10 * weights.z + color00 * weights.w;
-    return lerp(weightedColorSum / weightSum, 0, all(weights == 0));
+    float3 fallBackColor = (color01 + color11 + color10 + color00) / 4;
+    return lerp(weightedColorSum / weightSum, fallBackColor, all(weights == 0));
 }
 
 // Uniform weight, single channel version (don't consider bilinear weight)
@@ -50,7 +51,8 @@ float3 DepthAwareBilateralUpsample(float depthThreshold, float fullDepth, float4
     float4 weights = k_BilinearWeights[orderIndex] * depthWeights;
     float weightSum = weights.x + weights.y + weights.z + weights.w + HALF_MIN;
     float3 weightedColorSum = color01 * weights.x + color11 * weights.y + color10 * weights.z + color00 * weights.w;
-    return lerp(weightedColorSum / weightSum, 0, all(weights == 0));
+    float3 fallBackColor = (color01 + color11 + color10 + color00) / 4;
+    return lerp(weightedColorSum / weightSum, fallBackColor, all(weights == 0));
 }
 
 // Bilinear weight, single channel version

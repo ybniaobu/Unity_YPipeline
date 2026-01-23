@@ -149,7 +149,7 @@ float3 SliceIntegration_Front(uint2 pixelCoord, float2 maxTexelDelta, float rand
     float3 irradiance = 0;
     for (int s = 0; s < GetStepCount(); s++)
     {
-        float2 offset = PositivePow((randomOffset + s) / GetStepCount(), GetConvergeDegree()) * maxTexelDelta;
+        float2 offset = PositivePow((randomOffset + s) / (GetStepCount() + 1.0), GetConvergeDegree()) * maxTexelDelta;
         int2 sampleCoord = pixelCoord + offset;
         float2 sampleUV = (float2(sampleCoord) + 0.5) * _TextureSize.xy;
         if (any(abs(sampleUV - 0.5) > 0.5)) break;
@@ -182,7 +182,7 @@ float3 SliceIntegration_Back(uint2 pixelCoord, float2 maxTexelDelta, float rando
     float3 irradiance = 0;
     for (int s = 0; s < GetStepCount(); s++)
     {
-        float2 offset = PositivePow((randomOffset + s) / GetStepCount(), GetConvergeDegree()) * maxTexelDelta;
+        float2 offset = PositivePow((randomOffset + s) / (GetStepCount() + 1.0), GetConvergeDegree()) * maxTexelDelta;
         int2 sampleCoord = pixelCoord - offset;
         float2 sampleUV = (float2(sampleCoord) + 0.5) * _TextureSize.xy;
         if (any(abs(sampleUV - 0.5) > 0.5)) break;
@@ -283,8 +283,7 @@ void HBILKernel(uint3 id : SV_DispatchThreadID)
     
     // ------------------------- Loop -------------------------
     
-    int maxRayTexel = min(_TextureSize.z, _TextureSize.w);
-    // int maxRayTexel = max(_TextureSize.z, _TextureSize.w);
+    int maxRayTexel = max(_TextureSize.z, _TextureSize.w);
     float dirAngle = PI / GetDirectionCount();
     float3 irradiance = 0;
     float ao = 0;
@@ -368,7 +367,7 @@ float3 SliceMarching(bool IsRightDir, uint2 pixelCoord, float2 maxTexelDelta, fl
     
     for (int s = 0; s < GetStepCount(); s++)
     {
-        float2 offset = PositivePow((randomOffset + s) / GetStepCount(), GetConvergeDegree()) * maxTexelDelta;
+        float2 offset = PositivePow((randomOffset + s) / (GetStepCount() + 1.0), GetConvergeDegree()) * maxTexelDelta;
         int2 sampleCoord = pixelCoord + offset * samplingDirection;
         float2 sampleUV = (float2(sampleCoord) + 0.5) * _TextureSize.xy;
         if (any(abs(sampleUV - 0.5) > 0.5)) break;
@@ -435,8 +434,7 @@ void HBILAlternateKernel(uint3 id : SV_DispatchThreadID)
     
     // ------------------------- Loop -------------------------
     
-    int maxRayTexel = min(_TextureSize.z, _TextureSize.w);
-    // int maxRayTexel = max(_TextureSize.z, _TextureSize.w);
+    int maxRayTexel = max(_TextureSize.z, _TextureSize.w);
     float dirAngle = PI / GetDirectionCount();
     float3 irradiance = 0;
     float ao = 0;
