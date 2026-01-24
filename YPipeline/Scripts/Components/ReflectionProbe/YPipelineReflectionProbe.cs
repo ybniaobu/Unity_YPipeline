@@ -16,9 +16,13 @@ namespace YPipeline
     
     [DisallowMultipleComponent]
     [RequireComponent(typeof(ReflectionProbe))]
+    [ExecuteAlways]
     public class YPipelineReflectionProbe : MonoBehaviour, IAdditionalData
     {
-        public Texture texture;
-        public bool showOctahedralCubemap;
+        public Texture octahedralMap;
+        public bool showOctahedralMap;
+        public bool isOctahedralMapBaked;
+        public Vector4[] SH = new Vector4[7];
+        public bool isSHBaked;
     }
 }

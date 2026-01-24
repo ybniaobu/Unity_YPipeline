@@ -14,7 +14,7 @@ namespace YPipeline.Editor
         // Fields/Properties
         // ----------------------------------------------------------------------------------------------------
         
-        public ReflectionProbe Probe => target as ReflectionProbe;
+        private ReflectionProbe Probe => target as ReflectionProbe;
         private YPipelineReflectionProbe m_YPipelineProbe;
         private SerializedYPipelineReflectionProbe m_SerializedProbe;
         

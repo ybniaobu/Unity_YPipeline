@@ -902,10 +902,10 @@ MonoBehaviour:
     m_Value: 1.5
   directionCount:
     m_OverrideState: 1
-    m_Value: 3
+    m_Value: 4
   stepCount:
     m_OverrideState: 1
-    m_Value: 6
+    m_Value: 8
   fallbackMode:
     m_OverrideState: 1
     m_Value: 1

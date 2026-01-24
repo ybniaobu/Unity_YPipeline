@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEditor.Rendering;
 
 namespace YPipeline.Editor
@@ -28,14 +29,17 @@ namespace YPipeline.Editor
             CED.Group( 
                 CED.FoldoutGroup(k_RuntimeSettingsHeader, Expandable.Runtime, k_ExpandedState, DrawRuntimeSettings),
                 CED.FoldoutGroup(k_CaptureSettingsHeader, Expandable.Capture, k_ExpandedState, DrawCaptureSettings),
-                CED.Group(DrawBakeButton)
+                CED.Group(DrawCubemapBakeButton)
                 
                 
             
             ).Draw(serialized, owner);
         }
         
-
+        // ----------------------------------------------------------------------------------------------------
+        // Draw Settings
+        // ----------------------------------------------------------------------------------------------------
+        
         private static void DrawModeSettings(SerializedYPipelineReflectionProbe serialized, UnityEditor.Editor owner)
         {
             EditorGUILayout.IntPopup(serialized.mode, k_ModeContents, k_ModeValues, k_ModeText);
@@ -43,6 +47,8 @@ namespace YPipeline.Editor
             switch ((ReflectionProbeMode) serialized.mode.intValue)
             {
                 case ReflectionProbeMode.Baked:
+                    EditorGUILayout.HelpBox("受限制于 Unity 内置 API，Baked 的功能有一点限制，强烈建议使用 Custom 模式。若要使用 Baked 模式，只能先在 Lighting 里烘焙所有 Reflection Probes，否则下面 Bake 按钮无法使用。", 
+                        MessageType.Warning, true);
                     break;
                 case ReflectionProbeMode.Custom:
                     Rect lineRect = EditorGUILayout.GetControlRect(true, 64);
@@ -90,37 +96,35 @@ namespace YPipeline.Editor
         }
         
         // ----------------------------------------------------------------------------------------------------
-        // Reflection Probe Bake Related
+        // Bake Cubemap
         // ----------------------------------------------------------------------------------------------------
 
-        private static void DrawBakeButton(SerializedYPipelineReflectionProbe serialized, UnityEditor.Editor owner)
+        private static void DrawCubemapBakeButton(SerializedYPipelineReflectionProbe serialized, UnityEditor.Editor owner)
         {
             ReflectionProbe probe = owner.target as ReflectionProbe;
-            if (probe == null) return;
+            if (probe == null || owner.targets.Length > 1) return;
             
             GUILayout.BeginHorizontal();
-
+            
             switch (serialized.mode.intValue)
             {
                 case (int) ReflectionProbeMode.Baked:
                     using (new EditorGUI.DisabledScope(!probe.enabled))
                     {
-                        if (GUILayout.Button(k_BakeButtonLabel, GUILayout.Height(32)))
+                        Color originalColor = GUI.color;
+                        GUI.color = probe.texture == null ? Color.firebrick : originalColor;
+                        if (GUILayout.Button(k_CubemapBakeButtonLabel, GUILayout.Height(20)))
                         {
-                            // EditorGUI.BeginChangeCheck();
-                            var texture = BakeReflectionProbe(probe);
-                            // Debug.Log(serialized.bakedTexture.objectReferenceValue == null);
-                            // serialized.bakedTexture.objectReferenceValue = texture;
-                            // EditorGUI.EndChangeCheck();
-                            // serialized.ApplyModifiedProperties();
+                            BakeReflectionProbe(probe);
                             GUIUtility.ExitGUI();
                         }
+                        GUI.color = originalColor;
                     }
                     break;
                 case (int) ReflectionProbeMode.Custom:
                     using (new EditorGUI.DisabledScope(!probe.enabled))
                     {
-                        if (GUILayout.Button(k_BakeButtonLabel, GUILayout.Height(32)))
+                        if (GUILayout.Button(k_CubemapBakeButtonLabel, GUILayout.Height(20)))
                         {
                             BakeCustomReflectionProbe(probe);
                             GUIUtility.ExitGUI();
@@ -133,46 +137,28 @@ namespace YPipeline.Editor
             GUILayout.EndHorizontal();
         }
 
-        private static Object BakeReflectionProbe(ReflectionProbe probe)
+        /// <summary>
+        /// 我们没法调用 Lightmapping.BakeAllReflectionProbesSnapshots()、Lightmapping.BakeReflectionProbeSnapshot()，都是 internal 函数。
+        /// 本来想着调用 Lightmapping.BakeReflectionProbe() 来模仿 Baked 模式的逻辑，但是发现 Reflection Probe 的 bakedTexture 跟 customBakedTexture 不一样，
+        /// bakedTexture 不会被序列化（Scene 用文本打开也看不到该属性），应该是直接由 Unity C++ 控制的，这就很尴尬了。
+        /// HDRP 直接另外写了一套烘焙逻辑，自己序列化了 bakedTexture，太复杂了，就不抄了。
+        /// 所以在使用 Baked 模式时，要先在 Lighting 里 Generate Lighting，才能正确序列化。
+        /// </summary>
+        /// <param name="probe"></param>
+        private static void BakeReflectionProbe(ReflectionProbe probe)
         {
             string path = AssetDatabase.GetAssetPath(probe.bakedTexture);
             string extension = probe.hdr ? "exr" : "png";
 
             if (string.IsNullOrEmpty(path) || Path.GetExtension(path) != "." + extension)
             {
-                // 若 scene 文件夹不存在，则创建文件夹
-                string scenePath = Path.ChangeExtension(SceneManager.GetActiveScene().path, null);
-                if (string.IsNullOrEmpty(scenePath)) scenePath = "Assets";
-                else if (Directory.Exists(scenePath) == false) Directory.CreateDirectory(scenePath);
-                
-                // 查找 ReflectionProbe-X
-                HashSet<int> existingNumbers = new HashSet<int>();
-                foreach (string filePath in Directory.GetFiles(scenePath, "ReflectionProbe-*"))
-                {
-                    if (filePath.EndsWith(".meta")) continue;
-                    string fileName = Path.GetFileNameWithoutExtension(filePath);
-                    
-                    string numberPart = fileName.Substring("ReflectionProbe-".Length);
-                    if (int.TryParse(numberPart, out int number))
-                    {
-                        existingNumbers.Add(number);
-                    }
-                }
-                
-                int firstAvailableNumber = 0;
-                while (existingNumbers.Contains(firstAvailableNumber))
-                {
-                    firstAvailableNumber++;
-                }
-                
-                path = Path.Combine(scenePath, $"ReflectionProbe-{firstAvailableNumber}" + "." + extension);
+                Debug.LogWarning("请先在 <b><i>Window -> Lighting</i></b> 里烘焙所有反射探针：<b><i>Generate Lighting -> Bake Reflection Probes</i></b>");
+                return;
             }
             
             EditorUtility.DisplayProgressBar("Reflection Probes", "Baking " + path, 0.5f);
             if (!Lightmapping.BakeReflectionProbe(probe, path)) Debug.LogError("Failed to bake reflection probe to " + path);
             EditorUtility.ClearProgressBar();
-
-            return AssetDatabase.LoadAssetAtPath(path, typeof(Object));
         }
         
         private static void BakeCustomReflectionProbe(ReflectionProbe probe)
@@ -194,8 +180,7 @@ namespace YPipeline.Editor
                 if (string.IsNullOrEmpty(path)) return;
                 
                 // 检查文件路径是否和其他 ReflectionProbe 的 cubemap 冲突
-                ReflectionProbe collidingProbe;
-                if (IsCustomReflectionProbeCollidingWithOtherProbes(path, probe, out collidingProbe))
+                if (IsCustomReflectionProbeCollidingWithOtherProbes(path, probe, out ReflectionProbe collidingProbe))
                 {
                     string message = $"'{path}' path is used by the game object '{collidingProbe.name}', do you really want to overwrite it?";
                     if (!EditorUtility.DisplayDialog("Cubemap is used by other reflection probe", message, "Yes", "No")) return;
@@ -222,6 +207,30 @@ namespace YPipeline.Editor
                 }
             }
             return false;
+        }
+        
+        // ----------------------------------------------------------------------------------------------------
+        // Bake Octahedral Map
+        // ----------------------------------------------------------------------------------------------------
+    
+        private static void DrawOctahedralBakeButton(SerializedYPipelineReflectionProbe serialized, UnityEditor.Editor owner)
+        {
+            ReflectionProbe probe = owner.target as ReflectionProbe;
+            if (probe == null || owner.targets.Length > 1) return;
+            
+            GUILayout.BeginHorizontal();
+            
+            if (GUILayout.Button(k_OctahedralMapBakeButtonLabel, GUILayout.Height(20)))
+            {
+                GUIUtility.ExitGUI();
+            }
+            
+            GUILayout.EndHorizontal();
+        }
+
+        private static void BakeOctahedralMap(SerializedYPipelineReflectionProbe serialized)
+        {
+            
         }
     }
 }

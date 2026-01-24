@@ -110,6 +110,7 @@ namespace YPipeline
         public bool enableSplitDepth = true;
         
         // Reflection Probes Culling
+        public ResolutionSize octahedralMapSize = ResolutionSize._1024;
         [Range(4, 16)] public int maxReflectionProbesOnScreen = 8;
         
         // Global Illumination

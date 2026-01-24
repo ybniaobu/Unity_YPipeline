@@ -54,6 +54,7 @@ namespace YPipeline.Editor
         };
         
         // Bake Button
-        private static GUIContent k_BakeButtonLabel = EditorGUIUtility.TrTextContent("Bake");
+        private static GUIContent k_CubemapBakeButtonLabel = EditorGUIUtility.TrTextContent("Bake Cubemap");
+        private static GUIContent k_OctahedralMapBakeButtonLabel = EditorGUIUtility.TrTextContent("Bake Octahedral Map Cache");
     }
 }

@@ -18,7 +18,8 @@ namespace YPipeline
     
     [DisallowMultipleComponent]
     [RequireComponent(typeof(Light))]
-    public class YPipelineLight : MonoBehaviour, ISerializationCallbackReceiver
+    [ExecuteAlways]
+    public class YPipelineLight : MonoBehaviour, IAdditionalData
     {
         [Space(5f)] 
         [Range(0f, 1f)] public float rangeAttenuationScale = 0.0f;
@@ -49,15 +50,5 @@ namespace YPipeline
         [Range(1, 64)] public int blockerSearchSampleNumber = 8;
         [Range(1, 64)] public int filterSampleNumber = 8;
         
-        
-        public void OnBeforeSerialize()
-        {
-            
-        }
-
-        public void OnAfterDeserialize()
-        {
-            
-        }
     }
 }

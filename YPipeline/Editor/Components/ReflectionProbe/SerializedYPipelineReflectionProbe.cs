@@ -29,13 +29,13 @@ namespace YPipeline.Editor
         public SerializedProperty intensityMultiplier;
         public SerializedProperty blendDistance;
         public SerializedProperty customBakedTexture;
-        public SerializedProperty bakedTexture;
         public SerializedProperty renderDynamicObjects;
         public SerializedProperty useOcclusionCulling;
         public SerializedProperty nearClip;
         public SerializedProperty farClip;
         
         // YPipeline ReflectionProbe Properties
+        
         public SerializedProperty showOctahedralCubemap;
         
         public SerializedYPipelineReflectionProbe(SerializedObject serializedObject)
@@ -60,7 +60,6 @@ namespace YPipeline.Editor
             intensityMultiplier = serializedObject.FindProperty("m_IntensityMultiplier");
             blendDistance = serializedObject.FindProperty("m_BlendDistance");
             customBakedTexture = serializedObject.FindProperty("m_CustomBakedTexture");
-            bakedTexture = serializedObject.FindProperty("m_BakedTexture");
             renderDynamicObjects = serializedObject.FindProperty("m_RenderDynamicObjects");
             useOcclusionCulling = serializedObject.FindProperty("m_UseOcclusionCulling");
             nearClip = serializedObject.FindProperty("m_NearClip");

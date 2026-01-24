@@ -1,0 +1,12 @@
+#pragma kernel OctahedralMappingKernel
+
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Packing.hlsl"
+
+RWTexture2D<float4> _OutputTexture;
+TextureCube<float4> _Cubemap;
+
+[numthreads(8,8,1)]
+void OctahedralMappingKernel(uint3 id : SV_DispatchThreadID)
+{
+    _OutputTexture[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
+}
