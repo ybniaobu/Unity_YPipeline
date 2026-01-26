@@ -2,10 +2,10 @@
 #define YPIPELINE_SIMPLE_COPY_PASS_INCLUDED
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
-#include "../../ShaderLibrary/Core/UnityInput.hlsl"
-#include "../../ShaderLibrary/Core/UnityMatrix.hlsl"
+#include "../ShaderLibrary/Core/UnityInput.hlsl"
+#include "../ShaderLibrary/Core/UnityMatrix.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
-#include "../../ShaderLibrary/Core/SpaceTransforms.hlsl"
+#include "../ShaderLibrary/Core/SpaceTransforms.hlsl"
 
 TEXTURE2D(_BlitTexture);
 float4 _BlitTexture_TexelSize;

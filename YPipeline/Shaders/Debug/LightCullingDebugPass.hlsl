@@ -3,8 +3,8 @@
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Debug.hlsl"
-#include "../../ShaderLibrary/Core/UnityInput.hlsl"
-#include "../../ShaderLibrary/Core/YPipelineMacros.hlsl"
+#include "../ShaderLibrary/Core/UnityInput.hlsl"
+#include "../ShaderLibrary/Core/YPipelineMacros.hlsl"
 
 float4 _CameraBufferSize; // x: 1.0 / bufferSize.x, y: 1.0 / bufferSize.y, z: bufferSize.x, w: bufferSize.y
 float4 _TileParams; // xy: tileCountXY, zw: tileUVSizeXY

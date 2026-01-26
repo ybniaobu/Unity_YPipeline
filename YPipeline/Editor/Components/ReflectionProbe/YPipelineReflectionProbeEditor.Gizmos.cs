@@ -20,19 +20,6 @@ namespace YPipeline.Editor
         // Tool Bar
         // ----------------------------------------------------------------------------------------------------
         
-        [DrawGizmo(GizmoType.NonSelected | GizmoType.Active)]
-        private static void DrawReflectionProbeGizmoUnSelected(ReflectionProbe probe, GizmoType gizmoType)
-        {
-            // 绘制 Reflection Probe 影响范围
-            Color oldColor = Gizmos.color;
-            Gizmos.color = new Color(0.0f, 0.0f, 0.0f, 1.0f);
-            Matrix4x4 probeMatrix = Matrix4x4.TRS(probe.transform.position, Quaternion.identity, Vector3.one);
-            Gizmos.matrix = probeMatrix;
-            Gizmos.DrawWireCube(probe.center, probe.size);
-            Gizmos.matrix = Matrix4x4.identity;
-            Gizmos.color = oldColor;
-        }
-        
         [DrawGizmo(GizmoType.Selected | GizmoType.Active)]
         private static void DrawReflectionProbeGizmoSelected(ReflectionProbe probe, GizmoType gizmoType)
         {

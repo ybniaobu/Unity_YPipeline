@@ -21,9 +21,9 @@ Shader "YPipeline/EditorTool/EnvMapPrefilter"
             #pragma vertex vert
             #pragma fragment frag
             
-            #include "Assets/YPipeline/ShaderLibrary/Core/YPipelineCore.hlsl"
-            #include "Assets/YPipeline/ShaderLibrary/IBLLibrary.hlsl"
-            #include "Assets/YPipeline/ShaderLibrary/ToneMappingLibrary.hlsl"
+            #include "Assets/YPipeline/Shaders/ShaderLibrary/Core/YPipelineCore.hlsl"
+            #include "Assets/YPipeline/Shaders/ShaderLibrary/IBLLibrary.hlsl"
+            #include "Assets/YPipeline/Shaders/ShaderLibrary/ToneMappingLibrary.hlsl"
 
             TextureCube _Cubemap; SamplerState trilinear_repeat_sampler_Cubemap;
 

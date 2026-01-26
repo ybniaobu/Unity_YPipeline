@@ -1,7 +1,7 @@
 ﻿#ifndef YPIPELINE_STANDARD_PBR_FOR_TEST_PASS_INCLUDED
 #define YPIPELINE_STANDARD_PBR_FOR_TEST_PASS_INCLUDED
 
-#include "../../../../ShaderLibrary/RenderingEquationLibrary.hlsl"
+#include "../../../ShaderLibrary/RenderingEquationLibrary.hlsl"
 
 struct Attributes
 {

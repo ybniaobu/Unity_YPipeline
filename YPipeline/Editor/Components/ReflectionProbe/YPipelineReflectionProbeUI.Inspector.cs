@@ -5,7 +5,6 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEditor;
-using UnityEditorInternal;
 using UnityEditor.Rendering;
 
 namespace YPipeline.Editor
@@ -18,6 +17,7 @@ namespace YPipeline.Editor
         {
             Runtime = 1 << 0,
             Capture = 1 << 1,
+            Debug =  1 << 2
         }
         
         private static readonly ExpandedState<Expandable, ReflectionProbe> k_ExpandedState = new ExpandedState<Expandable, ReflectionProbe>(~-1, "YPipeline");
@@ -29,10 +29,10 @@ namespace YPipeline.Editor
             CED.Group( 
                 CED.FoldoutGroup(k_RuntimeSettingsHeader, Expandable.Runtime, k_ExpandedState, DrawRuntimeSettings),
                 CED.FoldoutGroup(k_CaptureSettingsHeader, Expandable.Capture, k_ExpandedState, DrawCaptureSettings),
-                CED.Group(DrawCubemapBakeButton)
-                
-                
-            
+                CED.Group(DrawBakeAllButton),
+                CED.Group(DrawCubemapBakeButton),
+                CED.Group(DrawOctahedralBakeButton),
+                CED.FoldoutGroup(k_DebugSettingsHeader, Expandable.Debug, k_ExpandedState, DrawDebugSettings)
             ).Draw(serialized, owner);
         }
         
@@ -93,6 +93,59 @@ namespace YPipeline.Editor
             EditorGUILayout.PropertyField(serialized.useOcclusionCulling, k_UseOcclusionCulling);
             
             CoreEditorUtils.DrawMultipleFields(k_ClippingPlanesLabel, new[] { serialized.nearClip, serialized.farClip }, k_NearAndFarLabels);
+        }
+
+        private static void DrawDebugSettings(SerializedYPipelineReflectionProbe serialized, UnityEditor.Editor owner)
+        {
+            EditorGUILayout.PropertyField(serialized.showOctahedralAtlas);
+            EditorGUILayout.PropertyField(serialized.showSHData);
+            EditorGUILayout.PropertyField(serialized.showSHProbe);
+        }
+        
+        // ----------------------------------------------------------------------------------------------------
+        // Bake All
+        // ----------------------------------------------------------------------------------------------------
+
+        private static void DrawBakeAllButton(SerializedYPipelineReflectionProbe serialized, UnityEditor.Editor owner)
+        {
+            ReflectionProbe probe = owner.target as ReflectionProbe;
+            if (probe == null || owner.targets.Length > 1) return;
+            
+            GUILayout.BeginHorizontal();
+            
+            switch (serialized.mode.intValue)
+            {
+                case (int) ReflectionProbeMode.Baked:
+                    using (new EditorGUI.DisabledScope(!probe.enabled))
+                    {
+                        bool nonbaked = probe.texture == null;
+                        Color originalColor = GUI.color;
+                        GUI.color = nonbaked ? Color.firebrick : originalColor;
+                        if (GUILayout.Button(k_BakeAllButtonLabel, GUILayout.Height(20)))
+                        {
+                            BakeReflectionProbe(probe);
+                            if (!nonbaked) BakeOctahedralMap(serialized, probe);
+                            GUIUtility.ExitGUI();
+                        }
+                        GUI.color = originalColor;
+                    }
+                    break;
+                case (int) ReflectionProbeMode.Custom:
+                    using (new EditorGUI.DisabledScope(!probe.enabled))
+                    {
+                        if (GUILayout.Button(k_BakeAllButtonLabel, GUILayout.Height(20)))
+                        {
+                            bool baked = BakeCustomReflectionProbe(probe);
+                            if (baked) BakeOctahedralMap(serialized, probe);
+                            GUIUtility.ExitGUI();
+                        }
+                    }
+                    break;
+                case (int) ReflectionProbeMode.Realtime:
+                    break;
+            }
+            
+            GUILayout.EndHorizontal();
         }
         
         // ----------------------------------------------------------------------------------------------------
@@ -161,7 +214,7 @@ namespace YPipeline.Editor
             EditorUtility.ClearProgressBar();
         }
         
-        private static void BakeCustomReflectionProbe(ReflectionProbe probe)
+        private static bool BakeCustomReflectionProbe(ReflectionProbe probe)
         {
             string path = AssetDatabase.GetAssetPath(probe.customBakedTexture);
             string extension = probe.hdr ? "exr" : "png";
@@ -177,19 +230,24 @@ namespace YPipeline.Editor
                 string fileName = probe.name + "." + extension;
                 fileName = Path.GetFileNameWithoutExtension(AssetDatabase.GenerateUniqueAssetPath(Path.Combine(scenePath, fileName)));
                 path = EditorUtility.SaveFilePanelInProject("Save Reflection Probe's Cubemap.", fileName, extension, string.Empty, scenePath);
-                if (string.IsNullOrEmpty(path)) return;
+                if (string.IsNullOrEmpty(path)) return false;
                 
                 // 检查文件路径是否和其他 ReflectionProbe 的 cubemap 冲突
                 if (IsCustomReflectionProbeCollidingWithOtherProbes(path, probe, out ReflectionProbe collidingProbe))
                 {
                     string message = $"'{path}' path is used by the game object '{collidingProbe.name}', do you really want to overwrite it?";
-                    if (!EditorUtility.DisplayDialog("Cubemap is used by other reflection probe", message, "Yes", "No")) return;
+                    if (!EditorUtility.DisplayDialog("Cubemap is used by other reflection probe", message, "Yes", "No")) return false;
                 }
             }
             
             EditorUtility.DisplayProgressBar("Reflection Probes", "Baking " + path, 0.5f);
-            if (!Lightmapping.BakeReflectionProbe(probe, path)) Debug.LogError("Failed to bake reflection probe to " + path);
+            if (!Lightmapping.BakeReflectionProbe(probe, path))
+            {
+                Debug.LogError("Failed to bake reflection probe to " + path);
+                return false;
+            }
             EditorUtility.ClearProgressBar();
+            return true;
         }
         
         private static bool IsCustomReflectionProbeCollidingWithOtherProbes(string targetPath, ReflectionProbe targetProbe, out ReflectionProbe collidingProbe)
@@ -220,17 +278,33 @@ namespace YPipeline.Editor
             
             GUILayout.BeginHorizontal();
             
-            if (GUILayout.Button(k_OctahedralMapBakeButtonLabel, GUILayout.Height(20)))
+            Color originalColor = GUI.color;
+            GUI.color = probe.texture == null && probe.mode == ReflectionProbeMode.Baked ? Color.firebrick : originalColor;
+            if (GUILayout.Button(k_OctahedralAtlasBakeButtonLabel, GUILayout.Height(20)))
             {
+                BakeOctahedralMap(serialized, probe);
                 GUIUtility.ExitGUI();
             }
+            GUI.color = originalColor;
             
             GUILayout.EndHorizontal();
         }
 
-        private static void BakeOctahedralMap(SerializedYPipelineReflectionProbe serialized)
+        private static void BakeOctahedralMap(SerializedYPipelineReflectionProbe serialized, ReflectionProbe probe)
         {
+            string path = AssetDatabase.GetAssetPath(probe.texture);
+            if (string.IsNullOrEmpty(path))
+            {
+                Debug.LogWarning("请先烘焙 Cubemap！");
+                return;
+            }
+            path = Path.GetDirectoryName(path);
             
+            GenerateOctahedralAtlas(serialized, probe, path, Quality3Tier.Low);
+            GenerateOctahedralAtlas(serialized, probe, path, Quality3Tier.Medium);
+            GenerateOctahedralAtlas(serialized, probe, path, Quality3Tier.High);
+            serialized.isOctahedralAtlasBaked.boolValue = true;
+            serialized.ApplyModifiedProperties();
         }
     }
 }

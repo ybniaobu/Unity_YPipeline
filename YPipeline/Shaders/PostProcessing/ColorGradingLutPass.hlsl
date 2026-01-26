@@ -3,8 +3,8 @@
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
-#include "../../ShaderLibrary/Core/UnityInput.hlsl"
-#include "../../ShaderLibrary/ToneMappingLibrary.hlsl"
+#include "../ShaderLibrary/Core/UnityInput.hlsl"
+#include "../ShaderLibrary/ToneMappingLibrary.hlsl"
 
 #include "CopyPass.hlsl"
 

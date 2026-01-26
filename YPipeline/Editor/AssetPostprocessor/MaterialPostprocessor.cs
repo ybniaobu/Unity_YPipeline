@@ -1,23 +1,27 @@
 using UnityEngine;
 using UnityEditor;
 
-public class MaterialPostprocessor : AssetPostprocessor
+namespace YPipeline.Editor
 {
-    private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
+    public class MaterialPostprocessor : AssetPostprocessor
     {
-        foreach (string assetPath in importedAssets)
+        private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets,
+            string[] movedAssets, string[] movedFromAssetPaths)
         {
-            if (assetPath.EndsWith(".mat"))
+            foreach (string assetPath in importedAssets)
             {
-                Material material = AssetDatabase.LoadAssetAtPath<Material>(assetPath);
-                if (material != null && material.shader.name == "Standard")
+                if (assetPath.EndsWith(".mat"))
                 {
-                    Shader defaultShader = Shader.Find("YPipeline/PBR/Standard Forward");
-                    
-                    if (defaultShader != null)
+                    Material material = AssetDatabase.LoadAssetAtPath<Material>(assetPath);
+                    if (material != null && material.shader.name == "Standard")
                     {
-                        material.shader = defaultShader;
-                        EditorUtility.SetDirty(material);
+                        Shader defaultShader = Shader.Find("YPipeline/Shading Models/Standard PBR");
+
+                        if (defaultShader != null)
+                        {
+                            material.shader = defaultShader;
+                            EditorUtility.SetDirty(material);
+                        }
                     }
                 }
             }

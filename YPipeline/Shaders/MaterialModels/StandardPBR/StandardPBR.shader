@@ -75,7 +75,7 @@
             #pragma multi_compile _ LIGHTMAP_ON
             #pragma multi_compile _ PROBE_VOLUMES_L1 PROBE_VOLUMES_L2
 
-            #include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+            #include "../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "StandardPBRInput.hlsl"
             #include "StandardPBRForwardPass.hlsl"
             ENDHLSL
@@ -101,7 +101,7 @@
             #pragma shader_feature_local_fragment _USE_HYBRIDTEX
             #pragma shader_feature_local_fragment _USE_NORMALTEX
 
-            #include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+            #include "../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "StandardPBRInput.hlsl"
             #include "StandardPBRGBufferPass.hlsl"
             ENDHLSL
@@ -129,7 +129,7 @@
 			// Unity defined keywords
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
 
-			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+			#include "../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "StandardPBRInput.hlsl"
 			#include "../ShadowCasterCommon.hlsl"
 			ENDHLSL
@@ -157,7 +157,7 @@
 			// Unity defined keywords
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
 
-			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+			#include "../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "StandardPBRInput.hlsl"
 			#include "../DepthPrePassCommon.hlsl"
 			ENDHLSL
@@ -186,7 +186,7 @@
 			// Unity defined keywords
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
 
-			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+			#include "../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "StandardPBRInput.hlsl"
 			#include "../ThinGBufferCommon.hlsl"
 			ENDHLSL
@@ -206,7 +206,7 @@
 			#pragma vertex MetaVert
 			#pragma fragment MetaFrag
 
-			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+			#include "../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "StandardPBRInput.hlsl"
 			#include "../MetaCommon.hlsl"
 			ENDHLSL
@@ -243,7 +243,7 @@
             // Unity defined keywords
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
 
-            #include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+            #include "../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "StandardPBRInput.hlsl"
 			#include "../MotionVectorCommon.hlsl"
             ENDHLSL

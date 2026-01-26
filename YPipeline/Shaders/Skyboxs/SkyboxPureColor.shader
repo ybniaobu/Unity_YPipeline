@@ -22,7 +22,7 @@
             #pragma fragment Frag
             #pragma target 2.0
 
-            #include "../../ShaderLibrary/Core/YPipelineCore.hlsl"
+            #include "../ShaderLibrary/Core/YPipelineCore.hlsl"
 
             float4 _Color;
 

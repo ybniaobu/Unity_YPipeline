@@ -25,9 +25,9 @@
             
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/EntityLighting.hlsl"
-            #include "Assets/YPipeline/ShaderLibrary/Core/UnityInput.hlsl"
-            #include "Assets/YPipeline/ShaderLibrary/Core/UnityMatrix.hlsl"
-            #include "Assets/YPipeline/ShaderLibrary/Core/YPipelineMacros.hlsl"
+            #include "Assets/YPipeline/Shaders/ShaderLibrary/Core/UnityInput.hlsl"
+            #include "Assets/YPipeline/Shaders/ShaderLibrary/Core/UnityMatrix.hlsl"
+            #include "Assets/YPipeline/Shaders/ShaderLibrary/Core/YPipelineMacros.hlsl"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
             
             struct Attributes

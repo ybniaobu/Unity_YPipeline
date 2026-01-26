@@ -2,7 +2,7 @@
 #define YPIPELINE_TAA_PASS_INCLUDED
 
 #include "CopyPass.hlsl"
-#include "../../ShaderLibrary/AntiAliasing/TAA.hlsl"
+#include "../ShaderLibrary/AntiAliasing/TAA.hlsl"
 
 TEXTURE2D(_CameraDepthTexture);
 TEXTURE2D(_MotionVectorTexture);

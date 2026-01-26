@@ -4,7 +4,7 @@
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
 #include "CopyPass.hlsl"
-#include "../../ShaderLibrary/AntiAliasing/FXAA.hlsl"
+#include "../ShaderLibrary/AntiAliasing/FXAA.hlsl"
 
 float4 _FilmGrainParams; // x: intensity, y: response
 float4 _FilmGrainTexParams; // xy: CameraSize.xy / FilmGrainTexSize.xy, zw: random offset in uv

@@ -6,7 +6,7 @@
 #pragma multi_compile _ _OUTPUT_MOTION_VECTOR
 #pragma multi_compile _ _OUTPUT_SCENE_HISTORY
 
-#include "../../../ShaderLibrary/Core/YPipelineCSCore.hlsl"
+#include "../../ShaderLibrary/Core/YPipelineCSCore.hlsl"
 
 #define CHECKERBOARD_DOWNSAMPLE 0
 #define MIN_DEPTH_DOWNSAMPLE 1

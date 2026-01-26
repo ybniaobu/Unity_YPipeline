@@ -1,7 +1,7 @@
 ﻿#ifndef YPIPELINE_GBUFFER_COMMON_INCLUDED
 #define YPIPELINE_GBUFFER_COMMON_INCLUDED
 
-#include "../../Scripts/PipelinePasses/DeferredPasses/MaterialID.cs.hlsl"
+#include "../../../Runtime/PipelinePasses/DeferredPasses/MaterialID.cs.hlsl"
 #include "../EncodingLibrary.hlsl"
 
 struct GBufferOutput

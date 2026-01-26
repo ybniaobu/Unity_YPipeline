@@ -7,9 +7,9 @@
 #pragma multi_compile _ _HALF_RESOLUTION
 #pragma multi_compile _ _DEFERRED_RENDERING
 
-#include "../../../ShaderLibrary/Core/YPipelineCSCore.hlsl"
-#include "../../../ShaderLibrary/RandomLibrary.hlsl"
-#include "../../../ShaderLibrary/EncodingLibrary.hlsl"
+#include "../../ShaderLibrary/Core/YPipelineCSCore.hlsl"
+#include "../../ShaderLibrary/RandomLibrary.hlsl"
+#include "../../ShaderLibrary/EncodingLibrary.hlsl"
 
 // --- Textures & Samplers ---
 RWTexture2D<float2> _OutputTexture;

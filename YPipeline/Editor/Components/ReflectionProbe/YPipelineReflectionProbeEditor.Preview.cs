@@ -19,14 +19,14 @@ namespace YPipeline.Editor
             {
                 if (m_CubemapEditor != null) DestroyCubemapEditor();
                 
-                if (m_OctahedralCubemapEditor != null && m_OctahedralCubemapEditor.target as Texture != m_YPipelineProbe.octahedralMap)
+                if (m_OctahedralCubemapEditor != null && m_OctahedralCubemapEditor.target as Texture != m_YPipelineProbe.octahedralAtlasHigh)
                 {
                     DestroyOctahedralCubemapEditor();
                 }
 
                 if (HasOctahedralCubemap() && m_OctahedralCubemapEditor == null)
                 {
-                    m_OctahedralCubemapEditor = CreateEditor(m_YPipelineProbe.octahedralMap);
+                    m_OctahedralCubemapEditor = CreateEditor(m_YPipelineProbe.octahedralAtlasHigh);
                 }
             }
             else
@@ -92,12 +92,12 @@ namespace YPipeline.Editor
 
         private bool ShowOctahedralCubemap()
         {
-            return m_YPipelineProbe.showOctahedralMap;
+            return m_YPipelineProbe.showOctahedralAtlas;
         }
 
         private bool HasOctahedralCubemap()
         {
-            return (Probe != null && m_YPipelineProbe != null && m_YPipelineProbe.octahedralMap != null);
+            return (Probe != null && m_YPipelineProbe != null && m_YPipelineProbe.octahedralAtlasHigh != null);
         }
         
         private void DestroyOctahedralCubemapEditor()

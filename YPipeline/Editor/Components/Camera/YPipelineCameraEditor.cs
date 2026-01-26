@@ -1,18 +1,20 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using UnityEngine.Rendering;
-using YPipeline;
 
-[CanEditMultipleObjects]
-[CustomEditor(typeof(Camera))]
-[SupportedOnRenderPipeline(typeof(YRenderPipelineAsset))]
-public class YPipelineCameraEditor : Editor
+namespace YPipeline.Editor
 {
-    public Camera Camera => target as Camera;
-    private YPipelineCamera m_YPipelineCamera;
-    
-    public void OnEnable()
+    [CanEditMultipleObjects]
+    [CustomEditor(typeof(Camera))]
+    [SupportedOnRenderPipeline(typeof(YRenderPipelineAsset))]
+    public class YPipelineCameraEditor : UnityEditor.Editor
     {
-        m_YPipelineCamera = Camera.GetYPipelineCamera();
+        public Camera Camera => target as Camera;
+        private YPipelineCamera m_YPipelineCamera;
+
+        public void OnEnable()
+        {
+            m_YPipelineCamera = Camera.GetYPipelineCamera();
+        }
     }
 }

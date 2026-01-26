@@ -1,6 +1,6 @@
 #pragma kernel GenerateEnvBRDFLut
 
-#include "Assets/YPipeline/ShaderLibrary/IBLLibrary.hlsl"
+#include "Assets/YPipeline/Shaders/ShaderLibrary/IBLLibrary.hlsl"
 
 RWTexture2D<float4> _RWTexture;
 int _SampleNumber;

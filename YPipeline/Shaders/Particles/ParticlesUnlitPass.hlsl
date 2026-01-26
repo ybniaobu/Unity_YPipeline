@@ -1,7 +1,7 @@
 ﻿#ifndef YPIPELINE_PARTICLES_UNLIT_PASS_INCLUDED
 #define YPIPELINE_PARTICLES_UNLIT_PASS_INCLUDED
 
-#include "../../ShaderLibrary/Core/YPipelineCore.hlsl"
+#include "../ShaderLibrary/Core/YPipelineCore.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/UnityInstancing.hlsl"
 
 UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)

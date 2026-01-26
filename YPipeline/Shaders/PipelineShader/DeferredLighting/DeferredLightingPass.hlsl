@@ -1,9 +1,9 @@
 ﻿#ifndef YPIPELINE_DEFERRED_LIGHTING_PASS_INCLUDED
 #define YPIPELINE_DEFERRED_LIGHTING_PASS_INCLUDED
 
-#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
-#include "../../../ShaderLibrary/Core/GBufferCommon.hlsl"
-#include "../../../ShaderLibrary/RenderingEquationLibrary.hlsl"
+#include "../../ShaderLibrary/Core/YPipelineCore.hlsl"
+#include "../../ShaderLibrary/Core/GBufferCommon.hlsl"
+#include "../../ShaderLibrary/RenderingEquationLibrary.hlsl"
 
 Texture2D<float4> _GBuffer0; // RGBA8_SRGB: albedo, AO
 Texture2D<float4> _GBuffer1; // RGBA8_UNORM: normal, roughness

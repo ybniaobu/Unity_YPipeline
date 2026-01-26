@@ -6,7 +6,7 @@ namespace YPipeline
 {
     [Serializable]
     [SupportedOnRenderPipeline(typeof(YRenderPipelineAsset))]
-    public class YPipelineRuntimeResources : IRenderPipelineResources
+    public class YPipelineRuntimeResources : IRenderPipelineResources 
     {
         [SerializeField][HideInInspector] private int m_Version = 1;
         public int version => m_Version;
@@ -112,7 +112,7 @@ namespace YPipeline
 
         #region Shaders
 
-        [SerializeField] [ResourcePath("YPipeline/Shaders/MaterialModels/StandardForward/StandardPBR.shader")]
+        [SerializeField] [ResourcePath("YPipeline/Shaders/MaterialModels/StandardPBR/StandardPBR.shader")]
         private Shader m_DefaultPBRShader;
         public Shader DefaultPBRShader
         {

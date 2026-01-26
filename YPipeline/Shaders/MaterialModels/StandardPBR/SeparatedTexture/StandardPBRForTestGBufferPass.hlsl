@@ -1,7 +1,7 @@
 ﻿#ifndef YPIPELINE_STANDARD_PBR_FOR_TEST_GBUFFER_PASS_INCLUDED
 #define YPIPELINE_STANDARD_PBR_FOR_TEST_GBUFFER_PASS_INCLUDED
 
-#include "../../../../ShaderLibrary/Core/GBufferCommon.hlsl"
+#include "../../../ShaderLibrary/Core/GBufferCommon.hlsl"
 
 struct Attributes
 {

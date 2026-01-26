@@ -1,39 +1,42 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using UnityEngine.Rendering;
-using YPipeline;
 
-[CanEditMultipleObjects]
-[CustomEditor(typeof(Light))]
-[SupportedOnRenderPipeline(typeof(YRenderPipelineAsset))]
-public class YPipelineLightEditor : LightEditor
+namespace YPipeline.Editor
 {
-    public Light Light => target as Light;
-    private YPipelineLight m_YPipelineLight;
-    
-    protected new void OnEnable()
+    [CanEditMultipleObjects]
+    [CustomEditor(typeof(Light))]
+    [SupportedOnRenderPipeline(typeof(YRenderPipelineAsset))]
+    public class YPipelineLightEditor : LightEditor
     {
-        base.OnEnable();
-        m_YPipelineLight = Light.GetYPipelineLight();
-    }
-    
-    public override void OnInspectorGUI() 
-    {
-        base.OnInspectorGUI();
-        DrawInnerAndOuterSpotAngle();
-    }
+        public Light Light => target as Light;
+        private YPipelineLight m_YPipelineLight;
 
-    private void DrawInnerAndOuterSpotAngle()
-    {
-        if (!settings.lightType.hasMultipleDifferentValues && (LightType)settings.lightType.enumValueIndex == LightType.Spot)
+        protected new void OnEnable()
         {
-            settings.DrawInnerAndOuterSpotAngle();
-            settings.ApplyModifiedProperties();
+            base.OnEnable();
+            m_YPipelineLight = Light.GetYPipelineLight();
         }
-    }
 
-    private void DrawYPipelineLight()
-    {
-        
+        public override void OnInspectorGUI()
+        {
+            base.OnInspectorGUI();
+            DrawInnerAndOuterSpotAngle();
+        }
+
+        private void DrawInnerAndOuterSpotAngle()
+        {
+            if (!settings.lightType.hasMultipleDifferentValues &&
+                (LightType)settings.lightType.enumValueIndex == LightType.Spot)
+            {
+                settings.DrawInnerAndOuterSpotAngle();
+                settings.ApplyModifiedProperties();
+            }
+        }
+
+        private void DrawYPipelineLight()
+        {
+
+        }
     }
 }

@@ -44,7 +44,7 @@ Shader "YPipeline/Shading Models/Unlit"
             #pragma vertex UnlitVert
             #pragma fragment UnlitOpaqueFrag
 
-            #include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+            #include "../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "UnlitInput.hlsl"
             #include "UnlitPass.hlsl"
             ENDHLSL
@@ -71,7 +71,7 @@ Shader "YPipeline/Shading Models/Unlit"
 
             #pragma multi_compile _ LOD_FADE_CROSSFADE
 
-            #include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+            #include "../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "UnlitInput.hlsl"
             #include "UnlitPass.hlsl"
             ENDHLSL
@@ -95,7 +95,7 @@ Shader "YPipeline/Shading Models/Unlit"
 
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
 
-			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+			#include "../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "UnlitInput.hlsl"
 			#include "../ShadowCasterCommon.hlsl"
 			ENDHLSL
@@ -120,7 +120,7 @@ Shader "YPipeline/Shading Models/Unlit"
 
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
 
-			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+			#include "../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "UnlitInput.hlsl"
 			#include "../DepthPrePassCommon.hlsl"
 			ENDHLSL
@@ -145,7 +145,7 @@ Shader "YPipeline/Shading Models/Unlit"
 
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
 
-			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+			#include "../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "UnlitInput.hlsl"
 			#include "UnlitThinGBufferPass.hlsl"
 			ENDHLSL
@@ -164,7 +164,7 @@ Shader "YPipeline/Shading Models/Unlit"
 			#pragma vertex MetaVert
 			#pragma fragment MetaFrag
 
-			#include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+			#include "../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "UnlitInput.hlsl"
 			#include "UnlitMetaPass.hlsl"
 			ENDHLSL
@@ -199,7 +199,7 @@ Shader "YPipeline/Shading Models/Unlit"
 
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
 
-            #include "../../../ShaderLibrary/Core/YPipelineCore.hlsl"
+            #include "../../ShaderLibrary/Core/YPipelineCore.hlsl"
 			#include "UnlitInput.hlsl"
 			#include "../MotionVectorCommon.hlsl"
             ENDHLSL

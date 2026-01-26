@@ -1,7 +1,7 @@
 #pragma kernel PrefilterEnvMap
 
 #define PI 3.14159265358979323846
-#include "Assets/YPipeline/ShaderLibrary/IBLLibrary.hlsl"
+#include "Assets/YPipeline/Shaders/ShaderLibrary/IBLLibrary.hlsl"
 
 TextureCube _EnvMap;
 SamplerState trilinear_repeat_sampler_EnvMap;

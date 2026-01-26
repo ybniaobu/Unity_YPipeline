@@ -19,6 +19,7 @@ namespace YPipeline.Editor
         // Expandable Header
         private static readonly GUIContent k_RuntimeSettingsHeader = EditorGUIUtility.TrTextContent("Runtime Settings");
         private static readonly GUIContent k_CaptureSettingsHeader = EditorGUIUtility.TrTextContent("Capture Settings");
+        private static readonly GUIContent k_DebugSettingsHeader = EditorGUIUtility.TrTextContent("Debug Settings");
         
         // Runtime Settings
         private static readonly GUIContent k_ImportanceText = EditorGUIUtility.TrTextContent("Importance", "When reflection probes overlap, Unity uses Importance to determine which probe should take priority.");
@@ -53,8 +54,13 @@ namespace YPipeline.Editor
             EditorGUIUtility.TrTextContent("Far", "The furthest point from the Camera that drawing occurs.")
         };
         
+        // Debug Settings
+        
+        
         // Bake Button
-        private static GUIContent k_CubemapBakeButtonLabel = EditorGUIUtility.TrTextContent("Bake Cubemap");
-        private static GUIContent k_OctahedralMapBakeButtonLabel = EditorGUIUtility.TrTextContent("Bake Octahedral Map Cache");
+        private static GUIContent k_BakeAllButtonLabel = EditorGUIUtility.TrTextContent("Bake All");
+        private static GUIContent k_CubemapBakeButtonLabel = EditorGUIUtility.TrTextContent("Bake Cubemap Only");
+        private static GUIContent k_OctahedralAtlasBakeButtonLabel = EditorGUIUtility.TrTextContent("Bake Octahedral Atlas Cache Only");
+        private static GUIContent k_SHBakeButtonLabel = EditorGUIUtility.TrTextContent("Bake SH Data Cache Only");
     }
 }

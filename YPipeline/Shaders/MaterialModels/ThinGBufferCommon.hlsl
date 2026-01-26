@@ -1,7 +1,7 @@
 ﻿#ifndef YPIPELINE_THIN_GBUFFER_COMMON_INCLUDED
 #define YPIPELINE_THIN_GBUFFER_COMMON_INCLUDED
 
-#include "../../ShaderLibrary/EncodingLibrary.hlsl"
+#include "../ShaderLibrary/EncodingLibrary.hlsl"
 
 struct Attributes
 {

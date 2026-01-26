@@ -35,8 +35,16 @@ namespace YPipeline.Editor
         public SerializedProperty farClip;
         
         // YPipeline ReflectionProbe Properties
+        public SerializedProperty isOctahedralAtlasBaked;
+        public SerializedProperty octahedralAtlasLow;
+        public SerializedProperty octahedralAtlasMedium;
+        public SerializedProperty octahedralAtlasHigh;
+        public SerializedProperty showOctahedralAtlas;
         
-        public SerializedProperty showOctahedralCubemap;
+        public SerializedProperty isSHBaked;
+        public SerializedProperty SHData;
+        public SerializedProperty showSHData;
+        public SerializedProperty showSHProbe;
         
         public SerializedYPipelineReflectionProbe(SerializedObject serializedObject)
         {
@@ -65,7 +73,16 @@ namespace YPipeline.Editor
             nearClip = serializedObject.FindProperty("m_NearClip");
             farClip = serializedObject.FindProperty("m_FarClip");
             
-            showOctahedralCubemap = serializedObject.FindProperty("showOctahedralCubemap");
+            isOctahedralAtlasBaked = serializedAdditionalDataObject.FindProperty("isOctahedralAtlasBaked");
+            octahedralAtlasLow = serializedAdditionalDataObject.FindProperty("octahedralAtlasLow");
+            octahedralAtlasMedium = serializedAdditionalDataObject.FindProperty("octahedralAtlasMedium");
+            octahedralAtlasHigh = serializedAdditionalDataObject.FindProperty("octahedralAtlasHigh");
+            showOctahedralAtlas = serializedAdditionalDataObject.FindProperty("showOctahedralAtlas");
+            
+            isSHBaked = serializedAdditionalDataObject.FindProperty("isSHBaked");
+            SHData = serializedAdditionalDataObject.FindProperty("SHData");
+            showSHData = serializedAdditionalDataObject.FindProperty("showSHData");
+            showSHProbe = serializedAdditionalDataObject.FindProperty("showSHProbe");
         }
         
         public void Update()

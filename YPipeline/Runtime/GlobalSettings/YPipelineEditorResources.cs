@@ -14,7 +14,7 @@ namespace YPipeline
         bool IRenderPipelineGraphicsSettings.isAvailableInPlayerBuild => false;
         
         // ----------------------------------------------------------------------------------------------------
-        // Materials
+        // Default Materials
         // ----------------------------------------------------------------------------------------------------
         
         #region Materials
@@ -28,5 +28,17 @@ namespace YPipeline
         }
 
         #endregion
+        
+        // ----------------------------------------------------------------------------------------------------
+        // Reflection Probe Related
+        // ----------------------------------------------------------------------------------------------------
+        
+        [SerializeField] [ResourcePath("YPipeline/Editor/Components/ReflectionProbe/EditorShader/OctahedralMapping.compute")]
+        private ComputeShader m_OctahedralMappingCS;
+        public ComputeShader OctahedralMappingCS
+        {
+            get => m_OctahedralMappingCS;
+            set => this.SetValueAndNotify(ref m_OctahedralMappingCS, value, nameof(m_OctahedralMappingCS));
+        }
     }
 }

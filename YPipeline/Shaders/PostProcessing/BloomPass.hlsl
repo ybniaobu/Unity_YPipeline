@@ -4,7 +4,7 @@
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 // #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Filtering.hlsl"
-#include "../../ShaderLibrary/Core/UnityInput.hlsl"
+#include "../ShaderLibrary/Core/UnityInput.hlsl"
 
 #include "CopyPass.hlsl"
 
