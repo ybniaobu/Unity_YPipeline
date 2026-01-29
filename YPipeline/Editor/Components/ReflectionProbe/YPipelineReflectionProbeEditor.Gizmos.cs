@@ -40,6 +40,14 @@ namespace YPipeline.Editor
             m_PreviewMaterial.SetVector("_Cubemap_HDR", probe.textureHDRDecodeValues);
             m_PreviewMaterial.SetPass(0);
             Graphics.DrawMeshNow(m_Sphere, probeMatrix);
+
+            if (probe.GetYPipelineReflectionProbe().showSHProbe)
+            {
+                m_PreviewMaterial.SetVectorArray("_SH", probe.GetYPipelineReflectionProbe().SHData);
+                m_PreviewMaterial.SetPass(1);
+                probeMatrix = Matrix4x4.TRS(probe.transform.position + new Vector3(0, 1, 0), Quaternion.identity, Vector3.one);
+                Graphics.DrawMeshNow(m_Sphere, probeMatrix);
+            }
         }
     }
 }

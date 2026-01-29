@@ -46,8 +46,6 @@
             TEXTURECUBE(_Cubemap);
             SAMPLER(sampler_Cubemap);
             float4 _Cubemap_HDR;
-
-            float3 _CameraWorldPosition;
             float _MipLevel;
             float _Exposure;
             
@@ -62,12 +60,67 @@
             
             float4 Frag(Varyings IN) : SV_TARGET
             {
-                float3 V = normalize(_WorldSpaceCameraPos - IN.positionWS);
-                float3 R = reflect(-V, normalize(IN.normalWS));
-                float4 color = SAMPLE_TEXTURECUBE_LOD(_Cubemap, sampler_Cubemap, R, _MipLevel).rgba;
+                // float3 V = normalize(_WorldSpaceCameraPos - IN.positionWS);
+                // float3 R = reflect(-V, normalize(IN.normalWS));
+                // float4 color = SAMPLE_TEXTURECUBE_LOD(_Cubemap, sampler_Cubemap, R, _MipLevel).rgba;
+                
+                float3 N = normalize(IN.normalWS);
+                float4 color = SAMPLE_TEXTURECUBE_LOD(_Cubemap, sampler_Cubemap, N, _MipLevel).rgba;
+                
                 color.rgb = DecodeHDREnvironment(color, _Cubemap_HDR);
                 color = color * exp2(_Exposure);
                 return color;
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "ReflectionProbeSHPreview"
+            
+            HLSLPROGRAM
+            
+            #pragma editor_sync_compilation
+            
+            #pragma vertex Vert
+            #pragma fragment Frag
+            
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
+            #include "Assets/YPipeline/Shaders/ShaderLibrary/Core/UnityInput.hlsl"
+            #include "Assets/YPipeline/Shaders/ShaderLibrary/Core/UnityMatrix.hlsl"
+            #include "Assets/YPipeline/Shaders/ShaderLibrary/Core/YPipelineMacros.hlsl"
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
+            #include "Assets/YPipeline/Shaders/ShaderLibrary/SphericalHarmonicsLibrary.hlsl"
+            
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+            };
+
+            struct Varyings
+            {
+                float4 positionHCS : SV_POSITION;
+                float3 positionWS   : TEXCOORD0;
+                float3 normalWS     : TEXCOORD1;
+            };
+            
+            float4 _SH[7];
+            
+            Varyings Vert(Attributes IN)
+            {
+                Varyings OUT;
+                OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
+                OUT.positionWS = TransformObjectToWorld(IN.positionOS.xyz);
+                OUT.normalWS = TransformObjectToWorldNormal(IN.normalOS);
+                return OUT;
+            }
+            
+            float4 Frag(Varyings IN) : SV_TARGET
+            {
+                float3 N = normalize(IN.normalWS);
+                float3 color = EvaluateAmbientProbe(N, _SH);
+                return float4(color, 1.0);
             }
             ENDHLSL
         }

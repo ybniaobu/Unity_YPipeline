@@ -40,5 +40,14 @@ namespace YPipeline
             get => m_OctahedralMappingCS;
             set => this.SetValueAndNotify(ref m_OctahedralMappingCS, value, nameof(m_OctahedralMappingCS));
         }
+
+        [SerializeField] [ResourcePath("YPipeline/Editor/Components/ReflectionProbe/EditorShader/CubemapSHCoefficients.compute")]
+        private ComputeShader m_CubemapSHCoefficientsCS;
+        public ComputeShader CubemapSHCoefficientsCS
+        {
+            get => m_CubemapSHCoefficientsCS;
+            set => this.SetValueAndNotify(ref m_CubemapSHCoefficientsCS, value, nameof(m_CubemapSHCoefficientsCS));
+        }
+        
     }
 }

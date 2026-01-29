@@ -10,6 +10,9 @@ namespace YPipeline.Editor
     [SupportedOnRenderPipeline(typeof(YRenderPipelineAsset))]
     public class YPipelineReflectionProbeAdditionalDataEditor : UnityEditor.Editor
     {
-        public override void OnInspectorGUI() { }
+        public override void OnInspectorGUI()
+        {
+            base.OnInspectorGUI();
+        }
     }
 }

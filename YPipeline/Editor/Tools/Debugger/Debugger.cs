@@ -25,11 +25,7 @@ namespace YPipeline.Editor
 
         public void DebugEntry()
         {
-            YPipelineReflectionProbe yProbe = probe.GetYPipelineReflectionProbe();
-            Debug.Log(yProbe.isOctahedralAtlasBaked);
-            Debug.Log(yProbe.octahedralAtlasLow != null);
-            Debug.Log(yProbe.octahedralAtlasMedium != null);
-            Debug.Log(yProbe.octahedralAtlasHigh != null);
+            
         }
     }
 }

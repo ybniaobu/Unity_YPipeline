@@ -32,6 +32,7 @@ namespace YPipeline.Editor
                 CED.Group(DrawBakeAllButton),
                 CED.Group(DrawCubemapBakeButton),
                 CED.Group(DrawOctahedralBakeButton),
+                CED.Group(DrawSHBakeButton),
                 CED.FoldoutGroup(k_DebugSettingsHeader, Expandable.Debug, k_ExpandedState, DrawDebugSettings)
             ).Draw(serialized, owner);
         }
@@ -124,7 +125,11 @@ namespace YPipeline.Editor
                         if (GUILayout.Button(k_BakeAllButtonLabel, GUILayout.Height(20)))
                         {
                             BakeReflectionProbe(probe);
-                            if (!nonbaked) BakeOctahedralMap(serialized, probe);
+                            if (!nonbaked)
+                            {
+                                BakeOctahedralAtlas(serialized, probe);
+                                BakeSHData(serialized, probe);
+                            }
                             GUIUtility.ExitGUI();
                         }
                         GUI.color = originalColor;
@@ -136,7 +141,11 @@ namespace YPipeline.Editor
                         if (GUILayout.Button(k_BakeAllButtonLabel, GUILayout.Height(20)))
                         {
                             bool baked = BakeCustomReflectionProbe(probe);
-                            if (baked) BakeOctahedralMap(serialized, probe);
+                            if (baked)
+                            {
+                                BakeOctahedralAtlas(serialized, probe);
+                                BakeSHData(serialized, probe);
+                            }
                             GUIUtility.ExitGUI();
                         }
                     }
@@ -268,7 +277,7 @@ namespace YPipeline.Editor
         }
         
         // ----------------------------------------------------------------------------------------------------
-        // Bake Octahedral Map
+        // Bake Octahedral Atlas
         // ----------------------------------------------------------------------------------------------------
     
         private static void DrawOctahedralBakeButton(SerializedYPipelineReflectionProbe serialized, UnityEditor.Editor owner)
@@ -282,7 +291,7 @@ namespace YPipeline.Editor
             GUI.color = probe.texture == null && probe.mode == ReflectionProbeMode.Baked ? Color.firebrick : originalColor;
             if (GUILayout.Button(k_OctahedralAtlasBakeButtonLabel, GUILayout.Height(20)))
             {
-                BakeOctahedralMap(serialized, probe);
+                BakeOctahedralAtlas(serialized, probe);
                 GUIUtility.ExitGUI();
             }
             GUI.color = originalColor;
@@ -290,7 +299,7 @@ namespace YPipeline.Editor
             GUILayout.EndHorizontal();
         }
 
-        private static void BakeOctahedralMap(SerializedYPipelineReflectionProbe serialized, ReflectionProbe probe)
+        private static void BakeOctahedralAtlas(SerializedYPipelineReflectionProbe serialized, ReflectionProbe probe)
         {
             string path = AssetDatabase.GetAssetPath(probe.texture);
             if (string.IsNullOrEmpty(path))
@@ -304,6 +313,38 @@ namespace YPipeline.Editor
             GenerateOctahedralAtlas(serialized, probe, path, Quality3Tier.Medium);
             GenerateOctahedralAtlas(serialized, probe, path, Quality3Tier.High);
             serialized.isOctahedralAtlasBaked.boolValue = true;
+            serialized.ApplyModifiedProperties();
+        }
+        
+        // ----------------------------------------------------------------------------------------------------
+        // Bake Cubemap SH Data
+        // ----------------------------------------------------------------------------------------------------
+        
+        private static void DrawSHBakeButton(SerializedYPipelineReflectionProbe serialized, UnityEditor.Editor owner)
+        {
+            ReflectionProbe probe = owner.target as ReflectionProbe;
+            if (probe == null || owner.targets.Length > 1) return;
+            
+            GUILayout.BeginHorizontal();
+            
+            Color originalColor = GUI.color;
+            GUI.color = probe.texture == null && probe.mode == ReflectionProbeMode.Baked ? Color.firebrick : originalColor;
+            if (GUILayout.Button(k_SHBakeButtonLabel, GUILayout.Height(20)))
+            {
+                BakeSHData(serialized, probe);
+                GUIUtility.ExitGUI();
+            }
+            GUI.color = originalColor;
+            
+            GUILayout.EndHorizontal();
+        }
+        
+        private static void BakeSHData(SerializedYPipelineReflectionProbe serialized, ReflectionProbe probe)
+        {
+            if (probe.texture == null) return;
+            
+            CalculateSHData(serialized, probe);
+            serialized.isSHBaked.boolValue = true;
             serialized.ApplyModifiedProperties();
         }
     }
