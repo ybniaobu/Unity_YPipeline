@@ -48,6 +48,7 @@
             float4 _Cubemap_HDR;
             float _MipLevel;
             float _Exposure;
+            int _SampleByNormal;
             
             Varyings Vert(Attributes IN)
             {
@@ -60,12 +61,20 @@
             
             float4 Frag(Varyings IN) : SV_TARGET
             {
-                // float3 V = normalize(_WorldSpaceCameraPos - IN.positionWS);
-                // float3 R = reflect(-V, normalize(IN.normalWS));
-                // float4 color = SAMPLE_TEXTURECUBE_LOD(_Cubemap, sampler_Cubemap, R, _MipLevel).rgba;
+                float4 color = 0;
                 
-                float3 N = normalize(IN.normalWS);
-                float4 color = SAMPLE_TEXTURECUBE_LOD(_Cubemap, sampler_Cubemap, N, _MipLevel).rgba;
+                UNITY_BRANCH
+                if (!_SampleByNormal)
+                {
+                    float3 V = normalize(_WorldSpaceCameraPos - IN.positionWS);
+                    float3 R = reflect(-V, normalize(IN.normalWS));
+                    color = SAMPLE_TEXTURECUBE_LOD(_Cubemap, sampler_Cubemap, R, _MipLevel).rgba;
+                }
+                else
+                {
+                    float3 N = normalize(IN.normalWS);
+                    color = SAMPLE_TEXTURECUBE_LOD(_Cubemap, sampler_Cubemap, N, _MipLevel).rgba;
+                }
                 
                 color.rgb = DecodeHDREnvironment(color, _Cubemap_HDR);
                 color = color * exp2(_Exposure);
@@ -106,6 +115,7 @@
             };
             
             float4 _SH[7];
+            int _SampleByReflection;
             
             Varyings Vert(Attributes IN)
             {
@@ -118,8 +128,18 @@
             
             float4 Frag(Varyings IN) : SV_TARGET
             {
-                float3 N = normalize(IN.normalWS);
-                float3 color = EvaluateAmbientProbe(N, _SH);
+                float3 color = 0;
+                if (_SampleByReflection)
+                {
+                    float3 V = normalize(_WorldSpaceCameraPos - IN.positionWS);
+                    float3 R = reflect(-V, normalize(IN.normalWS));
+                    color = EvaluateAmbientProbe(R, _SH);
+                }
+                else
+                {
+                    float3 N = normalize(IN.normalWS);
+                    color = EvaluateAmbientProbe(N, _SH);
+                }
                 return float4(color, 1.0);
             }
             ENDHLSL

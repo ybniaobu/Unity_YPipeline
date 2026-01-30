@@ -61,7 +61,7 @@ namespace YPipeline.Editor
                 GUILayout.FlexibleSpace();
                 Color prevColor = GUI.color;
                 GUI.color = new Color(1, 1, 1, 1);
-                GUILayout.Label("Reflection Probe Not Baked/Ready Yet");
+                GUILayout.Label("Not Baked/Ready Yet");
                 GUI.color = prevColor;
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();

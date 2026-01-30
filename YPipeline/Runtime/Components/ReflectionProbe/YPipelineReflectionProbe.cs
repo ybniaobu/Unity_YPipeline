@@ -19,6 +19,8 @@ namespace YPipeline
     [ExecuteAlways]
     public class YPipelineReflectionProbe : MonoBehaviour, IAdditionalData
     {
+        public bool cubemapPreviewByNormal;
+        
         public bool isOctahedralAtlasBaked;
         public Texture octahedralAtlasLow;
         public Texture octahedralAtlasMedium;
@@ -27,8 +29,8 @@ namespace YPipeline
         
         public bool isSHBaked;
         public Vector4[] SHData = new Vector4[7];
-        public bool showSHData;
         public bool showSHProbe;
+        public bool SHPreviewByReflection = true;
         
         // Properties
         public ReflectionProbe Probe => GetComponent<ReflectionProbe>();

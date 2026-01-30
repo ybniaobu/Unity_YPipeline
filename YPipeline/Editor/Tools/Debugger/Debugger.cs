@@ -11,7 +11,7 @@ namespace YPipeline.Editor
 {
     public class Debugger : MonoBehaviour
     {
-        public ReflectionProbe probe;
+        public Camera camera;
         
         void Start()
         {
@@ -25,7 +25,7 @@ namespace YPipeline.Editor
 
         public void DebugEntry()
         {
-            
+            Debug.Log(camera.stereoEnabled);
         }
     }
 }

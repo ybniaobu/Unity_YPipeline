@@ -33,7 +33,8 @@ namespace YPipeline.Editor
                 CED.Group(DrawCubemapBakeButton),
                 CED.Group(DrawOctahedralBakeButton),
                 CED.Group(DrawSHBakeButton),
-                CED.FoldoutGroup(k_DebugSettingsHeader, Expandable.Debug, k_ExpandedState, DrawDebugSettings)
+                CED.FoldoutGroup(k_DebugSettingsHeader, Expandable.Debug, k_ExpandedState, DrawDebugSettings),
+                CED.Group(DrawInfo)
             ).Draw(serialized, owner);
         }
         
@@ -98,9 +99,34 @@ namespace YPipeline.Editor
 
         private static void DrawDebugSettings(SerializedYPipelineReflectionProbe serialized, UnityEditor.Editor owner)
         {
-            EditorGUILayout.PropertyField(serialized.showOctahedralAtlas);
-            EditorGUILayout.PropertyField(serialized.showSHData);
-            EditorGUILayout.PropertyField(serialized.showSHProbe);
+            EditorGUILayout.PropertyField(serialized.cubemapPreviewByNormal, k_CubemapPreviewByNormalText);
+            EditorGUILayout.PropertyField(serialized.showOctahedralAtlas, k_ShowOctahedralAtlasText);
+            EditorGUILayout.PropertyField(serialized.showSHProbe, k_ShowSHProbeText);
+            if (serialized.showSHProbe.boolValue)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(serialized.SHPreviewByReflection, k_SHPreviewByReflectionText);
+                EditorGUI.indentLevel--;
+            }
+        }
+
+        private static void DrawInfo(SerializedYPipelineReflectionProbe serialized, UnityEditor.Editor owner)
+        {
+            Rect rect = EditorGUILayout.GetControlRect(true, 80);
+            GUIStyle customStyle = new GUIStyle(EditorStyles.helpBox);
+            customStyle.stretchHeight = true;
+            customStyle.fontSize = 12;
+            customStyle.richText = true;
+            string tick = "<color=green><b>✓</b></color> ;";
+            string cross = "<color=red><b>×</b></color> ;";
+            bool isReady = serialized.isOctahedralAtlasBaked.boolValue && serialized.isSHBaked.boolValue;
+            EditorGUI.SelectableLabel(rect, $"<i><b>Reflection Probe Info</b>: \n 1. Is Probe Ready to use: " + (isReady ? tick : cross) +
+                                          $" 2. Is Octahedral Atlas Baked: " + (serialized.isOctahedralAtlasBaked.boolValue ? tick : cross) +
+                                          $" 3. Is SH Data Baked: " + (serialized.isSHBaked.boolValue ? tick : cross) + 
+                                          $"\n 4. SH Data (7 Vectors): {serialized.SHData.GetArrayElementAtIndex(0).vector4Value} , " +
+                                          $"{serialized.SHData.GetArrayElementAtIndex(1).vector4Value} , {serialized.SHData.GetArrayElementAtIndex(2).vector4Value} , " + 
+                                          $"{serialized.SHData.GetArrayElementAtIndex(3).vector4Value} , {serialized.SHData.GetArrayElementAtIndex(4).vector4Value} , " +
+                                          $"{serialized.SHData.GetArrayElementAtIndex(5).vector4Value} , {serialized.SHData.GetArrayElementAtIndex(6).vector4Value}</i>", customStyle);
         }
         
         // ----------------------------------------------------------------------------------------------------
@@ -153,7 +179,6 @@ namespace YPipeline.Editor
                 case (int) ReflectionProbeMode.Realtime:
                     break;
             }
-            
             GUILayout.EndHorizontal();
         }
         

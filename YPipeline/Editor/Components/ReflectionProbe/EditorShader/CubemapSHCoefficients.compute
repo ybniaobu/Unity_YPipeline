@@ -1,10 +1,10 @@
 #pragma kernel ComputeCubemapSHKernel
-#pragma kernel ReductionAddKernel
+#pragma kernel SecondAddReductionKernel
 
 #define THREAD_NUM_X 8
 #define THREAD_NUM_Y 8
 #define THREAD_NUM THREAD_NUM_X * THREAD_NUM_Y
-#define SHBasisCount 9
+#define SH_BASIS_COUNT 9
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 #include "Assets/YPipeline/Shaders/ShaderLibrary/SphericalHarmonicsLibrary.hlsl"
@@ -16,7 +16,7 @@ SAMPLER(sampler_PointClamp);
 
 float4 _Params; // x: cubemap size
 
-groupshared float4 sharedMem[THREAD_NUM * SHBasisCount];
+groupshared float4 sharedMem[THREAD_NUM * SH_BASIS_COUNT];
 
 // From https://www.rorydriscoll.com/2012/01/15/cubemap-texel-solid-angle/
 inline float AreaSolidAngle(float x, float y)
@@ -72,7 +72,7 @@ void ComputeCubemapSHKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId 
     float SHFunctions[9];
     InitializeSHFunctions(normalizedDir, SHFunctions);
     
-    uint index = groupIndex * SHBasisCount;
+    uint index = groupIndex * SH_BASIS_COUNT;
     sharedMem[index + 0] = radiance * SHFunctions[0] * dSolidAngle;
     sharedMem[index + 1] = radiance * SHFunctions[1] * dSolidAngle;
     sharedMem[index + 2] = radiance * SHFunctions[2] * dSolidAngle;
@@ -91,7 +91,7 @@ void ComputeCubemapSHKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId 
     {
         if (groupIndex < s)
         {
-            uint index2 = (groupIndex + s) * SHBasisCount;
+            uint index2 = (groupIndex + s) * SH_BASIS_COUNT;
             sharedMem[index + 0] += sharedMem[index2 + 0];
             sharedMem[index + 1] += sharedMem[index2 + 1];
             sharedMem[index + 2] += sharedMem[index2 + 2];
@@ -109,7 +109,7 @@ void ComputeCubemapSHKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId 
     {
         uint groupCountX = uint(_Params.x) / THREAD_NUM_X;
         uint groupCountY = uint(_Params.x) / THREAD_NUM_Y;
-        uint outputIndex = (groupId.z * groupCountX * groupCountY + groupId.y * groupCountX + groupId.x) * SHBasisCount;
+        uint outputIndex = (groupId.z * groupCountX * groupCountY + groupId.y * groupCountX + groupId.x) * SH_BASIS_COUNT;
         _Result[outputIndex + 0] = sharedMem[0];
         _Result[outputIndex + 1] = sharedMem[1];
         _Result[outputIndex + 2] = sharedMem[2];
@@ -123,10 +123,11 @@ void ComputeCubemapSHKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId 
 }
 
 [numthreads(THREAD_NUM_X, THREAD_NUM_Y, 1)]
-void ReductionAddKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_GroupThreadID, uint3 groupId : SV_GroupID, uint groupIndex : SV_GroupIndex)
+void SecondAddReductionKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV_GroupThreadID, uint3 groupId : SV_GroupID, uint groupIndex : SV_GroupIndex)
 {
-    uint inputIndex = (id.z * THREAD_NUM_X * THREAD_NUM_Y + id.y * THREAD_NUM_X + id.x) * SHBasisCount;
-    uint index = groupIndex * SHBasisCount;
+    uint dim = uint(_Params.x) / THREAD_NUM_X;
+    uint inputIndex = (id.z * dim * dim + id.y * dim + id.x) * SH_BASIS_COUNT;
+    uint index = groupIndex * SH_BASIS_COUNT;
     sharedMem[index + 0] = _Input[inputIndex + 0];
     sharedMem[index + 1] = _Input[inputIndex + 1];
     sharedMem[index + 2] = _Input[inputIndex + 2];
@@ -143,7 +144,7 @@ void ReductionAddKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV
     {
         if (groupIndex < s)
         {
-            uint index2 = (groupIndex + s) * SHBasisCount;
+            uint index2 = (groupIndex + s) * SH_BASIS_COUNT;
             sharedMem[index + 0] += sharedMem[index2 + 0];
             sharedMem[index + 1] += sharedMem[index2 + 1];
             sharedMem[index + 2] += sharedMem[index2 + 2];
@@ -159,9 +160,9 @@ void ReductionAddKernel(uint3 id : SV_DispatchThreadID, uint3 groupThreadId : SV
     
     if (groupIndex == 0)
     {
-        uint groupCountX = _Params.x / THREAD_NUM_X / THREAD_NUM_X;
-        uint groupCountY = _Params.x / THREAD_NUM_Y / THREAD_NUM_Y;
-        uint outputIndex = (groupId.z * groupCountX * groupCountY + groupId.y * groupCountX + groupId.x) * SHBasisCount;
+        uint groupCountX = dim / THREAD_NUM_X;
+        uint groupCountY = dim / THREAD_NUM_Y;
+        uint outputIndex = (groupId.z * groupCountX * groupCountY + groupId.y * groupCountX + groupId.x) * SH_BASIS_COUNT;
         _Result[outputIndex + 0] = sharedMem[0];
         _Result[outputIndex + 1] = sharedMem[1];
         _Result[outputIndex + 2] = sharedMem[2];

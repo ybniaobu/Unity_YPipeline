@@ -55,12 +55,15 @@ namespace YPipeline.Editor
         };
         
         // Debug Settings
-        
+        private static readonly GUIContent k_CubemapPreviewByNormalText = EditorGUIUtility.TrTextContent("Cubemap Gizom Preview by Normal", "当未激活时，在 Scene 中的 Cubemap 预览的采样的方向是视角反射方向，激活按钮可以按 Normal 方向采样。");
+        private static readonly GUIContent k_ShowOctahedralAtlasText = EditorGUIUtility.TrTextContent("Show Octahedral Atlas in Preview");
+        private static readonly GUIContent k_ShowSHProbeText = EditorGUIUtility.TrTextContent("Show SH Probe in Scene View");
+        private static readonly GUIContent k_SHPreviewByReflectionText = EditorGUIUtility.TrTextContent("SH Probe Gizom Preview by Reflection", "当未激活时，在 Scene 中的 SH Probe 预览采样的方向是 Normal 方向，激活按钮可以按视角反射方向采样。");
         
         // Bake Button
-        private static GUIContent k_BakeAllButtonLabel = EditorGUIUtility.TrTextContent("Bake All");
-        private static GUIContent k_CubemapBakeButtonLabel = EditorGUIUtility.TrTextContent("Bake Cubemap Only");
-        private static GUIContent k_OctahedralAtlasBakeButtonLabel = EditorGUIUtility.TrTextContent("Bake Octahedral Atlas Cache Only");
-        private static GUIContent k_SHBakeButtonLabel = EditorGUIUtility.TrTextContent("Bake SH Data Cache Only");
+        private static readonly GUIContent k_BakeAllButtonLabel = EditorGUIUtility.TrTextContent("Bake All");
+        private static readonly GUIContent k_CubemapBakeButtonLabel = EditorGUIUtility.TrTextContent("Bake Cubemap Only");
+        private static readonly GUIContent k_OctahedralAtlasBakeButtonLabel = EditorGUIUtility.TrTextContent("Bake Octahedral Atlas Cache Only");
+        private static readonly GUIContent k_SHBakeButtonLabel = EditorGUIUtility.TrTextContent("Bake SH Data Cache Only");
     }
 }

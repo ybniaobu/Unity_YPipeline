@@ -325,7 +325,7 @@ namespace YPipeline
             ImportResourceParams importBackbufferParams = new ImportResourceParams()
             {
                 clearOnFirstUse = true,
-                clearColor = Color.clear,
+                clearColor = new Color(0.01033f, 0.01033f, 0.01033f, 1.0f), // Blender 的背景颜色
                 discardOnLastUse = false
             };
             

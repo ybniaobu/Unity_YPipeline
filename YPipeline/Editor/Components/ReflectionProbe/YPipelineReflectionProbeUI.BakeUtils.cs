@@ -88,6 +88,7 @@ namespace YPipeline.Editor
                 importer.mipmapEnabled = false;
                 importer.maxTextureSize = 8192;
                 importer.npotScale = TextureImporterNPOTScale.None;
+                importer.textureCompression = TextureImporterCompression.CompressedHQ;
                 importer.SaveAndReimport();
             }
             
@@ -118,7 +119,7 @@ namespace YPipeline.Editor
             // First Dispatch
             ComputeShader cs = editorResources.CubemapSHCoefficientsCS;
             int kernel01 = cs.FindKernel("ComputeCubemapSHKernel");
-            int cubemapSize = probe.resolution;
+            int cubemapSize = probe.texture.width;
             cs.SetTexture(kernel01, "_Cubemap", probe.texture);
             cs.SetVector("_Params", new Vector4(cubemapSize, 0.0f));
             
@@ -128,22 +129,22 @@ namespace YPipeline.Editor
             cs.Dispatch(kernel01, groupNum01, groupNum01, 6);
             
             // Second Dispatch
-            // int kernel02 = cs.FindKernel("ReductionAddKernel");
-            //
-            // int groupNum02 = groupNum01 / 8;
-            // ComputeBuffer buffer02 = new ComputeBuffer(groupNum02 * groupNum02 * 6 * 9, 16);
-            // cs.SetBuffer(kernel02, "_Input", buffer01);
-            // cs.SetBuffer(kernel02, "_Result", buffer02);
-            // cs.Dispatch(kernel02, groupNum02, groupNum02, 6);
+            int kernel02 = cs.FindKernel("SecondAddReductionKernel");
+            
+            int groupNum02 = groupNum01 / 8;
+            ComputeBuffer buffer02 = new ComputeBuffer(groupNum02 * groupNum02 * 6 * 9, 16);
+            cs.SetBuffer(kernel02, "_Input", buffer01);
+            cs.SetBuffer(kernel02, "_Result", buffer02);
+            cs.Dispatch(kernel02, groupNum02, groupNum02, 6);
             
             // 回读
-            AsyncGPUReadback.Request(buffer01, (callback) =>
+            AsyncGPUReadback.Request(buffer02, (callback) =>
             {
                 if (callback.hasError)
                 {
                     Debug.LogError("回读出错");
                     buffer01.Release();
-                    //buffer02.Release();
+                    buffer02.Release();
                     return;
                 }
                 
@@ -171,10 +172,9 @@ namespace YPipeline.Editor
                 serialized.SHData.GetArrayElementAtIndex(5).vector4Value = new Vector4(SH[4].z, SH[5].z, SH[6].z * 3.0f, SH[7].z);
                 serialized.SHData.GetArrayElementAtIndex(6).vector4Value = new Vector4(SH[8].x, SH[8].y, SH[8].z);
                 serialized.ApplyModifiedProperties();
-                Debug.Log("SH 烘焙完成!");
                 
                 buffer01.Release();
-                //buffer02.Release();
+                buffer02.Release();
             });
         }
     }
