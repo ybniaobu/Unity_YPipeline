@@ -18,6 +18,7 @@ namespace YPipeline
         public CommandBuffer cmd;
         public CullingResults cullingResults;
         public YPipelineLightsData lightsData;
+        public YPipelineReflectionProbesData reflectionProbesData;
         
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         public DebugSettings debugSettings;
@@ -104,6 +105,8 @@ namespace YPipeline
             camera = null;
             lightsData.Dispose();
             lightsData = null;
+            reflectionProbesData.Dispose();
+            reflectionProbesData = null;
             
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             debugSettings.Dispose();

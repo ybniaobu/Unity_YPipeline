@@ -22,6 +22,10 @@ namespace YPipeline
             
             // Ambient Probe(SH)
             public Vector4[] ambientProbe = new Vector4[7];
+            
+            // Global Reflection Probe
+            public Texture defaultReflectionProbe;
+            public Vector4 defaultHDRDecodeValues;
         }
         
         private struct SunLightConstantBuffer
@@ -108,6 +112,10 @@ namespace YPipeline
                 // Ambient Probe(SH)
                 GatherAmbientProbeSH(ref passData.ambientProbe);
                 
+                // Global Reflection Probe
+                passData.defaultReflectionProbe = ReflectionProbe.defaultTexture;
+                passData.defaultHDRDecodeValues = ReflectionProbe.defaultTextureHDRDecodeValues;
+                
                 builder.AllowPassCulling(false);
 
                 builder.SetRenderFunc((LightSetupPassData data, UnsafeGraphContext context) =>
@@ -132,6 +140,10 @@ namespace YPipeline
                     
                     // Ambient Probe(SH)
                     context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_AmbientProbeID, data.ambientProbe);
+                    
+                    // Global Reflection Probe
+                    context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_GlobalReflectionProbeID, data.defaultReflectionProbe);
+                    context.cmd.SetGlobalVector(YPipelineShaderIDs.k_GlobalReflectionProbeHDRID, data.defaultHDRDecodeValues);
                 });
             }
         }

@@ -28,6 +28,7 @@ namespace YPipeline
             m_Data.runtimeResources = GraphicsSettings.GetRenderPipelineSettings<YPipelineRuntimeResources>();
             m_Data.renderGraph = new RenderGraph("YPipeline Render Graph");
             m_Data.lightsData = new YPipelineLightsData();
+            m_Data.reflectionProbesData = new YPipelineReflectionProbesData();
             
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             m_Data.debugSettings = new DebugSettings();

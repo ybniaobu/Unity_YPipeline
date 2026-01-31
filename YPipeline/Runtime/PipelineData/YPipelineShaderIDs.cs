@@ -168,6 +168,8 @@ namespace YPipeline
         // ----------------------------------------------------------------------------------------------------
         
         public static readonly int k_AmbientProbeID = Shader.PropertyToID("_AmbientProbe");
+        public static readonly int k_GlobalReflectionProbeID = Shader.PropertyToID("_GlobalReflectionProbe");
+        public static readonly int k_GlobalReflectionProbeHDRID  = Shader.PropertyToID("_GlobalReflectionProbe_HDR");
         
         public static readonly int k_SSGIParamsID = Shader.PropertyToID("_SSGIParams");
         public static readonly int k_SSGIFallbackParamsID = Shader.PropertyToID("_SSGIFallbackParams");

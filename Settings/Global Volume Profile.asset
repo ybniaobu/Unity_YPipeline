@@ -856,7 +856,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f021eeae69254c388de6f3da8e71b2a8, type: 3}
   m_Name: Vignette
   m_EditorClassIdentifier: 
-  active: 0
+  active: 1
   color:
     m_OverrideState: 1
     m_Value: {r: 0, g: 0, b: 0, a: 1}
@@ -908,7 +908,7 @@ MonoBehaviour:
     m_Value: 8
   fallbackMode:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0
   fallbackIntensity:
     m_OverrideState: 1
     m_Value: 1

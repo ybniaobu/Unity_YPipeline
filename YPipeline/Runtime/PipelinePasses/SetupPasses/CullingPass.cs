@@ -16,6 +16,7 @@ namespace YPipeline
             data.camera.TryGetCullingParameters(out ScriptableCullingParameters cullingParameters);
             cullingParameters.shadowDistance = Mathf.Min(data.asset.maxShadowDistance, data.camera.farClipPlane);
             cullingParameters.maximumVisibleLights = YPipelineLightsData.k_MaxPunctualLightCount + 1;
+            cullingParameters.reflectionProbeSortingCriteria = ReflectionProbeSortingCriteria.ImportanceThenSize;
             cullingParameters.conservativeEnclosingSphere = true;
             // TODO：实现了 Reflection Probe 的 tile/cluster culling 就需要取消掉 
             // cullingParameters.cullingOptions |= CullingOptions.DisablePerObjectCulling;

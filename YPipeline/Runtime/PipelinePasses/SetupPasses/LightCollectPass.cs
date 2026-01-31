@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.Rendering;
 using Unity.Collections;
 
@@ -238,6 +239,45 @@ namespace YPipeline
                     data.lightsData.spotLightProjectionMatrices[i] = projectionMatrix;
                 }
             }
+        }
+
+        private void CollectReflectionProbeData(ref YPipelineData data)
+        {
+            NativeArray<VisibleReflectionProbe> visibleReflectionProbes = data.cullingResults.visibleReflectionProbes;
+            int reflectionProbeCount = 0;
+            float atlasSize = 0;
+
+            for (int i = 0; i < visibleReflectionProbes.Length; i++)
+            {
+                if (reflectionProbeCount >= data.asset.maxReflectionProbesOnScreen) break;
+                
+                VisibleReflectionProbe visibleProbe = visibleReflectionProbes[i];
+                ReflectionProbe probe = visibleProbe.reflectionProbe;
+                YPipelineReflectionProbe yProbe = probe.GetYPipelineReflectionProbe();
+                if (!yProbe.IsReady) continue;
+
+                data.reflectionProbesData.boxCenter[reflectionProbeCount] = visibleProbe.bounds.center;
+                data.reflectionProbesData.boxCenter[reflectionProbeCount].w = visibleProbe.importance;
+                data.reflectionProbesData.boxExtent[reflectionProbeCount] = visibleProbe.bounds.extents;
+                data.reflectionProbesData.boxExtent[reflectionProbeCount].w = visibleProbe.isBoxProjection ? 1 : 0;
+                Array.Copy(yProbe.SHData, 0, data.reflectionProbesData.SH, reflectionProbeCount * 7, 7);
+                Texture octahedralAtlas = data.asset.reflectionProbeQuality switch
+                {
+                    Quality3Tier.High => yProbe.octahedralAtlasHigh,
+                    Quality3Tier.Medium => yProbe.octahedralAtlasMedium,
+                    Quality3Tier.Low => yProbe.octahedralAtlasLow,
+                    _ => yProbe.octahedralAtlasMedium
+                };
+                data.reflectionProbesData.probeParams[reflectionProbeCount] = new Vector4(probe.intensity, octahedralAtlas.height);
+                data.reflectionProbesData.octahedralAtlas[reflectionProbeCount] = octahedralAtlas;
+
+                atlasSize += octahedralAtlas.height * octahedralAtlas.height;
+                reflectionProbeCount++;
+            }
+
+            atlasSize = Mathf.Sqrt(atlasSize);
+            data.reflectionProbesData.atlasSize = Mathf.NextPowerOfTwo(Mathf.CeilToInt(atlasSize));
+            data.reflectionProbesData.probeCount = reflectionProbeCount;
         }
     }
 }

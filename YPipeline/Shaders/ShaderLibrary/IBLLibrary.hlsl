@@ -5,11 +5,14 @@
 #include "../ShaderLibrary/RandomLibrary.hlsl"
 #include "../ShaderLibrary/SamplingLibrary.hlsl"
 
+float4 _AmbientProbe[7]; // YPipeline 上传的全局 Ambient Probe 球谐数据
+TEXTURECUBE(_GlobalReflectionProbe); // YPipeline 上传的全局 Reflection Probe 数据
+SAMPLER(sampler_GlobalReflectionProbe);
+float4 _GlobalReflectionProbe_HDR;
+
 // ----------------------------------------------------------------------------------------------------
 // Spherical Harmonics(SH)
 // ----------------------------------------------------------------------------------------------------
-
-float4 _AmbientProbe[7]; // YPipeline 上传的全局 AmbientProbe 球谐数据
 
 float3 EvaluateAmbientProbe(float3 N)
 {
