@@ -9,6 +9,8 @@
 
 TEXTURE2D(_BlitTexture);
 float4 _BlitTexture_TexelSize;
+float4 _ScaleOffset; // xy: scale, zw: offset(pixels)
+
 float4 _CameraBufferSize;
 
 SAMPLER(sampler_LinearClamp);
@@ -41,7 +43,7 @@ Varyings CopyVert(uint vertexID : SV_VertexID)
 
 float4 CopyFrag(Varyings IN) : SV_TARGET
 {
-    return LOAD_TEXTURE2D_LOD(_BlitTexture, IN.positionHCS.xy, 0);
+    return LOAD_TEXTURE2D_LOD(_BlitTexture, IN.positionHCS.xy * _ScaleOffset.xy + _ScaleOffset.zw, 0);
     // return SAMPLE_TEXTURE2D_LOD(_BlitTexture, sampler_LinearClamp, IN.uv, 0);
 }
 

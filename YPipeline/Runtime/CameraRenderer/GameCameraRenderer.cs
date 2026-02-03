@@ -12,12 +12,13 @@ namespace YPipeline
             m_CameraPipelineNodes.Clear();
             
             m_CameraPipelineNodes.Add(PipelinePass.Create<CullingPass>(ref data));
-            m_CameraPipelineNodes.Add(PipelinePass.Create<LightCollectPass>(ref data));
+            m_CameraPipelineNodes.Add(PipelinePass.Create<LightDataCollectPass>(ref data));
             
             switch (data.asset.renderPath)
             {
                 case RenderPath.ForwardPlus: 
                     m_CameraPipelineNodes.Add(PipelinePass.Create<LightSetupPass>(ref data));
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<ReflectionProbeSetupPass>(ref data));
                     m_CameraPipelineNodes.Add(PipelinePass.Create<CameraSetupPass>(ref data));
                     m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardResourcesPass>(ref data));
                     m_CameraPipelineNodes.Add(PipelinePass.Create<ForwardThinGBufferPass>(ref data));
@@ -58,6 +59,7 @@ namespace YPipeline
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             m_CameraPipelineNodes.Add(PipelinePass.Create<DebugPass>(ref data));
 #endif
+            
 #if UNITY_EDITOR
             m_CameraPipelineNodes.Add(PipelinePass.Create<GizmosPass>(ref data));
 #endif

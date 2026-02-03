@@ -52,6 +52,7 @@ namespace YPipeline
         public static readonly int k_MotionVectorTextureID = Shader.PropertyToID("_MotionVectorTexture");
         public static readonly int k_IrradianceTextureID = Shader.PropertyToID("_IrradianceTexture");
         public static readonly int k_IrradianceHistoryID = Shader.PropertyToID("_IrradianceHistory");
+        public static readonly int k_ReflectionProbeAtlasID = Shader.PropertyToID("_ReflectionProbeAtlas");
         public static readonly int k_AmbientOcclusionTextureID = Shader.PropertyToID("_AmbientOcclusionTexture");
         public static readonly int k_AmbientOcclusionHistoryID = Shader.PropertyToID("_AmbientOcclusionHistory");
         

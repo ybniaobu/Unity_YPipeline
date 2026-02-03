@@ -116,7 +116,7 @@ namespace YPipeline
                         data.material.SetTexture(YPipelineShaderIDs.k_FilmGrainTexID, data.filmGrainTexture);
                     }
                     
-                    data.material.SetTexture(BlitUtility.k_BlitTextureId, data.finalTexture);
+                    data.material.SetTexture(BlitHelper.k_BlitTextureID, data.finalTexture);
                     context.cmd.SetViewport(data.cameraPixelRect);
                     context.cmd.DrawProcedural(Matrix4x4.identity, data.material, 0, MeshTopology.Triangles, 3);
                 });

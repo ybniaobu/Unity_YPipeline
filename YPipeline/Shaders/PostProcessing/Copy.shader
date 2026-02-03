@@ -1,5 +1,11 @@
 ﻿Shader "Hidden/YPipeline/Copy"
 {
+    Properties
+    {
+        _BlitTexture("_BlitTexture", 2D) = "black" {}
+        _ScaleOffset("_ScaleOffset", Vector) = (1.0, 1.0, 0.0, 0.0)
+    }
+    
     SubShader
     {
         Tags

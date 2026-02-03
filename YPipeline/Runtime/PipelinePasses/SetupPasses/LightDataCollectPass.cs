@@ -1,18 +1,34 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering;
 using Unity.Collections;
 
 namespace YPipeline
 {
-    public class LightCollectPass : PipelinePass
+    public class LightDataCollectPass : PipelinePass
     {
         private NativeArray<LightShadowCasterCullingInfo> m_CullingInfoPerLight;
         private NativeArray<ShadowSplitData> m_ShadowSplitDataPerLight;
+        private TextureAtlasPacker m_Packer;
         
-        protected override void Initialize(ref YPipelineData data) { }
+        Vector2Int m_LastResolution;
+        private RTHandle m_ReflectionProbeAtlas;
 
-        protected override void OnDispose() { }
+        protected override void Initialize(ref YPipelineData data)
+        {
+            m_Packer = new TextureAtlasPacker();
+        }
+
+        protected override void OnDispose()
+        {
+            m_Packer.Dispose();
+            m_Packer = null;
+            
+            RTHandles.Release(m_ReflectionProbeAtlas);
+            m_ReflectionProbeAtlas = null;
+        }
 
         protected override void OnRecord(ref YPipelineData data)
         {
@@ -35,6 +51,9 @@ namespace YPipeline
                     splitBuffer = m_ShadowSplitDataPerLight
                 });
             }
+            
+            // Reflection Probe Collection
+            CollectReflectionProbeData(ref data);
             
             data.context.ExecuteCommandBuffer(data.cmd);
             data.context.Submit();
@@ -245,7 +264,7 @@ namespace YPipeline
         {
             NativeArray<VisibleReflectionProbe> visibleReflectionProbes = data.cullingResults.visibleReflectionProbes;
             int reflectionProbeCount = 0;
-            float atlasSize = 0;
+            float atlasArea = 0;
 
             for (int i = 0; i < visibleReflectionProbes.Length; i++)
             {
@@ -268,16 +287,18 @@ namespace YPipeline
                     Quality3Tier.Low => yProbe.octahedralAtlasLow,
                     _ => yProbe.octahedralAtlasMedium
                 };
-                data.reflectionProbesData.probeParams[reflectionProbeCount] = new Vector4(probe.intensity, octahedralAtlas.height);
+                data.reflectionProbesData.probeParams[reflectionProbeCount] = new Vector4(0, 0, octahedralAtlas.height, probe.intensity);
                 data.reflectionProbesData.octahedralAtlas[reflectionProbeCount] = octahedralAtlas;
 
-                atlasSize += octahedralAtlas.height * octahedralAtlas.height;
+                atlasArea += octahedralAtlas.height * octahedralAtlas.height;
                 reflectionProbeCount++;
             }
 
-            atlasSize = Mathf.Sqrt(atlasSize);
-            data.reflectionProbesData.atlasSize = Mathf.NextPowerOfTwo(Mathf.CeilToInt(atlasSize));
+            int atlasSize = Mathf.NextPowerOfTwo(Mathf.CeilToInt(Mathf.Sqrt(atlasArea)));
+            data.reflectionProbesData.atlasSize = atlasSize * atlasSize / 2 >= atlasArea ? new Vector2Int(atlasSize * 3 / 2, atlasSize / 2) : new Vector2Int(atlasSize * 3 / 2, atlasSize);
             data.reflectionProbesData.probeCount = reflectionProbeCount;
+            
+            m_Packer.Pack(ref data.reflectionProbesData.probeParams, reflectionProbeCount, atlasSize, 1.5f);
         }
     }
 }

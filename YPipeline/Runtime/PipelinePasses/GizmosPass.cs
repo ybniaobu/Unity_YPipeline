@@ -1,9 +1,9 @@
 ﻿using UnityEngine;
+using UnityEditor;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 
-using UnityEditor;
-
+#if UNITY_EDITOR
 namespace YPipeline
 {
     public class GizmosPass : PipelinePass
@@ -41,7 +41,7 @@ namespace YPipeline
                     
                     builder.SetRenderFunc((GizmosPassData data, UnsafeGraphContext context) =>
                     {
-                        BlitUtility.CopyDepth(context.cmd, data.depthAttachment, data.cameraDepthTarget);
+                        BlitHelper.CopyDepth(context.cmd, data.depthAttachment, data.cameraDepthTarget);
                         
                         context.cmd.SetRenderTarget(data.cameraColorTarget, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
                             data.cameraDepthTarget, RenderBufferLoadAction.Load, RenderBufferStoreAction.Store);
@@ -53,3 +53,4 @@ namespace YPipeline
         }
     }
 }
+#endif

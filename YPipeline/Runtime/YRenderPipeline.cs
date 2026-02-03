@@ -58,7 +58,7 @@ namespace YPipeline
             
             RTHandles.Initialize(Screen.width, Screen.height);
             VolumeManager.instance.Initialize(null, asset.globalVolumeProfile);
-            BlitUtility.Initialize();
+            BlitHelper.Initialize();
 
             // Camera Renderer
             m_GameCameraRenderer = CameraRenderer.Create<GameCameraRenderer>(ref m_Data);
@@ -104,7 +104,7 @@ namespace YPipeline
             
             VolumeManager.instance.Deinitialize();
             m_Data.Dispose();
-            BlitUtility.Dispose();
+            BlitHelper.Dispose();
             
             m_GameCameraRenderer.Dispose();
             m_GameCameraRenderer = null;
@@ -128,10 +128,12 @@ namespace YPipeline
                     case CameraType.SceneView: 
                         m_GameCameraRenderer.Render(ref m_Data);
                         break;
+#if UNITY_EDITOR
                     case CameraType.Preview:
                         m_PreviewCameraRenderer.Render(ref m_Data);
                         // m_GameCameraRenderer.Render(ref m_Data);
                         break;
+#endif
                     case CameraType.Reflection:  // TODO：反射探针不能用 depth prepass 渲染，效果不好 ！！！！！！！！！！！！！！
                         m_GameCameraRenderer.Render(ref m_Data);
                         break;

@@ -73,13 +73,13 @@ namespace YPipeline
                     if (data.cameraType > CameraType.SceneView)
                     {
                         // TODO: 改变逻辑
-                        BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.cameraColorTarget);
+                        BlitHelper.BlitTexture(context.cmd, data.colorAttachment, data.cameraColorTarget);
                     }
             
                     // enable or disable post-processing in the scene window via its effects dropdown menu in its toolbar
                     if (data.cameraType == CameraType.SceneView && !SceneView.currentDrawingSceneView.sceneViewState.showImageEffects)
                     {
-                        BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.cameraColorTarget);
+                        BlitHelper.BlitTexture(context.cmd, data.colorAttachment, data.cameraColorTarget);
                     }
                 });
             }

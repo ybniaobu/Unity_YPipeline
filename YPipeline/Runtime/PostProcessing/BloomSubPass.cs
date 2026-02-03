@@ -155,7 +155,7 @@ namespace YPipeline
                         
                         // Prefilter
                         context.cmd.BeginSample("Prefilter");
-                        BlitUtility.BlitGlobalTexture(context.cmd, data.inputTexture, data.bloomPrefilteredTexture, data.material, 0);
+                        BlitHelper.BlitGlobalTexture(context.cmd, data.inputTexture, data.bloomPrefilteredTexture, data.material, 0);
                         context.cmd.EndSample("Prefilter");
                         
                         // Downsample - gaussian pyramid
@@ -163,8 +163,8 @@ namespace YPipeline
                         TextureHandle source = data.bloomPrefilteredTexture;
                         for (int i = 0; i < data.iterationCount; i++)
                         {
-                            BlitUtility.BlitGlobalTexture(context.cmd, source, data.bloomPyramidUpTextures[i], data.material, 1);
-                            BlitUtility.BlitGlobalTexture(context.cmd, data.bloomPyramidUpTextures[i], data.bloomPyramidDownTextures[i], data.material, 2);
+                            BlitHelper.BlitGlobalTexture(context.cmd, source, data.bloomPyramidUpTextures[i], data.material, 1);
+                            BlitHelper.BlitGlobalTexture(context.cmd, data.bloomPyramidUpTextures[i], data.bloomPyramidDownTextures[i], data.material, 2);
                             source = data.bloomPyramidDownTextures[i];
                         }
                         context.cmd.EndSample("Downsample");
@@ -176,8 +176,8 @@ namespace YPipeline
                         for (int i = data.iterationCount - 2; i >= 0; i--)
                         {
                             context.cmd.SetGlobalTexture(YPipelineShaderIDs.k_BloomLowerTextureID, lastDst);
-                            if (i == 0) BlitUtility.BlitGlobalTexture(context.cmd, data.bloomPyramidDownTextures[i], data.bloomTexture, data.material, upsamplePass);
-                            else BlitUtility.BlitGlobalTexture(context.cmd, data.bloomPyramidDownTextures[i], data.bloomPyramidUpTextures[i], data.material, upsamplePass);
+                            if (i == 0) BlitHelper.BlitGlobalTexture(context.cmd, data.bloomPyramidDownTextures[i], data.bloomTexture, data.material, upsamplePass);
+                            else BlitHelper.BlitGlobalTexture(context.cmd, data.bloomPyramidDownTextures[i], data.bloomPyramidUpTextures[i], data.material, upsamplePass);
                             lastDst = data.bloomPyramidUpTextures[i];
                         }
                         context.cmd.EndSample("Upsample");

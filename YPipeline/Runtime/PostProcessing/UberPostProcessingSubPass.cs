@@ -259,7 +259,7 @@ namespace YPipeline
                     }
                     
                     // Blit
-                    data.material.SetTexture(BlitUtility.k_BlitTextureId, data.inputTexture);
+                    data.material.SetTexture(BlitHelper.k_BlitTextureID, data.inputTexture);
                     context.cmd.DrawProcedural(Matrix4x4.identity, data.material, 0, MeshTopology.Triangles, 3);
                 });
             }

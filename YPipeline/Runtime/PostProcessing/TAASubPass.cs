@@ -119,10 +119,10 @@ namespace YPipeline
                     CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAACurrentFilter, data.currentFilter == CurrentFilter.Gaussian);
                     CoreUtils.SetKeyword(data.material, YPipelineKeywords.k_TAAHistoryFilter, data.historyFilter == HistoryFilter.CatmullRomBicubic);
                     
-                    if (data.isFirstFrame || data.isTAAHistoryReset) BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.taaHistory);
+                    if (data.isFirstFrame || data.isTAAHistoryReset) BlitHelper.BlitTexture(context.cmd, data.colorAttachment, data.taaHistory);
                     data.material.SetTexture(YPipelineShaderIDs.k_TAAHistoryID, data.taaHistory);
                     
-                    BlitUtility.BlitTexture(context.cmd, data.colorAttachment, data.taaTarget, data.material, (int) data.rectifyMode);
+                    BlitHelper.BlitTexture(context.cmd, data.colorAttachment, data.taaTarget, data.material, (int) data.rectifyMode);
                     context.cmd.EndSample("TAABlendHistory");
                     
                     context.cmd.BeginSample("TAACopyHistory");
