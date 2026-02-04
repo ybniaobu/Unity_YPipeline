@@ -165,12 +165,24 @@ namespace YPipeline
         public static readonly int k_ShadowPancakingID = Shader.PropertyToID("_ShadowPancaking");
         
         // ----------------------------------------------------------------------------------------------------
+        // Reflection Probe Related Param IDs
+        // ----------------------------------------------------------------------------------------------------
+        
+        public static readonly int k_GlobalReflectionProbeID = Shader.PropertyToID("_GlobalReflectionProbe");
+        public static readonly int k_GlobalReflectionProbeHDRID  = Shader.PropertyToID("_GlobalReflectionProbe_HDR");
+        
+        public static readonly int k_ReflectionProbeCountID = Shader.PropertyToID("_ReflectionProbeCount");
+        
+        public static readonly int k_ReflectionProbeBoxCenterID = Shader.PropertyToID("_ReflectionProbeBoxCenter");
+        public static readonly int k_ReflectionProbeBoxExtentID = Shader.PropertyToID("_ReflectionProbeBoxExtent");
+        public static readonly int k_ReflectionProbeSHID = Shader.PropertyToID("_ReflectionProbeSH");
+        public static readonly int k_ReflectionProbeParamsID = Shader.PropertyToID("_ReflectionProbeParams");
+        
+        // ----------------------------------------------------------------------------------------------------
         // Global Illumination Related Param IDs
         // ----------------------------------------------------------------------------------------------------
         
         public static readonly int k_AmbientProbeID = Shader.PropertyToID("_AmbientProbe");
-        public static readonly int k_GlobalReflectionProbeID = Shader.PropertyToID("_GlobalReflectionProbe");
-        public static readonly int k_GlobalReflectionProbeHDRID  = Shader.PropertyToID("_GlobalReflectionProbe_HDR");
         
         public static readonly int k_SSGIParamsID = Shader.PropertyToID("_SSGIParams");
         public static readonly int k_SSGIFallbackParamsID = Shader.PropertyToID("_SSGIFallbackParams");
@@ -185,14 +197,16 @@ namespace YPipeline
         public static readonly int k_TemporalDenoiseEnabledID = Shader.PropertyToID("_TemporalDenoiseEnabled");
         
         // ----------------------------------------------------------------------------------------------------
-        // Light Culling Related Param IDs
+        // Light / Reflection Probe Culling Related Param IDs
         // ----------------------------------------------------------------------------------------------------
         
         public static readonly int k_LightInputInfosID = Shader.PropertyToID("_LightInputInfos");
         public static readonly int k_TileParamsID = Shader.PropertyToID("_TileParams");
         public static readonly int k_CameraNearPlaneLBID = Shader.PropertyToID("_CameraNearPlaneLB");
         public static readonly int k_TileNearPlaneSizeID = Shader.PropertyToID("_TileNearPlaneSize");
+        
         public static readonly int k_TilesLightIndicesBufferID = Shader.PropertyToID("_TilesLightIndicesBuffer");
+        public static readonly int k_TileReflectionProbeIndicesBufferID = Shader.PropertyToID("_TileReflectionProbeIndicesBuffer");
         
         // ----------------------------------------------------------------------------------------------------
         // Post Processing Related Param IDs

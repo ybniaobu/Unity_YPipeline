@@ -90,7 +90,8 @@ namespace YPipeline
         public BufferHandle SpotLightShadowBufferHandle { set; get; }
         public BufferHandle SpotLightShadowMatricesBufferHandle { set; get; }
         
-        public BufferHandle TilesLightIndicesBufferHandle { set; get; }
+        public BufferHandle TileLightIndicesBufferHandle { set; get; }
+        public BufferHandle TileReflectionProbeIndicesBufferHandle { set; get; }
         
         // ----------------------------------------------------------------------------------------------------
         // Methods
@@ -141,7 +142,7 @@ namespace YPipeline
             SpotLightShadowBufferHandle = BufferHandle.nullHandle;
             SpotLightShadowMatricesBufferHandle = BufferHandle.nullHandle;
             
-            TilesLightIndicesBufferHandle = BufferHandle.nullHandle;
+            TileLightIndicesBufferHandle = BufferHandle.nullHandle;
         }
     }
 }

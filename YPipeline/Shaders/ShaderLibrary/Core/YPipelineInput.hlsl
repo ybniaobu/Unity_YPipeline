@@ -66,11 +66,12 @@ inline float4x4 GetSunLightShadowMatrix(int cascadeIndex)          { return _Sun
 inline float4 GetSunLightDepthParams(int cascadeIndex)             { return _SunLightDepthParams[cascadeIndex]; }
 
 // ----------------------------------------------------------------------------------------------------
-// Tiled Based Light Indices
+// Tiled Based Culling - Light / Reflection Probe Indices
 // ----------------------------------------------------------------------------------------------------
 
 float4 _TileParams; // xy: tileCountXY, zw: tileUVSizeXY
 StructuredBuffer<uint> _TilesLightIndicesBuffer;
+StructuredBuffer<uint> _TileReflectionProbeIndicesBuffer;
 
 // ----------------------------------------------------------------------------------------------------
 // Punctual Light & Shadow Data
@@ -155,6 +156,38 @@ inline float GetSpotLightBlockerSampleNumber(int shadowIndex)              { ret
 inline float GetSpotLightMinPenumbraWidth(int shadowIndex)                 { return _SpotLightShadowData[shadowIndex].spotLightShadowParams2.w; }
 inline float4 GetSpotLightDepthParams(int shadowIndex)                     { return _SpotLightShadowData[shadowIndex].spotLightDepthParams; }
 inline float4x4 GetSpotLightShadowMatrix(int shadowIndex)                  { return _SpotLightShadowMatrices[shadowIndex]; }
+
+// ----------------------------------------------------------------------------------------------------
+// Reflection Probe Data
+// ----------------------------------------------------------------------------------------------------
+
+CBUFFER_START(ReflectionProbeData)
+    float4 _ReflectionProbeCount; // x: Reflection Probe Count, yzw: 暂无
+    float4 _ReflectionProbeBoxCenter[MAX_REFLECTION_PROBE_COUNT]; // xyz: box center, w: importance
+    float4 _ReflectionProbeBoxExtent[MAX_REFLECTION_PROBE_COUNT]; // xyz: box extent, w: box projection
+    float4 _ReflectionProbeSH[MAX_REFLECTION_PROBE_COUNT * 7]; // reflection probe normalization
+    float4 _ReflectionProbeParams[MAX_REFLECTION_PROBE_COUNT]; // xy: uv in atlas, z: height, w: intensity
+CBUFFER_END
+
+inline float GetReflectionProbeCount()                    { return _ReflectionProbeCount.x; }
+inline float3 GetReflectionProbeBoxCenter(int index)      { return _ReflectionProbeBoxCenter[index].xyz; }
+inline float GetReflectionProbeImportance(int index)      { return _ReflectionProbeBoxCenter[index].w; }
+inline float3 GetReflectionProbeBoxExtent(int index)      { return _ReflectionProbeBoxExtent[index].xyz; }
+inline float IsReflectionProbeBoxProjection(int index)    { return _ReflectionProbeBoxExtent[index].w; }
+inline void GetReflectionProbeSH(int index, out float4 SH[7])
+{
+    int idx = index * 7;
+    SH[0] = _ReflectionProbeSH[idx + 0];
+    SH[1] = _ReflectionProbeSH[idx + 1];
+    SH[2] = _ReflectionProbeSH[idx + 2];
+    SH[3] = _ReflectionProbeSH[idx + 3];
+    SH[4] = _ReflectionProbeSH[idx + 4];
+    SH[5] = _ReflectionProbeSH[idx + 5];
+    SH[6] = _ReflectionProbeSH[idx + 6];
+}
+inline float2 GetReflectionProbeAtlasUV(int index)        { return _ReflectionProbeParams[index].xy; }
+inline float GetReflectionProbeMapSize(int index)         { return _ReflectionProbeParams[index].z; }
+inline float GetReflectionProbeIntensity(int index)       { return _ReflectionProbeParams[index].w; }
 
 // ----------------------------------------------------------------------------------------------------
 // Textures and Samplers

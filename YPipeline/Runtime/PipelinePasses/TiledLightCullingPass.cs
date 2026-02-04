@@ -19,7 +19,8 @@ namespace YPipeline
             public LightInputInfos[] lightInputInfos = new LightInputInfos[YPipelineLightsData.k_MaxPunctualLightCount];
             
             // Output Buffer
-            public BufferHandle tilesLightIndicesBuffer; // 每个 tile 都包含一个 header（light 的数量）和每个 light 的 index
+            public BufferHandle tileLightIndicesBuffer; // 每个 tile 都包含一个 header（light 的数量）和每个 light 的 index
+            public BufferHandle tileReflectionProbeIndicesBuffer; // 每个 tile 都包含一个 header（reflection probe 的数量）和每个 probe 的 index
             
             // Tile Params
             public Vector2Int tileCountXY;
@@ -56,6 +57,8 @@ namespace YPipeline
 
         protected override void OnRecord(ref YPipelineData data)
         {
+            // TODO: 好好整理 TiledLightCulling.compute 里的代码
+            // 包含 light 和 reflection probe 的 tile based culling
             using (var builder = data.renderGraph.AddComputePass<TiledLightCullingPassData>("Tiled Based Light Culling", out var passData))
             {
                 passData.cs = data.runtimeResources.TiledLightCullingCS;
@@ -94,15 +97,23 @@ namespace YPipeline
                 passData.tileNearPlaneSize = new Vector2(YPipelineLightsData.k_TileSize * nearPlaneWidth / data.BufferSize.x, YPipelineLightsData.k_TileSize * nearPlaneHeight / data.BufferSize.y);
                 
                 // Output
-                data.TilesLightIndicesBufferHandle = data.renderGraph.CreateBuffer(new BufferDesc()
+                data.TileLightIndicesBufferHandle = data.renderGraph.CreateBuffer(new BufferDesc()
                 {
                     count = tileCount * YPipelineLightsData.k_PerTileDataSize,
                     stride = 4,
                     target = GraphicsBuffer.Target.Structured,
-                    name = "Tiled Light Indices Buffer"
+                    name = "Tile Light Indices Buffer"
                 });
-                
-                passData.tilesLightIndicesBuffer = builder.UseBuffer(data.TilesLightIndicesBufferHandle, AccessFlags.Write);
+                passData.tileLightIndicesBuffer = builder.UseBuffer(data.TileLightIndicesBufferHandle, AccessFlags.Write);
+
+                data.TileReflectionProbeIndicesBufferHandle = data.renderGraph.CreateBuffer(new BufferDesc()
+                {
+                    count = tileCount * YPipelineReflectionProbesData.k_PerTileDataSize,
+                    stride = 4,
+                    target = GraphicsBuffer.Target.Structured,
+                    name = "Tile Reflection Probe Indices Buffer"
+                });
+                passData.tileReflectionProbeIndicesBuffer  = builder.UseBuffer(data.TileReflectionProbeIndicesBufferHandle, AccessFlags.Write);
                 
                 builder.AllowPassCulling(false);
                 builder.AllowGlobalStateModification(true);
@@ -120,7 +131,8 @@ namespace YPipeline
                     context.cmd.SetComputeVectorParam(data.cs, YPipelineShaderIDs.k_CameraNearPlaneLBID, data.cameraNearPlaneLB);
                     context.cmd.SetComputeVectorParam(data.cs, YPipelineShaderIDs.k_TileNearPlaneSizeID, data.tileNearPlaneSize);
                     
-                    context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_TilesLightIndicesBufferID, data.tilesLightIndicesBuffer);
+                    context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_TilesLightIndicesBufferID, data.tileLightIndicesBuffer);
+                    context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_TileReflectionProbeIndicesBufferID, data.tileReflectionProbeIndicesBuffer);
                     context.cmd.DispatchCompute(data.cs, kernel, data.tileCountXY.x, data.tileCountXY.y, 1);
                 });
             }

@@ -9,7 +9,9 @@
 float4 _CameraBufferSize; // x: 1.0 / bufferSize.x, y: 1.0 / bufferSize.y, z: bufferSize.x, w: bufferSize.y
 float4 _TileParams; // xy: tileCountXY, zw: tileUVSizeXY
 StructuredBuffer<uint> _TilesLightIndicesBuffer;
+StructuredBuffer<uint> _TileReflectionProbeIndicesBuffer;
 
+float4 _TilesDebugParams; // x: 1 for reflection probe, 0 for light
 float _TilesDebugOpacity;
 
 struct Varyings
@@ -43,14 +45,29 @@ float4 Frag(Varyings IN) : SV_TARGET
     bool IsMinimumEdgePixel = any(IN.uv - startUV < _CameraBufferSize.xy);
 
     int tileIndex = tileCoord.y * (int) _TileParams.x + tileCoord.x;
-    int headerIndex = tileIndex * (MAX_LIGHT_COUNT_PER_TILE + 1);
-    int lightCount = _TilesLightIndicesBuffer[headerIndex];
+    int headerIndex;
+    int count;
+    uint maxN;
+    UNITY_BRANCH
+    if (_TilesDebugParams.x)
+    {
+        headerIndex = tileIndex * (MAX_REFLECTION_PROBE_COUNT_PER_TILE + 1);
+        count = _TileReflectionProbeIndicesBuffer[headerIndex];
+        maxN = MAX_REFLECTION_PROBE_COUNT_PER_TILE;
+    }
+    else
+    {
+        headerIndex = tileIndex * (MAX_LIGHT_COUNT_PER_TILE + 1);
+        count = _TilesLightIndicesBuffer[headerIndex];
+        maxN = MAX_LIGHT_COUNT_PER_TILE;
+    }
     
     float3 color;
     if (IsMinimumEdgePixel) color = 1.0;
-    else color = OverlayHeatMap(IN.uv * _CameraBufferSize.zw, _CameraBufferSize.zw * _TileParams.zw, lightCount, MAX_LIGHT_COUNT_PER_TILE, 1.0).rgb;
+    else color = OverlayHeatMap(IN.uv * _CameraBufferSize.zw, _CameraBufferSize.zw * _TileParams.zw, count, maxN, 1.0).rgb;
     
-    return float4(color, _TilesDebugOpacity);
+    float4 output = count == 0 ? float4(0, 0, 0, 0) : float4(color, _TilesDebugOpacity);
+    return output;
 }
 
 #endif

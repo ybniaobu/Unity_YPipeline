@@ -18,6 +18,7 @@ MonoBehaviour:
   antiAliasingMode: 2
   fxaaMode: 0
   enableSplitDepth: 1
+  reflectionProbeQuality: 2
   maxReflectionProbesOnScreen: 8
   enableScreenSpaceAmbientOcclusion: 1
   enableScreenSpaceGlobalIllumination: 1

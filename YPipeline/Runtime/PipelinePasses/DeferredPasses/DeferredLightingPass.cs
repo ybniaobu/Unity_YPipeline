@@ -48,7 +48,8 @@ namespace YPipeline
                 builder.UseBuffer(data.PointLightShadowMatricesBufferHandle, AccessFlags.Read);
                 builder.UseBuffer(data.SpotLightShadowBufferHandle, AccessFlags.Read);
                 builder.UseBuffer(data.SpotLightShadowMatricesBufferHandle, AccessFlags.Read);
-                builder.UseBuffer(data.TilesLightIndicesBufferHandle, AccessFlags.Read);
+                builder.UseBuffer(data.TileLightIndicesBufferHandle, AccessFlags.Read);
+                builder.UseBuffer(data.TileReflectionProbeIndicesBufferHandle, AccessFlags.Read);
                 
                 builder.SetRenderAttachment(data.CameraColorAttachment, 0, AccessFlags.Write);
                 

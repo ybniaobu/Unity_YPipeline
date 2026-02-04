@@ -33,6 +33,7 @@ namespace YPipeline
                     break;
                 case RenderPath.DeferredPlus:
                     m_CameraPipelineNodes.Add(PipelinePass.Create<LightSetupPass>(ref data));
+                    m_CameraPipelineNodes.Add(PipelinePass.Create<ReflectionProbeSetupPass>(ref data));
                     m_CameraPipelineNodes.Add(PipelinePass.Create<CameraSetupPass>(ref data));
                     m_CameraPipelineNodes.Add(PipelinePass.Create<DeferredResourcesPass>(ref data));
                     m_CameraPipelineNodes.Add(PipelinePass.Create<DepthOnlyPass>(ref data));

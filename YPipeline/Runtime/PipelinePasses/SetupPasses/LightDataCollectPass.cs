@@ -11,10 +11,8 @@ namespace YPipeline
     {
         private NativeArray<LightShadowCasterCullingInfo> m_CullingInfoPerLight;
         private NativeArray<ShadowSplitData> m_ShadowSplitDataPerLight;
-        private TextureAtlasPacker m_Packer;
         
-        Vector2Int m_LastResolution;
-        private RTHandle m_ReflectionProbeAtlas;
+        private TextureAtlasPacker m_Packer;
 
         protected override void Initialize(ref YPipelineData data)
         {
@@ -25,9 +23,6 @@ namespace YPipeline
         {
             m_Packer.Dispose();
             m_Packer = null;
-            
-            RTHandles.Release(m_ReflectionProbeAtlas);
-            m_ReflectionProbeAtlas = null;
         }
 
         protected override void OnRecord(ref YPipelineData data)

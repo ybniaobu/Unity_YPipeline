@@ -10,8 +10,11 @@ namespace YPipeline
     {
         private const string k_PanelName = "Lighting";
         public static readonly int k_TilesDebugOpacityID = Shader.PropertyToID("_TilesDebugOpacity");
+        public static readonly int k_TilesDebugParamsID =  Shader.PropertyToID("_TilesDebugParams");
         
         public bool showLightTiles;
+        public bool showReflectionProbeTiles;
+        public bool ShowTiles => showLightTiles || showReflectionProbeTiles;
         public float tileOpacity = 0.5f;
         
         public Material lightCullingDebugMaterial;
@@ -34,6 +37,13 @@ namespace YPipeline
                             tooltip = "Whether the light tiles overlay is shown.",
                             getter = () => showLightTiles,
                             setter = value => showLightTiles = value
+                        },
+                        new DebugUI.BoolField
+                        {
+                            displayName = "Show Reflection Probe Tiles",
+                            tooltip = "Whether the reflection probe tiles are shown.",
+                            getter = () => showReflectionProbeTiles,
+                            setter = value => showReflectionProbeTiles = value
                         },
                         new DebugUI.FloatField
                         {

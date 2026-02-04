@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Runtime.InteropServices;
+using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Experimental.Rendering;
@@ -12,6 +13,7 @@ namespace YPipeline
             public TextureHandle atlas;
             
             public int probeCount;
+            
             public Vector4[] boxCenter;
             public Vector4[] boxExtent;
             public Vector4[] SH;
@@ -53,9 +55,16 @@ namespace YPipeline
                 passData.octahedralAtlas = data.reflectionProbesData.octahedralAtlas;
                 
                 builder.AllowPassCulling(false);
+                builder.AllowGlobalStateModification(true);
                 
                 builder.SetRenderFunc((ReflectionProbeSetupPassData data, RasterGraphContext context) =>
                 {
+                    context.cmd.SetGlobalVector(YPipelineShaderIDs.k_ReflectionProbeCountID, new Vector4(data.probeCount, 0));
+                    context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_ReflectionProbeBoxCenterID, data.boxCenter);
+                    context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_ReflectionProbeBoxExtentID, data.boxExtent);
+                    context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_ReflectionProbeSHID, data.SH);
+                    context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_ReflectionProbeParamsID, data.probeParams);
+                    
                     for (int i = 0; i < data.probeCount; i++)
                     {
                         Vector4 probeParams = data.probeParams[i];
