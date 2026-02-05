@@ -23,14 +23,14 @@ namespace YPipeline
             {
                 RendererListDesc opaqueRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_ForwardOpaqueShaderTagIds, data.cullingResults, data.camera)
                 {
-                    rendererConfiguration = PerObjectData.ReflectionProbes | PerObjectData.Lightmaps, // PerObjectData.LightProbe
+                    rendererConfiguration = PerObjectData.Lightmaps,
                     renderQueueRange = new RenderQueueRange(2000, 2449),
                     sortingCriteria = SortingCriteria.OptimizeStateChanges
                 };
                 
                 RendererListDesc alphaTestRendererListDesc = new RendererListDesc(YPipelineShaderTagIDs.k_ForwardOpaqueShaderTagIds, data.cullingResults, data.camera)
                 {
-                    rendererConfiguration = PerObjectData.ReflectionProbes | PerObjectData.Lightmaps, // PerObjectData.LightProbe
+                    rendererConfiguration = PerObjectData.Lightmaps,
                     renderQueueRange = new RenderQueueRange(2450, 2499),
                     sortingCriteria = SortingCriteria.OptimizeStateChanges
                 };

@@ -1,9 +1,11 @@
 ﻿#ifndef YPIPELINE_IBL_LIBRARY_INCLUDED
 #define YPIPELINE_IBL_LIBRARY_INCLUDED
 
-#include "../ShaderLibrary/BRDFModelLibrary.hlsl"
-#include "../ShaderLibrary/RandomLibrary.hlsl"
-#include "../ShaderLibrary/SamplingLibrary.hlsl"
+#include "BRDFModelLibrary.hlsl"
+#include "RandomLibrary.hlsl"
+#include "SamplingLibrary.hlsl"
+#include "SphericalHarmonicsLibrary.hlsl"
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Packing.hlsl"
 
 float4 _AmbientProbe[7]; // YPipeline 上传的全局 Ambient Probe 球谐数据
 TEXTURECUBE(_GlobalReflectionProbe); // YPipeline 上传的全局 Reflection Probe 数据
@@ -14,7 +16,7 @@ float4 _GlobalReflectionProbe_HDR;
 // Spherical Harmonics(SH)
 // ----------------------------------------------------------------------------------------------------
 
-float3 EvaluateAmbientProbe(float3 N)
+float3 EvaluateAmbientProbe(float3 N) // 名字不能乱改，该函数覆写掉了 unity 自带的 EvaluateAmbientProbe 函数
 {
     float3 L0L1;
     float4 vA = float4(N, 1.0);
@@ -55,19 +57,43 @@ float3 EvaluateAmbientProbe(float3 N)
 // }
 
 // ----------------------------------------------------------------------------------------------------
-// IBL calculation
+// IBL Utilities
 // ----------------------------------------------------------------------------------------------------
 
-float3 SampleEnvLut(Texture2D envLut, SamplerState envLutSampler, float NoV, float roughness)
+inline float3 SampleEnvLut(Texture2D envLut, SamplerState envLutSampler, float NoV, float roughness)
 {
     return SAMPLE_TEXTURE2D(envLut, envLutSampler, float2(NoV, roughness)).rgb;
 }
 
-// float3 SampleHDREnvironment(TextureCube envMap, SamplerState envMapSampler, float3 dir, float mipmap)
-// {
-//     float4 env = SAMPLE_TEXTURECUBE_LOD(envMap, envMapSampler, dir, mipmap);
-//     return DecodeHDREnvironment(env, unity_SpecCube0_HDR);
-// }
+inline float3 DecodeHDR(float4 encoded, float4 decodeInstructions)
+{
+    // Take into account texture alpha if decodeInstructions.w is true(the alpha value affects the RGB channels)
+    float alpha = max(decodeInstructions.w * (encoded.a - 1.0) + 1.0, 0.0);
+    // If Linear mode is not supported we can skip exponent part
+    return (decodeInstructions.x * PositivePow(alpha, decodeInstructions.y)) * encoded.rgb;
+}
+
+inline float3 SampleCubemap(TextureCube cubemap, SamplerState cubemapSampler, float3 dir, float mipmap)
+{
+    return SAMPLE_TEXTURECUBE_LOD(cubemap, cubemapSampler, dir, mipmap).rgb;
+}
+
+inline float3 SampleHDRCubemap(TextureCube cubemap, SamplerState cubemapSampler, float3 dir, float mipmap, float4 decodeInstructions)
+{
+    float4 env = SAMPLE_TEXTURECUBE_LOD(cubemap, cubemapSampler, dir, mipmap);
+    return DecodeHDR(env, decodeInstructions);
+}
+
+inline float3 SampleGlobalReflectionProbe(float3 dir, float mipmap)
+{
+    float4 env = SAMPLE_TEXTURECUBE_LOD(_GlobalReflectionProbe, sampler_GlobalReflectionProbe, dir, mipmap);
+    return DecodeHDR(env, _GlobalReflectionProbe_HDR);
+}
+
+// ----------------------------------------------------------------------------------------------------
+// IBL Calculation -- Old Version & Deprecated，BUT DO NOT DELETE！！！！！！！！！！
+// 下面函数都不再使用了，但不要删除！！！！！！！！！！！
+// ----------------------------------------------------------------------------------------------------
 
 float3 CalculateIndirectDiffuse_IBL(in StandardPBRParams standardPBRParams, float envBRDF_Diffuse)
 {
@@ -78,7 +104,7 @@ float3 CalculateIndirectDiffuse_IBL(in StandardPBRParams standardPBRParams, floa
     return IBLDiffuse;
 }
 
-float RoughnessToMipmapLevel(float roughness, float maxMipLevel)
+inline float RoughnessToMipmapLevel(float roughness, float maxMipLevel)
 {
     roughness = roughness * (1.7 - 0.7 * roughness);
     return roughness * maxMipLevel;
@@ -87,7 +113,7 @@ float RoughnessToMipmapLevel(float roughness, float maxMipLevel)
 float3 CalculateIndirectSpecular_IBL(in StandardPBRParams standardPBRParams, TextureCube prefilteredEnvMap, SamplerState prefilteredEnvMapSampler, float2 envBRDF_Specular, float3 energyCompensation)
 {
     float3 prefilteredColor = SAMPLE_TEXTURECUBE_LOD(prefilteredEnvMap, prefilteredEnvMapSampler, standardPBRParams.R, 6.0 * standardPBRParams.roughness).rgb;
-    //float3 prefilteredColor = SampleHDREnvironment(prefilteredEnvMap, prefilteredEnvMapSampler, standardPBRParams.R, 6.0 * standardPBRParams.roughness);
+    //float3 prefilteredColor = SampleHDRCubemap(prefilteredEnvMap, prefilteredEnvMapSampler, standardPBRParams.R, 6.0 * standardPBRParams.roughness);
     //float3 envBRDFSpecular = lerp(envBRDF.yyy, envBRDF.xxx, standardPBRParams.F0);
     float3 envBRDFSpecular = envBRDF_Specular.xxx * standardPBRParams.F0 + (float3(standardPBRParams.F90, standardPBRParams.F90, standardPBRParams.F90) - standardPBRParams.F0) * envBRDF_Specular.yyy;
     float3 IBLSpecular = prefilteredColor * envBRDFSpecular * energyCompensation * ComputeSpecularAO(standardPBRParams.NoV, standardPBRParams.ao, standardPBRParams.roughness);
@@ -100,7 +126,7 @@ float3 CalculateIndirectSpecular_IBL_RemappedMipmap(in StandardPBRParams standar
 {
     float mipmap = RoughnessToMipmapLevel(standardPBRParams.roughness, 6.0);
     float3 prefilteredColor = SAMPLE_TEXTURECUBE_LOD(prefilteredEnvMap, prefilteredEnvMapSampler, standardPBRParams.R, mipmap).rgb;
-    //float3 prefilteredColor = SampleHDREnvironment(prefilteredEnvMap, prefilteredEnvMapSampler, standardPBRParams.R, mipmap);
+    //float3 prefilteredColor = SampleHDRCubemap(prefilteredEnvMap, prefilteredEnvMapSampler, standardPBRParams.R, mipmap);
     //float3 envBRDFSpecular = lerp(envBRDF.yyy, envBRDF.xxx, standardPBRParams.F0);
     float3 envBRDFSpecular = envBRDF_Specular.xxx * standardPBRParams.F0 + (float3(standardPBRParams.F90, standardPBRParams.F90, standardPBRParams.F90) - standardPBRParams.F0) * envBRDF_Specular.yyy;
     float3 IBLSpecular = prefilteredColor * envBRDFSpecular * energyCompensation * ComputeSpecularAO(standardPBRParams.NoV, standardPBRParams.ao, standardPBRParams.roughness);
@@ -109,29 +135,29 @@ float3 CalculateIndirectSpecular_IBL_RemappedMipmap(in StandardPBRParams standar
     return IBLSpecular;
 }
 
-// float3 CalculateIBL(StandardPBRParams standardPBRParams, TextureCube prefilteredEnvMap, SamplerState prefilteredEnvMapSampler,
-//     Texture2D envLut, SamplerState envLutSampler, out float3 energyCompensation)
-// {
-//     float3 envBRDF = SAMPLE_TEXTURE2D(envLut, envLutSampler, float2(standardPBRParams.NoV, standardPBRParams.roughness)).rgb;
-//     
-//     float3 irradiance = SampleSH(standardPBRParams.N);
-//     float3 envBRDFDiffuse = standardPBRParams.albedo * envBRDF.b;
-//     float Kd = 1.0 - standardPBRParams.metallic;
-//     float3 IBLDiffuse = irradiance * envBRDFDiffuse * Kd * standardPBRParams.ao;
-//     
-//     float3 prefilteredColor = SAMPLE_TEXTURECUBE_LOD(prefilteredEnvMap, prefilteredEnvMapSampler, standardPBRParams.R, 8.0 * standardPBRParams.roughness).rgb;
-//     //float3 envBRDFSpecular = lerp(envBRDF.yyy, envBRDF.xxx, standardPBRParams.F0);
-//     float3 envBRDFSpecular = envBRDF.xxx * standardPBRParams.F0 + (float3(standardPBRParams.F90, standardPBRParams.F90, standardPBRParams.F90) - standardPBRParams.F0) * envBRDF.yyy;
-//     energyCompensation = 1.0 + standardPBRParams.F0 * (1.0 / envBRDF.x - 1) / 2;
-//     float3 IBLSpecular = prefilteredColor * envBRDFSpecular * energyCompensation * ComputeSpecularAO(standardPBRParams.NoV, standardPBRParams.ao, standardPBRParams.roughness);
-//     
-//     // Horizon specular occlusion
-//     float horizon = saturate(1.0 + dot(standardPBRParams.R, standardPBRParams.N));
-//     IBLSpecular *= horizon * horizon;
-//
-//     float3 IBL = IBLDiffuse + IBLSpecular;
-//     return IBL;
-// }
+float3 CalculateIBL(StandardPBRParams standardPBRParams, TextureCube prefilteredEnvMap, SamplerState prefilteredEnvMapSampler,
+    Texture2D envLut, SamplerState envLutSampler, out float3 energyCompensation)
+{
+    float3 envBRDF = SAMPLE_TEXTURE2D(envLut, envLutSampler, float2(standardPBRParams.NoV, standardPBRParams.roughness)).rgb;
+    
+    float3 irradiance = EvaluateAmbientProbe(standardPBRParams.N);
+    float3 envBRDFDiffuse = standardPBRParams.albedo * envBRDF.b;
+    float Kd = 1.0 - standardPBRParams.metallic;
+    float3 IBLDiffuse = irradiance * envBRDFDiffuse * Kd * standardPBRParams.ao;
+    
+    float3 prefilteredColor = SAMPLE_TEXTURECUBE_LOD(prefilteredEnvMap, prefilteredEnvMapSampler, standardPBRParams.R, 6.0 * standardPBRParams.roughness).rgb;
+    //float3 envBRDFSpecular = lerp(envBRDF.yyy, envBRDF.xxx, standardPBRParams.F0);
+    float3 envBRDFSpecular = envBRDF.xxx * standardPBRParams.F0 + (float3(standardPBRParams.F90, standardPBRParams.F90, standardPBRParams.F90) - standardPBRParams.F0) * envBRDF.yyy;
+    energyCompensation = 1.0 + standardPBRParams.F0 * (1.0 / envBRDF.x - 1) / 2;
+    float3 IBLSpecular = prefilteredColor * envBRDFSpecular * energyCompensation * ComputeSpecularAO(standardPBRParams.NoV, standardPBRParams.ao, standardPBRParams.roughness);
+    
+    // Horizon specular occlusion
+    float horizon = saturate(1.0 + dot(standardPBRParams.R, standardPBRParams.N));
+    IBLSpecular *= horizon * horizon;
+
+    float3 IBL = IBLDiffuse + IBLSpecular;
+    return IBL;
+}
 
 // ----------------------------------------------------------------------------------------------------
 // Prefilter Environment Map

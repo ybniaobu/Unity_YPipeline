@@ -64,7 +64,7 @@ void InitializeStandardPBRParams(in GeometryParams geometryParams, out StandardP
     standardPBRParams.alpha = 1.0;
     standardPBRParams.N = DecodeNormalFrom888(gBuffer1.rgb);
     standardPBRParams.roughness = gBuffer1.a;
-    standardPBRParams.metallic = gBuffer2.b;
+    standardPBRParams.metallic = gBuffer2.g;
     standardPBRParams.F0 = lerp(gBuffer2.r * gBuffer2.r * float3(0.16, 0.16, 0.16), standardPBRParams.albedo, standardPBRParams.metallic);
     standardPBRParams.F90 = saturate(dot(standardPBRParams.F0, 50.0 * 0.3333));
     standardPBRParams.emission = gBuffer3;

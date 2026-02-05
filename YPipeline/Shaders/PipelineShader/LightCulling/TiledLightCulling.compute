@@ -22,7 +22,7 @@ struct LightInputInfos
 StructuredBuffer<LightInputInfos> _LightInputInfos; // xyz: light position, w: light range
 
 // Reflection Probe Input
-float4 _ReflectionProbeCount; // x: Reflection Probe Count, yzw: 暂无
+float4 _ReflectionProbeCount; // x: reflection probe count, yzw: 暂无
 float4 _ReflectionProbeBoxCenter[MAX_REFLECTION_PROBE_COUNT]; // xyz: box center, w: importance
 float4 _ReflectionProbeBoxExtent[MAX_REFLECTION_PROBE_COUNT]; // xyz: box extent, w: box projection
 
@@ -61,9 +61,7 @@ inline float GetSpotLightHalfOuterAngle(uint lightIndex)   { return _LightInputI
 
 inline float GetReflectionProbeCount()                     { return _ReflectionProbeCount.x; }
 inline float3 GetReflectionProbeBoxCenter(uint index)      { return _ReflectionProbeBoxCenter[index].xyz; }
-inline float GetReflectionProbeImportance(uint index)      { return _ReflectionProbeBoxCenter[index].w; }
 inline float3 GetReflectionProbeBoxExtent(uint index)      { return _ReflectionProbeBoxExtent[index].xyz; }
-inline float IsReflectionProbeBoxProjection(uint index)    { return _ReflectionProbeBoxExtent[index].w; }
 
 // ----------------------------------------------------------------------------------------------------
 // Intersect Test Referred Functions

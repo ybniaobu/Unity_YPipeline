@@ -59,6 +59,8 @@ namespace YPipeline.Editor
                     if (EditorGUI.EndChangeCheck()) serialized.customBakedTexture.objectReferenceValue = customTexture;
                     break;
                 case ReflectionProbeMode.Realtime:
+                    EditorGUILayout.HelpBox("Realtime 模式 YPipeline 暂时不支持！！！！！！", 
+                        MessageType.Error, true);
                     EditorGUILayout.PropertyField(serialized.refreshMode, k_RefreshModeText);
                     EditorGUILayout.PropertyField(serialized.timeSlicingMode, k_TimeSlicingText);
                     break;
@@ -74,6 +76,7 @@ namespace YPipeline.Editor
             EditorGUILayout.PropertyField(serialized.boxProjection, k_BoxProjectionText);
             EditorGUILayout.PropertyField(serialized.blendDistance, k_BlendDistanceText);
             EditorGUILayout.PropertyField(serialized.boxSize, k_BoxSizeText);
+            EditorGUILayout.PropertyField(serialized.boxOffset, k_BoxOffsetText);
         }
 
         private static void DrawCaptureSettings(SerializedYPipelineReflectionProbe serialized, UnityEditor.Editor owner)

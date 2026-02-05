@@ -10,7 +10,7 @@
 // Diffuse Fallback -- APV
 // ----------------------------------------------------------------------------------------------------
 
-void EvaluateAdaptiveProbeVolume_NoNoise(float3 positionWS, float3 normalWS, float3 bentNormal, float3 noise, uint renderingLayer, out float3 bakeDiffuseLighting)
+void EvaluateAdaptiveProbeVolume(float3 positionWS, float3 normalWS, float3 bentNormal, float3 noise, uint renderingLayer, out float3 bakeDiffuseLighting)
 {
     bakeDiffuseLighting = float3(0.0, 0.0, 0.0);
     positionWS = positionWS + noise.x * _APVSamplingNoise * bentNormal;
@@ -18,10 +18,10 @@ void EvaluateAdaptiveProbeVolume_NoNoise(float3 positionWS, float3 normalWS, flo
     EvaluateAdaptiveProbeVolume(apvSample, normalWS, bakeDiffuseLighting); // 这里用 bent normal 感觉反而不如 normalWS
 }
 
-float3 SampleProbeVolume_NoNoise(float3 positionWS, float3 normalWS, float3 bentNormal, float3 noise)
+float3 SampleProbeVolume(float3 positionWS, float3 normalWS, float3 bentNormal, float3 noise)
 {
     float3 irradiance;
-    EvaluateAdaptiveProbeVolume_NoNoise(positionWS, normalWS, bentNormal, noise, 0, irradiance);
+    EvaluateAdaptiveProbeVolume(positionWS, normalWS, bentNormal, noise, 0, irradiance);
     return irradiance;
 }
 
@@ -33,7 +33,7 @@ float3 FallbackAmbientProbe(float3 bentNormal)
 float3 FallbackAPV(float3 positionWS, float3 normalWS, float3 bentNormal,  float3 noise)
 {
     #if defined(PROBE_VOLUMES_L1) || defined(PROBE_VOLUMES_L2)
-        return SampleProbeVolume_NoNoise(positionWS, normalWS, bentNormal, noise);
+        return SampleProbeVolume(positionWS, normalWS, bentNormal, noise);
     #else
         return EvaluateAmbientProbe(bentNormal);
     #endif

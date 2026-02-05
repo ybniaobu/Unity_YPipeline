@@ -53,7 +53,7 @@ void InitializeZHCoefficients(float3 N, out float ZHCoefficients[9])
 // ----------------------------------------------------------------------------------------------------
 
 // 7 个 float4 存储 9 * 3 = 27 个球谐系数
-float3 EvaluateAmbientProbe(float3 N, in float4 SH[7])
+float3 SampleSphericalHarmonics(float3 N, in float4 SH[7])
 {
     float3 L0L1;
     float4 vA = float4(N, 1.0);

@@ -185,7 +185,7 @@ inline void GetReflectionProbeSH(int index, out float4 SH[7])
     SH[5] = _ReflectionProbeSH[idx + 5];
     SH[6] = _ReflectionProbeSH[idx + 6];
 }
-inline float2 GetReflectionProbeAtlasUV(int index)        { return _ReflectionProbeParams[index].xy; }
+inline float2 GetReflectionProbeAtlasCoord(int index)     { return _ReflectionProbeParams[index].xy; }
 inline float GetReflectionProbeMapSize(int index)         { return _ReflectionProbeParams[index].z; }
 inline float GetReflectionProbeIntensity(int index)       { return _ReflectionProbeParams[index].w; }
 
@@ -223,6 +223,8 @@ TEXTURE2D(_ThinGBuffer);
 TEXTURE2D(_MotionVectorTexture);
 TEXTURE2D(_IrradianceTexture);
 TEXTURE2D(_AmbientOcclusionTexture);
+TEXTURE2D(_ReflectionProbeAtlas);
+float4 _ReflectionProbeAtlas_TexelSize;
 
 // Blue Noise
 TEXTURE2D(_BlueNoise64);

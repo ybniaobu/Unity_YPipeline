@@ -23,6 +23,6 @@ public class Debugger : MonoBehaviour
 
     public void DebugEntry()
     {
-        
+        Debug.Log(ReflectionProbe.defaultTexture.name);
     }
 }

@@ -10,6 +10,7 @@ namespace YPipeline
     {
         protected override void Initialize(ref YPipelineData data)
         {
+            // TODO：专门给 Preview 写个 Pass 得了
             m_CameraPipelineNodes.Clear();
             m_CameraPipelineNodes.Add(PipelinePass.Create<CullingPass>(ref data));
             m_CameraPipelineNodes.Add(PipelinePass.Create<PreviewSetupPass>(ref data));

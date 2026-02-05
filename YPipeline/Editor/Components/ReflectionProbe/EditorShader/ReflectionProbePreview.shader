@@ -133,12 +133,12 @@
                 {
                     float3 V = normalize(_WorldSpaceCameraPos - IN.positionWS);
                     float3 R = reflect(-V, normalize(IN.normalWS));
-                    color = EvaluateAmbientProbe(R, _SH);
+                    color = SampleSphericalHarmonics(R, _SH);
                 }
                 else
                 {
                     float3 N = normalize(IN.normalWS);
-                    color = EvaluateAmbientProbe(N, _SH);
+                    color = SampleSphericalHarmonics(N, _SH);
                 }
                 return float4(color, 1.0);
             }

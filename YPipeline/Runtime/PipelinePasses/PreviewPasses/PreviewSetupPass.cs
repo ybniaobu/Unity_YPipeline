@@ -22,7 +22,8 @@ namespace YPipeline
             public BufferHandle punctualLightsBuffer;
             public PunctualLightStructuredBuffer[] punctualLightsData = new PunctualLightStructuredBuffer[YPipelineLightsData.k_MaxPunctualLightCount];
             
-            // public BufferHandle tilesLightIndicesBuffer;
+            // public BufferHandle tileLightIndicesBuffer;
+            // public BufferHandle tileReflectionProbeIndicesBuffer;
             
             public PointLightShadowStructuredBuffer[] pointLightsShadowData = new PointLightShadowStructuredBuffer[YPipelineLightsData.k_MaxShadowingPointLightCount];
             public BufferHandle pointLightShadowBuffer;
@@ -234,6 +235,9 @@ namespace YPipeline
                     context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_SpotLightShadowDataID, data.spotLightShadowBuffer);
                     context.cmd.SetBufferData(data.spotLightShadowMatricesBuffer, data.spotLightShadowMatrices);
                     context.cmd.SetGlobalBuffer(YPipelineShaderIDs.k_SpotLightShadowMatricesID, data.spotLightShadowMatricesBuffer);
+                    
+                    // Reflection Probe
+                    context.cmd.SetGlobalVector(YPipelineShaderIDs.k_ReflectionProbeCountID, new Vector4(0, 0));
                 });
             }
         }

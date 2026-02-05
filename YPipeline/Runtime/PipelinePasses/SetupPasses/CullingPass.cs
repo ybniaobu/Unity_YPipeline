@@ -18,8 +18,7 @@ namespace YPipeline
             cullingParameters.maximumVisibleLights = YPipelineLightsData.k_MaxPunctualLightCount + 1;
             cullingParameters.reflectionProbeSortingCriteria = ReflectionProbeSortingCriteria.ImportanceThenSize;
             cullingParameters.conservativeEnclosingSphere = true;
-            // TODO：实现了 Reflection Probe 的 tile/cluster culling 就需要取消掉 
-            // cullingParameters.cullingOptions |= CullingOptions.DisablePerObjectCulling;
+            cullingParameters.cullingOptions |= CullingOptions.DisablePerObjectCulling; // 取消 per-object culling for Lights and Reflection Probes
             
             // Emit scene view UI
 #if UNITY_EDITOR

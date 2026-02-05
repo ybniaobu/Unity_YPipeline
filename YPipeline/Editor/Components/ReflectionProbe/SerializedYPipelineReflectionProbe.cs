@@ -20,7 +20,7 @@ namespace YPipeline.Editor
         public SerializedProperty shadowDistance;
         public SerializedProperty importance;
         public SerializedProperty boxSize;
-        // public SerializedProperty boxOffset;
+        public SerializedProperty boxOffset;
         public SerializedProperty cullingMask;
         public SerializedProperty clearFlags;
         public SerializedProperty backgroundColor;
@@ -61,7 +61,7 @@ namespace YPipeline.Editor
             shadowDistance = serializedObject.FindProperty("m_ShadowDistance");
             importance = serializedObject.FindProperty("m_Importance");
             boxSize = serializedObject.FindProperty("m_BoxSize");
-            // boxOffset = serializedObject.FindProperty("m_BoxOffset");
+            boxOffset = serializedObject.FindProperty("m_BoxOffset");
             cullingMask = serializedObject.FindProperty("m_CullingMask");
             clearFlags = serializedObject.FindProperty("m_ClearFlags");
             backgroundColor = serializedObject.FindProperty("m_BackGroundColor");

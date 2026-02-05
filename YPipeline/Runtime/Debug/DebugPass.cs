@@ -27,7 +27,8 @@ namespace YPipeline
                     // Light Culling Debug
                     passData.lightCullingDebugMaterial = data.debugSettings.lightingDebugSettings.lightCullingDebugMaterial;
                     passData.tilesDebugOpacity = data.debugSettings.lightingDebugSettings.tileOpacity;
-                    Vector4 debugParams = new Vector4(data.debugSettings.lightingDebugSettings.showReflectionProbeTiles ? 1 : 0, 0);
+                    Vector4 debugParams = new Vector4(data.debugSettings.lightingDebugSettings.showReflectionProbeTiles ? 1 : 0,
+                        data.debugSettings.lightingDebugSettings.showZeroTiles ? 1 : 0);
                     passData.tilesDebugParams = debugParams;
 
                     builder.SetRenderAttachment(data.CameraColorTarget, 0, AccessFlags.Write);

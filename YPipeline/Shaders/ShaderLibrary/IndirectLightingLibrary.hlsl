@@ -1,14 +1,15 @@
 ﻿#ifndef YPIPELINE_INDIRECT_LIGHTING_LIBRARY_INCLUDED
 #define YPIPELINE_INDIRECT_LIGHTING_LIBRARY_INCLUDED
 
-#include "../ShaderLibrary/IBLLibrary.hlsl"
+#include "IBLLibrary.hlsl"
+#include "ReflectionProbeLibrary.hlsl"
 
 #if defined(LIGHTMAP_ON)
-#include "../ShaderLibrary/UnityLightMappingLibrary.hlsl"
+#include "UnityLightMappingLibrary.hlsl"
 #endif
 
 #if defined(PROBE_VOLUMES_L1) || defined(PROBE_VOLUMES_L2)
-#include "../ShaderLibrary/UnityAPVLibrary.hlsl"
+#include "UnityAPVLibrary.hlsl"
 #endif
 
 // ----------------------------------------------------------------------------------------------------
@@ -30,7 +31,7 @@
 // ----------------------------------------------------------------------------------------------------
 
 // 对 Irradiance 应用漫反射反射方程得到 Radiance，即 Diffuse Indirect Lighting
-float3 ApplyDiffuseBRDF(float3 irradiance, in StandardPBRParams standardPBRParams, float envBRDF_Diffuse)
+inline float3 ApplyDiffuseBRDF(float3 irradiance, in StandardPBRParams standardPBRParams, float envBRDF_Diffuse)
 {
     float3 envBRDFDiffuse = standardPBRParams.albedo * envBRDF_Diffuse;
     float Kd = 1.0 - standardPBRParams.metallic;
@@ -39,19 +40,38 @@ float3 ApplyDiffuseBRDF(float3 irradiance, in StandardPBRParams standardPBRParam
 }
 
 // TODO: 改为 Macro 形式
-float3 DiffuseIndirectLighting(in GeometryParams geometryParams, in StandardPBRParams standardPBRParams, float envBRDF_Diffuse)
+inline float3 DiffuseIndirectLighting(in GeometryParams geometryParams, in StandardPBRParams standardPBRParams, float envBRDF_Diffuse, out float3 irradiance)
 {
     #if defined(_SCREEN_SPACE_IRRADIANCE)
-        float3 irradiance = SAMPLE_TEXTURE2D_LOD(_IrradianceTexture, sampler_LinearClamp, geometryParams.screenUV, 0).rgb;
+        irradiance = SAMPLE_TEXTURE2D_LOD(_IrradianceTexture, sampler_LinearClamp, geometryParams.screenUV, 0).rgb;
     #elif defined(PROBE_VOLUMES_L1) || defined(PROBE_VOLUMES_L2)
-        float3 irradiance = SampleProbeVolume(geometryParams.positionWS, standardPBRParams.N, standardPBRParams.V, geometryParams.pixelCoord);
+        irradiance = SampleProbeVolume(geometryParams.positionWS, standardPBRParams.N, standardPBRParams.V, geometryParams.pixelCoord);
     #elif defined(LIGHTMAP_ON)
-        float3 irradiance = SampleLightMap(geometryParams.lightMapUV);
+        irradiance = SampleLightMap(geometryParams.lightMapUV);
     #else
-        float3 irradiance = EvaluateAmbientProbe(standardPBRParams.N);
+        irradiance = EvaluateAmbientProbe(standardPBRParams.N);
     #endif
     
     return ApplyDiffuseBRDF(irradiance, standardPBRParams, envBRDF_Diffuse);
+}
+
+// ----------------------------------------------------------------------------------------------------
+// Specular Indirect Lighting
+// ----------------------------------------------------------------------------------------------------
+
+inline float3 ApplySpecularBRDF(float3 prefilteredColor, in StandardPBRParams standardPBRParams, float2 envBRDF_Specular, float3 energyCompensation)
+{
+    // float3 envBRDFSpecular = lerp(envBRDF.yyy, envBRDF.xxx, standardPBRParams.F0);
+    float3 envBRDFSpecular = envBRDF_Specular.xxx * standardPBRParams.F0 + (float3(standardPBRParams.F90, standardPBRParams.F90, standardPBRParams.F90) - standardPBRParams.F0) * envBRDF_Specular.yyy;
+    float3 indirectSpecular = prefilteredColor * envBRDFSpecular * energyCompensation * ComputeSpecularAO(standardPBRParams.NoV, standardPBRParams.ao, standardPBRParams.roughness);
+    indirectSpecular *= ComputeHorizonSpecularOcclusion(standardPBRParams.R, standardPBRParams.N);
+    return indirectSpecular;
+}
+
+inline float3 SpecularIndirectLighting(in StandardPBRParams standardPBRParams, int probeIndex, float3 positionWS, float3 irradiance, float2 envBRDF_Specular, float3 energyCompensation)
+{
+    float3 prefilteredColor = GetPrefilteredEnvColor_RemappedMipmap(standardPBRParams, probeIndex, positionWS, irradiance);
+    return ApplySpecularBRDF(prefilteredColor, standardPBRParams, envBRDF_Specular, energyCompensation);
 }
 
 #endif

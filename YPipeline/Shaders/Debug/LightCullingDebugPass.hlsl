@@ -11,7 +11,7 @@ float4 _TileParams; // xy: tileCountXY, zw: tileUVSizeXY
 StructuredBuffer<uint> _TilesLightIndicesBuffer;
 StructuredBuffer<uint> _TileReflectionProbeIndicesBuffer;
 
-float4 _TilesDebugParams; // x: 1 for reflection probe, 0 for light
+float4 _TilesDebugParams; // x: 1 for reflection probe, 0 for light; y: show zero tile
 float _TilesDebugOpacity;
 
 struct Varyings
@@ -48,6 +48,7 @@ float4 Frag(Varyings IN) : SV_TARGET
     int headerIndex;
     int count;
     uint maxN;
+    
     UNITY_BRANCH
     if (_TilesDebugParams.x)
     {
@@ -66,7 +67,16 @@ float4 Frag(Varyings IN) : SV_TARGET
     if (IsMinimumEdgePixel) color = 1.0;
     else color = OverlayHeatMap(IN.uv * _CameraBufferSize.zw, _CameraBufferSize.zw * _TileParams.zw, count, maxN, 1.0).rgb;
     
-    float4 output = count == 0 ? float4(0, 0, 0, 0) : float4(color, _TilesDebugOpacity);
+    float4 output;
+    UNITY_BRANCH
+    if (_TilesDebugParams.y)
+    {
+        output = float4(color, _TilesDebugOpacity);
+    }
+    else
+    {
+        output = count == 0 ? float4(0, 0, 0, 0) : float4(color, _TilesDebugOpacity);
+    }
     return output;
 }
 

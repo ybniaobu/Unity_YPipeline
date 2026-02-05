@@ -259,7 +259,7 @@ namespace YPipeline
         {
             NativeArray<VisibleReflectionProbe> visibleReflectionProbes = data.cullingResults.visibleReflectionProbes;
             int reflectionProbeCount = 0;
-            float atlasArea = 0;
+            int atlasArea = 0;
 
             for (int i = 0; i < visibleReflectionProbes.Length; i++)
             {
@@ -289,7 +289,7 @@ namespace YPipeline
                 reflectionProbeCount++;
             }
 
-            int atlasSize = Mathf.NextPowerOfTwo(Mathf.CeilToInt(Mathf.Sqrt(atlasArea)));
+            int atlasSize = Mathf.NextPowerOfTwo(Mathf.RoundToInt(Mathf.Sqrt(atlasArea)));
             data.reflectionProbesData.atlasSize = atlasSize * atlasSize / 2 >= atlasArea ? new Vector2Int(atlasSize * 3 / 2, atlasSize / 2) : new Vector2Int(atlasSize * 3 / 2, atlasSize);
             data.reflectionProbesData.probeCount = reflectionProbeCount;
             

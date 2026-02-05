@@ -7,7 +7,7 @@
 // Tiled Light Culling
 // ----------------------------------------------------------------------------------------------------
 
-struct LightsTileParams
+struct LightTile
 {
     int tileIndex;
     int headerIndex;
@@ -15,13 +15,13 @@ struct LightsTileParams
     int lastLightIndex;
 };
 
-void InitializeLightsTileParams(out LightsTileParams lightsTileParams, float2 pixelCoord)
+void InitializeLightTile(out LightTile tile, float2 pixelCoord)
 {
     uint2 coord = floor(pixelCoord * _CameraBufferSize.xy / _TileParams.zw);
-    lightsTileParams.tileIndex = coord.y * (int) _TileParams.x + coord.x;
-    lightsTileParams.headerIndex = lightsTileParams.tileIndex * (MAX_LIGHT_COUNT_PER_TILE + 1);
-    lightsTileParams.lightCount = _TilesLightIndicesBuffer[lightsTileParams.headerIndex];
-    lightsTileParams.lastLightIndex = lightsTileParams.headerIndex + lightsTileParams.lightCount;
+    tile.tileIndex = coord.y * (int) _TileParams.x + coord.x;
+    tile.headerIndex = tile.tileIndex * (MAX_LIGHT_COUNT_PER_TILE + 1);
+    tile.lightCount = _TilesLightIndicesBuffer[tile.headerIndex];
+    tile.lastLightIndex = tile.headerIndex + tile.lightCount;
 }
 
 // ----------------------------------------------------------------------------------------------------

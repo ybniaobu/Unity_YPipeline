@@ -20,12 +20,20 @@ struct OBB
     float3 extent; // half-sizes along local axes
 };
 
-bool IsValidAABB_MinMax(AABBMinMax aabb)
+inline AABBMinMax BuildAABBMinMax(float3 center, float3 extent)
+{
+    AABBMinMax aabb;
+    aabb.min = center - extent;
+    aabb.max = center + extent;
+    return aabb;
+}
+
+inline bool IsValidAABB_MinMax(AABBMinMax aabb)
 {
     return all(aabb.min <= aabb.max);
 }
 
-bool IsValidAABB(AABB aabb)
+inline bool IsValidAABB(AABB aabb)
 {
     float3 aabbMin = aabb.center - aabb.extent;
     float3 aabbMax = aabb.center + aabb.extent;
@@ -84,6 +92,11 @@ bool AABB_Sphere_Intersect(AABBMinMax aabb, float3 sphereCenter, float radius)
     float sqrDiff = dot(diff, diff);
     float sqrRadius = radius * radius;
     return sqrDiff <= sqrRadius;
+}
+
+bool AABB_Point_Intersect(AABBMinMax aabb, float3 p)
+{
+    return all(p >= aabb.min) && all(p <= aabb.max);
 }
 
 // ----------------------------------------------------------------------------------------------------

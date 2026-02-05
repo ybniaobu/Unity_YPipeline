@@ -15,6 +15,8 @@ namespace YPipeline
         public bool showLightTiles;
         public bool showReflectionProbeTiles;
         public bool ShowTiles => showLightTiles || showReflectionProbeTiles;
+
+        public bool showZeroTiles;
         public float tileOpacity = 0.5f;
         
         public Material lightCullingDebugMaterial;
@@ -44,6 +46,13 @@ namespace YPipeline
                             tooltip = "Whether the reflection probe tiles are shown.",
                             getter = () => showReflectionProbeTiles,
                             setter = value => showReflectionProbeTiles = value
+                        },
+                        new DebugUI.BoolField
+                        {
+                            displayName = "Show Zero Tiles",
+                            tooltip = "Whether the zero count tiles are shown.",
+                            getter = () => showZeroTiles,
+                            setter = value => showZeroTiles = value
                         },
                         new DebugUI.FloatField
                         {

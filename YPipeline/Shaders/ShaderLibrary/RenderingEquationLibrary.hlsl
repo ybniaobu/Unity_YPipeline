@@ -48,11 +48,15 @@ void StandardPBRShading(in GeometryParams geometryParams, in StandardPBRParams s
     float3 envBRDF = SampleEnvLut(ENVIRONMENT_BRDF_LUT, LUT_SAMPLER, standardPBRParams.NoV, standardPBRParams.roughness);
     float3 energyCompensation = 1.0 + standardPBRParams.F0 * (1.0 / envBRDF.x - 1) * 0.5; // 0.5 is a magic number
     
-    content.indirectLightDiffuse += DiffuseIndirectLighting(geometryParams, standardPBRParams, envBRDF.b);
+    float3 irradiance;
+    content.indirectLightDiffuse += DiffuseIndirectLighting(geometryParams, standardPBRParams, envBRDF.b, irradiance);
 
-    //renderingEquationContent.indirectLightSpecular += CalculateIndirectSpecular_IBL(standardPBRParams, unity_SpecCube0, samplerunity_SpecCube0, envBRDF.rg, energyCompensation);
-    content.indirectLightSpecular += CalculateIndirectSpecular_IBL_RemappedMipmap(standardPBRParams, unity_SpecCube0,
-        samplerunity_SpecCube0, envBRDF.rg, energyCompensation);
+    // content.indirectLightSpecular += CalculateIndirectSpecular_IBL(standardPBRParams, unity_SpecCube0, samplerunity_SpecCube0, envBRDF.rg, energyCompensation);
+    // content.indirectLightSpecular += CalculateIndirectSpecular_IBL_RemappedMipmap(standardPBRParams, unity_SpecCube0,samplerunity_SpecCube0, envBRDF.rg, energyCompensation);
+    
+    int bestReflectionProbeIndex = FindBestReflectionProbe(geometryParams.screenUV, geometryParams.positionWS);
+    if (bestReflectionProbeIndex == -1) content.indirectLightSpecular += CalculateIndirectSpecular_IBL_RemappedMipmap(standardPBRParams, _GlobalReflectionProbe, sampler_GlobalReflectionProbe, envBRDF.rg, energyCompensation);
+    else content.indirectLightSpecular += SpecularIndirectLighting(standardPBRParams, bestReflectionProbeIndex, geometryParams.positionWS, irradiance, envBRDF.rg, energyCompensation);
     
     // ------------------------- Direct Lighting - Sun Light -------------------------
     
@@ -66,10 +70,10 @@ void StandardPBRShading(in GeometryParams geometryParams, in StandardPBRParams s
     
     // ------------------------- Direct Lighting - Punctual Light -------------------------
 
-    LightsTileParams lightsTileParams = (LightsTileParams) 0;
-    InitializeLightsTileParams(lightsTileParams, geometryParams.pixelCoord);
+    LightTile lightTile = (LightTile) 0;
+    InitializeLightTile(lightTile, geometryParams.pixelCoord);
     
-    for (int i = lightsTileParams.headerIndex + 1; i <= lightsTileParams.lastLightIndex; i++)
+    for (int i = lightTile.headerIndex + 1; i <= lightTile.lastLightIndex; i++)
     {
         uint lightIndex = _TilesLightIndicesBuffer[i];
         

@@ -27,25 +27,28 @@ namespace YPipeline
 
         protected override void OnRecord(ref YPipelineData data)
         {
-            Vector2Int size = data.reflectionProbesData.atlasSize;
-            if (size.x == 0 || size.y == 0) return;
-            
             // 当前版本 AddBlit/CopyPass 无法多次复制，暂时使用 RasterRenderPass
             using (var builder = data.renderGraph.AddRasterRenderPass<ReflectionProbeSetupPassData>("Set Reflection Probe Data", out var passData))
             {
-                TextureDesc atlasDesc = new TextureDesc(size.x, size.y)
-                {
-                    colorFormat = GraphicsFormat.B10G11R11_UFloatPack32,
-                    filterMode = FilterMode.Point,
-                    wrapMode = TextureWrapMode.Clamp,
-                    clearBuffer = true,
-                    clearColor = Color.clear,
-                    name = "Reflection Probe Atlas"
-                };
+                Vector2Int size = data.reflectionProbesData.atlasSize;
+                bool hasAtlas = size.x != 0 && size.y != 0;
                 
-                passData.atlas = data.renderGraph.CreateTexture(atlasDesc);
-                builder.SetRenderAttachment(passData.atlas, 0, AccessFlags.Write);
-                builder.SetGlobalTextureAfterPass(passData.atlas, YPipelineShaderIDs.k_ReflectionProbeAtlasID);
+                if (hasAtlas)
+                {
+                    TextureDesc atlasDesc = new TextureDesc(size.x, size.y)
+                    {
+                        colorFormat = GraphicsFormat.B10G11R11_UFloatPack32,
+                        filterMode = FilterMode.Point,
+                        wrapMode = TextureWrapMode.Clamp,
+                        clearBuffer = true,
+                        clearColor = Color.clear,
+                        name = "Reflection Probe Atlas"
+                    };
+
+                    passData.atlas = data.renderGraph.CreateTexture(atlasDesc);
+                    builder.SetRenderAttachment(passData.atlas, 0, AccessFlags.Write);
+                    builder.SetGlobalTextureAfterPass(passData.atlas, YPipelineShaderIDs.k_ReflectionProbeAtlasID);
+                }
                 
                 passData.probeCount = data.reflectionProbesData.probeCount;
                 passData.boxCenter = data.reflectionProbesData.boxCenter;
