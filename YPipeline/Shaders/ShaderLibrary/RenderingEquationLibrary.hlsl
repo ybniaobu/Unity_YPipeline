@@ -53,10 +53,7 @@ void StandardPBRShading(in GeometryParams geometryParams, in StandardPBRParams s
 
     // content.indirectLightSpecular += CalculateIndirectSpecular_IBL(standardPBRParams, unity_SpecCube0, samplerunity_SpecCube0, envBRDF.rg, energyCompensation);
     // content.indirectLightSpecular += CalculateIndirectSpecular_IBL_RemappedMipmap(standardPBRParams, unity_SpecCube0,samplerunity_SpecCube0, envBRDF.rg, energyCompensation);
-    
-    int bestReflectionProbeIndex = FindBestReflectionProbe(geometryParams.screenUV, geometryParams.positionWS);
-    if (bestReflectionProbeIndex == -1) content.indirectLightSpecular += CalculateIndirectSpecular_IBL_RemappedMipmap(standardPBRParams, _GlobalReflectionProbe, sampler_GlobalReflectionProbe, envBRDF.rg, energyCompensation);
-    else content.indirectLightSpecular += SpecularIndirectLighting(standardPBRParams, bestReflectionProbeIndex, geometryParams.positionWS, irradiance, envBRDF.rg, energyCompensation);
+    content.indirectLightSpecular += SpecularIndirectLighting(geometryParams, standardPBRParams, irradiance, envBRDF.rg, energyCompensation);
     
     // ------------------------- Direct Lighting - Sun Light -------------------------
     

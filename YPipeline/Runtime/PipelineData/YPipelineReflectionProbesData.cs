@@ -23,8 +23,9 @@ namespace YPipeline
         public Vector4[] boxCenter = new Vector4[k_MaxReflectionProbeCount]; // xyz: box center, w: importance
         public Vector4[] boxExtent = new Vector4[k_MaxReflectionProbeCount]; // xyz: box extent, w: box projection
         public Vector4[] SH = new Vector4[k_MaxReflectionProbeCount * 7]; // For reflection probe normalization
-        public Vector4[] probeParams  = new Vector4[k_MaxReflectionProbeCount]; // xy: uv in atlas, z: height, w: intensity
-        // public Matrix4x4[] rotation = new Vector4[k_MaxReflectionProbeCount]; // 暂未支持 Reflection Probe 的旋转
+        public Vector4[] probeSampleParams = new Vector4[k_MaxReflectionProbeCount]; // xy: uv in atlas, z: height
+        public Vector4[] probeParams = new Vector4[k_MaxReflectionProbeCount]; // x: intensity, y: blend distance
+        // public Vector4[] rotation = new Vector4[k_MaxReflectionProbeCount]; // 暂未支持 Reflection Probe 的旋转
         
         public Texture[] octahedralAtlas = new Texture[k_MaxReflectionProbeCount];
         

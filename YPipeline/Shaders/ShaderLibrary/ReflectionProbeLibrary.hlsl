@@ -5,7 +5,7 @@
 #include "IntersectionTestLibrary.hlsl"
 
 // ----------------------------------------------------------------------------------------------------
-// Tiled Culling
+// Tiled Culling -- Reflection Probe
 // ----------------------------------------------------------------------------------------------------
 
 struct ReflectionProbeTile
@@ -16,7 +16,7 @@ struct ReflectionProbeTile
     int lastProbeIndex;
 };
 
-void InitializeReflectionProbeTile(out ReflectionProbeTile tile, float2 screenUV)
+inline void InitializeReflectionProbeTile(out ReflectionProbeTile tile, float2 screenUV)
 {
     uint2 tileCoord = floor(screenUV / _TileParams.zw);
     tile.tileIndex = tileCoord.y * (int) _TileParams.x + tileCoord.x;
@@ -25,8 +25,8 @@ void InitializeReflectionProbeTile(out ReflectionProbeTile tile, float2 screenUV
     tile.lastProbeIndex = tile.headerIndex + tile.probeCount;
 }
 
-// 根据优先级、离像素点距离来找到最合适的 Reflection Probe
-inline int FindBestReflectionProbe(float2 screenUV, float3 positionWS)
+// 根据优先级、离像素点距离来找到最合适的一个 Reflection Probe
+int FindBestReflectionProbe(float2 screenUV, float3 positionWS)
 {
     ReflectionProbeTile tile = (ReflectionProbeTile) 0;
     InitializeReflectionProbeTile(tile, screenUV);
@@ -63,8 +63,55 @@ inline int FindBestReflectionProbe(float2 screenUV, float3 positionWS)
             }
         }
     }
-    
     return bestIndex;
+}
+
+// 根据优先级、离像素点距离来找到最合适的二个 Reflection Probe，用于后续混合
+// 【书签】
+int2 FindBestTwoReflectionProbe(float2 screenUV, float3 positionWS)
+{
+    ReflectionProbeTile tile = (ReflectionProbeTile) 0;
+    InitializeReflectionProbeTile(tile, screenUV);
+    
+    int bestIndex = -1, secondBestIndex = -1;
+    int lastImportance = -1;
+    float lastDistSqr = FLT_MAX, secondLastDistSqr = FLT_MAX;
+    
+    for (int i = tile.headerIndex + 1; i <= tile.lastProbeIndex; i++)
+    {
+        // 判断像素点是否在 probe 范围内
+        uint idx = _TileReflectionProbeIndicesBuffer[i];
+        AABBMinMax aabb = BuildAABBMinMax(GetReflectionProbeBoxCenter(idx), GetReflectionProbeBoxExtent(idx));
+        bool isInProbe = AABB_Point_Intersect(aabb, positionWS);
+        if (!isInProbe) continue;
+        
+        // 先判断优先级，再判断像素点离 probe 中心距离
+        int importance = (int) GetReflectionProbeImportance(idx);
+        float3 dir = positionWS - GetReflectionProbeBoxCenter(idx);
+        float distSqr = dot(dir, dir);
+        
+        if (importance > lastImportance)
+        {
+            secondBestIndex = bestIndex;
+            bestIndex = idx;
+            lastImportance = importance;
+            lastDistSqr = distSqr;
+        }
+        else if (importance == lastImportance)
+        {
+            if (distSqr < lastDistSqr)
+            {
+                secondBestIndex = bestIndex;
+                bestIndex = idx;
+                lastDistSqr = distSqr;
+            }
+            else
+            {
+                secondBestIndex = idx;
+            }
+        }
+    }
+    return int2(bestIndex, secondBestIndex);
 }
 
 // ----------------------------------------------------------------------------------------------------
@@ -75,7 +122,6 @@ float3 SampleReflectionProbeAtlas(int probeIndex, float3 dir, float mipmap)
 {
     float2 leftBottomCoord = GetReflectionProbeAtlasCoord(probeIndex);
     float size = GetReflectionProbeMapSize(probeIndex);
-    float intensity = GetReflectionProbeIntensity(probeIndex);
     float2 uv = PackNormalOctQuadEncode(dir);
     uv = saturate(uv * 0.5 + 0.5);
     float2 indent = 0.5 * _ReflectionProbeAtlas_TexelSize.xy;
@@ -99,8 +145,12 @@ float3 SampleReflectionProbeAtlas(int probeIndex, float3 dir, float mipmap)
     float3 color1 = SAMPLE_TEXTURE2D_LOD(_ReflectionProbeAtlas, sampler_LinearClamp, uv1, 0).rgb;
     
     float mipBlend = mipmap - mip0;
-    return lerp(color0, color1, mipBlend) * intensity;
+    return lerp(color0, color1, mipBlend);
 }
+
+// ----------------------------------------------------------------------------------------------------
+// Parallax Correction
+// ----------------------------------------------------------------------------------------------------
 
 float3 GetParallaxCorrectionDirection(int probeIndex, float3 R, float3 positionWS)
 {
@@ -117,7 +167,7 @@ float3 GetParallaxCorrectionDirection(int probeIndex, float3 R, float3 positionW
         float t = min(tMax.x, min(tMax.y, tMax.z));
         t = max(t, 0.0);
         float3 intersection = positionWS + R * t;
-        return intersection - boxCenter;
+        return normalize(intersection - boxCenter);
     }
     else
     {
@@ -131,49 +181,92 @@ float3 GetParallaxCorrectionDirection(int probeIndex, float3 R, float3 positionW
 
 float3 ReflectionProbeNormalization(float3 rawReflection, float3 irradiance, float3 R, int probeIndex)
 {
-    // float4 SH[7];
-    // GetReflectionProbeSH(probeIndex, SH);
-    // float probeSHLuma = Luminance(SampleSphericalHarmonics(R, SH));
-    // float3 normalizedReflection = rawReflection / (probeSHLuma);
-    // return normalizedReflection * Luminance(irradiance);
-    return rawReflection;
+    float4 SH[7];
+    GetReflectionProbeSH(probeIndex, SH);
+    float3 probeSH = SampleSphericalHarmonics(R, SH);
+    float3 normalizedReflection = rawReflection / (probeSH + 1e-6);
+    return normalizedReflection * irradiance;
 }
 
-// No Parallax Correction, No Normalization, Without Unity Mipmap Remap
-inline float3 GetPrefilteredEnvColor(in StandardPBRParams standardPBRParams, int probeIndex)
+float3 ReflectionProbeNormalization_Luminance(float3 rawReflection, float3 irradiance, float3 R, int probeIndex)
 {
-    return SampleReflectionProbeAtlas(probeIndex, standardPBRParams.R, 6.0 * standardPBRParams.roughness).rgb;
+    float4 SH[7];
+    GetReflectionProbeSH(probeIndex, SH);
+    float probeSHLuma = Luminance(SampleSphericalHarmonics(R, SH));
+    float3 normalizedReflection = rawReflection / probeSHLuma;
+    return normalizedReflection * Luminance(irradiance);
 }
 
-// No Parallax Correction, No Normalization, With Unity Mipmap Remap
-inline float3 GetPrefilteredEnvColor_RemappedMipmap(in StandardPBRParams standardPBRParams, int probeIndex)
+// Only For Global Reflection Probe
+float3 ReflectionProbeNormalization(float3 rawReflection, float3 irradiance, float3 R)
 {
+    float3 probeSH = EvaluateAmbientProbe(R);
+    float3 normalizedReflection = rawReflection / (probeSH + 1e-6);
+    return normalizedReflection * irradiance;
+}
+
+// Only For Global Reflection Probe
+float3 ReflectionProbeNormalization_Luminance(float3 rawReflection, float3 irradiance, float3 R)
+{
+    float probeSHLuma = Luminance(EvaluateAmbientProbe(R));
+    float3 normalizedReflection = rawReflection / probeSHLuma;
+    return normalizedReflection * Luminance(irradiance);
+}
+
+// ----------------------------------------------------------------------------------------------------
+// Get Pre-filtered Environment Color -- After Parallax Correction or Normalization
+// ----------------------------------------------------------------------------------------------------
+
+// No Normalization Version, Only For Global Reflection Probe
+inline float3 GetGlobalPrefilteredEnvColor(float mipmap, float3 R)
+{
+    return SampleGlobalReflectionProbe(R, mipmap);
+}
+
+// Normalization Version, Only For Global Reflection Probe
+inline float3 GetGlobalPrefilteredEnvColor(float mipmap, float3 R, float3 irradiance)
+{
+    float3 rawReflection = SampleGlobalReflectionProbe(R, mipmap);
+    return ReflectionProbeNormalization_Luminance(rawReflection, irradiance, R);
+}
+
+// No Parallax Correction & No Normalization Version, For Local Reflection Probe
+inline float3 GetPrefilteredEnvColor(int probeIndex, float mipmap, float3 R)
+{
+    float intensity = GetReflectionProbeIntensity(probeIndex);
+    return SampleReflectionProbeAtlas(probeIndex, R, mipmap) * intensity;
+}
+
+// Parallax Correction & No Normalization Version, For Local Reflection Probe
+inline float3 GetPrefilteredEnvColor(int probeIndex, float mipmap, float3 R, float3 positionWS)
+{
+    float intensity = GetReflectionProbeIntensity(probeIndex);
+    float3 correctedR = GetParallaxCorrectionDirection(probeIndex, R, positionWS);
+    return SampleReflectionProbeAtlas(probeIndex, correctedR, mipmap) * intensity;
+}
+
+// Parallax Correction & Normalization Version, For Local Reflection Probe
+inline float3 GetPrefilteredEnvColor(int probeIndex, float mipmap, float3 R, float3 positionWS, float3 irradiance)
+{
+    float intensity = GetReflectionProbeIntensity(probeIndex);
+    float3 correctedR = GetParallaxCorrectionDirection(probeIndex, R, positionWS);
+    float3 rawReflection = SampleReflectionProbeAtlas(probeIndex, correctedR, mipmap);
+    return ReflectionProbeNormalization_Luminance(rawReflection, irradiance, correctedR, probeIndex) * intensity;
+}
+
+// ----------------------------------------------------------------------------------------------------
+// Reflection Probe Blending
+// ----------------------------------------------------------------------------------------------------
+
+float3 EvaluateSingleReflectionProbe(in GeometryParams geometryParams, in StandardPBRParams standardPBRParams, float3 irradiance)
+{
+    int bestReflectionProbeIndex = FindBestReflectionProbe(geometryParams.screenUV, geometryParams.positionWS);
     float mipmap = RoughnessToMipmapLevel(standardPBRParams.roughness, 6.0);
-    return SampleReflectionProbeAtlas(probeIndex, standardPBRParams.R, mipmap).rgb;
+    
+    if (bestReflectionProbeIndex == -1) return GetGlobalPrefilteredEnvColor(mipmap, standardPBRParams.R, irradiance);
+    else return GetPrefilteredEnvColor(bestReflectionProbeIndex, mipmap, standardPBRParams.R, geometryParams.positionWS, irradiance);
 }
 
-// Parallax Correction, No Normalization, Without Unity Mipmap Remap
-inline float3 GetPrefilteredEnvColor(in StandardPBRParams standardPBRParams, int probeIndex, float3 positionWS)
-{
-    float3 R = GetParallaxCorrectionDirection(probeIndex, standardPBRParams.R, positionWS);
-    return SampleReflectionProbeAtlas(probeIndex, R, 6.0 * standardPBRParams.roughness).rgb;
-}
 
-// Parallax Correction, No Normalization, With Unity Mipmap Remap
-inline float3 GetPrefilteredEnvColor_RemappedMipmap(in StandardPBRParams standardPBRParams, int probeIndex, float3 positionWS)
-{
-    float3 R = GetParallaxCorrectionDirection(probeIndex, standardPBRParams.R, positionWS);
-    float mipmap = RoughnessToMipmapLevel(standardPBRParams.roughness, 6.0);
-    return SampleReflectionProbeAtlas(probeIndex, R, mipmap).rgb;
-}
-
-// Parallax Correction, Normalization, With Unity Mipmap Remap
-inline float3 GetPrefilteredEnvColor_RemappedMipmap(in StandardPBRParams standardPBRParams, int probeIndex, float3 positionWS, float3 irradiance)
-{
-    float3 R = GetParallaxCorrectionDirection(probeIndex, standardPBRParams.R, positionWS);
-    float mipmap = RoughnessToMipmapLevel(standardPBRParams.roughness, 6.0);
-    float3 rawReflection = SampleReflectionProbeAtlas(probeIndex, R, mipmap).rgb;
-    return ReflectionProbeNormalization(rawReflection, irradiance, R, probeIndex);
-}
 
 #endif

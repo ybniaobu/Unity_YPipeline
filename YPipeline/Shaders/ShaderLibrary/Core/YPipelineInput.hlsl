@@ -162,11 +162,12 @@ inline float4x4 GetSpotLightShadowMatrix(int shadowIndex)                  { ret
 // ----------------------------------------------------------------------------------------------------
 
 CBUFFER_START(ReflectionProbeData)
-    float4 _ReflectionProbeCount; // x: Reflection Probe Count, yzw: 暂无
+    float4 _ReflectionProbeCount; // x: reflection probe count, yzw: 暂无
     float4 _ReflectionProbeBoxCenter[MAX_REFLECTION_PROBE_COUNT]; // xyz: box center, w: importance
     float4 _ReflectionProbeBoxExtent[MAX_REFLECTION_PROBE_COUNT]; // xyz: box extent, w: box projection
     float4 _ReflectionProbeSH[MAX_REFLECTION_PROBE_COUNT * 7]; // reflection probe normalization
-    float4 _ReflectionProbeParams[MAX_REFLECTION_PROBE_COUNT]; // xy: uv in atlas, z: height, w: intensity
+    float4 _ReflectionProbeSampleParams[MAX_REFLECTION_PROBE_COUNT]; // xy: uv in atlas, z: height
+    float4 _ReflectionProbeParams[MAX_REFLECTION_PROBE_COUNT]; // x: intensity, y: blend distance
 CBUFFER_END
 
 inline float GetReflectionProbeCount()                    { return _ReflectionProbeCount.x; }
@@ -185,9 +186,10 @@ inline void GetReflectionProbeSH(int index, out float4 SH[7])
     SH[5] = _ReflectionProbeSH[idx + 5];
     SH[6] = _ReflectionProbeSH[idx + 6];
 }
-inline float2 GetReflectionProbeAtlasCoord(int index)     { return _ReflectionProbeParams[index].xy; }
-inline float GetReflectionProbeMapSize(int index)         { return _ReflectionProbeParams[index].z; }
-inline float GetReflectionProbeIntensity(int index)       { return _ReflectionProbeParams[index].w; }
+inline float2 GetReflectionProbeAtlasCoord(int index)     { return _ReflectionProbeSampleParams[index].xy; }
+inline float GetReflectionProbeMapSize(int index)         { return _ReflectionProbeSampleParams[index].z; }
+inline float GetReflectionProbeIntensity(int index)       { return _ReflectionProbeParams[index].x; }
+inline float GetReflectionProbeBlendDistance(int index)   { return _ReflectionProbeParams[index].y; }
 
 // ----------------------------------------------------------------------------------------------------
 // Textures and Samplers

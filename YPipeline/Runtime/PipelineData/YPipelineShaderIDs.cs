@@ -176,6 +176,7 @@ namespace YPipeline
         public static readonly int k_ReflectionProbeBoxCenterID = Shader.PropertyToID("_ReflectionProbeBoxCenter");
         public static readonly int k_ReflectionProbeBoxExtentID = Shader.PropertyToID("_ReflectionProbeBoxExtent");
         public static readonly int k_ReflectionProbeSHID = Shader.PropertyToID("_ReflectionProbeSH");
+        public static readonly int k_ReflectionProbeSampleParamsID = Shader.PropertyToID("_ReflectionProbeSampleParams");
         public static readonly int k_ReflectionProbeParamsID = Shader.PropertyToID("_ReflectionProbeParams");
         
         // ----------------------------------------------------------------------------------------------------

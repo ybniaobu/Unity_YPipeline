@@ -17,6 +17,7 @@ namespace YPipeline
             public Vector4[] boxCenter;
             public Vector4[] boxExtent;
             public Vector4[] SH;
+            public Vector4[] probeSampleParams;
             public Vector4[] probeParams;
             public Texture[] octahedralAtlas;
         }
@@ -54,6 +55,7 @@ namespace YPipeline
                 passData.boxCenter = data.reflectionProbesData.boxCenter;
                 passData.boxExtent = data.reflectionProbesData.boxExtent;
                 passData.SH = data.reflectionProbesData.SH;
+                passData.probeSampleParams = data.reflectionProbesData.probeSampleParams;
                 passData.probeParams = data.reflectionProbesData.probeParams;
                 passData.octahedralAtlas = data.reflectionProbesData.octahedralAtlas;
                 
@@ -66,11 +68,12 @@ namespace YPipeline
                     context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_ReflectionProbeBoxCenterID, data.boxCenter);
                     context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_ReflectionProbeBoxExtentID, data.boxExtent);
                     context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_ReflectionProbeSHID, data.SH);
+                    context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_ReflectionProbeSampleParamsID, data.probeSampleParams);
                     context.cmd.SetGlobalVectorArray(YPipelineShaderIDs.k_ReflectionProbeParamsID, data.probeParams);
                     
                     for (int i = 0; i < data.probeCount; i++)
                     {
-                        Vector4 probeParams = data.probeParams[i];
+                        Vector4 probeParams = data.probeSampleParams[i];
                         Vector4 scaleOffset = new Vector4(1, 1, -probeParams.x, -probeParams.y);
                         Rect rect = new Rect(probeParams.x, probeParams.y,  probeParams.z * 1.5f, probeParams.z);
                         BlitHelper.BlitTexture(context.cmd, data.octahedralAtlas[i], rect, scaleOffset);

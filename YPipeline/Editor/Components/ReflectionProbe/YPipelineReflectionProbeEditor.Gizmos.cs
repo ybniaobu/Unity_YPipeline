@@ -23,12 +23,15 @@ namespace YPipeline.Editor
         [DrawGizmo(GizmoType.Selected | GizmoType.Active)]
         private static void DrawReflectionProbeGizmoSelected(ReflectionProbe probe, GizmoType gizmoType)
         {
-            // 绘制 Reflection Probe 影响范围
             Color oldColor = Gizmos.color;
-            Gizmos.color = new Color(0.75f, 0.5f, 0.25f, 1.0f);
+            // 绘制 Reflection Probe 影响范围
+            Gizmos.color = new Color(1.0f, 0.667f, 0.333f, 1.0f);
             Matrix4x4 probeMatrix = Matrix4x4.TRS(probe.transform.position, Quaternion.identity, Vector3.one);
             Gizmos.matrix = probeMatrix;
             Gizmos.DrawWireCube(probe.center, probe.size);
+            
+            // 绘制 Blend 影响范围
+            Gizmos.DrawWireCube(probe.center, probe.size - new Vector3(probe.blendDistance, probe.blendDistance, probe.blendDistance));
             Gizmos.matrix = Matrix4x4.identity;
             Gizmos.color = oldColor;
             

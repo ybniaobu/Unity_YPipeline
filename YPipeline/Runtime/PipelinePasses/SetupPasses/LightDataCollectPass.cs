@@ -282,7 +282,8 @@ namespace YPipeline
                     Quality3Tier.Low => yProbe.octahedralAtlasLow,
                     _ => yProbe.octahedralAtlasMedium
                 };
-                data.reflectionProbesData.probeParams[reflectionProbeCount] = new Vector4(0, 0, octahedralAtlas.height, probe.intensity);
+                data.reflectionProbesData.probeSampleParams[reflectionProbeCount] = new Vector4(0, 0, octahedralAtlas.height);
+                data.reflectionProbesData.probeParams[reflectionProbeCount] = new Vector4(probe.intensity, probe.blendDistance);
                 data.reflectionProbesData.octahedralAtlas[reflectionProbeCount] = octahedralAtlas;
 
                 atlasArea += octahedralAtlas.height * octahedralAtlas.height;
@@ -293,7 +294,7 @@ namespace YPipeline
             data.reflectionProbesData.atlasSize = atlasSize * atlasSize / 2 >= atlasArea ? new Vector2Int(atlasSize * 3 / 2, atlasSize / 2) : new Vector2Int(atlasSize * 3 / 2, atlasSize);
             data.reflectionProbesData.probeCount = reflectionProbeCount;
             
-            m_Packer.Pack(ref data.reflectionProbesData.probeParams, reflectionProbeCount, atlasSize, 1.5f);
+            m_Packer.Pack(ref data.reflectionProbesData.probeSampleParams, reflectionProbeCount, atlasSize, 1.5f);
         }
     }
 }
