@@ -70,7 +70,8 @@ inline float3 ApplySpecularBRDF(float3 prefilteredColor, in StandardPBRParams st
 
 inline float3 SpecularIndirectLighting(in GeometryParams geometryParams, in StandardPBRParams standardPBRParams, float3 irradiance, float2 envBRDF_Specular, float3 energyCompensation)
 {
-    float3 prefilteredColor = EvaluateSingleReflectionProbe(geometryParams, standardPBRParams, irradiance);
+    // float3 prefilteredColor = EvaluateSingleReflectionProbe(geometryParams, standardPBRParams, irradiance);
+    float3 prefilteredColor = EvaluateAndBlendingTwoReflectionProbes(geometryParams, standardPBRParams, irradiance);
     return ApplySpecularBRDF(prefilteredColor, standardPBRParams, envBRDF_Specular, energyCompensation);
 }
 

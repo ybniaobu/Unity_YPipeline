@@ -4,6 +4,8 @@
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
 #include "IntersectionTestLibrary.hlsl"
 
+// TODO: 里面有些许重复运算的代码，比如 AABBMinMax，目前影响不大，之后有时间再更改。
+
 // ----------------------------------------------------------------------------------------------------
 // Tiled Culling -- Reflection Probe
 // ----------------------------------------------------------------------------------------------------
@@ -32,8 +34,8 @@ int FindBestReflectionProbe(float2 screenUV, float3 positionWS)
     InitializeReflectionProbeTile(tile, screenUV);
     
     int bestIndex = -1;
-    int lastImportance = -1;
-    float lastDistSqr = FLT_MAX;
+    int bestImportance = -1;
+    float bestDistSqr = FLT_MAX;
     
     for (int i = tile.headerIndex + 1; i <= tile.lastProbeIndex; i++)
     {
@@ -48,34 +50,40 @@ int FindBestReflectionProbe(float2 screenUV, float3 positionWS)
         float3 dir = positionWS - GetReflectionProbeBoxCenter(idx);
         float distSqr = dot(dir, dir);
         
-        if (importance > lastImportance)
+        if (importance > bestImportance)
         {
             bestIndex = idx;
-            lastImportance = importance;
-            lastDistSqr = distSqr;
+            bestImportance = importance;
+            bestDistSqr = distSqr;
         }
-        else if (importance == lastImportance)
+        else if (importance == bestImportance)
         {
-            if (distSqr < lastDistSqr)
+            if (distSqr < bestDistSqr)
             {
                 bestIndex = idx;
-                lastDistSqr = distSqr;
+                bestDistSqr = distSqr;
             }
         }
     }
     return bestIndex;
 }
 
+bool IsGreater(int importanceA, float distSqrA, int importanceB, float distSqrB)
+{
+    if (importanceA > importanceB) return true;
+    if (importanceA < importanceB) return false;
+    return distSqrA < distSqrB;  // importance 相等时, 比较 distSqr
+}
+
 // 根据优先级、离像素点距离来找到最合适的二个 Reflection Probe，用于后续混合
-// 【书签】
 int2 FindBestTwoReflectionProbe(float2 screenUV, float3 positionWS)
 {
     ReflectionProbeTile tile = (ReflectionProbeTile) 0;
     InitializeReflectionProbeTile(tile, screenUV);
     
     int bestIndex = -1, secondBestIndex = -1;
-    int lastImportance = -1;
-    float lastDistSqr = FLT_MAX, secondLastDistSqr = FLT_MAX;
+    int bestImportance = -1, secondBestImportance = -1;
+    float bestDistSqr = FLT_MAX, secondBestDistSqr = FLT_MAX;
     
     for (int i = tile.headerIndex + 1; i <= tile.lastProbeIndex; i++)
     {
@@ -90,25 +98,20 @@ int2 FindBestTwoReflectionProbe(float2 screenUV, float3 positionWS)
         float3 dir = positionWS - GetReflectionProbeBoxCenter(idx);
         float distSqr = dot(dir, dir);
         
-        if (importance > lastImportance)
+        if (IsGreater(importance, distSqr, bestImportance, bestDistSqr))
         {
             secondBestIndex = bestIndex;
             bestIndex = idx;
-            lastImportance = importance;
-            lastDistSqr = distSqr;
+            secondBestImportance = bestImportance;
+            bestImportance = importance;
+            secondBestDistSqr = bestDistSqr;
+            bestDistSqr = distSqr;
         }
-        else if (importance == lastImportance)
+        else if (IsGreater(importance, distSqr, secondBestImportance, secondBestDistSqr))
         {
-            if (distSqr < lastDistSqr)
-            {
-                secondBestIndex = bestIndex;
-                bestIndex = idx;
-                lastDistSqr = distSqr;
-            }
-            else
-            {
-                secondBestIndex = idx;
-            }
+            secondBestIndex = idx;
+            secondBestImportance = importance;
+            secondBestDistSqr = distSqr;
         }
     }
     return int2(bestIndex, secondBestIndex);
@@ -227,7 +230,7 @@ inline float3 GetGlobalPrefilteredEnvColor(float mipmap, float3 R)
 inline float3 GetGlobalPrefilteredEnvColor(float mipmap, float3 R, float3 irradiance)
 {
     float3 rawReflection = SampleGlobalReflectionProbe(R, mipmap);
-    return ReflectionProbeNormalization_Luminance(rawReflection, irradiance, R);
+    return ReflectionProbeNormalization(rawReflection, irradiance, R);
 }
 
 // No Parallax Correction & No Normalization Version, For Local Reflection Probe
@@ -251,7 +254,7 @@ inline float3 GetPrefilteredEnvColor(int probeIndex, float mipmap, float3 R, flo
     float intensity = GetReflectionProbeIntensity(probeIndex);
     float3 correctedR = GetParallaxCorrectionDirection(probeIndex, R, positionWS);
     float3 rawReflection = SampleReflectionProbeAtlas(probeIndex, correctedR, mipmap);
-    return ReflectionProbeNormalization_Luminance(rawReflection, irradiance, correctedR, probeIndex) * intensity;
+    return ReflectionProbeNormalization(rawReflection, irradiance, correctedR, probeIndex) * intensity;
 }
 
 // ----------------------------------------------------------------------------------------------------
@@ -267,6 +270,38 @@ float3 EvaluateSingleReflectionProbe(in GeometryParams geometryParams, in Standa
     else return GetPrefilteredEnvColor(bestReflectionProbeIndex, mipmap, standardPBRParams.R, geometryParams.positionWS, irradiance);
 }
 
+float CalculateProbeWeight(int probeIndex, float3 positionWS)
+{
+    float blendDistance = GetReflectionProbeBlendDistance(probeIndex);
+    float3 boxCenter = GetReflectionProbeBoxCenter(probeIndex);
+    float3 boxExtent = GetReflectionProbeBoxExtent(probeIndex);
+    AABBMinMax aabb = BuildAABBMinMax(boxCenter, boxExtent);
+    float3 weights = min(positionWS - aabb.min, aabb.max - positionWS) / blendDistance;
+    return saturate(min(weights.x, min(weights.y, weights.z)));
+}
 
+float3 EvaluateAndBlendingTwoReflectionProbes(in GeometryParams geometryParams, in StandardPBRParams standardPBRParams, float3 irradiance)
+{
+    int2 bestReflectionProbeIndices = FindBestTwoReflectionProbe(geometryParams.screenUV, geometryParams.positionWS);
+    float mipmap = RoughnessToMipmapLevel(standardPBRParams.roughness, 6.0);
+    
+    if (bestReflectionProbeIndices.x == -1) return GetGlobalPrefilteredEnvColor(mipmap, standardPBRParams.R, irradiance);
+    else if (bestReflectionProbeIndices.y == -1)
+    {
+        float weight = CalculateProbeWeight(bestReflectionProbeIndices.x, geometryParams.positionWS);
+        float3 secondProbe = GetGlobalPrefilteredEnvColor(mipmap, standardPBRParams.R, irradiance);
+        float3 firstProbe = GetPrefilteredEnvColor(bestReflectionProbeIndices.x, mipmap, standardPBRParams.R, geometryParams.positionWS, irradiance);
+        return lerp(secondProbe, firstProbe, weight);
+    }
+    else
+    {
+        float weight0 = CalculateProbeWeight(bestReflectionProbeIndices.x, geometryParams.positionWS);
+        float weight1 = CalculateProbeWeight(bestReflectionProbeIndices.y, geometryParams.positionWS);
+        float weight = weight0 / (weight0 + weight1);
+        float3 firstProbe = GetPrefilteredEnvColor(bestReflectionProbeIndices.x, mipmap, standardPBRParams.R, geometryParams.positionWS, irradiance);
+        float3 secondProbe = GetPrefilteredEnvColor(bestReflectionProbeIndices.y, mipmap, standardPBRParams.R, geometryParams.positionWS, irradiance);
+        return lerp(secondProbe, firstProbe, weight);
+    }
+}
 
 #endif

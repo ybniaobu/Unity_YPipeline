@@ -31,7 +31,7 @@ namespace YPipeline.Editor
             Gizmos.DrawWireCube(probe.center, probe.size);
             
             // 绘制 Blend 影响范围
-            Gizmos.DrawWireCube(probe.center, probe.size - new Vector3(probe.blendDistance, probe.blendDistance, probe.blendDistance));
+            Gizmos.DrawWireCube(probe.center, probe.size - new Vector3(probe.blendDistance, probe.blendDistance, probe.blendDistance) * 2.0f);
             Gizmos.matrix = Matrix4x4.identity;
             Gizmos.color = oldColor;
             

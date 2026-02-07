@@ -36,6 +36,7 @@ namespace YPipeline
             
             // Supported Rendering Features
 #if UNITY_EDITOR
+            // SupportedRenderingFeatures.active.rendersUIOverlay = true;
             SupportedRenderingFeatures.active.overridesRealtimeReflectionProbes = true;
             SupportedRenderingFeatures.active.overridesShadowmask = true;
             
@@ -50,6 +51,7 @@ namespace YPipeline
             SupportedRenderingFeatures.active.overridesOtherLightingSettings = true;
             
             SupportedRenderingFeatures.active.receiveShadows = false;
+            SupportedRenderingFeatures.active.rendererProbes = false;
             SupportedRenderingFeatures.active.lightProbeProxyVolumes = false;
 #endif
             // Graphics Settings
